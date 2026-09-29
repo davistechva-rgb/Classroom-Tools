@@ -16,12 +16,13 @@ body{height:100vh;height:100dvh;overflow:hidden}
 .head h1 span{color:var(--sun);display:inline-block;transform:rotate(-3deg)}
 .head .search{flex:1;max-width:440px;margin-left:auto}
 .head input{font-size:1.1rem;padding:9px 18px;border-width:4px;border-radius:999px;background:#fff}
-.app{flex:1;min-height:0;display:grid;grid-template-columns:minmax(210px,270px) 1fr;gap:18px;padding:4px clamp(14px,2.5vw,28px) 8px}
-nav{display:flex;flex-direction:column;gap:9px;min-height:0;overflow:auto;padding:2px 8px 8px 2px}
-nav button{font:inherit;font-weight:700;font-size:clamp(.95rem,1.4vw,1.12rem);color:var(--ink);text-align:left;display:flex;align-items:center;gap:10px;
-  background:#fff;border:4px solid var(--ink);border-radius:16px;padding:8px 12px;cursor:pointer;box-shadow:4px 4px 0 var(--ink);flex:1;min-height:44px;max-height:74px}
-nav button .ic{font-size:1.5em;width:1.6em;height:1.6em;border-radius:50%;display:grid;place-items:center;border:3px solid var(--ink);flex:none}
-nav button .n{margin-left:auto;font-size:.8rem;background:#EEF3F9;border-radius:999px;padding:1px 8px}
+.app{flex:1;min-height:0;display:grid;grid-template-columns:clamp(230px,22vw,290px) 1fr;gap:18px;padding:4px clamp(14px,2.5vw,28px) 8px}
+nav{display:flex;flex-direction:column;gap:clamp(6px,1.1vh,10px);min-height:0;overflow:auto;padding:2px 8px 8px 2px}
+nav button{font:inherit;font-weight:700;font-size:clamp(.92rem,1.2vw,1.1rem);line-height:1.1;white-space:nowrap;color:var(--ink);text-align:left;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;
+  background:#fff;border:4px solid var(--ink);border-radius:16px;padding:5px 12px 5px 8px;cursor:pointer;box-shadow:4px 4px 0 var(--ink);flex:1 1 0;min-height:46px;max-height:72px}
+nav button .ic{font-size:1.25rem;width:2.1rem;height:2.1rem;border-radius:50%;display:grid;place-items:center;border:3px solid var(--ink);flex:none}
+nav button .t{min-width:0;overflow:hidden;text-overflow:ellipsis}
+nav button .n{font-size:.8rem;background:#EEF3F9;border:2px solid var(--ink);border-radius:999px;min-width:1.9em;padding:1px 6px;text-align:center}
 nav button[aria-pressed="true"]{background:var(--c);transform:translate(3px,3px);box-shadow:1px 1px 0 var(--ink)}
 .panel{min-height:0;display:flex;flex-direction:column;background:var(--paper);border:4px solid var(--ink);border-radius:26px;box-shadow:7px 7px 0 var(--ink);padding:16px 18px 18px;position:relative;overflow:hidden}
 .panel h2{margin:0 0 12px;font-size:clamp(1.4rem,2.6vw,2rem);display:flex;align-items:center;gap:10px}
@@ -32,6 +33,7 @@ nav button[aria-pressed="true"]{background:var(--c);transform:translate(3px,3px)
 .tile:hover{transform:translate(-2px,-2px) rotate(-1deg);box-shadow:7px 7px 0 var(--ink)}
 .tile:active{transform:translate(4px,4px);box-shadow:1px 1px 0 var(--ink)}
 .tile .e{font-size:clamp(1.8rem,4.5vh,3.4rem);width:1.7em;height:1.7em;display:grid;place-items:center;border-radius:50%;border:4px solid var(--ink);background:#fff;flex:none}
+.ver{margin-left:12px;font-size:.8rem;font-weight:700;color:var(--ink);background:#fff;border:2px solid var(--ink);border-radius:999px;padding:1px 10px}
 .empty{display:grid;place-items:center;font-size:1.3rem;font-weight:600;flex:1}
 @media (max-width:760px),(max-height:520px){
   body{height:auto;overflow:auto}
@@ -39,6 +41,7 @@ nav button[aria-pressed="true"]{background:var(--c);transform:translate(3px,3px)
   nav{flex-direction:row;overflow-x:auto;padding-bottom:6px}
   nav button{flex:none;white-space:nowrap}
   nav button .n{display:none}
+  nav button{grid-template-columns:auto auto}
   .tiles{grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-auto-rows:minmax(120px,auto)!important}
   .head .search{max-width:none;flex-basis:100%}
 }
@@ -57,26 +60,26 @@ nav button[aria-pressed="true"]{background:var(--c);transform:translate(3px,3px)
 <script>
 // slug = file name of the tool (slug.html)
 const CATS=[
- {name:'Pick and choose',emoji:'🎲',color:'#FFC93C',tools:[
+ {name:'Pick & choose',emoji:'🎲',color:'#FFC93C',tools:[
   ['🎲','Random Number Generator','random-number'],['🎡','Random Wheel','random-wheel'],['🎯','Random Name Picker','name-picker'],
   ['👥','Random Team Generator','team-generator'],['👥','Group Generator','group-generator'],['🧑‍🏫','Teacher Randomizer','teacher-randomizer'],
   ['🪙','Coin Flip','coin-flip'],['🎲','Dice Roller','dice-roller'],['🃏','Virtual Playing Cards','playing-cards']]},
- {name:'Timers and signals',emoji:'⏱️',color:'#FF6B5B',tools:[
+ {name:'Timers & signals',emoji:'⏱️',color:'#FF6B5B',tools:[
   ['⏱️','Classroom Timer','classroom-timer'],['⏰','Multiple Timers','multiple-timers'],['🔔','Classroom Bell','classroom-bell'],
   ['🚦','Classroom Traffic Light','traffic-light'],['📣','Attention Getter Generator','attention-getter'],['🔊','Sound Board','sound-board'],['🎵','Classroom Music Player','music-player']]},
  {name:'Games',emoji:'🎮',color:'#9B6BF2',tools:[
   ['🔢','Interactive Number Board','number-board'],['🎱','Bingo Board','bingo-board'],['🏆','Classroom Scoreboard','scoreboard'],
   ['🧠','Memory Matching Game','memory-game'],['❓','Quiz Game','quiz-game'],['🏆','Jeopardy-Style Game','jeopardy'],['🧩','Puzzle Generator','puzzle-generator']]},
- {name:'Talk and think',emoji:'💬',color:'#FF8FC7',tools:[
+ {name:'Talk & think',emoji:'💬',color:'#FF8FC7',tools:[
   ['🎤','Discussion Question Generator','discussion-questions'],['💬','Icebreaker Generator','icebreakers']]},
- {name:'Words and reading',emoji:'📚',color:'#5DC66E',tools:[
+ {name:'Words & reading',emoji:'📚',color:'#5DC66E',tools:[
   ['📝','Flashcard App','flashcards'],['🔤','Word Scrambler','word-scrambler'],['🔍','Word Search Generator','word-search'],
   ['✏️','Crossword Generator','crossword'],['📚','Vocabulary Quiz','vocab-quiz'],['📖','Spelling Quiz','spelling-quiz']]},
  {name:'Math',emoji:'➗',color:'#22C3E6',tools:[
   ['🔢','Math Problem Generator','math-problems'],['➕','Addition Practice','addition'],['➖','Subtraction Practice','subtraction'],
   ['✖️','Multiplication Practice','multiplication'],['➗','Division Practice','division'],['📐','Geometry Quiz','geometry-quiz'],
   ['💵','Money Counting Game','money-game'],['🕐','Time-Telling Game','time-telling']]},
- {name:'World and science',emoji:'🌎',color:'#FF9F43',tools:[
+ {name:'World & science',emoji:'🌎',color:'#FF9F43',tools:[
   ['🗺️','Geography Quiz','geography-quiz'],['🇺🇸','State Capitals Quiz','state-capitals'],['🌎','World Capitals Quiz','world-capitals'],
   ['🏳️','Flag Quiz','flag-quiz'],['🧪','Science Quiz','science-quiz']]},
  {name:'Teacher tools',emoji:'🧑‍🏫',color:'#7BD3F7',tools:[
@@ -90,13 +93,13 @@ function layout(n){const w=$('tiles').clientWidth,h=$('tiles').clientHeight;let 
  $('tiles').style.gridTemplateColumns=`repeat(${best[0]},minmax(0,1fr))`;$('tiles').style.gridTemplateRows=`repeat(${best[1]},minmax(0,1fr))`}
 function tiles(list,color){$('tiles').innerHTML=list.length?list.map(([e,n,s,c],i)=>`<a class="tile" href="${s}.html" style="--tbg:${(c||color)}22;animation-delay:${i*.03}s"><span class="e" style="background:${c||color}">${e}</span>${esc(n)}</a>`).join(''):'<div class="empty">No tools match that search.</div>';
  if(list.length)layout(list.length)}
-function nav(){$('nav').innerHTML=CATS.map((c,i)=>`<button aria-pressed="${i===cur&&!$('q').value}" data-i="${i}" style="--c:${c.color}"><span class="ic" style="background:${c.color}">${c.emoji}</span>${c.name}<span class="n">${c.tools.length}</span></button>`).join('')}
+function nav(){$('nav').innerHTML=CATS.map((c,i)=>`<button aria-pressed="${i===cur&&!$('q').value}" data-i="${i}" style="--c:${c.color}"><span class="ic" style="background:${c.color}">${c.emoji}</span><span class="t">${c.name}</span><span class="n">${c.tools.length}</span></button>`).join('')}
 function show(){const q=$('q').value.toLowerCase().trim();nav();
  if(q){const hits=CATS.flatMap(c=>c.tools.filter(t=>t[1].toLowerCase().includes(q)).map(t=>[t[0],t[1],t[2],c.color]));$('ptitle').textContent='🔍 Search results';$('panel').style.setProperty('--cat','#FFC93C');tiles(hits.slice(0,12))}
  else{const c=CATS[cur];$('ptitle').innerHTML=`<span>${c.emoji}</span>${c.name}`;$('panel').style.setProperty('--cat',c.color);tiles(c.tools,c.color)}}
 $('nav').onclick=e=>{const b=e.target.closest('[data-i]');if(!b)return;cur=+b.dataset.i;$('q').value='';try{localStorage.setItem('ct:home-cat',cur)}catch{};show()};
 $('q').oninput=show;addEventListener('resize',()=>{const n=$('tiles').querySelectorAll('.tile').length;if(n)layout(n)});
-$('foot').outerHTML=Kit.LOGO('');show();
-if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
+$('foot').outerHTML=Kit.LOGO('');document.querySelector('footer.brand').insertAdjacentHTML('beforeend','<span class="ver">Version 11</span>');show();
+if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).catch(()=>{});
 </script>
 </body></html>

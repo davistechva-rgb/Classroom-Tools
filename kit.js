@@ -70,7 +70,7 @@ const Kit = (() => {
     top.querySelector('#fsBtn').onclick = fullscreen;
     document.querySelector('main').insertAdjacentHTML('afterend', LOGO(''));
     new MutationObserver(refit).observe(document.querySelector('main'), { childList: true, subtree: true });
-    if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
+    if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).catch(() => {});
   }
   function modal(html) {
     let m = document.getElementById('kitModal');

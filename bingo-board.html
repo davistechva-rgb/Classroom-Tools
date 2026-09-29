@@ -8,34 +8,33 @@
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="kit.css">
 <title>Bingo Board</title>
-<style>.ball{width:min(210px,60vw);aspect-ratio:1;border-radius:50%;margin:0 auto 20px;border:6px solid var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(circle at 35% 30%,#fff 0 30%,var(--bubble) 31%);box-shadow:6px 6px 0 var(--ink)}
-.ball span{font-size:3rem;font-weight:700;line-height:1}.ball b{font-size:5.5rem;line-height:1}
+<style>main{max-width:1300px}.bingo-top{padding:14px 22px;display:grid;grid-template-columns:auto minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:center;margin-bottom:16px}
+@media(max-width:800px){.bingo-top{grid-template-columns:1fr;text-align:center}}
+.ball{--bc:#FF8FC7;width:clamp(120px,12vw,165px);aspect-ratio:1;border-radius:50%;margin:0 auto;border:6px solid var(--ink);position:relative;display:grid;place-items:center;
+ background:radial-gradient(circle at 32% 26%,rgba(255,255,255,.55) 0 11%,transparent 12%),var(--bc);box-shadow:6px 6px 0 var(--ink);transition:background-color .3s}
+.ball .face{width:62%;aspect-ratio:1;border-radius:50%;background:#fff;border:4px solid var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
+.ball span{font-size:clamp(1.3rem,2.2vw,1.9rem);font-weight:700;color:var(--bc)}.ball b{font-size:clamp(2.4rem,4.4vw,3.6rem)}
 .ball.pop{animation:pop .45s cubic-bezier(.3,1.6,.5,1)}
-.grid2{grid-template-columns:minmax(0,1fr) minmax(0,2.2fr)}.bboard{display:grid;grid-template-columns:auto repeat(15,minmax(0,1fr));gap:4px}
-.bl{display:grid;place-items:center;font-weight:700;font-size:1.4rem;color:#fff;border-radius:8px;border:3px solid var(--ink);width:38px}
-.bn{aspect-ratio:1;display:grid;place-items:center;border-radius:50%;background:#EEF3F9;font-weight:600;font-size:clamp(.7rem,1.3vw,1rem);color:#8793ad}
-.bn.on{background:var(--sun);color:var(--ink);border:3px solid var(--ink);font-weight:700}
-.bn.last{background:var(--tomato);color:#fff}
-@media (max-width:1000px){.bboard{grid-template-columns:auto repeat(15,minmax(0,1fr));gap:2px}.bl{width:30px;font-size:1rem}}</style></head>
+.ctrls{display:flex;flex-direction:column;gap:10px;align-items:flex-start}@media(max-width:800px){.ctrls{align-items:center}}
+.recentbox p{margin:0 0 6px}
+.bboard{display:grid;grid-template-columns:auto repeat(15,minmax(0,1fr));gap:clamp(3px,.5vw,7px);align-items:center}
+.bl{display:grid;place-items:center;font-weight:700;font-size:clamp(1.3rem,2.8vw,2.4rem);color:#fff;border-radius:12px;border:4px solid var(--ink);width:clamp(34px,4.2vw,60px);aspect-ratio:1;text-shadow:2px 2px 0 var(--ink)}
+.bn{aspect-ratio:1;max-height:62px;margin:auto;height:100%;display:grid;place-items:center;border-radius:50%;background:#EEF3F9;font-weight:700;font-size:clamp(.75rem,1.9vw,1.6rem);color:#8793ad;transition:background .3s}
+.bn.on{color:var(--ink);border:3px solid var(--ink)}
+.bn.last{color:#fff;text-shadow:1px 1px 0 var(--ink);transform:scale(1.12);box-shadow:0 0 0 4px var(--ink)}</style></head>
 <body>
 <main>
-<div class="grid2">
- <div class="card center">
-  <div class="ball" id="ball"><span id="letter">?</span><b id="num"></b></div>
+<div class="card bingo-top">
+ <div class="ball" id="ball"><div class="face"><span id="letter">?</span><b id="num"></b></div></div>
+ <div class="ctrls">
   <button class="btn big pink" id="call">Call a number</button>
-  <div class="row" style="justify-content:center;margin-top:16px">
-   <button class="btn small white" id="auto">Auto call: off</button>
-   <label>every <input type="number" id="secs" value="8" min="3"> sec</label>
-  </div>
-  <div class="row" style="justify-content:center;margin-top:10px">
-   <label><input type="checkbox" id="speak" checked> Read numbers out loud</label>
-   <button class="btn small red" id="newg">New game</button>
-  </div>
-  <p><b>Last called</b></p><div id="recent"></div>
-  <p class="muted" id="count">0 of 75 called</p>
+  <div class="row" style="gap:10px"><button class="btn small white" id="auto">Auto call: off</button><label>every <input type="number" id="secs" value="8" min="3" style="width:4em;padding:4px 8px"> sec</label><button class="btn small red" id="newg">New game</button></div>
+  <label><input type="checkbox" id="speak" checked> Read numbers out loud</label>
  </div>
- <div class="card"><div id="board" class="bboard"></div></div>
-</div></main>
+ <div class="recentbox"><p><b>Last called</b></p><div id="recent"></div><p class="muted" id="count" style="margin-top:8px">0 of 75 called</p></div>
+</div>
+<div class="card"><div id="board" class="bboard"></div></div>
+</main>
 <script src="kit.js"></script>
 <script>
 Kit.mount('🎱', 'Bingo Board');
@@ -44,9 +43,9 @@ const $=id=>document.getElementById(id);const L='BINGO',LC=['#22C3E6','#FF6B5B',
 let called=Kit.get('bingo',[]),auto=null;
 const let_=n=>L[Math.floor((n-1)/15)];
 function render(){$('board').innerHTML=[0,1,2,3,4].map(r=>`<div class="bl" style="background:${LC[r]}">${L[r]}</div>`+Array.from({length:15},(_,i)=>{const n=r*15+i+1;
- return `<div class="bn ${called.includes(n)?'on':''} ${n===called.at(-1)?'last':''}">${n}</div>`}).join('')).join('');
- $('recent').innerHTML=called.slice(-6,-1).reverse().map(n=>`<span class="chip">${let_(n)} ${n}</span>`).join('')||'<span class="muted">None yet</span>';
- $('count').textContent=`${called.length} of 75 called`;const l=called.at(-1);$('letter').textContent=l?let_(l):'?';$('num').textContent=l||''}
+ const on=called.includes(n);return `<div class="bn ${on?'on':''} ${n===called.at(-1)?'last':''}" style="${on?`background:${n===called.at(-1)?LC[r]:LC[r]+'66'}`:''}">${n}</div>`}).join('')).join('');
+ $('recent').innerHTML=called.slice(-6,-1).reverse().map(n=>`<span class="chip" style="background:${LC[Math.floor((n-1)/15)]}55">${let_(n)} ${n}</span>`).join('')||'<span class="muted">None yet</span>';
+ $('count').textContent=`${called.length} of 75 called`;$('ball').style.setProperty('--bc',called.length?LC[Math.floor((called.at(-1)-1)/15)]:'#FF8FC7');const l=called.at(-1);$('letter').textContent=l?let_(l):'?';$('num').textContent=l||''}
 function call(){if(called.length>=75){stopAuto();$('letter').textContent='All';$('num').textContent='';return}
  let n;do{n=Kit.rand(1,75)}while(called.includes(n));called.push(n);Kit.set('bingo',called);render();
  $('ball').classList.remove('pop');void $('ball').offsetWidth;$('ball').classList.add('pop');Kit.ding();
