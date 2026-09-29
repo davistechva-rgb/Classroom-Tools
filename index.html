@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<title>Classroom Tools</title>
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/kit.css">
+<style>
+.hero{text-align:center;padding:36px 16px 10px}
+.hero h1{margin:0;font-size:clamp(3rem,10vw,6rem);line-height:.95;color:#fff;letter-spacing:.01em;
+  text-shadow:5px 5px 0 var(--ink),-2px -2px 0 var(--ink),2px -2px 0 var(--ink),-2px 2px 0 var(--ink),2px 2px 0 var(--ink)}
+.hero h1 span{display:inline-block}
+.hero h1 span:nth-child(1){transform:rotate(-3deg);color:var(--sun)}
+.hero h1 span:nth-child(2){transform:rotate(2deg)}
+.hero p{font-size:1.3rem;font-weight:600;color:var(--ink);margin:18px 0}
+.search{max-width:520px;margin:0 auto 10px}
+.search input{font-size:1.2rem;padding:12px 18px;border-width:4px;border-radius:999px;background:#fff}
+section{margin-top:34px}
+section h2{display:inline-block;margin:0 0 14px;font-size:1.5rem;background:var(--paper);border:4px solid var(--ink);border-radius:14px;padding:4px 16px;box-shadow:4px 4px 0 var(--ink)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px}
+.tile{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;text-decoration:none;color:var(--ink);
+  background:var(--paper);border:4px solid var(--ink);border-radius:20px;box-shadow:5px 5px 0 var(--ink);padding:16px 10px;font-weight:600;font-size:1.05rem;line-height:1.2;transition:transform .12s}
+.tile:hover{transform:translate(-2px,-2px) rotate(-1deg);box-shadow:7px 7px 0 var(--ink)}
+.tile:active{transform:translate(4px,4px);box-shadow:1px 1px 0 var(--ink)}
+.tile .e{font-size:2.6rem;width:74px;height:74px;display:grid;place-items:center;border-radius:50%;border:4px solid var(--ink)}
+.tile.soon{border-style:dashed;box-shadow:none;opacity:.6;pointer-events:none}
+.tile.soon small{font-size:.8rem;background:#EEF6FF;border-radius:999px;padding:1px 10px}
+.foot{text-align:center;margin:50px 0 10px;font-weight:600}
+.foot a{color:var(--ink)}
+</style></head>
+<body>
+<main>
+ <div class="hero">
+  <h1><span>Classroom</span> <span>Tools</span></h1>
+  <p>Pick a tool to get started.</p>
+  <div class="search"><input type="text" id="q" placeholder="🔍 Find a tool" aria-label="Find a tool"></div>
+ </div>
+ <div id="cats"></div>
+ <p class="foot">Free to use. Made by <a href="https://davis-tech-support.com" target="_blank" rel="noopener">Davis Tech Support</a>.</p>
+</main>
+<a class="dts" href="https://davis-tech-support.com" target="_blank" rel="noopener"><b>DTS</b>Davis Tech Support</a>
+<script>
+// slug = folder in apps/. ready:true once built.
+const CATS=[
+ {name:'Pick and choose',color:'#FFC93C',tools:[
+  ['🎲','Random Number Generator','random-number',1],['🎡','Random Wheel','random-wheel',1],['🎯','Random Name Picker','name-picker',1],
+  ['👥','Random Team Generator','team-generator',1],['👥','Group Generator','group-generator',1],['🧑‍🏫','Teacher Randomizer','teacher-randomizer',1],
+  ['🪙','Coin Flip','coin-flip',1],['🎲','Dice Roller','dice-roller',1],['🃏','Virtual Playing Cards','playing-cards',1]]},
+ {name:'Timers and signals',color:'#FF6B5B',tools:[
+  ['⏱️','Classroom Timer','classroom-timer',1],['⏰','Multiple Timers','multiple-timers',1],['🔔','Classroom Bell','classroom-bell',1],
+  ['🚦','Classroom Traffic Light','traffic-light',1],['📣','Attention Getter Generator','attention-getter',1],['🔊','Sound Board','sound-board',1],['🎵','Classroom Music Player','music-player',1]]},
+ {name:'Games',color:'#9B6BF2',tools:[
+  ['🔢','Interactive Number Board','number-board',1],['🎱','Bingo Board','bingo-board',1],['🏆','Classroom Scoreboard','scoreboard',1],
+  ['🧠','Memory Matching Game','memory-game',1],['❓','Quiz Game','quiz-game',1],['🏆','Jeopardy-Style Game','jeopardy',1],['🧩','Puzzle Generator','puzzle-generator',1]]},
+ {name:'Talk and think',color:'#FF8FC7',tools:[
+  ['🎤','Discussion Question Generator','discussion-questions',1],['💬','Icebreaker Generator','icebreakers',1]]},
+ {name:'Words and reading',color:'#5DC66E',tools:[
+  ['📝','Flashcard App','flashcards',1],['🔤','Word Scrambler','word-scrambler',1],['🔍','Word Search Generator','word-search',1],
+  ['✏️','Crossword Generator','crossword',1],['📚','Vocabulary Quiz','vocab-quiz',1],['📖','Spelling Quiz','spelling-quiz',1]]},
+ {name:'Math',color:'#22C3E6',tools:[
+  ['🔢','Math Problem Generator','math-problems',1],['➕','Addition Practice','addition',1],['➖','Subtraction Practice','subtraction',1],
+  ['✖️','Multiplication Practice','multiplication',1],['➗','Division Practice','division',1],['📐','Geometry Quiz','geometry-quiz',1],
+  ['💵','Money Counting Game','money-game',1],['🕐','Time-Telling Game','time-telling',1]]},
+ {name:'World and science',color:'#FF9F43',tools:[
+  ['🗺️','Geography Quiz','geography-quiz',1],['🇺🇸','State Capitals Quiz','state-capitals',1],['🌎','World Capitals Quiz','world-capitals',1],
+  ['🏳️','Flag Quiz','flag-quiz',1],['🧪','Science Quiz','science-quiz',1]]},
+ {name:'Teacher tools',color:'#7BD3F7',tools:[
+  ['📊','Grade Calculator','grade-calculator',1],['📈','Grade Tracker','grade-tracker',1],['📝','Assignment Tracker','assignment-tracker',1],
+  ['📅','Class Schedule','class-schedule',1],['📋','Seating Chart Generator','seating-chart',1],['🪑','Random Seating Chart','random-seating',1]]}
+];
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function render(q=''){q=q.toLowerCase().trim();
+ document.getElementById('cats').innerHTML=CATS.map(c=>{const t=c.tools.filter(x=>x[1].toLowerCase().includes(q));if(!t.length)return'';
+  return `<section><h2 style="background:${c.color}">${c.name}</h2><div class="tiles">${t.map(([e,n,s,r])=>
+   r?`<a class="tile" href="apps/${s}/index.html"><span class="e" style="background:${c.color}">${e}</span>${esc(n)}</a>`
+    :`<div class="tile soon"><span class="e" style="background:${c.color}">${e}</span>${esc(n)}<small>Coming soon</small></div>`).join('')}</div></section>`}).join('')
+  ||'<p class="center" style="font-size:1.3rem;font-weight:600">No tools match that search.</p>'}
+document.getElementById('q').oninput=e=>render(e.target.value);render();
+if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body></html>
