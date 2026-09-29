@@ -1,0 +1,79 @@
+/* Classroom Tools shared styles - Davis Tech Support - MIT */
+:root{
+  --ink:#1D2B53; --sky:#56B8EA; --paper:#FFFFFF;
+  --sun:#FFC93C; --tomato:#FF6B5B; --grass:#5DC66E; --grape:#9B6BF2; --bubble:#FF8FC7; --cyan:#22C3E6;
+  --radius:22px; --line:4px; --lift:6px;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:inherit}
+html,body{margin:0;height:auto;min-height:100%}
+body{
+  font-family:"Fredoka","Baloo 2","Trebuchet MS","Segoe UI",system-ui,sans-serif;
+  color:var(--ink); background:var(--sky);
+  background-image:radial-gradient(rgba(255,255,255,.18) 2px,transparent 2.5px);
+  background-size:28px 28px; font-size:1.1rem; line-height:1.4;
+  display:flex;flex-direction:column;min-height:100vh;
+}
+.top{display:flex;align-items:center;gap:14px;padding:16px clamp(14px,3vw,32px);flex-wrap:wrap}
+.home{text-decoration:none;color:var(--ink);background:var(--paper);border:var(--line) solid var(--ink);
+  border-radius:999px;padding:6px 16px;font-weight:600;box-shadow:0 4px 0 var(--ink);white-space:nowrap}
+.home:active{transform:translateY(4px);box-shadow:none}
+.title{margin:0;font-size:clamp(1.6rem,4vw,2.6rem);font-weight:700;color:var(--paper);flex:1;
+  text-shadow:3px 3px 0 var(--ink),-1.5px -1.5px 0 var(--ink),1.5px -1.5px 0 var(--ink),-1.5px 1.5px 0 var(--ink)}
+.title .emo{text-shadow:none;margin-right:.25em}
+.tool-btns{display:flex;gap:8px}
+main{flex:1;width:100%;max-width:1100px;margin:0 auto;padding:0 clamp(14px,3vw,32px) 90px}
+.card{background:var(--paper);border:var(--line) solid var(--ink);border-radius:var(--radius);
+  box-shadow:var(--lift) var(--lift) 0 var(--ink);padding:clamp(16px,3vw,28px)}
+.row{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.6fr);gap:22px;align-items:start}
+@media (max-width:760px){.grid2{grid-template-columns:1fr}}
+.stack>*+*{margin-top:14px}
+.btn{font:inherit;font-weight:600;font-size:1.15rem;color:var(--ink);background:var(--sun);
+  border:var(--line) solid var(--ink);border-radius:16px;padding:10px 22px;cursor:pointer;
+  box-shadow:0 5px 0 var(--ink);transition:transform .08s;user-select:none;-webkit-user-select:none}
+.btn:hover{filter:brightness(1.05)}
+.btn:active{transform:translateY(5px);box-shadow:0 0 0 var(--ink)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.big{font-size:clamp(1.4rem,3vw,2rem);padding:14px 36px;border-radius:22px}
+.btn.red{background:var(--tomato);color:#fff}.btn.green{background:var(--grass)}
+.btn.grape{background:var(--grape);color:#fff}.btn.white{background:var(--paper)}
+.btn.pink{background:var(--bubble)}
+.btn.small{font-size:.95rem;padding:6px 14px;box-shadow:0 3px 0 var(--ink);border-width:3px}
+.btn.icon{padding:6px 12px;font-size:1.2rem;box-shadow:0 4px 0 var(--ink);border-radius:14px}
+label{font-weight:600}
+input[type=number],input[type=text],textarea,select{font:inherit;color:var(--ink);background:#F4FAFF;
+  border:3px solid var(--ink);border-radius:14px;padding:8px 12px;width:100%}
+input[type=number]{width:6.5em}
+textarea{min-height:220px;resize:vertical;line-height:1.5}
+input[type=checkbox]{width:22px;height:22px;accent-color:var(--grape);vertical-align:middle}
+:focus-visible{outline:4px dashed var(--grape);outline-offset:3px}
+.big-display{font-size:clamp(5rem,20vw,13rem);font-weight:700;line-height:1;text-align:center;margin:10px 0}
+.center{text-align:center}.muted{opacity:.7;font-size:.95rem}
+.chip{display:inline-block;background:#EEF6FF;border:3px solid var(--ink);border-radius:999px;padding:2px 12px;margin:3px;font-weight:600}
+.dts{position:fixed;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:6px;
+  background:var(--paper);border:3px solid var(--ink);border-radius:999px;padding:3px 12px 3px 4px;
+  font-size:.78rem;font-weight:600;color:var(--ink);text-decoration:none;opacity:.92;z-index:5}
+.dts b{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--ink);color:var(--cyan);font-size:.6rem}
+.modal{position:fixed;inset:0;background:rgba(29,43,83,.55);display:none;place-items:center;z-index:20;padding:20px}
+.modal.open{display:grid}
+.modal .card{max-width:640px;width:100%;text-align:center;animation:pop .35s cubic-bezier(.3,1.6,.5,1)}
+@keyframes pop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+.confetti{position:fixed;top:-20px;width:12px;height:16px;z-index:30;pointer-events:none;border-radius:3px}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+/* shared quiz + practice pieces */
+.qz-top{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;margin-bottom:10px}
+.qz-vis{display:grid;place-items:center;min-height:40px;margin:8px 0}
+.qz-q{font-size:clamp(1.6rem,4.2vw,2.8rem);font-weight:700;line-height:1.2;margin:12px 0 22px;text-align:center}
+.qz-ans{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:600px){.qz-ans{grid-template-columns:1fr}}
+.qz-a{font:inherit;font-size:clamp(1.2rem,2.6vw,1.7rem);font-weight:700;color:var(--ink);border:4px solid var(--ink);border-radius:20px;padding:18px 12px;cursor:pointer;box-shadow:0 6px 0 var(--ink);background:#fff}
+.qz-a:active{transform:translateY(6px);box-shadow:none}
+.qz-a.yes{background:var(--grass)}.qz-a.no{background:var(--tomato);color:#fff}.qz-a.dim{opacity:.4}
+.qz-a img{max-height:90px;max-width:100%;display:block;margin:0 auto}
+.stars{font-size:3rem;letter-spacing:.1em}
+.keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:330px;margin:16px auto 0}
+.keypad button{font:inherit;font-size:1.8rem;font-weight:700;padding:12px;border:4px solid var(--ink);border-radius:16px;background:#fff;box-shadow:0 4px 0 var(--ink);cursor:pointer;color:var(--ink)}
+.keypad button:active{transform:translateY(4px);box-shadow:none}
+@media print{.top,.dts,.noprint{display:none!important}body{background:#fff!important}.card{box-shadow:none!important;border:0!important}main{padding:0}}
