@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Attention Getter Generator</title>
+<style>.call{font-size:clamp(2.4rem,8vw,5rem);font-weight:700;line-height:1.1;margin:6px 0 22px}
+.resp{font-size:clamp(2rem,6vw,4rem);font-weight:700;line-height:1.1;color:var(--grape);margin-top:6px;transition:filter .3s}
+.resp.hidden{filter:blur(18px)}summary{cursor:pointer}</style></head>
+<body>
+<main>
+<div class="card center">
+ <p class="muted" style="margin:0">Teacher says</p>
+ <div id="call" class="call">Class, class!</div>
+ <p class="muted" style="margin:0">Students say</p>
+ <div id="resp" class="resp hidden">Yes, yes!</div>
+ <div class="row" style="justify-content:center;margin-top:20px">
+  <button class="btn big pink" id="next">New one</button><button class="btn big white" id="show">Show answer</button>
+ </div>
+</div>
+<details class="card setup" style="margin-top:22px"><summary><b>Add your own</b></summary>
+ <p class="muted">One per line. Put a | between what you say and what students say.</p>
+ <textarea id="custom" placeholder="Hocus pocus | Everybody focus"></textarea></details></main>
+<script src="kit.js"></script>
+<script>
+Kit.mount('📣', 'Attention Getter Generator');
+
+const $=id=>document.getElementById(id);
+const BASE=`Class, class! | Yes, yes!
+Hocus pocus | Everybody focus!
+Macaroni and cheese | Everybody freeze!
+Ready to rock? | Ready to roll!
+One, two, three, eyes on me | One, two, eyes on you!
+Hands on top | That means stop!
+Chicka chicka | Boom boom!
+Peanut butter | Jelly time!
+Salt and pepper | Ketchup!
+Holy moly | Guacamole!
+Scooby dooby doo | Where are you?
+Ants in your pants | Freeze and dance!
+Tootsie roll, lollipop | We've been talking, now let's stop!
+Silent seat | Feet on the floor!
+All set? | You bet!
+Waterfall | Shhhhhh!
+Stop, look | And listen!
+Criss cross | Applesauce!
+Mother Goose | Tell the truth!
+Ready, set | You bet!
+Sharks! | Chomp chomp!
+Zip it, lock it | Put it in your pocket!
+Hey hey | Ho ho!
+Hakuna | Matata!
+If you can hear me, clap once | (clap)
+Teamwork makes | The dream work!
+Shark bait | Ooh ha ha!
+Winner winner | Chicken dinner!
+Up high | Down low!
+Owl be listening | Whooo whooo!
+Mac and cheese | Please and thank you!
+Stop, collaborate | And listen!
+Bump on a log | Quiet as a frog!
+To infinity | And beyond!
+Oh me, oh my | Hands up high!`;
+$('custom').value=Kit.get('ag-custom','');$('custom').oninput=()=>Kit.set('ag-custom',$('custom').value);
+const all=()=>Kit.lines(BASE+'\n'+$('custom').value).map(l=>l.split('|').map(s=>s.trim())).filter(p=>p[0]);
+let last=-1;
+$('next').onclick=()=>{const a=all();let i;do{i=Math.floor(Math.random()*a.length)}while(a.length>1&&i===last);last=i;
+ $('call').textContent=a[i][0];$('resp').textContent=a[i][1]||'';$('resp').classList.add('hidden');Kit.ding()};
+$('show').onclick=()=>$('resp').classList.remove('hidden');
+
+</script>
+</body></html>

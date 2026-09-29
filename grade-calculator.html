@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Grade Calculator</title>
+<style>.stack>label{display:block}.res{font-size:2rem;font-weight:700;border:4px solid var(--ink);border-radius:18px;padding:10px 16px;text-align:center}
+.tblwrap{max-height:340px;overflow:auto;border:3px solid var(--ink);border-radius:14px}
+table{border-collapse:collapse;width:100%;font-weight:600}td,th{padding:5px 10px;text-align:center;border-bottom:1px solid #dde}th{position:sticky;top:0;background:var(--sun)}
+tr.on td{background:#FFF4CC}.catrow{display:grid;grid-template-columns:1.4fr .8fr .8fr auto;gap:8px;margin:6px 0;align-items:center}.catrow input{width:100%}</style></head>
+<body>
+<main>
+<div class="grid2">
+ <div class="card stack">
+  <h2 style="margin:0">Quick grader</h2>
+  <label>Number of questions <input type="number" id="nq" value="20" min="1"></label>
+  <label>Number wrong <input type="number" id="nw" value="0" min="0"></label>
+  <div class="res" id="quick"></div>
+  <div class="tblwrap"><table id="chart"></table></div>
+ </div>
+ <div class="card stack">
+  <h2 style="margin:0">Weighted grade</h2>
+  <p class="muted" style="margin:0">Add each category with its weight and the student's average in it.</p>
+  <div id="cats"></div>
+  <button class="btn white small" id="addCat">Add category</button>
+  <div class="res" id="wres"></div>
+  <h2 style="margin:10px 0 0">What do I need on the final?</h2>
+  <div class="row"><label>Current grade % <input type="number" id="cur" value="85"></label><label>Final is worth % <input type="number" id="fw" value="20"></label><label>Goal % <input type="number" id="goal" value="90"></label></div>
+  <div class="res" id="need"></div>
+ </div>
+</div></main>
+<script src="kit.js"></script>
+<script>
+Kit.mount('📊', 'Grade Calculator');
+const SCALE=[[97,'A+'],[93,'A'],[90,'A-'],[87,'B+'],[83,'B'],[80,'B-'],[77,'C+'],[73,'C'],[70,'C-'],[67,'D+'],[63,'D'],[60,'D-'],[0,'F']];
+const letter=p=>p==null||isNaN(p)?'':SCALE.find(s=>p>=s[0])[1];const lc=p=>p>=90?'#5DC66E':p>=80?'#22C3E6':p>=70?'#FFC93C':p>=60?'#FF9F43':'#FF6B5B';
+const $=id=>document.getElementById(id);
+function quick(){const n=Math.max(1,+$('nq').value||1),w=Math.min(n,Math.max(0,+$('nw').value||0)),p=Math.round(1000*(n-w)/n)/10;
+ $('quick').innerHTML=`${n-w} / ${n} = ${p}% <span style="color:${lc(p)}">${letter(p)}</span>`;$('quick').style.background=lc(p)+'33';
+ $('chart').innerHTML='<tr><th>Wrong</th><th>Score</th><th>Grade</th></tr>'+Array.from({length:n+1},(_,k)=>{const q=Math.round(1000*(n-k)/n)/10;return `<tr class="${k===w?'on':''}"><td>${k}</td><td>${q}%</td><td>${letter(q)}</td></tr>`}).join('')}
+['nq','nw'].forEach(k=>$(k).oninput=quick);
+let C=Kit.get('gc-cats',[{n:'Tests',w:40,a:''},{n:'Quizzes',w:30,a:''},{n:'Homework',w:20,a:''},{n:'Participation',w:10,a:''}]);
+function cats(){$('cats').innerHTML='<div class="catrow muted"><span>Category</span><span>Weight %</span><span>Average %</span><span></span></div>'+C.map((c,i)=>`<div class="catrow"><input type="text" value="${Kit.esc(c.n)}" data-i="${i}" data-f="n"><input type="number" value="${c.w}" data-i="${i}" data-f="w"><input type="number" value="${c.a}" data-i="${i}" data-f="a"><button class="btn small red" data-del="${i}" aria-label="Remove">✕</button></div>`).join('');weighted()}
+function weighted(){Kit.set('gc-cats',C);const used=C.filter(c=>c.a!==''&&!isNaN(+c.a)&&+c.w>0),tw=used.reduce((s,c)=>s+ +c.w,0);
+ if(!tw){$('wres').textContent='Enter averages to see the grade';$('wres').style.background='';return}const p=Math.round(10*used.reduce((s,c)=>s+c.w*c.a,0)/tw)/10;
+ $('wres').innerHTML=`${p}% <span style="color:${lc(p)}">${letter(p)}</span>`+(Math.round(tw)!==100?`<div class="muted" style="font-size:1rem">Weights add up to ${tw}%, so they were scaled to 100%.</div>`:'');$('wres').style.background=lc(p)+'33'}
+$('cats').oninput=e=>{const i=e.target.dataset.i;if(i==null)return;C[i][e.target.dataset.f]=e.target.dataset.f==='n'?e.target.value:e.target.value;weighted()};
+$('cats').onclick=e=>{const d=e.target.closest('[data-del]');if(d){C.splice(+d.dataset.del,1);cats()}};
+$('addCat').onclick=()=>{C.push({n:'New category',w:10,a:''});cats()};
+function need(){const c=+$('cur').value,f=+$('fw').value/100,g=+$('goal').value;if(!f){$('need').textContent='';return}
+ const n=Math.round(10*(g-c*(1-f))/f)/10;$('need').innerHTML=n>100?`${n}% needed. That goal is out of reach.`:n<=0?'Any score gets there! 🎉':`You need ${n}% on the final`}
+['cur','fw','goal'].forEach(k=>$(k).oninput=need);quick();cats();need();
+
+</script>
+</body></html>

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Money Counting Game</title>
+<style>.coins{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;align-items:center;max-width:700px}
+.coin{border-radius:50%;border:4px solid var(--ink);display:grid;place-items:center;font-weight:700;color:var(--ink);box-shadow:inset 0 0 0 5px rgba(255,255,255,.35);text-align:center;line-height:1}
+.coin small{display:block;font-size:.55em;font-weight:600}
+.bill{width:130px;height:62px;background:#9ED9A0;border:4px solid var(--ink);border-radius:8px;display:grid;place-items:center;font-weight:700;font-size:1.6rem;box-shadow:inset 0 0 0 6px #7CC47F}</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="quiz.js"></script>
+<script>
+Kit.mount('💵', 'Money Counting Game');
+
+const C={p:[1,'penny',62,'#D98E54'],n:[5,'nickel',72,'#C9D1DB'],d:[10,'dime',56,'#DDE3EA'],q:[25,'quarter',84,'#C9D1DB']};
+const fmt=c=>c<100?c+'¢':'$'+(c/100).toFixed(2);
+const coin=k=>k==='b'?'<div class="bill">$1</div>':`<div class="coin" style="width:${C[k][2]}px;height:${C[k][2]}px;background:${C[k][3]};font-size:${C[k][2]/3.4}px">${C[k][0]}¢<small>${C[k][1]}</small></div>`;
+Quiz.init({levels:['Pennies, nickels, dimes','Add quarters','Add dollar bills','Make change from $1'],makeQ(lv){
+ if(lv===3){const cost=Kit.rand(5,95),ch=100-cost;return{vis:`<div class="bill">$1</div>`,q:`You pay $1 for something that costs ${cost}¢. How much change do you get?`,answer:fmt(ch),options:[ch,...Quiz.numWrong(ch,15,3,1)].map(fmt)}}
+ const kinds=[['p','n','d'],['p','n','d','q'],['b','p','n','d','q']][lv];let items=[];const k=Kit.rand(3,lv?7:6);
+ for(let i=0;i<k;i++)items.push(Kit.pick(kinds));if(lv===2&&!items.includes('b'))items[0]='b';
+ const order=['b','q','d','n','p'];items.sort((a,b)=>order.indexOf(a)-order.indexOf(b));
+ const tot=items.reduce((s,x)=>s+(x==='b'?100:C[x][0]),0);
+ const w=new Set();[5,-5,10,-10,1,-1,25,-25].forEach(d=>{if(tot+d>0)w.add(tot+d)});
+ return{vis:`<div class="coins">${items.map(coin).join('')}</div>`,q:'How much money is this?',answer:fmt(tot),options:[fmt(tot),...Kit.shuffle([...w]).slice(0,3).map(fmt)]}}});
+
+</script>
+</body></html>

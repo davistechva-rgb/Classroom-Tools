@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Random Wheel</title>
+<style>.wheelwrap{position:relative;width:min(520px,100%);margin:0 auto 18px;aspect-ratio:1}
+#wheel{width:100%;height:100%;display:block}
+.pointer{position:absolute;left:50%;top:-6px;transform:translateX(-50%);width:0;height:0;border-left:22px solid transparent;border-right:22px solid transparent;border-top:44px solid var(--tomato);z-index:2;filter:drop-shadow(0 3px 0 var(--ink))}
+.hub{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:22%;aspect-ratio:1;border-radius:50%;background:#fff;border:6px solid var(--ink);font:inherit;font-weight:700;font-size:clamp(.9rem,2.4vw,1.4rem);color:var(--ink);cursor:pointer}
+.winner{font-size:clamp(2.4rem,8vw,4.5rem);font-weight:700;margin:6px 0;word-break:break-word}</style></head>
+<body>
+<main>
+<div class="grid2">
+ <div class="card stack setup">
+  <label for="items">Wheel choices (one per line)</label>
+  <textarea id="items"></textarea>
+  <label><input type="checkbox" id="remove"> Take the winner off the wheel</label>
+  <button class="btn white small" id="shuf">Shuffle order</button>
+ </div>
+ <div class="card center">
+  <div class="wheelwrap"><div class="pointer"></div><canvas id="wheel" width="1000" height="1000"></canvas>
+   <button id="spinHub" class="hub" aria-label="Spin">SPIN</button></div>
+  <button class="btn big grape" id="spin">Spin the wheel</button>
+ </div>
+</div></main>
+<script src="kit.js"></script>
+<script>
+Kit.mount('🎡', 'Random Wheel');
+
+const $=id=>document.getElementById(id);const cv=$('wheel'),g=cv.getContext('2d');
+const COLS=['#FFC93C','#FF6B5B','#5DC66E','#9B6BF2','#FF8FC7','#22C3E6','#FF9F43','#7BD3F7'];
+$('items').value=Kit.get('wheel-items','Pizza\nTacos\nPasta\nBurgers\nSushi\nSalad');
+$('remove').checked=Kit.get('wheel-remove',false);
+let rot=0,spinning=false;
+const items=()=>Kit.lines($('items').value);
+function draw(){const it=items(),n=Math.max(it.length,1),seg=2*Math.PI/n,R=490;g.clearRect(0,0,1000,1000);
+  g.save();g.translate(500,500);
+  for(let i=0;i<n;i++){const a=rot+i*seg;g.beginPath();g.moveTo(0,0);g.arc(0,0,R,a,a+seg);g.closePath();
+    g.fillStyle=it.length?COLS[(i%COLS.length===0&&i===n-1&&n>1)?2:i%COLS.length]:'#eee';g.fill();g.lineWidth=8;g.strokeStyle='#1D2B53';g.stroke();
+    if(it[i]){g.save();g.rotate(a+seg/2);g.textAlign='right';g.textBaseline='middle';g.fillStyle='#1D2B53';
+      let fs=Math.min(64,Math.max(22,900/n));g.font=`700 ${fs}px Fredoka, Trebuchet MS, sans-serif`;
+      let txt=it[i];while(g.measureText(txt).width>R-150&&txt.length>2)txt=txt.slice(0,-2)+'…';g.fillText(txt,R-30,0);g.restore()}}
+  g.beginPath();g.arc(0,0,R,0,2*Math.PI);g.lineWidth=14;g.stroke();g.restore()}
+$('items').oninput=()=>{Kit.set('wheel-items',$('items').value);draw()};
+$('remove').onchange=()=>Kit.set('wheel-remove',$('remove').checked);
+$('shuf').onclick=()=>{$('items').value=Kit.shuffle(items()).join('\n');$('items').oninput()};
+function spin(){const it=items();if(spinning||it.length<2)return;spinning=true;
+  const n=it.length,seg=2*Math.PI/n,start=rot,delta=2*Math.PI*(6+Math.random()*3)+Math.random()*2*Math.PI,dur=5200,t0=performance.now();
+  let lastIdx=-1;
+  function frame(t){const p=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-p,4);rot=start+delta*e;draw();
+    const idx=Math.floor((((-Math.PI/2-rot)%(2*Math.PI))+2*Math.PI)%(2*Math.PI)/seg);if(idx!==lastIdx){lastIdx=idx;Kit.tick()}
+    if(p<1)requestAnimationFrame(frame);else{spinning=false;const w=it[idx];Kit.tada();Kit.confetti();
+      Kit.modal(`<div class="muted">The wheel picked</div><div class="winner">${Kit.esc(w)}</div>`);
+      if($('remove').checked){const a=items();a.splice(idx,1);$('items').value=a.join('\n');Kit.set('wheel-items',$('items').value);draw()}}}
+  requestAnimationFrame(frame)}
+$('spin').onclick=spin;$('spinHub').onclick=spin;
+document.fonts?.ready.then(draw);draw();
+
+</script>
+</body></html>

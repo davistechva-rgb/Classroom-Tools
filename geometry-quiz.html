@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Geometry Quiz</title>
+<style>.qz-vis svg{width:min(320px,80vw);height:auto}</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="quiz.js"></script>
+<script>
+Kit.mount('📐', 'Geometry Quiz');
+
+const R=Kit.rand,INK='#1D2B53',FILLS=['#FFC93C','#FF8FC7','#22C3E6','#5DC66E','#9B6BF2','#FF9F43'];
+const svg=(inner,vb='0 0 240 200')=>`<svg viewBox="${vb}" xmlns="http://www.w3.org/2000/svg">${inner}</svg>`;
+const poly=(pts,f)=>`<polygon points="${pts.map(p=>p.join(',')).join(' ')}" fill="${f}" stroke="${INK}" stroke-width="6" stroke-linejoin="round"/>`;
+function reg(n,f){const rot=-Math.PI/2+(n%2?0:Math.PI/n);return poly([...Array(n)].map((_,i)=>[120+80*Math.cos(rot+2*Math.PI*i/n),100+80*Math.sin(rot+2*Math.PI*i/n)]),f)}
+const SH={triangle:[3,f=>reg(3,f)],square:[4,f=>poly([[50,30],[190,30],[190,170],[50,170]],f)],rectangle:[4,f=>poly([[20,55],[220,55],[220,150],[20,150]],f)],
+ pentagon:[5,f=>reg(5,f)],hexagon:[6,f=>reg(6,f)],octagon:[8,f=>reg(8,f)],trapezoid:[4,f=>poly([[70,40],[170,40],[220,160],[20,160]],f)],
+ rhombus:[4,f=>poly([[120,15],[200,100],[120,185],[40,100]],f)],parallelogram:[4,f=>poly([[70,50],[225,50],[170,150],[15,150]],f)],
+ circle:[0,f=>`<circle cx="120" cy="100" r="80" fill="${f}" stroke="${INK}" stroke-width="6"/>`]};
+const names=Object.keys(SH);
+const lbl=(x,y,t)=>`<text x="${x}" y="${y}" font-family="Fredoka,Trebuchet MS,sans-serif" font-weight="700" font-size="20" fill="${INK}" text-anchor="middle">${t}</text>`;
+Quiz.init({levels:['Name the shape','Sides and corners','Perimeter','Area','Angles'],makeQ(lv){const f=Kit.pick(FILLS);
+ if(lv===0){const n=Kit.pick(names);return{vis:svg(SH[n][1](f)),q:'What shape is this?',answer:n,options:[n,...Quiz.wrong(names,n)]}}
+ if(lv===1){const n=Kit.pick(names.filter(x=>x!=='circle')),s=SH[n][0],k=Kit.pick(['sides','corners']);return{vis:svg(SH[n][1](f)),q:`How many ${k} does this ${n} have?`,answer:s,options:[s,...Quiz.numWrong(s,3,3,2)]}}
+ if(lv===2){if(Math.random()<.6){const w=R(3,12),h=R(2,9),p=2*(w+h);return{vis:svg(poly([[30,50],[210,50],[210,150],[30,150]],f)+lbl(120,40,w+' cm')+lbl(232,106,h+' cm')),q:'What is the perimeter?',answer:p+' cm',options:[p,...Quiz.numWrong(p,6,2,2),w*h].map(x=>x+' cm').filter((v,i,a)=>a.indexOf(v)===i)}}
+  const a=R(3,9),b=R(3,9),c=R(Math.abs(a-b)+1,a+b-1),p=a+b+c;return{vis:svg(poly([[30,160],[210,160],[100,40]],f)+lbl(120,188,a+' cm')+lbl(45,95,b+' cm')+lbl(180,95,c+' cm'),'0 0 240 200'),q:'What is the perimeter of the triangle?',answer:p+' cm',options:[p,...Quiz.numWrong(p,5,3,3)].map(x=>x+' cm')}}
+ if(lv===3){const w=R(2,10),h=R(2,8),ar=w*h;const grid=w<=10&&h<=8&&Math.random()<.5;
+  if(grid){const s=Math.min(200/w,160/h);let g='';for(let i=0;i<w;i++)for(let j=0;j<h;j++)g+=`<rect x="${20+i*s}" y="${20+j*s}" width="${s}" height="${s}" fill="${f}" stroke="${INK}" stroke-width="3"/>`;
+   return{vis:svg(g),q:'Each square is 1 square unit. What is the area?',answer:ar+' sq units',options:[ar,...Quiz.numWrong(ar,5,2,1),2*(w+h)].map(x=>x+' sq units').filter((v,i,a)=>a.indexOf(v)===i)}}
+  return{vis:svg(poly([[30,50],[210,50],[210,150],[30,150]],f)+lbl(120,40,w+' ft')+lbl(232,106,h+' ft')),q:'What is the area of the rectangle?',answer:ar+' sq ft',options:[ar,2*(w+h),...Quiz.numWrong(ar,6,2,1)].map(x=>x+' sq ft').filter((v,i,a)=>a.indexOf(v)===i)}}
+ const t=Kit.pick(['acute','right','obtuse','straight']),d={acute:R(20,75),right:90,obtuse:R(105,165),straight:180}[t],rad=d*Math.PI/180,ex=120+100*Math.cos(-rad),ey=150+100*Math.sin(-rad);
+ return{vis:svg(`<path d="M220,150 L120,150 L${ex},${ey}" fill="none" stroke="${INK}" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>`+(t==='right'?`<path d="M145,150 L145,125 L120,125" fill="none" stroke="${f}" stroke-width="5"/>`:`<path d="M150,150 A30,30 0 0,0 ${120+30*Math.cos(-rad)},${150+30*Math.sin(-rad)}" fill="none" stroke="${f}" stroke-width="6"/>`)),
+  q:'What kind of angle is this?',answer:t,options:['acute','right','obtuse','straight'],keepOrder:true}}});
+
+</script>
+</body></html>

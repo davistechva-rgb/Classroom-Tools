@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Virtual Playing Cards</title>
+<style>.table{margin-top:22px;display:flex;flex-direction:column;gap:18px}
+.hand{background:#2E9B5C;border:4px solid var(--ink);border-radius:22px;padding:14px;box-shadow:5px 5px 0 var(--ink)}
+.hand h3{margin:0 0 10px;color:#fff;text-shadow:2px 2px 0 var(--ink)}
+.cards{display:flex;flex-wrap:wrap;gap:12px}
+.pc{width:100px;height:140px;background:#fff;border:3px solid var(--ink);border-radius:12px;position:relative;font-weight:700;animation:deal .35s ease-out both;box-shadow:3px 3px 0 rgba(0,0,0,.25)}
+.pc .c{position:absolute;top:6px;left:8px;font-size:1.2rem;line-height:1;text-align:center}.pc .c.b{top:auto;left:auto;bottom:6px;right:8px;transform:rotate(180deg)}
+.pc .m{position:absolute;inset:0;display:grid;place-items:center;font-size:3rem}
+.pc.r{color:#D93427}@keyframes deal{from{transform:translateY(-40px) rotate(-10deg);opacity:0}}</style></head>
+<body>
+<main>
+<div class="card row">
+ <button class="btn green" id="draw">Draw a card</button>
+ <button class="btn grape" id="shuffle">Shuffle the deck</button>
+ <label>Deal <input type="number" id="per" value="5" min="1" max="26"> cards to <input type="number" id="players" value="2" min="1" max="8"> players</label>
+ <button class="btn white" id="deal">Deal</button>
+ <label><input type="checkbox" id="jokers"> Jokers</label>
+ <span class="chip">Cards left: <b id="left">52</b></span>
+</div>
+<div id="table" class="table"></div></main>
+<script src="kit.js"></script>
+<script>
+Kit.mount('🃏', 'Virtual Playing Cards');
+
+const $=id=>document.getElementById(id);const SU=['♠','♥','♦','♣'],RK=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];let deck=[];
+function fresh(){deck=[];SU.forEach(s=>RK.forEach(r=>deck.push({r,s})));if($('jokers').checked)deck.push({r:'🃏',s:'Joker'},{r:'🃏',s:'Joker'});deck=Kit.shuffle(deck);$('left').textContent=deck.length}
+const card=(c,i)=>c.s==='Joker'?`<div class="pc" style="animation-delay:${i*.05}s"><div class="m">🃏</div></div>`:
+ `<div class="pc ${'♥♦'.includes(c.s)?'r':''}" style="animation-delay:${i*.05}s"><div class="c">${c.r}<br>${c.s}</div><div class="m">${c.s}</div><div class="c b">${c.r}<br>${c.s}</div></div>`;
+let drawn=[];
+$('draw').onclick=()=>{if(!deck.length){$('table').insertAdjacentHTML('afterbegin','<div class="card center">The deck is empty. Shuffle to start again.</div>');return}
+ drawn.push(deck.pop());$('left').textContent=deck.length;$('table').innerHTML=`<div class="hand"><h3>Drawn cards</h3><div class="cards">${drawn.map((c,i)=>card(c,i===drawn.length-1?0:-1)).join('')}</div></div>`;Kit.tick()};
+$('shuffle').onclick=()=>{fresh();drawn=[];$('table').innerHTML='';for(let i=0;i<8;i++)Kit.tone(2000,.03,'square',.04,i*.05)};
+$('jokers').onchange=()=>$('shuffle').click();
+$('deal').onclick=()=>{fresh();drawn=[];const per=+$('per').value||1,pl=+$('players').value||1;if(per*pl>deck.length){$('table').innerHTML='<div class="card center">Not enough cards for that many players.</div>';return}
+ const hands=Array.from({length:pl},()=>[]);for(let k=0;k<per;k++)hands.forEach(h=>h.push(deck.pop()));$('left').textContent=deck.length;
+ $('table').innerHTML=hands.map((h,i)=>`<div class="hand"><h3>Player ${i+1}</h3><div class="cards">${h.map((c,j)=>card(c,j)).join('')}</div></div>`).join('');Kit.ding()};
+fresh();
+
+</script>
+</body></html>

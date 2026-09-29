@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Classroom Timer</title>
+<style>.ringwrap{position:relative;width:min(420px,80vw);margin:0 auto}
+.ring{width:100%;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:18}.ring .bg{stroke:#E7F2FB}
+.ring .fg{stroke:var(--grass);stroke-linecap:round;transition:stroke-dashoffset .25s linear,stroke .4s}
+.time{position:absolute;inset:0;display:grid;place-items:center;font-size:clamp(3.5rem,14vw,7rem);font-weight:700;font-variant-numeric:tabular-nums}
+body.done{animation:flash .5s 6}@keyframes flash{50%{background-color:var(--tomato)}}</style></head>
+<body>
+<main>
+<div class="card center">
+ <div class="ringwrap">
+  <svg viewBox="0 0 200 200" class="ring"><circle cx="100" cy="100" r="88" class="bg"/><circle cx="100" cy="100" r="88" class="fg" id="arc"/></svg>
+  <div class="time" id="time">5:00</div>
+ </div>
+ <div class="row" style="justify-content:center;margin:12px 0">
+  <button class="btn small white" data-m="1">1 min</button><button class="btn small white" data-m="2">2 min</button>
+  <button class="btn small white" data-m="3">3 min</button><button class="btn small white" data-m="5">5 min</button>
+  <button class="btn small white" data-m="10">10 min</button><button class="btn small white" data-m="15">15 min</button>
+  <button class="btn small white" data-m="20">20 min</button>
+ </div>
+ <div class="row" style="justify-content:center">
+  <label>Min <input type="number" id="mm" value="5" min="0" max="180"></label>
+  <label>Sec <input type="number" id="ss" value="0" min="0" max="59"></label>
+  <button class="btn small grape" id="setc">Set</button>
+ </div>
+ <div class="row" style="justify-content:center;margin-top:20px">
+  <button class="btn big green" id="start">Start</button><button class="btn big red" id="reset">Reset</button>
+ </div>
+ <p class="muted">Press the space bar to start or pause.</p>
+</div></main>
+<script src="kit.js"></script>
+<script>
+Kit.mount('⏱️', 'Classroom Timer');
+
+const $=id=>document.getElementById(id);const C=2*Math.PI*88;$('arc').style.strokeDasharray=C;
+let total=Kit.get('timer-total',300),left=total,run=false,end=0,iv;
+function fmt(s){s=Math.ceil(s);const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return (h?h+':'+String(m).padStart(2,'0'):m)+':'+String(x).padStart(2,'0')}
+function draw(){$('time').textContent=fmt(left);const f=total?left/total:0;$('arc').style.strokeDashoffset=C*(1-f);
+  $('arc').style.stroke=f>.5?'var(--grass)':f>.2?'var(--sun)':'var(--tomato)';}
+function setT(s){stop();total=left=Math.max(1,s);Kit.set('timer-total',total);document.body.classList.remove('done');draw()}
+function stop(){run=false;clearInterval(iv);$('start').textContent='Start'}
+function start(){if(left<=0)left=total;run=true;end=Date.now()+left*1000;$('start').textContent='Pause';document.body.classList.remove('done');
+  iv=setInterval(()=>{left=Math.max(0,(end-Date.now())/1000);draw();if(left<=0){stop();$('time').textContent="Time's up!";$('time').style.fontSize='clamp(2rem,8vw,4rem)';document.body.classList.add('done');Kit.alarm()}},200)}
+$('start').onclick=()=>run?stop():($('time').style.fontSize='',start());
+$('reset').onclick=()=>{$('time').style.fontSize='';setT(total)};
+document.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{$('time').style.fontSize='';setT(+b.dataset.m*60)});
+$('setc').onclick=()=>{$('time').style.fontSize='';setT((+$('mm').value||0)*60+(+$('ss').value||0))};
+addEventListener('keydown',e=>{if(e.code==='Space'&&!/INPUT|TEXTAREA|SELECT|BUTTON/.test(document.activeElement.tagName)){e.preventDefault();$('start').click()}});
+draw();
+
+</script>
+</body></html>

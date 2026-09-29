@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Time-Telling Game</title>
+<style>.qz-vis svg{width:min(300px,75vw)}</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="quiz.js"></script>
+<script>
+Kit.mount('🕐', 'Time-Telling Game');
+
+const INK='#1D2B53';
+function clock(h,m){let s='<svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg"><circle cx="120" cy="120" r="110" fill="#fff" stroke="'+INK+'" stroke-width="8"/>';
+ for(let i=0;i<60;i++){const a=i*6*Math.PI/180,r1=i%5?100:94;s+=`<line x1="${120+r1*Math.sin(a)}" y1="${120-r1*Math.cos(a)}" x2="${120+104*Math.sin(a)}" y2="${120-104*Math.cos(a)}" stroke="${INK}" stroke-width="${i%5?2:4}"/>`}
+ for(let i=1;i<=12;i++){const a=i*30*Math.PI/180;s+=`<text x="${120+78*Math.sin(a)}" y="${128-78*Math.cos(a)}" text-anchor="middle" font-family="Fredoka,Trebuchet MS,sans-serif" font-weight="700" font-size="22" fill="${INK}">${i}</text>`}
+ const ha=((h%12)+m/60)*30*Math.PI/180,ma=m*6*Math.PI/180;
+ s+=`<line x1="120" y1="120" x2="${120+52*Math.sin(ha)}" y2="${120-52*Math.cos(ha)}" stroke="#FF6B5B" stroke-width="10" stroke-linecap="round"/>`;
+ s+=`<line x1="120" y1="120" x2="${120+84*Math.sin(ma)}" y2="${120-84*Math.cos(ma)}" stroke="#22C3E6" stroke-width="7" stroke-linecap="round"/><circle cx="120" cy="120" r="8" fill="${INK}"/></svg>`;return s}
+const f=(h,m)=>`${h}:${String(m).padStart(2,'0')}`;
+Quiz.init({levels:['On the hour','Half hour','Quarter hour','5 minutes','Any minute'],makeQ(lv){const h=Kit.rand(1,12);
+ const step=[60,30,15,5,1][lv],m=Kit.rand(0,59/step|0)*step%60;const ans=f(h,m),w=new Set();
+ const mm=m?Math.round(m/5)%12||12:12;if(mm!==h&&m%5===0)w.add(f(mm,(h%12)*5));
+ const alt=[[h%12+1,m],[h===1?12:h-1,m],[h,(m+step)%60],[h,(m+60-step)%60],[h,(m+30)%60]];Kit.shuffle(alt).forEach(([a,b])=>w.add(f(a,b)));w.delete(ans);
+ return{vis:clock(h,m),q:'What time does the clock show?',answer:ans,options:[ans,...[...w].slice(0,3)]}}});
+
+</script>
+</body></html>

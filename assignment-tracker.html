@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Assignment Tracker</title>
+<style>.as{display:grid;grid-template-columns:auto 1fr auto auto;gap:12px;align-items:center;background:#fff;border:4px solid var(--ink);border-radius:18px;box-shadow:4px 4px 0 var(--ink);padding:10px 14px;margin-bottom:12px}
+.as .t{font-weight:700;font-size:1.2rem}.as .m{font-size:.95rem}.as.done .t{text-decoration:line-through;opacity:.55}
+.due{font-weight:700;border-radius:999px;padding:3px 12px;border:3px solid var(--ink);white-space:nowrap}
+.st{font:inherit;font-weight:600;border:3px solid var(--ink);border-radius:12px;padding:4px 8px}
+@media(max-width:600px){.as{grid-template-columns:1fr auto}.as .due{grid-column:1}}</style></head>
+<body>
+<main>
+<div class="card stack" style="margin-bottom:18px">
+ <div class="row"><input type="text" id="t" placeholder="Assignment, like Chapter 3 worksheet" style="flex:2;min-width:200px"><input type="text" id="c" placeholder="Class or subject" style="flex:1;min-width:140px">
+ <input type="date" id="d" style="font:inherit;border:3px solid var(--ink);border-radius:14px;padding:7px"><button class="btn green" id="add">Add</button></div>
+ <div class="row"><b>Show</b><button class="btn small" data-f="open">To do</button><button class="btn small white" data-f="all">All</button><button class="btn small white" data-f="done">Done</button><button class="btn small red" id="clearDone">Clear finished</button></div>
+</div>
+<div id="list"></div></main>
+<script src="kit.js"></script>
+<script>
+Kit.mount('📝', 'Assignment Tracker');
+
+const $=id=>document.getElementById(id);let A=Kit.get('at',[]),f='open';const save=()=>Kit.set('at',A);
+const ST={todo:['Not started','#FFE0DC'],doing:['Working on it','#FFF4CC'],done:['Done','#E3F7E6']};
+function due(d){if(!d)return['No due date','#eee'];const t=new Date();t.setHours(0,0,0,0);const x=new Date(d+'T00:00');const n=Math.round((x-t)/864e5);
+ return n<0?[`${-n} day${n===-1?'':'s'} late`,'#FF6B5B']:n===0?['Due today','#FFC93C']:n===1?['Due tomorrow','#FFC93C']:[`Due ${x.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})}`,'#DDF6FC']}
+function render(){const L=A.map((a,i)=>({...a,i})).filter(a=>f==='all'||(f==='done')===(a.s==='done')).sort((a,b)=>(a.d||'9999').localeCompare(b.d||'9999'));
+ $('list').innerHTML=L.map(a=>{const [dt,dc]=a.s==='done'?['Finished','#E3F7E6']:due(a.d);return `<div class="as ${a.s==='done'?'done':''}" style="background:${ST[a.s][1]}"><input type="checkbox" data-c="${a.i}" ${a.s==='done'?'checked':''} aria-label="Mark done">
+ <div><div class="t">${Kit.esc(a.t)}</div><div class="m">${Kit.esc(a.c||'')}</div></div><span class="due" style="background:${dc}">${dt}</span>
+ <div class="row" style="gap:6px"><select class="st" data-s="${a.i}" aria-label="Status">${Object.entries(ST).map(([k,v])=>`<option value="${k}" ${a.s===k?'selected':''}>${v[0]}</option>`).join('')}</select><button class="btn small red" data-del="${a.i}" aria-label="Delete">✕</button></div></div>`}).join('')
+ ||`<div class="card center">${f==='done'?'Nothing finished yet.':'All caught up! Add an assignment above.'}</div>`;
+ document.querySelectorAll('[data-f]').forEach(b=>b.className='btn small '+(b.dataset.f===f?'':'white'))}
+$('add').onclick=()=>{const t=$('t').value.trim();if(!t)return;A.push({t,c:$('c').value.trim(),d:$('d').value,s:'todo'});$('t').value='';save();render();Kit.tick()};
+$('t').onkeydown=e=>{if(e.key==='Enter')$('add').click()};
+$('list').onchange=e=>{const c=e.target.dataset.c,s=e.target.dataset.s;if(c!=null){A[c].s=e.target.checked?'done':'todo';if(e.target.checked)Kit.ding()}if(s!=null)A[s].s=e.target.value;save();render()};
+$('list').onclick=e=>{const d=e.target.closest('[data-del]');if(d){A.splice(+d.dataset.del,1);save();render()}};
+document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{f=b.dataset.f;render()});
+$('clearDone').onclick=()=>{A=A.filter(a=>a.s!=='done');save();render()};render();
+
+</script>
+</body></html>

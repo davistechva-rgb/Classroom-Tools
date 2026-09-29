@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Bingo Board</title>
+<style>.ball{width:min(210px,60vw);aspect-ratio:1;border-radius:50%;margin:0 auto 20px;border:6px solid var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(circle at 35% 30%,#fff 0 30%,var(--bubble) 31%);box-shadow:6px 6px 0 var(--ink)}
+.ball span{font-size:3rem;font-weight:700;line-height:1}.ball b{font-size:5.5rem;line-height:1}
+.ball.pop{animation:pop .45s cubic-bezier(.3,1.6,.5,1)}
+.grid2{grid-template-columns:minmax(0,1fr) minmax(0,2.2fr)}.bboard{display:grid;grid-template-columns:auto repeat(15,minmax(0,1fr));gap:4px}
+.bl{display:grid;place-items:center;font-weight:700;font-size:1.4rem;color:#fff;border-radius:8px;border:3px solid var(--ink);width:38px}
+.bn{aspect-ratio:1;display:grid;place-items:center;border-radius:50%;background:#EEF3F9;font-weight:600;font-size:clamp(.7rem,1.3vw,1rem);color:#8793ad}
+.bn.on{background:var(--sun);color:var(--ink);border:3px solid var(--ink);font-weight:700}
+.bn.last{background:var(--tomato);color:#fff}
+@media (max-width:1000px){.bboard{grid-template-columns:auto repeat(15,minmax(0,1fr));gap:2px}.bl{width:30px;font-size:1rem}}</style></head>
+<body>
+<main>
+<div class="grid2">
+ <div class="card center">
+  <div class="ball" id="ball"><span id="letter">?</span><b id="num"></b></div>
+  <button class="btn big pink" id="call">Call a number</button>
+  <div class="row" style="justify-content:center;margin-top:16px">
+   <button class="btn small white" id="auto">Auto call: off</button>
+   <label>every <input type="number" id="secs" value="8" min="3"> sec</label>
+  </div>
+  <div class="row" style="justify-content:center;margin-top:10px">
+   <label><input type="checkbox" id="speak" checked> Read numbers out loud</label>
+   <button class="btn small red" id="newg">New game</button>
+  </div>
+  <p><b>Last called</b></p><div id="recent"></div>
+  <p class="muted" id="count">0 of 75 called</p>
+ </div>
+ <div class="card"><div id="board" class="bboard"></div></div>
+</div></main>
+<script src="kit.js"></script>
+<script>
+Kit.mount('🎱', 'Bingo Board');
+
+const $=id=>document.getElementById(id);const L='BINGO',LC=['#22C3E6','#FF6B5B','#9B6BF2','#5DC66E','#FF9F43'];
+let called=Kit.get('bingo',[]),auto=null;
+const let_=n=>L[Math.floor((n-1)/15)];
+function render(){$('board').innerHTML=[0,1,2,3,4].map(r=>`<div class="bl" style="background:${LC[r]}">${L[r]}</div>`+Array.from({length:15},(_,i)=>{const n=r*15+i+1;
+ return `<div class="bn ${called.includes(n)?'on':''} ${n===called.at(-1)?'last':''}">${n}</div>`}).join('')).join('');
+ $('recent').innerHTML=called.slice(-6,-1).reverse().map(n=>`<span class="chip">${let_(n)} ${n}</span>`).join('')||'<span class="muted">None yet</span>';
+ $('count').textContent=`${called.length} of 75 called`;const l=called.at(-1);$('letter').textContent=l?let_(l):'?';$('num').textContent=l||''}
+function call(){if(called.length>=75){stopAuto();$('letter').textContent='All';$('num').textContent='';return}
+ let n;do{n=Kit.rand(1,75)}while(called.includes(n));called.push(n);Kit.set('bingo',called);render();
+ $('ball').classList.remove('pop');void $('ball').offsetWidth;$('ball').classList.add('pop');Kit.ding();
+ if($('speak').checked&&'speechSynthesis' in window){speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(`${let_(n)}, ${n}`);u.rate=.85;setTimeout(()=>speechSynthesis.speak(u),400)}}
+function stopAuto(){clearInterval(auto);auto=null;$('auto').textContent='Auto call: off'}
+$('call').onclick=call;
+$('auto').onclick=()=>{if(auto)return stopAuto();call();auto=setInterval(call,Math.max(3,+$('secs').value)*1000);$('auto').textContent='Auto call: on'};
+$('newg').onclick=()=>{if(called.length&&!confirm('Start a new game? This clears the board.'))return;stopAuto();called=[];Kit.set('bingo',called);render()};
+render();
+
+</script>
+</body></html>

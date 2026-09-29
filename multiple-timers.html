@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Multiple Timers</title>
+<style>.timers{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:18px}
+.tm{border:4px solid var(--ink);border-radius:22px;box-shadow:5px 5px 0 var(--ink);padding:16px;text-align:center}
+.tm h3{margin:0;font-size:1.4rem;word-break:break-word}.tm .t{font-size:3.6rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1;margin:6px 0}
+.tm .bar{height:14px;border:3px solid var(--ink);border-radius:99px;background:#fff;overflow:hidden;margin-bottom:12px}.tm .bar i{display:block;height:100%;background:var(--grass)}
+.tm.done{animation:flash .5s 6}@keyframes flash{50%{background:var(--tomato)}}
+.tm .row{justify-content:center;gap:8px}</style></head>
+<body>
+<main>
+<div class="card row setup" style="margin-bottom:22px">
+ <input type="text" id="label" placeholder="Timer name, like Table 1" style="flex:1;min-width:180px">
+ <label>Min <input type="number" id="mm" value="5" min="0"></label>
+ <label>Sec <input type="number" id="ss" value="0" min="0" max="59"></label>
+ <button class="btn green" id="add">Add timer</button>
+ <button class="btn white small" id="startAll">Start all</button>
+</div>
+<div id="list" class="timers"></div></main>
+<script src="kit.js"></script>
+<script>
+Kit.mount('⏰', 'Multiple Timers');
+
+const $=id=>document.getElementById(id);const BG=['#FFF4CC','#FFE0DC','#E3F7E6','#EFE6FF','#FFE3F2','#DDF6FC'];
+let T=Kit.get('mt',[]).map(t=>({...t,run:false,end:0}));let n=T.length;
+const save=()=>Kit.set('mt',T.map(({label,total,left})=>({label,total,left})));
+const fmt=s=>{s=Math.ceil(s);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+function render(){$('list').innerHTML=T.length?T.map((t,i)=>`<div class="tm ${t.done?'done':''}" style="background:${BG[i%6]}"><h3>${Kit.esc(t.label)}</h3>
+ <div class="t" id="t${i}">${t.left>0?fmt(t.left):"Done!"}</div><div class="bar"><i id="b${i}" style="width:${100*t.left/t.total}%"></i></div>
+ <div class="row"><button class="btn small ${t.run?'white':'green'}" data-a="go" data-i="${i}">${t.run?'Pause':'Start'}</button>
+ <button class="btn small white" data-a="reset" data-i="${i}">Reset</button><button class="btn small red" data-a="del" data-i="${i}" aria-label="Remove">✕</button></div></div>`).join('')
+ :'<div class="card center muted">Add a timer above. You can run as many as you need.</div>'}
+function start(t){if(t.left<=0)t.left=t.total;t.run=true;t.done=false;t.end=Date.now()+t.left*1000}
+$('list').onclick=e=>{const b=e.target.closest('[data-a]');if(!b)return;const t=T[+b.dataset.i];
+ if(b.dataset.a==='go'){t.run?(t.run=false):start(t)}
+ if(b.dataset.a==='reset'){t.run=false;t.done=false;t.left=t.total}
+ if(b.dataset.a==='del'){T.splice(+b.dataset.i,1)} save();render()};
+$('add').onclick=()=>{const s=(+$('mm').value||0)*60+(+$('ss').value||0);if(s<=0)return;n++;
+ T.push({label:$('label').value.trim()||'Timer '+n,total:s,left:s,run:false});$('label').value='';save();render()};
+$('startAll').onclick=()=>{T.forEach(t=>{if(!t.run)start(t)});render()};
+setInterval(()=>{let changed=false;T.forEach((t,i)=>{if(!t.run)return;t.left=Math.max(0,(t.end-Date.now())/1000);
+ const el=$('t'+i);if(el){el.textContent=fmt(t.left);$('b'+i).style.width=100*t.left/t.total+'%'}
+ if(t.left<=0){t.run=false;t.done=true;changed=true;Kit.alarm()}});if(changed){save();render()}},250);
+render();
+
+</script>
+</body></html>

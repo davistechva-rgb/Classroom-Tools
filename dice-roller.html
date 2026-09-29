@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Dice Roller</title>
+<style>.dice{display:flex;flex-wrap:wrap;gap:22px;justify-content:center;margin:28px 0;min-height:150px}
+.die{width:130px;height:130px;background:#fff;border:6px solid var(--ink);border-radius:26px;box-shadow:6px 6px 0 var(--ink);display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);padding:14px}
+.die i{width:24px;height:24px;border-radius:50%;background:var(--ink);place-self:center;visibility:hidden}
+.die i.on{visibility:visible}
+.die.shake{animation:shake .12s infinite}
+@keyframes shake{0%{transform:rotate(-8deg)}50%{transform:rotate(8deg) translateY(-6px)}100%{transform:rotate(-8deg)}}
+.total{font-size:2rem;margin:0 0 18px}</style></head>
+<body>
+<main>
+<div class="card center">
+ <div class="row" style="justify-content:center">
+  <label>Number of dice
+  <select id="n" style="width:auto">
+  <option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select></label>
+ </div>
+ <div id="dice" class="dice"></div>
+ <p class="total">Total: <b id="total">?</b></p>
+ <button class="btn big" id="roll">Roll the dice</button>
+</div></main>
+<script src="kit.js"></script>
+<script>
+Kit.mount('🎲', 'Dice Roller');
+
+const $=id=>document.getElementById(id);
+const PIPS={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
+const COL=['#FFFFFF','#FFF4CC','#FFE0DC','#E3F7E6','#EFE6FF','#DDF6FC'];
+function draw(vals){$('dice').innerHTML=vals.map((v,k)=>`<div class="die" style="background:${COL[k]}">${[...Array(9)].map((_,i)=>`<i class="${PIPS[v].includes(i)?'on':''}"></i>`).join('')}</div>`).join('')}
+$('n').value=Kit.get('dice-n','2');draw(Array(+$('n').value).fill(1));
+$('n').onchange=()=>{Kit.set('dice-n',$('n').value);draw(Array(+$('n').value).fill(1));$('total').textContent='?'};
+$('roll').onclick=async()=>{const n=+$('n').value;$('roll').disabled=true;
+  for(let f=0;f<12;f++){draw(Array.from({length:n},()=>Kit.rand(1,6)));document.querySelectorAll('.die').forEach(d=>d.classList.add('shake'));Kit.tick();await Kit.sleep(70)}
+  const v=Array.from({length:n},()=>Kit.rand(1,6));draw(v);$('total').textContent=v.reduce((a,b)=>a+b,0);Kit.ding();$('roll').disabled=false};
+
+</script>
+</body></html>

@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Classroom Music Player</title>
+<style>.list{max-height:360px;overflow:auto}.song{display:flex;gap:8px;align-items:center;border:3px solid var(--ink);border-radius:14px;padding:6px 10px;margin:6px 0;cursor:pointer;font-weight:600}
+.song.on{background:var(--sun)}.song span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.disc{font-size:5rem;width:180px;height:180px;margin:0 auto;border-radius:50%;background:conic-gradient(var(--grape),var(--bubble),var(--sun),var(--cyan),var(--grape));border:6px solid var(--ink);display:grid;place-items:center}
+.disc.spin{animation:rot 4s linear infinite}@keyframes rot{to{transform:rotate(360deg)}}
+.now{font-size:1.6rem;font-weight:700;margin:16px 0;word-break:break-word}</style></head>
+<body>
+<main>
+<div class="grid2">
+ <div class="card stack setup">
+  <b>Add music from this device</b>
+  <input type="file" id="files" accept="audio/*" multiple style="font:inherit">
+  <p class="muted" style="margin:0">Songs stay on this device and are saved for next time.</p>
+  <div id="list" class="list"></div>
+ </div>
+ <div class="card center">
+  <div class="disc" id="disc">🎵</div>
+  <div id="now" class="now">Add some songs to start</div>
+  <div class="row" style="justify-content:center">
+   <button class="btn icon white" id="prev" aria-label="Previous">⏮</button>
+   <button class="btn big green" id="play">Play</button>
+   <button class="btn icon white" id="nextb" aria-label="Next">⏭</button>
+  </div>
+  <input type="range" id="seek" min="0" max="100" value="0" style="width:100%;margin-top:16px">
+  <div class="row" style="justify-content:center;margin-top:10px">
+   <label>Volume <input type="range" id="vol" min="0" max="1" step="0.05" value="0.8"></label>
+   <label><input type="checkbox" id="shuffle"> Shuffle</label>
+  </div>
+  <div class="row" style="justify-content:center;margin-top:10px">
+   <label>Play for <input type="number" id="mins" value="5" min="1"> min, then fade out</label>
+   <button class="btn small grape" id="timed">Start</button>
+   <button class="btn small white" id="fade">Fade out now</button>
+  </div>
+  <p id="stat" class="muted"></p>
+ </div>
+</div></main>
+<script src="kit.js"></script>
+<script>
+Kit.mount('🎵', 'Classroom Music Player');
+
+const $=id=>document.getElementById(id);const au=new Audio();let songs=[],cur=-1,fadeT,timer;
+function db(){return new Promise((res,rej)=>{const r=indexedDB.open('ct-music',1);r.onupgradeneeded=()=>r.result.createObjectStore('m',{keyPath:'id'});r.onsuccess=()=>res(r.result);r.onerror=rej})}
+async function load(){try{const d=await db();songs=await new Promise(r=>{const q=d.transaction('m').objectStore('m').getAll();q.onsuccess=()=>r(q.result)})}catch{}render()}
+function render(){$('list').innerHTML=songs.map((s,i)=>`<div class="song ${i===cur?'on':''}" data-i="${i}"><span>${Kit.esc(s.name)}</span><button class="btn small red" data-del="${s.id}" aria-label="Remove">✕</button></div>`).join('')||'<p class="muted">No songs yet.</p>'}
+$('files').onchange=async()=>{let d;try{d=await db()}catch{}for(const f of $('files').files){const s={id:Date.now()+Math.random(),name:f.name.replace(/\.[^.]+$/,''),blob:f};songs.push(s);try{d.transaction('m','readwrite').objectStore('m').put(s)}catch{}}$('files').value='';render()};
+$('list').onclick=async e=>{const del=e.target.closest('[data-del]');if(del){const id=+del.dataset.del;const i=songs.findIndex(s=>s.id===id);try{(await db()).transaction('m','readwrite').objectStore('m').delete(id)}catch{}
+ songs.splice(i,1);if(i===cur){au.pause();cur=-1}else if(i<cur)cur--;render();return}const s=e.target.closest('.song');if(s)playIdx(+s.dataset.i)};
+function playIdx(i){if(!songs.length)return;cur=(i+songs.length)%songs.length;if(au.src)URL.revokeObjectURL(au.src);au.src=URL.createObjectURL(songs[cur].blob);au.volume=+$('vol').value;au.play();$('now').textContent=songs[cur].name;render()}
+function next(){playIdx($('shuffle').checked?Math.floor(Math.random()*songs.length):cur+1)}
+$('play').onclick=()=>{if(cur<0)return playIdx(0);au.paused?au.play():au.pause()};
+$('nextb').onclick=next;$('prev').onclick=()=>playIdx(cur-1);au.onended=next;
+au.onplay=()=>{$('play').textContent='Pause';$('disc').classList.add('spin')};au.onpause=()=>{$('play').textContent='Play';$('disc').classList.remove('spin')};
+au.ontimeupdate=()=>{if(au.duration)$('seek').value=100*au.currentTime/au.duration};$('seek').oninput=()=>{if(au.duration)au.currentTime=au.duration*$('seek').value/100};
+$('vol').value=Kit.get('mp-vol',.8);$('vol').oninput=()=>{au.volume=+$('vol').value;Kit.set('mp-vol',+$('vol').value)};
+function fadeOut(){clearInterval(fadeT);clearInterval(timer);$('stat').textContent='Fading out...';fadeT=setInterval(()=>{au.volume=Math.max(0,au.volume-.03);if(au.volume<=0){clearInterval(fadeT);au.pause();au.volume=+$('vol').value;$('stat').textContent=''}},150)}
+$('fade').onclick=fadeOut;
+$('timed').onclick=()=>{if(cur<0)playIdx(0);else if(au.paused)au.play();clearInterval(timer);const end=Date.now()+(+$('mins').value||1)*60000;
+ timer=setInterval(()=>{const l=Math.ceil((end-Date.now())/1000);$('stat').textContent=`Music stops in ${Math.floor(l/60)}:${String(l%60).padStart(2,'0')}`;if(l<=0)fadeOut()},500)};
+load();
+
+</script>
+</body></html>

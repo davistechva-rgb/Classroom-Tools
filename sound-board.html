@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Sound Board</title>
+<style>.pads{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:16px}
+.pad{position:relative;font:inherit;font-weight:600;font-size:1.1rem;color:var(--ink);border:4px solid var(--ink);border-radius:22px;box-shadow:5px 5px 0 var(--ink);
+ aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;padding:8px;word-break:break-word}
+.pad .e{font-size:3rem}.pad:active,.pad.hit{transform:translate(4px,4px);box-shadow:1px 1px 0 var(--ink)}
+.pad .x{position:absolute;top:6px;right:6px;background:#fff;border:2px solid var(--ink);border-radius:50%;width:26px;height:26px;font-size:.8rem;line-height:1;cursor:pointer}</style></head>
+<body>
+<main>
+<div id="pads" class="pads"></div>
+<div class="card row setup" style="margin-top:24px">
+ <b>Add your own sound</b>
+ <input type="file" id="file" accept="audio/*" style="font:inherit">
+ <label>Volume <input type="range" id="vol" min="0" max="1" step="0.05" value="0.8"></label>
+ <button class="btn small red" id="stop">Stop all</button>
+</div></main>
+<script src="kit.js"></script>
+<script>
+Kit.mount('🔊', 'Sound Board');
+
+const $=id=>document.getElementById(id);const T=Kit.tone;
+let AC;const ac=()=>(AC=AC||new (window.AudioContext||window.webkitAudioContext)());
+function burst(dur,vol,freq,when=0){const a=ac(),b=a.createBuffer(1,a.sampleRate*dur,a.sampleRate),d=b.getChannelData(0);
+ for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,2);
+ const s=a.createBufferSource(),f=a.createBiquadFilter(),g=a.createGain();s.buffer=b;f.type='bandpass';f.frequency.value=freq;g.gain.value=vol*vol2();
+ s.connect(f).connect(g).connect(a.destination);s.start(a.currentTime+when)}
+const vol2=()=>+$('vol').value;
+const tv=(f,d,t,v,w)=>T(f,d,t,v*vol2(),w);
+function sweep(f1,f2,dur,type='sine',v=.25){const a=ac(),o=a.createOscillator(),g=a.createGain();o.type=type;o.frequency.setValueAtTime(f1,a.currentTime);
+ o.frequency.exponentialRampToValueAtTime(f2,a.currentTime+dur);g.gain.setValueAtTime(v*vol2(),a.currentTime);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+dur);o.connect(g).connect(a.destination);o.start();o.stop(a.currentTime+dur)}
+const SOUNDS=[
+ ['✅','Correct','#5DC66E',()=>{tv(880,.15,'sine',.3);tv(1320,.35,'sine',.3,.12)}],
+ ['❌','Wrong','#FF6B5B',()=>{tv(160,.5,'sawtooth',.25);tv(150,.5,'square',.12)}],
+ ['🎉','Ta-da','#FFC93C',()=>[523,659,784,1046].forEach((f,i)=>tv(f,.4,'triangle',.25,i*.1))],
+ ['🥁','Drumroll','#9B6BF2',()=>{for(let i=0;i<40;i++)burst(.06,.5,300,i*.05);burst(.5,1,150,2.05);tv(80,.5,'sine',.5,2.05)}],
+ ['👏','Applause','#FF8FC7',()=>{for(let i=0;i<120;i++)burst(.05,.35,1500+Math.random()*1500,Math.random()*2.5)}],
+ ['🔔','Ding','#22C3E6',()=>{tv(1568,1.2,'sine',.3);tv(3136,.8,'sine',.08)}],
+ ['📯','Fanfare','#FF9F43',()=>[[392,.15],[392,.15],[392,.15],[523,.6]].reduce((t,[f,d])=>{tv(f,d,'sawtooth',.12,t);tv(f*2,d,'square',.05,t);return t+d},0)],
+ ['⏰','Buzzer','#FF6B5B',()=>tv(110,1.2,'square',.25)],
+ ['🦘','Boing','#5DC66E',()=>sweep(150,700,.4,'sine',.35)],
+ ['🚀','Whoosh','#7BD3F7',()=>{burst(.8,1.2,800);sweep(300,1600,.8,'triangle',.08)}],
+ ['🌈','Magic','#9B6BF2',()=>[1046,1318,1568,2093,2637].forEach((f,i)=>tv(f,.5,'sine',.15,i*.07))],
+ ['😢','Sad trombone','#C8D4E3',()=>[[392,.4],[370,.4],[349,.4],[330,1]].reduce((t,[f,d])=>{tv(f,d,'sawtooth',.14,t);return t+d},0)],
+ ['⏳','Tick tock','#FFC93C',()=>{for(let i=0;i<8;i++)tv(i%2?1000:1400,.05,'square',.15,i*.5)}],
+ ['🦉','Whistle','#FF8FC7',()=>{sweep(1800,2600,.2,'sine',.2);setTimeout(()=>sweep(2600,1500,.3,'sine',.2),220)}],
+ ['🤫','Shhh','#22C3E6',()=>burst(1.5,1.4,4000)],
+ ['🏁','Countdown','#FF9F43',()=>{[0,1,2].forEach(i=>tv(660,.2,'square',.15,i));tv(1320,.6,'square',.18,3)}]];
+const pads=$('pads');let customs=[];let playing=[];
+function db(){return new Promise((res,rej)=>{const r=indexedDB.open('ct-sounds',1);r.onupgradeneeded=()=>r.result.createObjectStore('s',{keyPath:'id'});r.onsuccess=()=>res(r.result);r.onerror=rej})}
+async function loadCustom(){try{const d=await db();customs=await new Promise(r=>{const q=d.transaction('s').objectStore('s').getAll();q.onsuccess=()=>r(q.result)})}catch{customs=[]}render()}
+function render(){pads.innerHTML=SOUNDS.map((s,i)=>`<button class="pad" data-i="${i}" style="background:${s[2]}"><span class="e">${s[0]}</span>${s[1]}</button>`).join('')+
+ customs.map(c=>`<div class="pad" role="button" tabindex="0" data-c="${c.id}" style="background:#fff"><span class="e">🎵</span>${Kit.esc(c.name)}<button class="x" data-del="${c.id}" aria-label="Remove">✕</button></div>`).join('')}
+pads.onclick=async e=>{const del=e.target.closest('[data-del]');if(del){e.stopPropagation();const d=await db();d.transaction('s','readwrite').objectStore('s').delete(+del.dataset.del);customs=customs.filter(c=>c.id!=del.dataset.del);render();return}
+ const p=e.target.closest('.pad');if(!p)return;p.classList.add('hit');setTimeout(()=>p.classList.remove('hit'),120);
+ if(p.dataset.i)SOUNDS[+p.dataset.i][3]();
+ else{const c=customs.find(c=>c.id==p.dataset.c);const au=new Audio(URL.createObjectURL(c.blob));au.volume=vol2();au.play();playing.push(au)}};
+$('file').onchange=async()=>{const f=$('file').files[0];if(!f)return;const rec={id:Date.now(),name:f.name.replace(/\.[^.]+$/,'').slice(0,24),blob:f};
+ try{const d=await db();d.transaction('s','readwrite').objectStore('s').put(rec)}catch{}customs.push(rec);$('file').value='';render()};
+$('vol').value=Kit.get('sb-vol',.8);$('vol').oninput=()=>Kit.set('sb-vol',+$('vol').value);
+$('stop').onclick=()=>{playing.forEach(a=>a.pause());playing=[];if(AC){AC.close();AC=null}};
+loadCustom();
+
+</script>
+</body></html>

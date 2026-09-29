@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Crossword Generator</title>
+<style>.cwwrap{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:24px;align-items:start}@media(max-width:800px){.cwwrap{grid-template-columns:1fr}}
+.cw{display:grid;gap:0;margin:0 auto;max-width:100%}
+.cc{aspect-ratio:1;position:relative}.cc.l{background:#fff;border:2px solid var(--ink);margin:-1px}
+.cc input{width:100%;height:100%;border:0;background:transparent;text-align:center;font:inherit;font-weight:700;font-size:clamp(.8rem,2.2vw,1.4rem);text-transform:uppercase;color:var(--ink);padding:0;border-radius:0}
+.cc input:focus{background:#FFF4CC;outline:none}.cc input.ok{background:#E3F7E6}.cc input.bad{background:#FFE0DC}
+.cc sup{position:absolute;top:1px;left:3px;font-size:clamp(.5rem,1.1vw,.7rem);font-weight:700;pointer-events:none}
+.clues{display:grid;grid-template-columns:1fr;gap:10px}.clues h3{margin:0}.clues ol{margin:6px 0;padding-left:0;list-style:none}.clues li{margin:4px 0;font-weight:500}.clues b{margin-right:6px}</style></head>
+<body>
+<main>
+<div class="card stack noprint" style="margin-bottom:20px">
+ <div class="row"><label style="flex:1">Title <input type="text" id="title" value="Crossword"></label></div>
+ <label for="words">Words and clues. One per line: word | clue</label>
+ <textarea id="words" style="min-height:180px"></textarea>
+ <div class="row"><button class="btn green" id="make">Make crossword</button><button class="btn white" id="check">Check my answers</button><button class="btn white" id="reveal">Show answers</button><button class="btn white" id="print">Print</button></div>
+ <p id="note" class="muted"></p>
+</div>
+<div class="card">
+ <h2 id="ptitle" class="center" style="margin:0 0 14px;font-size:2rem"></h2>
+ <div class="cwwrap"><div id="grid" class="cw"></div>
+ <div class="clues"><div><h3>Across</h3><ol id="across"></ol></div><div><h3>Down</h3><ol id="down"></ol></div></div></div>
+</div></main>
+<script src="kit.js"></script>
+<script>
+Kit.mount('✏️', 'Crossword Generator');
+
+const $=id=>document.getElementById(id);
+$('words').value=Kit.get('cw-words',`sun | The star at the center of our solar system
+moon | It goes around the Earth
+earth | The planet we live on
+mars | The red planet
+orbit | The path a planet takes around the sun
+comet | An icy ball with a long tail
+star | Twinkle, twinkle, little ____
+rocket | It blasts off into space`);
+$('title').value=Kit.get('cw-title','Crossword');['words','title'].forEach(k=>$(k).oninput=()=>Kit.set('cw-'+k,$(k).value));
+let P=[],B;
+function gen(words){const g=new Map(),pl=[];const K=(r,c)=>r+','+c;
+ function can(w,r,c,d){const dr=d?1:0,dc=d?0:1;let hits=0;if(g.has(K(r-dr,c-dc))||g.has(K(r+dr*w.length,c+dc*w.length)))return -1;
+  for(let i=0;i<w.length;i++){const rr=r+dr*i,cc=c+dc*i,x=g.get(K(rr,cc));if(x){if(x!==w[i])return -1;hits++}else{if(g.has(K(rr+dc,cc+dr))||g.has(K(rr-dc,cc-dr)))return -1}}return hits}
+ function put(o){const dr=o.d?1:0,dc=o.d?0:1;for(let i=0;i<o.w.length;i++)g.set(K(o.r+dr*i,o.c+dc*i),o.w[i]);pl.push(o)}
+ const [first,...rest]=words;put({...first,r:0,c:0,d:0});let left=rest;
+ for(let pass=0;pass<3;pass++){const again=[];for(const o of left){let best=null,bh=0;
+  for(const [k,L] of g){const [r,c]=k.split(',').map(Number);for(let i=0;i<o.w.length;i++)if(o.w[i]===L)for(const d of [0,1]){const sr=d?r-i:r,sc=d?c:c-i,h=can(o.w,sr,sc,d);if(h>bh||(h===bh&&h>0&&Math.random()<.3)){bh=h;best={...o,r:sr,c:sc,d}}}}
+  best&&bh>0?put(best):again.push(o)}left=again;if(!left.length)break}
+ return {pl,skipped:left}}
+function make(){const words=Kit.lines($('words').value).map(l=>l.split('|').map(s=>s.trim())).map(([w,c])=>({w:(w||'').toUpperCase().replace(/[^A-Z]/g,''),clue:c||''})).filter(o=>o.w.length>1);
+ if(!words.length){$('note').textContent='Add some words first.';return}
+ let best;for(let t=0;t<30;t++){const r=gen(t?Kit.shuffle(words).sort((a,b)=>b.w.length-a.w.length+(Math.random()-.5)*3):[...words].sort((a,b)=>b.w.length-a.w.length));if(!best||r.pl.length>best.pl.length)best=r;if(!r.skipped.length)break}
+ P=best.pl;$('note').textContent=best.skipped.length?`Could not fit: ${best.skipped.map(o=>o.w.toLowerCase()).join(', ')}. Try adding words that share letters.`:'';
+ const minR=Math.min(...P.map(o=>o.r)),minC=Math.min(...P.map(o=>o.c));P.forEach(o=>{o.r-=minR;o.c-=minC});
+ const R=Math.max(...P.map(o=>o.r+(o.d?o.w.length:1))),C=Math.max(...P.map(o=>o.c+(o.d?1:o.w.length)));
+ B=Array.from({length:R},()=>Array(C).fill(null));P.forEach(o=>{for(let i=0;i<o.w.length;i++)B[o.r+(o.d?i:0)][o.c+(o.d?0:i)]=o.w[i]});
+ const starts=[...new Set(P.map(o=>o.r*1000+o.c))].sort((a,b)=>a-b);P.forEach(o=>o.n=starts.indexOf(o.r*1000+o.c)+1);
+ $('grid').style.gridTemplateColumns=`repeat(${C},minmax(0,1fr))`;$('grid').style.width=`min(100%,${C*48}px)`;
+ let h='';for(let r=0;r<R;r++)for(let c=0;c<C;c++){if(!B[r][c]){h+='<div class="cc"></div>';continue}const s=starts.indexOf(r*1000+c);
+  h+=`<div class="cc l">${s>=0?`<sup>${s+1}</sup>`:''}<input maxlength="1" data-r="${r}" data-c="${c}" aria-label="Row ${r+1} column ${c+1}"></div>`}
+ $('grid').innerHTML=h;$('ptitle').textContent=$('title').value;
+ const cl=d=>P.filter(o=>o.d===d).sort((a,b)=>a.n-b.n).map(o=>`<li><b>${o.n}.</b>${Kit.esc(o.clue)} <span class="muted">(${o.w.length})</span></li>`).join('');
+ $('across').innerHTML=cl(0);$('down').innerHTML=cl(1)}
+let dir=0;
+$('grid').oninput=e=>{const t=e.target;t.value=t.value.replace(/[^a-z]/gi,'').slice(-1);t.classList.remove('ok','bad');if(!t.value)return;const r=+t.dataset.r,c=+t.dataset.c;
+ const nx=q=>$('grid').querySelector(`input[data-r="${q[0]}"][data-c="${q[1]}"]`);const n=nx(dir?[r+1,c]:[r,c+1])||nx(dir?[r,c+1]:[r+1,c]);if(n)n.focus()};
+$('grid').onkeydown=e=>{const t=e.target;if(t.tagName!=='INPUT')return;const r=+t.dataset.r,c=+t.dataset.c;const m={ArrowRight:[0,1],ArrowLeft:[0,-1],ArrowDown:[1,0],ArrowUp:[-1,0]}[e.key];
+ if(e.key==='Backspace'&&!t.value){const p=$('grid').querySelector(`input[data-r="${dir?r-1:r}"][data-c="${dir?c:c-1}"]`);if(p){p.focus();p.value=''}}
+ if(m){dir=m[0]?1:0;const n=$('grid').querySelector(`input[data-r="${r+m[0]}"][data-c="${c+m[1]}"]`);if(n){n.focus();e.preventDefault()}}};
+$('grid').onfocusin=e=>{const t=e.target;if(t.tagName!=='INPUT')return;const r=+t.dataset.r,c=+t.dataset.c;const ac=B[r][c-1]||B[r][c+1],dn=(B[r-1]||[])[c]||(B[r+1]||[])[c];if(ac&&!dn)dir=0;if(dn&&!ac)dir=1};
+$('check').onclick=()=>{let all=true;document.querySelectorAll('.cw input').forEach(i=>{const ok=i.value.toUpperCase()===B[+i.dataset.r][+i.dataset.c];i.classList.toggle('ok',ok&&!!i.value);i.classList.toggle('bad',!ok&&!!i.value);if(!ok)all=false});
+ if(all){Kit.tada();Kit.confetti();Kit.modal('<h2 style="font-size:2.4rem;margin:0">Puzzle solved!</h2>')}else Kit.tick()};
+$('reveal').onclick=()=>document.querySelectorAll('.cw input').forEach(i=>{i.value=B[+i.dataset.r][+i.dataset.c]});
+$('make').onclick=make;$('print').onclick=()=>print();make();
+
+</script>
+</body></html>

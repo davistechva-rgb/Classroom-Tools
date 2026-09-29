@@ -33,18 +33,44 @@ const Kit = (() => {
         { duration: 1800 + Math.random() * 1600, easing: 'cubic-bezier(.2,.6,.4,1)', delay: Math.random() * 300, fill: 'forwards' }).onfinish = () => c.remove();
     }
   }
-  function fullscreen() { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen?.(); }
+  const LOGO = (base) => `<footer class="brand"><a href="https://davis-tech-support.com" target="_blank" rel="noopener" aria-label="Davis Tech Support"><img src="${base}logo.png" alt="Davis Tech Support" onerror="this.outerHTML='<span class=&quot;brand-txt&quot;>Davis Tech Support</span>'"></a></footer>`;
+  function setFs(on) { document.body.classList.toggle('fs', on); const b = document.getElementById('fsBtn'); if (b) b.textContent = on ? '✕' : '⛶'; fit(); setTimeout(fit, 250); }
+  function fullscreen() {
+    const on = document.body.classList.contains('fs');
+    if (document.fullscreenElement) return document.exitFullscreen();
+    if (on) return setFs(false);
+    const r = document.documentElement.requestFullscreen?.();
+    if (r && r.catch) r.catch(() => setFs(true)); else if (!r) setFs(true);
+  }
+  document.addEventListener('fullscreenchange', () => setFs(!!document.fullscreenElement));
+  // Shrink or grow the page so everything fits on one screen in full screen mode
+  function fit() {
+    const m = document.querySelector('main'); if (!m) return;
+    if (!document.body.classList.contains('fs')) { m.style.zoom = ''; m.style.width = ''; m.style.maxWidth = ''; return; }
+    m.style.maxWidth = 'none';
+    const top = document.querySelector('.top'), ft = document.querySelector('footer.brand');
+    const avail = innerHeight - (top ? top.offsetHeight : 0) - (ft ? ft.offsetHeight : 0) - 6;
+    let lo = 0.3, hi = 1.7;
+    for (let i = 0; i < 10; i++) {
+      const mid = (lo + hi) / 2; m.style.zoom = mid; m.style.width = Math.min(innerWidth / mid, 1500) + 'px';
+      const tooTall = m.getBoundingClientRect().height > avail, tooWide = document.documentElement.scrollWidth > innerWidth + 1;
+      if (tooTall || tooWide) hi = mid; else lo = mid;
+    }
+    m.style.zoom = lo; m.style.width = Math.min(innerWidth / lo, 1500) + 'px';
+  }
+  let fitT; const refit = () => { if (!document.body.classList.contains('fs')) return; clearTimeout(fitT); fitT = setTimeout(fit, 120); };
+  addEventListener('resize', refit);
   function mount(emoji, title) {
     document.title = title + ' | Classroom Tools';
     const top = document.createElement('header'); top.className = 'top';
-    top.innerHTML = `<a class="home" href="../../index.html">🏠 All tools</a>
+    top.innerHTML = `<a class="home" href="index.html">🏠 All tools</a>
       <h1 class="title"><span class="emo">${emoji}</span>${title}</h1>
       <div class="tool-btns"><button class="btn white icon" id="fsBtn" title="Full screen" aria-label="Full screen">⛶</button></div>`;
     document.body.prepend(top);
     top.querySelector('#fsBtn').onclick = fullscreen;
-    document.body.insertAdjacentHTML('beforeend',
-      `<a class="dts" href="https://davis-tech-support.com" target="_blank" rel="noopener"><b>DTS</b>Davis Tech Support</a>`);
-    if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('../../sw.js').catch(() => {});
+    document.querySelector('main').insertAdjacentHTML('afterend', LOGO(''));
+    new MutationObserver(refit).observe(document.querySelector('main'), { childList: true, subtree: true });
+    if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
   }
   function modal(html) {
     let m = document.getElementById('kitModal');
@@ -55,5 +81,5 @@ const Kit = (() => {
   }
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const sleep = ms => new Promise(r => setTimeout(r, ms));
-  return { rand, shuffle, pick, get, set, lines, tone, tick, ding, tada, alarm, confetti, fullscreen, mount, modal, esc, sleep, COLORS };
+  return { LOGO, fit, rand, shuffle, pick, get, set, lines, tone, tick, ding, tada, alarm, confetti, fullscreen, mount, modal, esc, sleep, COLORS };
 })();

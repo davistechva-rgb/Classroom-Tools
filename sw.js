@@ -1,5 +1,5 @@
 // Classroom Tools service worker - cache as you go, works offline after first visit
-const VERSION = 'ct-v5';
+const VERSION = 'ct-v8';
 self.addEventListener('install', e => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(
   caches.keys().then(ks => Promise.all(ks.filter(k => k !== VERSION).map(k => caches.delete(k)))).then(() => self.clients.claim())));

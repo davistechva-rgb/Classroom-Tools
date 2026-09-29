@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Class Schedule</title>
+<style>.now{text-align:center}.now .big{font-size:clamp(2.2rem,6vw,3.8rem);font-weight:700;line-height:1.1}.now .clock{font-size:1.4rem;font-weight:600}
+.blk{display:grid;grid-template-columns:11.5em 1fr auto;gap:12px;align-items:center;border:4px solid var(--ink);border-radius:16px;padding:10px 14px;margin:8px 0;font-weight:600}
+.blk .n{font-size:1.3rem;font-weight:700}.blk.cur{outline:5px dashed var(--grape);outline-offset:3px}.blk.past{opacity:.5}
+.bar{height:16px;border:3px solid var(--ink);border-radius:99px;background:#fff;overflow:hidden;max-width:500px;margin:10px auto 0}.bar i{display:block;height:100%;background:var(--grass)}</style></head>
+<body>
+<main>
+<div class="card now" id="now"></div>
+<div class="card setup" style="margin-top:20px">
+ <div class="row noprint" style="margin-bottom:12px"><b>Day</b><div id="days" class="row" style="gap:8px"></div><button class="btn small white" id="copy">Copy this day to all weekdays</button><button class="btn small white" id="print">Print</button></div>
+ <div id="list"></div>
+ <div class="row noprint" style="margin-top:12px"><input type="time" id="s" style="font:inherit;border:3px solid var(--ink);border-radius:14px;padding:7px"><span>to</span><input type="time" id="e" style="font:inherit;border:3px solid var(--ink);border-radius:14px;padding:7px">
+ <input type="text" id="n" placeholder="Subject, like Math" style="flex:1;min-width:150px"><button class="btn green" id="add">Add</button></div>
+</div></main>
+<script src="kit.js"></script>
+<script>
+Kit.mount('📅', 'Class Schedule');
+
+const $=id=>document.getElementById(id);const DAYS=['Monday','Tuesday','Wednesday','Thursday','Friday'];const COL=['#FFF4CC','#FFE0DC','#E3F7E6','#EFE6FF','#FFE3F2','#DDF6FC'];
+const def=[['08:00','08:15','Morning meeting'],['08:15','09:15','Reading'],['09:15','10:15','Math'],['10:15','10:30','Recess'],['10:30','11:30','Science'],['11:30','12:00','Lunch'],['12:00','12:45','Social studies'],['12:45','13:30','Specials'],['13:30','14:30','Writing'],['14:30','14:45','Pack up']];
+let D=Kit.get('cs',Object.fromEntries(DAYS.map(d=>[d,def.map(x=>[...x])])));const save=()=>Kit.set('cs',D);
+const today=()=>DAYS[new Date().getDay()-1];let sel=today()||'Monday';
+const fmt=t=>{const [h,m]=t.split(':').map(Number);return `${(h+11)%12+1}:${String(m).padStart(2,'0')} ${h<12?'AM':'PM'}`};
+const mins=t=>{const [h,m]=t.split(':').map(Number);return h*60+m};
+function render(){$('days').innerHTML=DAYS.map(d=>`<button class="btn small ${d===sel?'':'white'}" data-d="${d}">${d.slice(0,3)}</button>`).join('');
+ const now=new Date(),nm=now.getHours()*60+now.getMinutes(),isToday=sel===today();D[sel].sort((a,b)=>a[0].localeCompare(b[0]));
+ $('list').innerHTML=D[sel].map((b,i)=>{const cur=isToday&&nm>=mins(b[0])&&nm<mins(b[1]),past=isToday&&nm>=mins(b[1]);
+  return `<div class="blk ${cur?'cur':''} ${past?'past':''}" style="background:${COL[i%6]}"><span>${fmt(b[0])} to ${fmt(b[1])}</span><span class="n">${Kit.esc(b[2])}</span><button class="btn small red noprint" data-del="${i}" aria-label="Remove">✕</button></div>`}).join('')||'<p class="muted">Nothing scheduled.</p>';tick()}
+function tick(){const now=new Date(),nm=now.getHours()*60+now.getMinutes()+now.getSeconds()/60,d=today(),L=d?D[d]:[];
+ const cur=L.find(b=>nm>=mins(b[0])&&nm<mins(b[1])),nx=L.find(b=>mins(b[0])>nm);let h=`<div class="clock">${now.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}, ${now.toLocaleDateString([],{weekday:'long'})}</div>`;
+ if(cur){const left=Math.ceil(mins(cur[1])-nm),p=100*(nm-mins(cur[0]))/(mins(cur[1])-mins(cur[0]));h+=`<div class="muted">Right now</div><div class="big">${Kit.esc(cur[2])}</div><div class="bar"><i style="width:${p}%"></i></div><div class="clock" style="margin-top:6px">${left} min left${nx?`. Next: ${Kit.esc(nx[2])}`:''}</div>`}
+ else if(nx)h+=`<div class="muted">Coming up</div><div class="big">${Kit.esc(nx[2])}</div><div class="clock">at ${fmt(nx[0])}</div>`;else h+=`<div class="big">${d?'School day is done! 🎉':'No school today 😎'}</div>`;$('now').innerHTML=h}
+$('days').onclick=e=>{const b=e.target.closest('[data-d]');if(b){sel=b.dataset.d;render()}};
+$('list').onclick=e=>{const b=e.target.closest('[data-del]');if(b){D[sel].splice(+b.dataset.del,1);save();render()}};
+$('add').onclick=()=>{if(!$('s').value||!$('e').value||!$('n').value.trim())return;D[sel].push([$('s').value,$('e').value,$('n').value.trim()]);$('n').value='';save();render()};
+$('copy').onclick=()=>{if(!confirm(`Copy ${sel}'s schedule to every weekday?`))return;DAYS.forEach(d=>D[d]=D[sel].map(x=>[...x]));save();render()};
+$('print').onclick=()=>print();setInterval(tick,15000);render();
+
+</script>
+</body></html>

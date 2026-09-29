@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Discussion Question Generator</title>
+<style>.tabs{display:flex;flex-wrap:wrap;gap:10px}.tabs .btn.on{background:var(--ink);color:#fff}
+.q{font-size:clamp(1.8rem,4.6vw,3.2rem);font-weight:700;line-height:1.2;min-height:4em;display:grid;place-items:center;margin:14px 0 22px;word-break:break-word}.q.in{animation:pop .4s cubic-bezier(.3,1.6,.5,1)}summary{cursor:pointer}</style></head>
+<body>
+<main>
+<div class="tabs" id="tabs"></div>
+<div class="card center" style="margin-top:18px">
+ <div class="muted" id="cat"></div>
+ <div id="q" class="q">Pick a topic, then tap the button.</div>
+ <div class="row" style="justify-content:center"><button class="btn big pink" id="go">Next question</button><button class="btn white" id="copy">Copy</button></div>
+</div>
+<details class="card setup" style="margin-top:22px"><summary><b>Add your own</b></summary><p class="muted">One per line. These show up under "My questions".</p><textarea id="custom"></textarea></details></main>
+<script src="kit.js"></script>
+<script>
+Kit.mount('🎤', 'Discussion Question Generator');
+
+const $=id=>document.getElementById(id);const C={"\ud83d\udcd6 Reading": ["Which character would you want as a friend, and why?", "What do you think will happen next?", "How did the main character change from the beginning to the end?", "What was the biggest problem in the story, and how was it solved?", "If you could change the ending, what would you change?", "Which part of the story surprised you the most?", "What lesson does the author want us to learn?", "How is the setting important to the story?", "Would you recommend this book to a friend? Why or why not?", "What question would you ask the author?", "Which character made the best choice? Which made the worst?", "How is this story like your own life?"], "\ud83d\udd2c Science": ["Why do you think leaves change color in the fall?", "What would happen if there were no insects?", "How could we use less water at school?", "Why do some things float and others sink?", "What would you want to invent to help the planet?", "How do animals get ready for winter?", "If you could study any animal, which would you pick and why?", "What would life be like without electricity?", "Why is the sky blue during the day but dark at night?", "How do you think scientists find out new things?"], "\ud83c\udf0e Social studies": ["What makes someone a good leader?", "Why do we have rules and laws?", "What would you do if you were mayor for a day?", "How is life today different from when your grandparents were kids?", "What makes a community a good place to live?", "Why is it important to vote?", "If you could visit any time in history, when would you go?", "What does it mean to be a good citizen?", "How do people from different places help each other?", "What job in our town would you like to try, and why?"], "\ud83d\udcad Big ideas": ["Is it ever okay to break a rule?", "What makes a good friend?", "Is it better to be smart or kind?", "What does it mean to be brave?", "Should kids have homework? Why or why not?", "What is something you can do to make someone's day better?", "Is it more important to win or to have fun?", "What is the best way to solve an argument?", "What does fair mean? Is fair always the same for everyone?", "If you could have one superpower to help people, what would it be?"], "\u2797 Math talk": ["Where do you see math outside of school?", "Is there more than one way to solve this problem? Show another way.", "How do you know your answer makes sense?", "What is harder, adding or subtracting? Why?", "How would you explain fractions to a younger kid?", "When would you need to estimate instead of finding an exact answer?", "What is a pattern you noticed today?", "Why do you think we need to learn multiplication?"]};const key='discussion-questions';
+$('custom').value=Kit.get(key+'-custom','');$('custom').oninput=()=>Kit.set(key+'-custom',$('custom').value);
+const lists=()=>{const l={'🎲 Mix them all':Object.values(C).flat(),...C};const m=Kit.lines($('custom').value);if(m.length)l['✏️ My questions']=m;return l};
+let cur=Kit.get(key+'-cat','🎲 Mix them all'),seen=[];
+function tabs(){const l=lists();if(!l[cur])cur='🎲 Mix them all';$('tabs').innerHTML=Object.keys(l).map(k=>`<button class="btn small ${k===cur?'on':'white'}" data-k="${Kit.esc(k)}">${Kit.esc(k)}</button>`).join('')}
+$('tabs').onclick=e=>{const b=e.target.closest('[data-k]');if(b){cur=b.dataset.k;Kit.set(key+'-cat',cur);seen=[];tabs();$('go').click()}};
+$('go').onclick=()=>{const l=lists()[cur]||[];if(!l.length)return;let pool=l.filter(x=>!seen.includes(x));if(!pool.length){seen=[];pool=l}
+ const q=Kit.pick(pool);seen.push(q);$('q').textContent=q;$('q').classList.remove('in');void $('q').offsetWidth;$('q').classList.add('in');
+ $('cat').textContent=cur.startsWith('🎲')?Object.keys(C).find(k=>C[k].includes(q))||'':'';Kit.ding()};
+$('copy').onclick=()=>{navigator.clipboard?.writeText($('q').textContent);$('copy').textContent='Copied';setTimeout(()=>$('copy').textContent='Copy',1200)};
+$('custom').addEventListener('change',tabs);tabs();
+
+</script>
+</body></html>

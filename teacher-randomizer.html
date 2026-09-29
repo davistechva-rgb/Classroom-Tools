@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Teacher Randomizer</title>
+<style>.tabs{display:flex;flex-wrap:wrap;gap:10px}.tabs .btn.on{background:var(--grape);color:#fff}
+.out{font-size:clamp(2rem,6vw,3.6rem);font-weight:700;line-height:1.15;min-height:3.5em;display:grid;place-items:center;margin-bottom:16px;word-break:break-word}</style></head>
+<body>
+<main>
+<div class="tabs" id="tabs"></div>
+<div class="grid2" style="margin-top:18px">
+ <div class="card center"><div id="out" class="out">Pick a list, then tap the button.</div><button class="btn big grape" id="go">Pick one</button></div>
+ <div class="card stack setup"><label for="items">Items in this list (one per line)</label><textarea id="items"></textarea>
+ <button class="btn small white" id="resetList">Restore the starting list</button></div>
+</div></main>
+<script src="kit.js"></script>
+<script>
+Kit.mount('🧑\u200d🏫', 'Teacher Randomizer');
+
+const $=id=>document.getElementById(id);
+const DEF={
+'🤸 Brain breaks':'10 jumping jacks\nSimon says for 1 minute\nStretch up high, then touch your toes\nDance party for 30 seconds\nFreeze dance\nTrace your name in the air with your elbow\nDeep breaths: smell the flower, blow out the candle\nWalk like your favorite animal\nHigh five 3 friends\nMirror your partner for 1 minute',
+'🏅 Rewards':'Sit in the teacher chair\nExtra 5 minutes of recess\nPick the brain break\nLine leader for the day\nShoes off in class\nDraw on the whiteboard\nPick the class music\nLunch with the teacher\nHomework pass\nSticker of your choice',
+'🧹 Class jobs':'Line leader\nDoor holder\nPaper passer\nLights helper\nPlant waterer\nBoard eraser\nCaboose\nLibrarian\nMessenger\nPencil sharpener',
+'🎟️ Exit tickets':'One thing I learned today\nOne question I still have\nRate your understanding from 1 to 5\nExplain today\'s lesson in one sentence\nDraw something from today\'s lesson\nWhat was the hardest part today?\nHow would you teach this to a friend?\nOne word to describe today\'s lesson',
+'🏃 Recess games':'Freeze tag\nFour square\nRed light, green light\nDuck duck goose\nJump rope\nKickball\nHopscotch\nSharks and minnows'};
+let L=Kit.get('tr-lists',DEF),cur=Kit.get('tr-cur',Object.keys(L)[0]);if(!L[cur])cur=Object.keys(L)[0];
+function tabs(){$('tabs').innerHTML=Object.keys(L).map(k=>`<button class="btn small ${k===cur?'on':'white'}" data-k="${Kit.esc(k)}">${Kit.esc(k)}</button>`).join('');$('items').value=L[cur]}
+$('tabs').onclick=e=>{const b=e.target.closest('[data-k]');if(b){cur=b.dataset.k;Kit.set('tr-cur',cur);tabs();$('out').textContent='Tap the button to pick.'}};
+$('items').oninput=()=>{L[cur]=$('items').value;Kit.set('tr-lists',L)};
+$('resetList').onclick=()=>{if(DEF[cur]){L[cur]=DEF[cur];Kit.set('tr-lists',L);tabs()}};
+$('go').onclick=async()=>{const it=Kit.lines(L[cur]);if(!it.length)return;$('go').disabled=true;
+ for(let f=0;f<15;f++){$('out').textContent=Kit.pick(it);Kit.tick();await Kit.sleep(50+f*7)}$('out').textContent=Kit.pick(it);Kit.tada();$('go').disabled=false};
+tabs();
+
+</script>
+</body></html>

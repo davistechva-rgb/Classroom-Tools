@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Jeopardy-Style Game</title>
+<style>.jb{display:grid;gap:8px;background:var(--ink);border:5px solid var(--ink);border-radius:20px;padding:8px;box-shadow:6px 6px 0 rgba(29,43,83,.4)}
+.jh{background:#2B3F8C;color:#fff;font-weight:700;text-align:center;padding:12px 6px;border-radius:10px;font-size:clamp(.9rem,1.8vw,1.3rem);display:grid;place-items:center}
+.jt{font:inherit;background:var(--grape);color:var(--sun);font-size:clamp(1.4rem,3.5vw,2.6rem);font-weight:700;border:0;border-radius:10px;padding:14px 4px;cursor:pointer;text-shadow:2px 2px 0 var(--ink)}
+.jt:hover{filter:brightness(1.12)}.jt.used{background:#3A4A7A;color:transparent;text-shadow:none;cursor:default}
+.jteams{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-top:22px}
+.jteam{background:#fff;border:4px solid var(--ink);border-radius:18px;box-shadow:4px 4px 0 var(--ink);padding:10px;text-align:center}
+.jteam input{font:inherit;font-weight:700;text-align:center;border:0;border-bottom:3px dashed #ccd;width:100%;color:var(--ink)}.jteam .s{font-size:2.4rem;font-weight:700}
+.jq{font-size:clamp(1.6rem,4vw,2.6rem);font-weight:700;line-height:1.25;margin:10px 0 20px}.ja{font-size:1.8rem;font-weight:700;color:var(--grape);margin-bottom:14px}</style></head>
+<body>
+<main>
+<div class="card row setup" style="margin-bottom:18px">
+ <button class="btn white small" id="editBtn">Edit questions</button>
+ <button class="btn white small" id="resetBoard">Reset board</button>
+ <span class="muted">Tap a square to show the question.</span>
+</div>
+<div id="editor" class="card stack setup" hidden style="margin-bottom:18px">
+ <p class="muted" style="margin:0">Start each category with #. Then one line per square: points | question | answer</p>
+ <textarea id="src" style="min-height:360px"></textarea>
+ <button class="btn green" id="saveSrc">Save and show the board</button>
+</div>
+<div id="board" class="jb"></div>
+<div id="teams" class="jteams"></div></main>
+<script src="kit.js"></script>
+<script>
+Kit.mount('🏆', 'Jeopardy-Style Game');
+
+const $=id=>document.getElementById(id);
+const SAMPLE=`# Animals
+100 | This animal is known as the king of the jungle | Lion
+200 | Baby frogs are called this | Tadpoles
+300 | The fastest land animal | Cheetah
+400 | A group of wolves is called this | A pack
+500 | The largest animal that has ever lived | Blue whale
+# Math
+100 | 9 + 6 | 15
+200 | 8 x 7 | 56
+300 | How many sides does an octagon have? | 8
+400 | Half of 150 | 75
+500 | 12 x 12 | 144
+# Science
+100 | The planet we live on | Earth
+200 | Water freezes at this many degrees Fahrenheit | 32
+300 | Plants take in this gas from the air | Carbon dioxide
+400 | The closest star to Earth | The sun
+500 | The hardest natural material | Diamond
+# Words
+100 | The opposite of hot | Cold
+200 | A word that describes a noun | Adjective
+300 | Words that sound the same but mean different things | Homophones
+400 | The plural of mouse | Mice
+500 | A word that means the same as another word | Synonym
+# Virginia
+100 | The capital of Virginia | Richmond
+200 | Virginia's state bird | Cardinal
+300 | These mountains run through western Virginia | Blue Ridge Mountains
+400 | Virginia is nicknamed the Old ____ | Dominion
+500 | The first permanent English settlement, founded in 1607 | Jamestown`;
+let src=Kit.get('jep-src',SAMPLE),used=Kit.get('jep-used',[]),teams=Kit.get('jep-teams',[{n:'Team 1',s:0},{n:'Team 2',s:0},{n:'Team 3',s:0}]);
+function parse(t){const cats=[];t.split('\n').forEach(l=>{l=l.trim();if(!l)return;if(l[0]==='#')cats.push({name:l.slice(1).trim(),q:[]});else if(cats.length){const p=l.split('|').map(s=>s.trim());if(p.length>=3)cats.at(-1).q.push({v:+p[0]||0,q:p[1],a:p[2]})}});return cats}
+function render(){const cats=parse(src),rows=Math.max(0,...cats.map(c=>c.q.length));$('board').style.gridTemplateColumns=`repeat(${cats.length||1},1fr)`;
+ let h=cats.map(c=>`<div class="jh">${Kit.esc(c.name)}</div>`).join('');
+ for(let r=0;r<rows;r++)h+=cats.map((c,ci)=>c.q[r]?`<button class="jt ${used.includes(ci+'-'+r)?'used':''}" data-k="${ci}-${r}">${c.q[r].v}</button>`:'<div></div>').join('');
+ $('board').innerHTML=h||'<div class="jh">Tap Edit questions to add categories.</div>';
+ $('teams').innerHTML=teams.map((t,i)=>`<div class="jteam"><input value="${Kit.esc(t.n)}" data-n="${i}" aria-label="Team name"><div class="s">${t.s}</div></div>`).join('')+'<button class="btn white small" id="addTeam">Add team</button>'}
+const save=()=>{Kit.set('jep-used',used);Kit.set('jep-teams',teams)};
+$('board').onclick=e=>{const b=e.target.closest('.jt');if(!b||b.classList.contains('used'))return;const [ci,r]=b.dataset.k.split('-').map(Number),c=parse(src)[ci],q=c.q[r];Kit.ding();
+ Kit.modal(`<div class="muted">${Kit.esc(c.name)} for ${q.v}</div><div class="jq">${Kit.esc(q.q)}</div><div class="ja" id="ja" hidden>${Kit.esc(q.a)}</div>
+ <button class="btn grape" id="showA">Show answer</button><p class="muted" style="margin-bottom:6px">Give points</p><div class="row" style="justify-content:center">${teams.map((t,i)=>`<button class="btn small green" data-g="${i}" data-v="${q.v}">${Kit.esc(t.n)} +${q.v}</button><button class="btn small red" data-g="${i}" data-v="-${q.v}" aria-label="${Kit.esc(t.n)} minus">−</button>`).join('')}</div>`);
+ used.push(b.dataset.k);save();b.classList.add('used');
+ $('showA').onclick=()=>{$('ja').hidden=false;$('showA').hidden=true};
+ document.querySelectorAll('[data-g]').forEach(g=>g.onclick=()=>{teams[+g.dataset.g].s+=+g.dataset.v;save();render();+g.dataset.v>0?Kit.tada():Kit.tone(160,.3,'sawtooth',.2);$('kitModal').classList.remove('open')})};
+$('teams').onclick=e=>{if(e.target.id==='addTeam'){teams.push({n:'Team '+(teams.length+1),s:0});save();render()}};
+$('teams').oninput=e=>{const i=e.target.dataset.n;if(i!=null){teams[i].n=e.target.value;save()}};
+$('editBtn').onclick=()=>{$('editor').hidden=!$('editor').hidden;$('src').value=src};
+$('saveSrc').onclick=()=>{src=$('src').value;Kit.set('jep-src',src);used=[];save();$('editor').hidden=true;render()};
+$('resetBoard').onclick=()=>{if(!confirm('Reset the board and all scores?'))return;used=[];teams.forEach(t=>t.s=0);save();render()};
+render();
+
+</script>
+</body></html>

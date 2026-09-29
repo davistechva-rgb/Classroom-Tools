@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Interactive Number Board</title>
+<style>.board{display:grid;grid-template-columns:repeat(10,1fr);gap:5px;background:var(--ink);border:5px solid var(--ink);border-radius:18px;padding:5px;max-width:900px;margin:0 auto;box-shadow:6px 6px 0 rgba(29,43,83,.4)}
+.sq{aspect-ratio:1.35;border:0;border-radius:8px;background:#fff;font:inherit;font-weight:700;font-size:clamp(.9rem,2.6vw,1.7rem);color:var(--ink);cursor:pointer;transition:background .15s}
+.sq.hid{color:transparent;background:#C8D4E3}
+.sw{width:38px;height:38px;border-radius:50%;border:4px solid var(--ink);cursor:pointer}.sw.on{outline:4px dashed var(--ink);outline-offset:2px}</style></head>
+<body>
+<main>
+<div class="card row">
+ <label>Board <select id="range" style="width:auto"><option value="1-100">1 to 100</option><option value="0-99">0 to 99</option><option value="1-120">1 to 120</option></select></label>
+ <div class="row" id="colors" style="gap:8px"></div>
+ <label>Skip count by <select id="skip" style="width:auto"><option value="">pick</option><option>2</option><option>3</option><option>4</option><option>5</option><option>10</option></select></label>
+ <button class="btn small white" id="hide">Hide all numbers</button>
+ <button class="btn small red" id="clear">Clear</button>
+</div>
+<p class="muted center" style="color:var(--ink)">Tap a square to color it. When numbers are hidden, tap to reveal.</p>
+<div id="board" class="board"></div></main>
+<script src="kit.js"></script>
+<script>
+Kit.mount('🔢', 'Interactive Number Board');
+
+const $=id=>document.getElementById(id);const COLS=['#FFC93C','#FF6B5B','#5DC66E','#9B6BF2','#FF8FC7','#22C3E6'];let col=COLS[0],st=Kit.get('nb',{});
+$('colors').innerHTML=COLS.map((c,i)=>`<button class="sw ${i?'':'on'}" style="background:${c}" data-c="${c}" aria-label="Color ${i+1}"></button>`).join('');
+$('colors').onclick=e=>{const b=e.target.closest('[data-c]');if(!b)return;col=b.dataset.c;document.querySelectorAll('.sw').forEach(s=>s.classList.toggle('on',s===b))};
+$('range').value=Kit.get('nb-range','1-100');
+function build(){const [a,b]=$('range').value.split('-').map(Number);Kit.set('nb-range',$('range').value);
+ $('board').innerHTML=Array.from({length:b-a+1},(_,i)=>{const n=a+i,s=st[n]||{};return `<button class="sq ${s.h?'hid':''}" data-n="${n}" style="${s.c?'background:'+s.c:''}">${n}</button>`}).join('')}
+const save=()=>Kit.set('nb',st);
+$('board').onclick=e=>{const b=e.target.closest('.sq');if(!b)return;const n=b.dataset.n,s=st[n]=st[n]||{};
+ if(s.h){s.h=false;b.classList.remove('hid');Kit.ding()}else{s.c=s.c===col?'':col;b.style.background=s.c||'';Kit.tick()}save()};
+$('hide').onclick=()=>{document.querySelectorAll('.sq').forEach(b=>{(st[b.dataset.n]=st[b.dataset.n]||{}).h=true;b.classList.add('hid')});save()};
+$('clear').onclick=()=>{st={};save();build();$('skip').value=''};
+$('skip').onchange=()=>{const k=+$('skip').value;if(!k)return;document.querySelectorAll('.sq').forEach(b=>{const n=+b.dataset.n;if(n>0&&n%k===0){(st[n]=st[n]||{}).c=col;b.style.background=col}});save()};
+$('range').onchange=build;build();
+
+</script>
+</body></html>

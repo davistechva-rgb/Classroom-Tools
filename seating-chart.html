@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Seating Chart Generator</title>
+<style>.grid2{grid-template-columns:minmax(0,1fr) minmax(0,2fr)}.room{background:#F4FAFF;border:4px solid var(--ink);border-radius:20px;padding:16px;overflow:auto}
+.front{text-align:center;font-weight:700;background:var(--ink);color:#fff;border-radius:12px;padding:6px;margin:0 auto 16px;max-width:320px}
+.desks{display:grid;gap:12px}.desk{min-height:64px;border:3px solid var(--ink);border-radius:12px;display:grid;place-items:center;font-weight:700;text-align:center;padding:6px;cursor:pointer;box-shadow:3px 3px 0 var(--ink);word-break:break-word;font-size:1.05rem}
+.desk.empty{background:#fff;color:#99a;font-weight:500;box-shadow:none;border-style:dashed}.desk.sel{outline:5px solid var(--grape);outline-offset:2px}.desk.off{visibility:hidden}
+@media print{.room{border:0}.desk{box-shadow:none}}.pn{cursor:pointer}.pn.sel{background:var(--grape);color:#fff}</style></head>
+<body>
+<main>
+<div class="grid2">
+ <div class="card stack noprint">
+  <label>Title <input type="text" id="title" value="Our Seating Chart"></label>
+  <label for="names">Class list (one name per line)</label><textarea id="names"></textarea>
+  <div class="row"><label>Rows <input type="number" id="rows" value="4" min="1" max="12"></label><label>Columns <input type="number" id="cols" value="6" min="1" max="12"></label></div>
+  <p class="muted" style="margin:0">Tap a name, then tap a desk to seat them. Tap two desks to swap. Long-press or right-click a desk to turn it off.</p>
+  <div id="pool"></div>
+  <div class="row"><button class="btn white small" id="fill">Fill empty desks in order</button><button class="btn red small" id="clear">Clear seats</button><button class="btn white" id="print">Print</button></div>
+ </div>
+ <div class="card"><h2 id="ptitle" class="center" style="margin:0 0 12px"></h2><div class="room"><div class="front">Front of the room</div><div id="desks" class="desks"></div></div></div>
+</div></main>
+<script src="kit.js"></script>
+<script>
+Kit.mount('📋', 'Seating Chart Generator');
+const BG=['#FFF4CC','#FFE0DC','#E3F7E6','#EFE6FF','#FFE3F2','#DDF6FC'];
+const $=id=>document.getElementById(id);let S=Kit.get('sc',{seats:{},off:[]}),pick=null;
+$('names').value=Kit.get('names','');$('title').value=Kit.get('sc-title','Our Seating Chart');$('rows').value=Kit.get('sc-rows',4);$('cols').value=Kit.get('sc-cols',6);
+const save=()=>{Kit.set('sc',S);Kit.set('sc-rows',+$('rows').value);Kit.set('sc-cols',+$('cols').value)};
+const names=()=>Kit.lines($('names').value);
+function render(){const R=+$('rows').value||1,C=+$('cols').value||1,N=names();Object.keys(S.seats).forEach(k=>{const [r,c]=k.split('-').map(Number);if(r>=R||c>=C||!N.includes(S.seats[k]))delete S.seats[k]});
+ $('ptitle').textContent=$('title').value;$('desks').style.gridTemplateColumns=`repeat(${C},minmax(64px,1fr))`;
+ let h='';for(let r=0;r<R;r++)for(let c=0;c<C;c++){const k=r+'-'+c,n=S.seats[k],off=S.off.includes(k);h+=`<div class="desk ${n?'':'empty'} ${off?'off':''} ${pick&&pick.desk===k?'sel':''}" data-k="${k}" style="${n?'background:'+BG[(r+c)%6]:''}">${n?Kit.esc(n):'empty'}</div>`}
+ $('desks').innerHTML=h;const seated=Object.values(S.seats);const left=N.filter(n=>!seated.includes(n));
+ $('pool').innerHTML=left.length?'<b>Not seated yet</b><br>'+left.map(n=>`<span class="chip pn ${pick&&pick.name===n?'sel':''}" data-n="${Kit.esc(n)}">${Kit.esc(n)}</span>`).join(''):'<b>Everyone has a seat 🎉</b>';save()}
+$('pool').onclick=e=>{const p=e.target.closest('[data-n]');if(p){pick=pick&&pick.name===p.dataset.n?null:{name:p.dataset.n};render()}};
+$('desks').onclick=e=>{const d=e.target.closest('.desk');if(!d)return;const k=d.dataset.k;
+ if(pick&&pick.name){Object.keys(S.seats).forEach(x=>{if(S.seats[x]===pick.name)delete S.seats[x]});S.seats[k]=pick.name;S.off=S.off.filter(x=>x!==k);pick=null;Kit.tick()}
+ else if(pick&&pick.desk){const a=S.seats[pick.desk],b=S.seats[k];if(b)S.seats[pick.desk]=b;else delete S.seats[pick.desk];if(a)S.seats[k]=a;else delete S.seats[k];pick=null;Kit.tick()}
+ else if(S.seats[k])pick={desk:k};render()};
+$('desks').oncontextmenu=e=>{const d=e.target.closest('.desk');if(!d)return;e.preventDefault();const k=d.dataset.k;if(S.off.includes(k))S.off=S.off.filter(x=>x!==k);else{S.off.push(k);delete S.seats[k]}render()};
+$('fill').onclick=()=>{const R=+$('rows').value,C=+$('cols').value,seated=Object.values(S.seats);const left=names().filter(n=>!seated.includes(n));
+ for(let r=0;r<R;r++)for(let c=0;c<C;c++){const k=r+'-'+c;if(!S.seats[k]&&!S.off.includes(k)&&left.length)S.seats[k]=left.shift()}render()};
+$('clear').onclick=()=>{S.seats={};render()};
+$('names').oninput=()=>{Kit.set('names',$('names').value);render()};$('title').oninput=()=>{Kit.set('sc-title',$('title').value);render()};
+['rows','cols'].forEach(k=>$(k).oninput=render);$('print').onclick=()=>print();render();
+
+</script>
+</body></html>

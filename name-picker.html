@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Random Name Picker</title>
+<style>.namebox{font-size:clamp(2.5rem,9vw,6rem);font-weight:700;min-height:2.6em;display:grid;place-items:center;margin:10px 0;word-break:break-word;line-height:1.1}</style></head>
+<body>
+<main>
+<div class="grid2">
+ <div class="card stack setup">
+  <label for="names">Class list (one name per line)</label>
+  <textarea id="names" placeholder="Ava&#10;Ben&#10;Carlos&#10;Dani"></textarea>
+  <label><input type="checkbox" id="remove" checked> Don't pick the same name twice</label>
+  <div><b>Picked so far</b><div id="picked" style="margin-top:6px"></div></div>
+  <button class="btn white small" id="reset">Start over</button>
+ </div>
+ <div class="card center">
+  <div id="name" class="namebox">Who's next?</div>
+  <button class="btn big pink" id="pick">Pick a name</button>
+  <p class="muted" id="left"></p>
+ </div>
+</div></main>
+<script src="kit.js"></script>
+<script>
+Kit.mount('🎯', 'Random Name Picker');
+
+const $=id=>document.getElementById(id);
+$('names').value=Kit.get('names','');$('remove').checked=Kit.get('np-remove',true);
+let picked=Kit.get('np-picked',[]);
+const all=()=>Kit.lines($('names').value);
+function upd(){ $('picked').innerHTML=picked.map(n=>`<span class="chip">${Kit.esc(n)}</span>`).join('')||'<span class="muted">No one yet</span>';
+  const left=all().filter(n=>!picked.includes(n)).length; $('left').textContent=$('remove').checked?`${left} name${left==1?'':'s'} left`:''; }
+$('names').oninput=()=>{Kit.set('names',$('names').value);upd()};
+$('remove').onchange=()=>{Kit.set('np-remove',$('remove').checked);upd()};
+$('reset').onclick=()=>{picked=[];Kit.set('np-picked',picked);$('name').textContent="Who's next?";upd()};
+$('pick').onclick=async()=>{
+  let pool=all(); if(!pool.length){$('name').textContent='Add some names first';return}
+  if($('remove').checked){pool=pool.filter(n=>!picked.includes(n)); if(!pool.length){$('name').textContent='Everyone got a turn!';Kit.confetti();return}}
+  $('pick').disabled=true; const win=Kit.pick(pool);
+  for(let f=0;f<18;f++){$('name').textContent=Kit.pick(all());Kit.tick();await Kit.sleep(50+f*8)}
+  $('name').textContent=win;Kit.tada();Kit.confetti(50);
+  if(!picked.includes(win))picked.push(win);Kit.set('np-picked',picked);upd();$('pick').disabled=false;
+};
+upd();
+
+</script>
+</body></html>

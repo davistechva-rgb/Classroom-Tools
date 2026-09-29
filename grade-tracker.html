@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Grade Tracker</title>
+<style>.tblwrap{overflow:auto}table{border-collapse:separate;border-spacing:0;min-width:100%}
+th,td{border-bottom:2px solid #E2E8F2;padding:6px;text-align:center;white-space:nowrap}th{background:var(--sun);position:sticky;top:0;z-index:1}
+th:first-child,td:first-child{position:sticky;left:0;background:#fff;text-align:left;font-weight:600;z-index:2}th:first-child{background:var(--sun);z-index:3}
+td input{width:4.2em;font:inherit;text-align:center;border:2px solid #CFD8E6;border-radius:8px;padding:4px}
+th small{display:block;font-weight:500}.avg{font-weight:700;border-radius:10px;padding:3px 8px}.x{background:none;border:0;cursor:pointer;font-size:.9rem}</style></head>
+<body>
+<main>
+<div class="card row noprint" style="margin-bottom:18px">
+ <label>Class <select id="cls" style="width:auto"></select></label>
+ <button class="btn white small" id="newCls">New class</button><button class="btn white small" id="renCls">Rename</button>
+ <button class="btn green small" id="addStu">Add students</button><button class="btn grape small" id="addAsg">Add assignment</button>
+ <button class="btn white small" id="csv">Download spreadsheet (CSV)</button><button class="btn red small" id="delCls">Delete class</button>
+</div>
+<div class="card"><div class="tblwrap"><table id="tbl"></table></div><p class="muted" style="color:var(--ink)">🔒 Everything you enter stays in this browser on this device. Nothing is uploaded.</p></div></main>
+<script src="kit.js"></script>
+<script>
+Kit.mount('📈', 'Grade Tracker');
+const SCALE=[[97,'A+'],[93,'A'],[90,'A-'],[87,'B+'],[83,'B'],[80,'B-'],[77,'C+'],[73,'C'],[70,'C-'],[67,'D+'],[63,'D'],[60,'D-'],[0,'F']];
+const letter=p=>p==null||isNaN(p)?'':SCALE.find(s=>p>=s[0])[1];const lc=p=>p>=90?'#5DC66E':p>=80?'#22C3E6':p>=70?'#FFC93C':p>=60?'#FF9F43':'#FF6B5B';
+const $=id=>document.getElementById(id);
+let D=Kit.get('gt',{cur:'Class 1',classes:{'Class 1':{students:['Ava','Ben','Carlos'],asg:[{n:'Quiz 1',max:10}],g:{}}}});
+const K=()=>D.classes[D.cur];const save=()=>Kit.set('gt',D);
+function pct(s){const k=K();let e=0,m=0;k.asg.forEach((a,j)=>{const v=k.g[s+'|'+j];if(v!==undefined&&v!==''){e+=+v;m+=+a.max}});return m?Math.round(1000*e/m)/10:null}
+function render(){$('cls').innerHTML=Object.keys(D.classes).map(c=>`<option ${c===D.cur?'selected':''}>${Kit.esc(c)}</option>`).join('');const k=K();
+ let h=`<tr><th>Student</th>${k.asg.map((a,j)=>`<th>${Kit.esc(a.n)}<small>out of ${a.max}</small><button class="x" data-da="${j}" aria-label="Remove assignment">✕</button></th>`).join('')}<th>Average</th></tr>`;
+ h+=k.students.map((s,i)=>{const p=pct(s);return `<tr><td>${Kit.esc(s)} <button class="x" data-ds="${i}" aria-label="Remove student">✕</button></td>${k.asg.map((a,j)=>`<td><input type="number" data-k="${Kit.esc(s)}|${j}" value="${k.g[s+'|'+j]??''}" aria-label="${Kit.esc(s)} ${Kit.esc(a.n)}"></td>`).join('')}<td><span class="avg" id="avg${i}" style="background:${p==null?'#eee':lc(p)}">${p==null?'—':p+'% '+letter(p)}</span></td></tr>`}).join('');
+ h+=`<tr><td><i>Class average</i></td>${k.asg.map((a,j)=>{const v=k.students.map(s=>k.g[s+'|'+j]).filter(v=>v!==undefined&&v!=='');return `<td><b>${v.length?Math.round(1000*v.reduce((x,y)=>x+ +y,0)/v.length/a.max)/10+'%':'—'}</b></td>`}).join('')}<td></td></tr>`;
+ $('tbl').innerHTML=h}
+$('tbl').onchange=e=>{const k=e.target.dataset.k;if(!k)return;K().g[k]=e.target.value;save();render()};
+$('tbl').onclick=e=>{const a=e.target.closest('[data-da]'),s=e.target.closest('[data-ds]');const k=K();
+ if(a&&confirm('Remove this assignment and its scores?')){const j=+a.dataset.da;const g={};Object.entries(k.g).forEach(([key,v])=>{const [st,jj]=key.split('|');if(+jj<j)g[key]=v;else if(+jj>j)g[st+'|'+(jj-1)]=v});k.g=g;k.asg.splice(j,1)}
+ if(s&&confirm('Remove this student?'))k.students.splice(+s.dataset.ds,1);save();render()};
+$('addStu').onclick=()=>{const t=prompt('Type student names, separated by commas');if(!t)return;t.split(',').map(x=>x.trim()).filter(Boolean).forEach(n=>{if(!K().students.includes(n))K().students.push(n)});save();render()};
+$('addAsg').onclick=()=>{const n=prompt('Assignment name','Quiz '+(K().asg.length+1));if(!n)return;const m=+prompt('Points possible','100')||100;K().asg.push({n,max:m});save();render()};
+$('cls').onchange=()=>{D.cur=$('cls').value;save();render()};
+$('newCls').onclick=()=>{const n=prompt('Class name');if(!n||D.classes[n])return;D.classes[n]={students:[],asg:[],g:{}};D.cur=n;save();render()};
+$('renCls').onclick=()=>{const n=prompt('New name',D.cur);if(!n||D.classes[n])return;D.classes[n]=K();delete D.classes[D.cur];D.cur=n;save();render()};
+$('delCls').onclick=()=>{if(Object.keys(D.classes).length<2)return alert('You need at least one class.');if(!confirm(`Delete ${D.cur} and all its grades?`))return;delete D.classes[D.cur];D.cur=Object.keys(D.classes)[0];save();render()};
+$('csv').onclick=()=>{const k=K(),q=v=>`"${String(v).replace(/"/g,'""')}"`;const rows=[['Student',...k.asg.map(a=>`${a.n} (/${a.max})`),'Average %','Letter']];
+ k.students.forEach(s=>{const p=pct(s);rows.push([s,...k.asg.map((a,j)=>k.g[s+'|'+j]??''),p??'',letter(p)])});
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([rows.map(r=>r.map(q).join(',')).join('\n')],{type:'text/csv'}));a.download=D.cur.replace(/[^a-z0-9]+/gi,'-')+'-grades.csv';a.click()};
+render();
+
+</script>
+</body></html>

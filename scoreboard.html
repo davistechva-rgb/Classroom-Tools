@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Classroom Scoreboard</title>
+<style>.teams{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:20px}
+.tm{border:4px solid var(--ink);border-radius:24px;box-shadow:6px 6px 0 var(--ink);padding:16px;text-align:center;position:relative}
+.tm.lead::before{content:"👑";position:absolute;top:-30px;left:50%;transform:translateX(-50%) rotate(-8deg);font-size:2.6rem}
+.tm input{font:inherit;font-size:1.4rem;font-weight:700;text-align:center;background:transparent;border:0;border-bottom:3px dashed rgba(29,43,83,.3);width:100%;color:var(--ink)}
+.sc{font-size:5.5rem;font-weight:700;line-height:1.1;margin:8px 0;font-variant-numeric:tabular-nums}
+.sc.bump{animation:pop .3s}.tm .row{justify-content:center;gap:8px}</style></head>
+<body>
+<main>
+<div class="card row setup" style="margin-bottom:22px">
+ <input type="text" id="tname" placeholder="Team name" style="flex:1;min-width:160px">
+ <button class="btn green" id="add">Add team</button>
+ <button class="btn white small" id="zero">Reset scores</button>
+ <button class="btn red small" id="wipe">Remove all teams</button>
+</div>
+<div id="teams" class="teams"></div></main>
+<script src="kit.js"></script>
+<script>
+Kit.mount('🏆', 'Classroom Scoreboard');
+
+const $=id=>document.getElementById(id);const BG=['#FFF4CC','#FFE0DC','#E3F7E6','#EFE6FF','#FFE3F2','#DDF6FC'];
+let T=Kit.get('score',[{n:'Team 1',s:0},{n:'Team 2',s:0}]);const save=()=>Kit.set('score',T);
+function render(){const max=Math.max(...T.map(t=>t.s));
+ $('teams').innerHTML=T.map((t,i)=>`<div class="tm ${max>0&&t.s===max?'lead':''}" style="background:${BG[i%6]}">
+ <input value="${Kit.esc(t.n)}" data-name="${i}" aria-label="Team name"><div class="sc" id="s${i}">${t.s}</div>
+ <div class="row"><button class="btn red" data-i="${i}" data-d="-1" aria-label="Minus one">−1</button><button class="btn green" data-i="${i}" data-d="1">+1</button><button class="btn" data-i="${i}" data-d="5">+5</button></div>
+ <button class="btn small white" data-del="${i}" style="margin-top:10px">Remove</button></div>`).join('')||'<div class="card center muted">Add a team to start.</div>'}
+$('teams').onclick=e=>{const b=e.target.closest('[data-d]');if(b){const i=+b.dataset.i;T[i].s+=+b.dataset.d;save();render();$('s'+i).classList.add('bump');
+ +b.dataset.d>0?Kit.tone(880+T[i].s*10,.15,'triangle',.25):Kit.tone(220,.2,'sawtooth',.15);return}
+ const d=e.target.closest('[data-del]');if(d){T.splice(+d.dataset.del,1);save();render()}};
+$('teams').oninput=e=>{const i=e.target.dataset.name;if(i!=null){T[i].n=e.target.value;save()}};
+$('add').onclick=()=>{T.push({n:$('tname').value.trim()||'Team '+(T.length+1),s:0});$('tname').value='';save();render()};
+$('zero').onclick=()=>{T.forEach(t=>t.s=0);save();render()};
+$('wipe').onclick=()=>{if(confirm('Remove all teams?')){T=[];save();render()}};
+render();
+
+</script>
+</body></html>

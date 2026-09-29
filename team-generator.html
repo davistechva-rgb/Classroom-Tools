@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Random Team Generator</title>
+<style>.teams{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:18px}
+.team{border:4px solid var(--ink);border-radius:20px;box-shadow:5px 5px 0 var(--ink);padding:14px;animation:pop .4s cubic-bezier(.3,1.6,.5,1) both}
+.team h3{margin:0 0 8px;font-size:1.5rem}.team ol{margin:0;padding-left:1.4em;font-size:1.2rem;font-weight:500}</style></head>
+<body>
+<main>
+<div class="grid2">
+ <div class="card stack">
+  <label for="names">Class list (one name per line)</label>
+  <textarea id="names" placeholder="Ava&#10;Ben&#10;Carlos&#10;Dani"></textarea>
+  <div class="row">
+   <select id="mode" style="width:auto"><option value="teams">Number of teams</option><option value="size">People per team</option></select>
+   <input type="number" id="num" value="2" min="1">
+  </div>
+  <button class="btn big green" id="go">Make teams</button>
+ </div>
+ <div id="teams" class="teams"><div class="card center muted">Your teams will show up here.</div></div>
+</div></main>
+<script src="kit.js"></script>
+<script>
+Kit.mount('👥', 'Random Team Generator');
+
+const $=id=>document.getElementById(id);
+const NAMES=['🐯 Tigers','🚀 Rockets','🦈 Sharks','🌟 Stars','🐉 Dragons','⚡ Lightning','🦉 Owls','🌋 Volcanoes','🐬 Dolphins','🍕 Pizzas','🦖 Dinos','🌈 Rainbows'];
+const BG=['#FFF4CC','#FFE0DC','#E3F7E6','#EFE6FF','#FFE3F2','#DDF6FC'];
+$('names').value=Kit.get('names','');$('names').oninput=()=>Kit.set('names',$('names').value);
+$('go').onclick=()=>{
+  const names=Kit.shuffle(Kit.lines($('names').value)); if(names.length<2){$('teams').innerHTML='<div class="card center">Add at least 2 names.</div>';return}
+  let n=Math.max(1,+$('num').value||1); let t=$('mode').value==='teams'?Math.min(n,names.length):Math.ceil(names.length/n);
+  const teams=Array.from({length:t},()=>[]); names.forEach((x,i)=>teams[i%t].push(x));
+  const labels=Kit.shuffle(NAMES);
+  $('teams').innerHTML=teams.map((m,i)=>`<div class="team" style="background:${BG[i%6]};animation-delay:${i*.08}s"><h3>${labels[i%labels.length]}</h3><ol>${m.map(x=>`<li>${Kit.esc(x)}</li>`).join('')}</ol></div>`).join('');
+  Kit.tada();
+};
+
+</script>
+</body></html>

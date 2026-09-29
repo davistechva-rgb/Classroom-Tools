@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Coin Flip</title>
+<style>.stage{perspective:1000px;height:280px;display:grid;place-items:center}
+.coin{width:220px;height:220px;position:relative;transform-style:preserve-3d;transition:transform 1.6s cubic-bezier(.2,.8,.3,1)}
+.face{position:absolute;inset:0;border-radius:50%;display:grid;place-items:center;font-size:7rem;font-weight:700;border:8px solid var(--ink);backface-visibility:hidden;-webkit-backface-visibility:hidden;box-shadow:inset 0 0 0 12px rgba(255,255,255,.35)}
+.heads{background:var(--sun)}.tails{background:#C8D4E3;transform:rotateY(180deg)}
+.result{font-size:2.4rem;font-weight:700;margin:14px 0}</style></head>
+<body>
+<main>
+<div class="card center">
+ <div class="stage"><div class="coin" id="coin"><div class="face heads">H</div><div class="face tails">T</div></div></div>
+ <p id="res" class="result">Tap flip!</p>
+ <button class="btn big" id="flip">Flip the coin</button>
+ <div class="row" style="justify-content:center;margin-top:22px">
+  <span class="chip">Heads: <b id="h">0</b></span><span class="chip">Tails: <b id="t">0</b></span>
+  <button class="btn white small" id="reset">Reset count</button>
+ </div>
+</div></main>
+<script src="kit.js"></script>
+<script>
+Kit.mount('🪙', 'Coin Flip');
+
+const $=id=>document.getElementById(id);let rot=0,c=Kit.get('coin',{h:0,t:0});
+const upd=()=>{$('h').textContent=c.h;$('t').textContent=c.t};upd();
+$('flip').onclick=()=>{
+  const heads=Math.random()<.5; $('flip').disabled=true;$('res').textContent='Flipping...';
+  rot=rot-(rot%360)+1800+(heads?0:180); $('coin').style.transform=`rotateY(${rot}deg)`;
+  for(let i=0;i<10;i++)Kit.tone(1200+i*40,.03,'triangle',.05,i*.12);
+  setTimeout(()=>{$('res').textContent=heads?'Heads!':'Tails!';heads?c.h++:c.t++;Kit.set('coin',c);upd();Kit.ding();$('flip').disabled=false},1650);
+};
+$('reset').onclick=()=>{c={h:0,t:0};Kit.set('coin',c);upd()};
+
+</script>
+</body></html>

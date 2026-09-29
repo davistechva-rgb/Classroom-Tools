@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Classroom Bell</title>
+<style>.bellbtn{font-size:clamp(7rem,22vw,12rem);background:var(--sun);border:6px solid var(--ink);border-radius:50%;width:min(320px,70vw);aspect-ratio:1;cursor:pointer;box-shadow:8px 8px 0 var(--ink);line-height:1}
+.bellbtn:active{transform:translate(6px,6px);box-shadow:2px 2px 0 var(--ink)}
+.bellbtn.ring{animation:swing .15s 8}@keyframes swing{0%{transform:rotate(-12deg)}50%{transform:rotate(12deg)}100%{transform:rotate(-12deg)}}
+.item{display:flex;justify-content:space-between;align-items:center;gap:10px;border:3px solid var(--ink);border-radius:14px;padding:6px 12px;margin:6px 0;font-weight:600;background:#FFF4CC}</style></head>
+<body>
+<main>
+<div class="grid2">
+ <div class="card center">
+  <button class="bellbtn" id="ring" aria-label="Ring the bell">🔔</button>
+  <p class="muted">Tap the bell or press B</p>
+  <div class="row" style="justify-content:center">
+   <label>Sound <select id="snd" style="width:auto"><option value="desk">Desk bell</option><option value="chime">Chime</option><option value="school">School bell</option><option value="gong">Gong</option></select></label>
+  </div>
+ </div>
+ <div class="card stack setup">
+  <b>Bell schedule</b>
+  <p class="muted" style="margin:0">The bell rings on its own at these times while this page is open.</p>
+  <div class="row"><input type="time" id="time" style="font:inherit;border:3px solid var(--ink);border-radius:14px;padding:8px"><input type="text" id="what" placeholder="Label, like Lunch" style="flex:1;min-width:140px"><button class="btn small green" id="add">Add</button></div>
+  <div id="sched"></div>
+  <p id="next" class="muted"></p>
+ </div>
+</div></main>
+<script src="kit.js"></script>
+<script>
+Kit.mount('🔔', 'Classroom Bell');
+
+const $=id=>document.getElementById(id);
+function bell(kind){const T=Kit.tone;
+ if(kind==='desk'){[2093,4186,5274].forEach((f,i)=>T(f,1.6,'sine',[.3,.12,.06][i]))}
+ if(kind==='chime'){[784,988,1175,1568].forEach((f,i)=>{T(f,1.4,'sine',.22,i*.35);T(f*2,1,'sine',.05,i*.35)})}
+ if(kind==='school'){for(let i=0;i<40;i++){T(1400,.05,'square',.08,i*.05);T(2100,.05,'triangle',.05,i*.05)}}
+ if(kind==='gong'){[110,164,220,331,440].forEach((f,i)=>T(f,4,'sine',[.35,.2,.15,.08,.05][i]))}}
+$('snd').value=Kit.get('bell-snd','desk');$('snd').onchange=()=>Kit.set('bell-snd',$('snd').value);
+function ring(){bell($('snd').value);$('ring').classList.remove('ring');void $('ring').offsetWidth;$('ring').classList.add('ring')}
+$('ring').onclick=ring;addEventListener('keydown',e=>{if(e.key.toLowerCase()==='b'&&!/INPUT|SELECT/.test(document.activeElement.tagName))ring()});
+let S=Kit.get('bell-sched',[]);
+function render(){S.sort((a,b)=>a.t.localeCompare(b.t));Kit.set('bell-sched',S);
+ $('sched').innerHTML=S.map((s,i)=>`<div class="item"><span>${s.t} ${Kit.esc(s.w)}</span><button class="btn small red" data-i="${i}" aria-label="Remove">✕</button></div>`).join('')||'<p class="muted">No bells scheduled.</p>';
+ const now=new Date().toTimeString().slice(0,5),nx=S.find(s=>s.t>now);$('next').textContent=nx?`Next bell: ${nx.t} ${nx.w}`:''}
+$('sched').onclick=e=>{const b=e.target.closest('[data-i]');if(b){S.splice(+b.dataset.i,1);render()}};
+$('add').onclick=()=>{if(!$('time').value)return;S.push({t:$('time').value,w:$('what').value.trim()});$('what').value='';render()};
+let last='';setInterval(()=>{const now=new Date().toTimeString().slice(0,5);if(now!==last){last=now;if(S.some(s=>s.t===now))ring();render()}},1000);
+render();
+
+</script>
+</body></html>

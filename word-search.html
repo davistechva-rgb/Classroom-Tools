@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Word Search Generator</title>
+<style>.wgrid{display:grid;gap:3px;margin:0 auto;max-width:560px;touch-action:none;user-select:none;-webkit-user-select:none}
+.wc{aspect-ratio:1;display:grid;place-items:center;font-weight:700;font-size:clamp(.9rem,2.6vw,1.6rem);border-radius:8px;cursor:pointer;text-transform:uppercase}
+.wc.sel{background:var(--sun)}.wc.start{outline:3px solid var(--grape)}.wc.ans{background:#FFE3F2}
+.wlist{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:16px}.wlist span{font-weight:600}.wlist span.found{text-decoration:line-through;opacity:.5}
+@media print{.grid2{display:block}.wc{border:1px solid #ccc}.wgrid{max-width:100%}.wc.ans{background:none}}</style></head>
+<body>
+<main>
+<div class="grid2">
+ <div class="card stack noprint">
+  <label>Title <input type="text" id="title" value="Word Search"></label>
+  <label for="words">Words (one per line)</label>
+  <textarea id="words"></textarea>
+  <div class="row"><label>Size <select id="size" style="width:auto"><option>8</option><option selected>10</option><option>12</option><option>15</option></select></label>
+  <label>Level <select id="lvl" style="width:auto"><option value="1">Easy (across and down)</option><option value="2">Medium (plus diagonal)</option><option value="3">Hard (plus backwards)</option></select></label></div>
+  <div class="row"><button class="btn green" id="make">Make puzzle</button><button class="btn white" id="print">Print</button><button class="btn white small" id="show">Show answers</button></div>
+  <p id="note" class="muted"></p>
+ </div>
+ <div class="card center">
+  <h2 id="ptitle" style="margin:0 0 10px;font-size:2rem"></h2>
+  <div id="grid" class="wgrid"></div>
+  <div id="list" class="wlist"></div>
+  <p class="muted noprint">Tap the first letter, then the last letter of a word. You can also drag.</p>
+ </div>
+</div></main>
+<script src="kit.js"></script>
+<script>
+Kit.mount('🔍', 'Word Search Generator');
+
+const $=id=>document.getElementById(id);
+$('words').value=Kit.get('wsg-words','apple\nbanana\ncherry\ngrape\nlemon\nmango\npeach\npear\nplum\nkiwi');
+['words','title'].forEach(k=>$(k).oninput=()=>Kit.set('wsg-'+k,$(k).value));$('title').value=Kit.get('wsg-title','Word Search');
+const FOUND=['#FFC93C','#5DC66E','#22C3E6','#FF8FC7','#9B6BF2','#FF9F43'];
+let N,G,placed,found,start=null;
+function make(){N=+$('size').value;const lvl=+$('lvl').value;let dirs=[[0,1],[1,0]];if(lvl>1)dirs.push([1,1],[-1,1]);if(lvl>2)dirs=dirs.concat(dirs.map(([a,b])=>[-a,-b]));
+ const words=[...new Set(Kit.lines($('words').value).map(w=>w.toUpperCase().replace(/[^A-Z]/g,'')).filter(w=>w.length>1))].sort((a,b)=>b.length-a.length);
+ G=Array.from({length:N},()=>Array(N).fill(''));placed=[];found=[];const skipped=[];
+ for(const w of words){let ok=false;for(let t=0;t<400&&!ok;t++){const [dr,dc]=Kit.pick(dirs),r=Kit.rand(0,N-1),c=Kit.rand(0,N-1),er=r+dr*(w.length-1),ec=c+dc*(w.length-1);
+  if(er<0||er>=N||ec<0||ec>=N)continue;let fit=true;for(let i=0;i<w.length;i++){const x=G[r+dr*i][c+dc*i];if(x&&x!==w[i]){fit=false;break}}
+  if(fit){for(let i=0;i<w.length;i++)G[r+dr*i][c+dc*i]=w[i];placed.push({w,cells:[...Array(w.length)].map((_,i)=>(r+dr*i)*N+c+dc*i)});ok=true}}if(!ok)skipped.push(w)}
+ const AB='ABCDEFGHIJKLMNOPRSTUWY';for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(!G[r][c])G[r][c]=Kit.pick([...AB]);
+ $('note').textContent=skipped.length?`These words did not fit: ${skipped.join(', ')}. Try a bigger size.`:'';
+ $('ptitle').textContent=$('title').value;$('grid').style.gridTemplateColumns=`repeat(${N},1fr)`;
+ $('grid').innerHTML=G.flat().map((l,i)=>`<div class="wc" data-i="${i}">${l}</div>`).join('');list()}
+function list(){$('list').innerHTML=placed.map(p=>`<span class="chip ${found.includes(p.w)?'found':''}">${p.w.toLowerCase()}</span>`).join('')}
+const cell=i=>$('grid').children[i];
+function tryLine(a,b){const ar=Math.floor(a/N),ac=a%N,br=Math.floor(b/N),bc=b%N,dr=Math.sign(br-ar),dc=Math.sign(bc-ac),len=Math.max(Math.abs(br-ar),Math.abs(bc-ac))+1;
+ if(!(ar===br||ac===bc||Math.abs(br-ar)===Math.abs(bc-ac)))return;const cells=[...Array(len)].map((_,i)=>(ar+dr*i)*N+ac+dc*i);
+ const hit=placed.find(p=>!found.includes(p.w)&&p.cells.length===len&&(p.cells.join()===cells.join()||p.cells.join()===[...cells].reverse().join()));
+ if(hit){found.push(hit.w);const col=FOUND[found.length%6];cells.forEach(i=>cell(i).style.background=col);Kit.ding();list();if(found.length===placed.length){Kit.tada();Kit.confetti();Kit.modal('<h2 style="font-size:2.4rem;margin:0">You found them all!</h2>')}}
+ else Kit.tone(200,.15,'triangle',.12)}
+function clearSel(){document.querySelectorAll('.wc.start').forEach(c=>c.classList.remove('start'))}
+$('grid').onpointerdown=e=>{const c=e.target.closest('.wc');if(!c)return;const i=+c.dataset.i;if(start!=null&&start!==i){clearSel();tryLine(start,i);start=null;return}start=i;clearSel();c.classList.add('start')};
+$('grid').onpointerup=e=>{const el=document.elementFromPoint(e.clientX,e.clientY)?.closest('.wc');if(!el||start==null)return;const i=+el.dataset.i;if(i!==start){clearSel();tryLine(start,i);start=null}};
+$('make').onclick=make;$('print').onclick=()=>print();
+$('show').onclick=()=>placed.forEach(p=>p.cells.forEach(i=>{if(!found.includes(p.w))cell(i).classList.toggle('ans')}));
+make();
+
+</script>
+</body></html>

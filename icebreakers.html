@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Icebreaker Generator</title>
+<style>.tabs{display:flex;flex-wrap:wrap;gap:10px}.tabs .btn.on{background:var(--ink);color:#fff}
+.q{font-size:clamp(1.8rem,4.6vw,3.2rem);font-weight:700;line-height:1.2;min-height:4em;display:grid;place-items:center;margin:14px 0 22px;word-break:break-word}.q.in{animation:pop .4s cubic-bezier(.3,1.6,.5,1)}summary{cursor:pointer}</style></head>
+<body>
+<main>
+<div class="tabs" id="tabs"></div>
+<div class="card center" style="margin-top:18px">
+ <div class="muted" id="cat"></div>
+ <div id="q" class="q">Pick a topic, then tap the button.</div>
+ <div class="row" style="justify-content:center"><button class="btn big grape" id="go">New icebreaker</button><button class="btn white" id="copy">Copy</button></div>
+</div>
+<details class="card setup" style="margin-top:22px"><summary><b>Add your own</b></summary><p class="muted">One per line. These show up under "My questions".</p><textarea id="custom"></textarea></details></main>
+<script src="kit.js"></script>
+<script>
+Kit.mount('💬', 'Icebreaker Generator');
+
+const $=id=>document.getElementById(id);const C={"\ud83e\udd14 Would you rather": ["Would you rather fly or be invisible?", "Would you rather live in the ocean or in space?", "Would you rather have a pet dragon or a pet unicorn?", "Would you rather always be hot or always be cold?", "Would you rather talk to animals or speak every language?", "Would you rather eat only pizza or only tacos for a year?", "Would you rather be a famous singer or a famous athlete?", "Would you rather have a treehouse or a secret room?", "Would you rather go to the beach or the mountains?", "Would you rather be the oldest or the youngest in your family?", "Would you rather have no homework or no chores?", "Would you rather be able to breathe underwater or run super fast?"], "\u2696\ufe0f This or that": ["Cats or dogs?", "Summer or winter?", "Pancakes or waffles?", "Books or movies?", "Morning or night?", "Pizza or burgers?", "Drawing or building?", "Soccer or basketball?", "Ice cream or cake?", "Rain or snow?", "Video games or board games?", "Beach or pool?"], "\ud83d\ude4b Get to know you": ["What is your favorite food, and why?", "If you could meet any person, who would it be?", "What is something that makes you laugh?", "What is the best gift you ever got?", "What do you want to be when you grow up?", "What is your favorite thing to do on the weekend?", "If you had a free day, how would you spend it?", "What is a place you would love to visit?", "What is something you are really good at?", "What is your favorite song right now?", "What is one thing on your bucket list?", "What is the best thing that happened to you this week?"], "\u270f\ufe0f Finish the sentence": ["The best day ever would be...", "If I were a teacher for a day, I would...", "My perfect sandwich has...", "If I could invent anything, I would make...", "One thing that makes me happy is...", "If I had three wishes, I would wish for...", "My dream pet would be...", "The funniest thing I ever saw was..."], "\ud83c\udf88 Quick games": ["Two truths and a lie: share two true facts and one fake one. Can the class guess the lie?", "Find someone who has the same birthday month as you.", "Line up in order of your birthdays without talking.", "Share your name and an animal that starts with the same letter.", "Everyone stand up. Sit down if you have ever been on a plane.", "Find three things you have in common with a partner.", "Act out your favorite hobby. The class guesses what it is.", "Say your name and a food you love. The next person repeats yours and adds their own."]};const key='icebreakers';
+$('custom').value=Kit.get(key+'-custom','');$('custom').oninput=()=>Kit.set(key+'-custom',$('custom').value);
+const lists=()=>{const l={'🎲 Mix them all':Object.values(C).flat(),...C};const m=Kit.lines($('custom').value);if(m.length)l['✏️ My questions']=m;return l};
+let cur=Kit.get(key+'-cat','🎲 Mix them all'),seen=[];
+function tabs(){const l=lists();if(!l[cur])cur='🎲 Mix them all';$('tabs').innerHTML=Object.keys(l).map(k=>`<button class="btn small ${k===cur?'on':'white'}" data-k="${Kit.esc(k)}">${Kit.esc(k)}</button>`).join('')}
+$('tabs').onclick=e=>{const b=e.target.closest('[data-k]');if(b){cur=b.dataset.k;Kit.set(key+'-cat',cur);seen=[];tabs();$('go').click()}};
+$('go').onclick=()=>{const l=lists()[cur]||[];if(!l.length)return;let pool=l.filter(x=>!seen.includes(x));if(!pool.length){seen=[];pool=l}
+ const q=Kit.pick(pool);seen.push(q);$('q').textContent=q;$('q').classList.remove('in');void $('q').offsetWidth;$('q').classList.add('in');
+ $('cat').textContent=cur.startsWith('🎲')?Object.keys(C).find(k=>C[k].includes(q))||'':'';Kit.ding()};
+$('copy').onclick=()=>{navigator.clipboard?.writeText($('q').textContent);$('copy').textContent='Copied';setTimeout(()=>$('copy').textContent='Copy',1200)};
+$('custom').addEventListener('change',tabs);tabs();
+
+</script>
+</body></html>

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Memory Matching Game</title>
+<style>.mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:14px;max-width:980px;margin:0 auto}
+.mc{aspect-ratio:3/4;perspective:800px;border:0;background:none;padding:0;cursor:pointer;font:inherit}
+.mc .in{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .4s}
+.mc.up .in,.mc.done .in{transform:rotateY(180deg)}
+.mc .f,.mc .b{position:absolute;inset:0;border:4px solid var(--ink);border-radius:16px;backface-visibility:hidden;-webkit-backface-visibility:hidden;display:grid;place-items:center;box-shadow:4px 4px 0 var(--ink)}
+.mc .f{background:var(--grape);background-image:radial-gradient(rgba(255,255,255,.25) 3px,transparent 3.5px);background-size:18px 18px;font-size:2rem;color:#fff}
+.mc .b{background:#fff;transform:rotateY(180deg);font-size:clamp(1rem,2.4vw,1.5rem);font-weight:700;padding:6px;text-align:center;word-break:break-word;color:var(--ink)}
+.mc .b.emo{font-size:clamp(2.4rem,6vw,3.8rem)}.mc.done .b{background:#E3F7E6}</style></head>
+<body>
+<main>
+<div class="card row" style="margin-bottom:20px">
+ <label>Cards <select id="theme" style="width:auto"><option value="animals">Animals</option><option value="food">Food</option><option value="space">Space</option><option value="sports">Sports</option><option value="custom">My own pairs</option></select></label>
+ <label>Pairs <select id="pairs" style="width:auto"><option>6</option><option selected>8</option><option>10</option><option>12</option></select></label>
+ <label>Players <select id="players" style="width:auto"><option value="1">1</option><option value="2">2 teams</option></select></label>
+ <button class="btn green" id="start">New game</button>
+ <span class="chip" id="stat"></span>
+</div>
+<details class="card setup" id="customBox" style="margin-bottom:20px"><summary><b>My own pairs</b></summary>
+ <p class="muted">One pair per line with a | in the middle, like cat | gato or 3 x 4 | 12</p>
+ <textarea id="custom" style="min-height:140px">3 x 4 | 12
+5 + 6 | 11
+dog | perro
+H2O | water
+red | rojo
+10 - 7 | 3
+cat | gato
+2 x 9 | 18</textarea></details>
+<div id="grid" class="mgrid"></div></main>
+<script src="kit.js"></script>
+<script>
+Kit.mount('🧠', 'Memory Matching Game');
+
+const $=id=>document.getElementById(id);
+const THEMES={animals:'🐶 🐱 🦁 🐸 🐵 🐧 🐢 🦊 🐼 🐨 🦄 🐙',food:'🍕 🍎 🍌 🍩 🍪 🌮 🍔 🍇 🍓 🧁 🍉 🥕',space:'🚀 🌍 🌙 ⭐ ☄️ 🪐 🛸 👩‍🚀 🌞 🔭 🌌 🛰️',sports:'⚽ 🏀 🏈 ⚾ 🎾 🏐 🏓 🥊 ⛳ 🏒 🛹 🏊'};
+let cards=[],open=[],lock=false,moves=0,score=[0,0],turn=0;
+$('custom').value=Kit.get('mm-custom',$('custom').value);$('custom').oninput=()=>Kit.set('mm-custom',$('custom').value);
+function stat(){$('stat').textContent=$('players').value==='2'?`Team 1: ${score[0]}  Team 2: ${score[1]}  Turn: Team ${turn+1}`:`Moves: ${moves}`}
+function start(){const n=+$('pairs').value,th=$('theme').value;let pairs;
+ if(th==='custom'){pairs=Kit.shuffle(Kit.lines($('custom').value).map(l=>l.split('|').map(s=>s.trim())).filter(p=>p.length>1&&p[0]&&p[1])).slice(0,n);$('customBox').open=!pairs.length}
+ else pairs=Kit.shuffle(THEMES[th].split(' ')).slice(0,n).map(e=>[e,e]);
+ cards=Kit.shuffle(pairs.flatMap((p,i)=>[{k:i,t:p[0]},{k:i,t:p[1]}]));open=[];moves=0;score=[0,0];turn=0;lock=false;
+ $('grid').innerHTML=cards.map((c,i)=>`<button class="mc" data-i="${i}" aria-label="Card ${i+1}"><div class="in"><div class="f">?</div><div class="b ${th==='custom'?'':'emo'}">${Kit.esc(c.t)}</div></div></button>`).join('');stat()}
+$('grid').onclick=e=>{const b=e.target.closest('.mc');if(!b||lock||b.classList.contains('up')||b.classList.contains('done'))return;
+ b.classList.add('up');Kit.tick();open.push(b);if(open.length<2)return;moves++;lock=true;
+ const [x,y]=open.map(o=>cards[+o.dataset.i]);
+ if(x.k===y.k){setTimeout(()=>{open.forEach(o=>{o.classList.remove('up');o.classList.add('done')});open=[];lock=false;score[turn]++;Kit.ding();stat();
+  if(document.querySelectorAll('.mc.done').length===cards.length){Kit.tada();Kit.confetti();const two=$('players').value==='2';
+   Kit.modal(`<h2 style="font-size:2.4rem;margin:0">You did it!</h2><p style="font-size:1.4rem">${two?(score[0]===score[1]?"It's a tie!":`Team ${score[0]>score[1]?1:2} wins, ${Math.max(...score)} to ${Math.min(...score)}!`):`All matched in ${moves} moves.`}</p>`)}},450)}
+ else setTimeout(()=>{open.forEach(o=>o.classList.remove('up'));open=[];lock=false;turn=$('players').value==='2'?1-turn:0;stat()},1000)};
+$('start').onclick=start;['theme','pairs','players'].forEach(k=>$(k).onchange=start);start();
+
+</script>
+</body></html>

@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Puzzle Generator</title>
+<style>.pz{position:relative;width:min(560px,92vw);aspect-ratio:1;margin:0 auto;background:var(--ink);border:6px solid var(--ink);border-radius:20px;box-shadow:6px 6px 0 rgba(29,43,83,.4)}
+.tile{position:absolute;border:3px solid var(--ink);border-radius:12px;display:grid;place-items:center;font-weight:700;color:var(--ink);cursor:pointer;transition:left .15s,top .15s;background-size:cover;font:inherit;font-weight:700;padding:0}
+.tile.num{font-size:clamp(1.4rem,5vw,3rem)}</style></head>
+<body>
+<main>
+<div class="card row" style="margin-bottom:20px">
+ <label>Size <select id="size" style="width:auto"><option value="3">3 x 3 (easy)</option><option value="4">4 x 4</option><option value="5">5 x 5 (hard)</option></select></label>
+ <label>Picture <input type="file" id="img" accept="image/*" style="font:inherit;max-width:230px"></label>
+ <button class="btn white small" id="nums">Use numbers</button>
+ <button class="btn green" id="new">New puzzle</button>
+ <span class="chip">Moves: <b id="moves">0</b></span><span class="chip">Time: <b id="time">0:00</b></span>
+</div>
+<div id="pz" class="pz"></div>
+<p class="center" style="font-weight:600">Slide the tiles into order. Tap a tile next to the empty space to move it.</p></main>
+<script src="kit.js"></script>
+<script>
+Kit.mount('🧩', 'Puzzle Generator');
+
+const $=id=>document.getElementById(id);const COLS=['#FFC93C','#FF8FC7','#22C3E6','#5DC66E','#9B6BF2','#FF9F43'];
+let N=3,board=[],img=null,moves=0,t0=0,tv;
+function solvable(a){let inv=0;const f=a.filter(x=>x);for(let i=0;i<f.length;i++)for(let j=i+1;j<f.length;j++)if(f[i]>f[j])inv++;
+ if(N%2)return inv%2===0;const blankRowFromBottom=N-Math.floor(a.indexOf(0)/N);return (inv+blankRowFromBottom)%2===1}
+function newGame(){N=+$('size').value;const solved=[...Array(N*N-1)].map((_,i)=>i+1).concat(0);
+ do{board=Kit.shuffle(solved)}while(!solvable(board)||board.join()===solved.join());moves=0;$('moves').textContent=0;clearInterval(tv);t0=0;$('time').textContent='0:00';draw()}
+function draw(){const g=100/N,pad=.6;$('pz').innerHTML=board.map((v,i)=>{if(!v)return'';const r=Math.floor(i/N),c=i%N,sr=Math.floor((v-1)/N),sc=(v-1)%N;
+ const bg=img?`background-image:url(${img});background-size:${N*100}% ${N*100}%;background-position:${sc/(N-1)*100}% ${sr/(N-1)*100}%`:`background:${COLS[(sr+sc)%COLS.length]}`;
+ return `<button class="tile ${img?'':'num'}" data-i="${i}" style="left:${c*g+pad}%;top:${r*g+pad}%;width:${g-2*pad}%;height:${g-2*pad}%;${bg}">${img?'':v}</button>`}).join('')}
+$('pz').onclick=e=>{const b=e.target.closest('.tile');if(!b)return;const i=+b.dataset.i,z=board.indexOf(0);
+ const ok=(Math.abs(i-z)===N)||(Math.abs(i-z)===1&&Math.floor(i/N)===Math.floor(z/N));if(!ok)return;
+ if(!t0){t0=Date.now();tv=setInterval(()=>{const s=Math.floor((Date.now()-t0)/1000);$('time').textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0')},500)}
+ [board[i],board[z]]=[board[z],board[i]];moves++;$('moves').textContent=moves;Kit.tick();draw();
+ if(board.slice(0,-1).every((v,k)=>v===k+1)){clearInterval(tv);Kit.tada();Kit.confetti();Kit.modal(`<h2 style="font-size:2.4rem;margin:0">Solved!</h2><p style="font-size:1.4rem">${moves} moves in ${$('time').textContent}</p>`)}};
+$('img').onchange=()=>{const f=$('img').files[0];if(!f)return;const r=new FileReader();r.onload=()=>{img=r.result;newGame()};r.readAsDataURL(f)};
+$('nums').onclick=()=>{img=null;$('img').value='';newGame()};
+$('new').onclick=newGame;$('size').onchange=newGame;newGame();
+
+</script>
+</body></html>

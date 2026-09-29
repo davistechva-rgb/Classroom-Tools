@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Quiz Game</title>
+<style>.q{font-size:clamp(1.8rem,4.5vw,3rem);font-weight:700;line-height:1.2;margin:26px 0}
+.ans{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:22px}@media(max-width:600px){.ans{grid-template-columns:1fr}}
+.a{font:inherit;font-size:clamp(1.2rem,2.6vw,1.7rem);font-weight:700;color:#fff;border:4px solid var(--ink);border-radius:20px;padding:22px 14px;cursor:pointer;box-shadow:0 6px 0 var(--ink);text-shadow:2px 2px 0 rgba(0,0,0,.25)}
+.a:active{transform:translateY(6px);box-shadow:none}.a.no{opacity:.35}.a.yes{outline:6px solid var(--grass);outline-offset:3px;opacity:1}</style></head>
+<body>
+<main>
+<div id="setup" class="card stack">
+ <label for="qs">Your questions. One per line: question | right answer | wrong | wrong | wrong</label>
+ <textarea id="qs" style="min-height:260px"></textarea>
+ <div class="row"><label><input type="checkbox" id="shuf" checked> Mix up the question order</label>
+ <label>Seconds per question <input type="number" id="secs" value="20" min="0"></label><span class="muted">(0 means no timer)</span></div>
+ <button class="btn big green" id="play">Start the quiz</button>
+</div>
+<div id="game" class="card center" hidden>
+ <div class="row" style="justify-content:space-between"><span class="chip" id="prog"></span><span class="chip" id="timer"></span><span class="chip">Score: <b id="score">0</b></span></div>
+ <div id="q" class="q"></div>
+ <div id="ans" class="ans"></div>
+ <button class="btn big" id="next" hidden>Next question</button>
+</div></main>
+<script src="kit.js"></script>
+<script>
+Kit.mount('❓', 'Quiz Game');
+
+const $=id=>document.getElementById(id);const AC=['#FF6B5B','#22C3E6','#FFB020','#5DC66E'],SH=['▲','◆','●','■'];
+$('qs').value=Kit.get('quiz',`What is 7 x 8? | 56 | 54 | 48 | 64
+What planet is closest to the sun? | Mercury | Venus | Mars | Earth
+How many sides does a hexagon have? | 6 | 5 | 8 | 7
+What do plants need to make food? | Sunlight | Moonlight | Sand | Plastic
+Which is a mammal? | Whale | Shark | Frog | Snake
+What is the capital of Virginia? | Richmond | Norfolk | Roanoke | Arlington
+Which word is a noun? | Teacher | Quickly | Jump | Happy
+What is half of 50? | 25 | 20 | 30 | 15`);$('qs').oninput=()=>Kit.set('quiz',$('qs').value);
+let Q=[],i=0,score=0,tmr,left;
+$('play').onclick=()=>{Q=Kit.lines($('qs').value).map(l=>l.split('|').map(s=>s.trim())).filter(p=>p.length>=3&&p[1]);if(!Q.length){alert('Add at least one question with an answer.');return}
+ if($('shuf').checked)Q=Kit.shuffle(Q);i=0;score=0;$('setup').hidden=true;$('game').hidden=false;show()};
+function show(){const [q,right,...wrong]=Q[i];$('q').textContent=q;$('prog').textContent=`Question ${i+1} of ${Q.length}`;$('score').textContent=score;$('next').hidden=true;
+ const opts=Kit.shuffle([right,...wrong.filter(Boolean)]);$('ans').innerHTML=opts.map((o,k)=>`<button class="a" style="background:${AC[k%4]}" data-r="${o===right?1:0}">${SH[k%4]} ${Kit.esc(o)}</button>`).join('');
+ clearInterval(tmr);const s=+$('secs').value;$('timer').hidden=!s;if(s){left=s;$('timer').textContent=`⏱️ ${left}`;tmr=setInterval(()=>{left--;$('timer').textContent=`⏱️ ${left}`;if(left<=5&&left>0)Kit.tick();if(left<=0)reveal(null)},1000)}}
+function reveal(btn){clearInterval(tmr);document.querySelectorAll('.a').forEach(a=>{a.disabled=true;a.classList.add(a.dataset.r==='1'?'yes':'no')});
+ if(btn&&btn.dataset.r==='1'){score++;Kit.ding()}else Kit.tone(160,.4,'sawtooth',.2);$('score').textContent=score;$('next').hidden=false;$('next').textContent=i<Q.length-1?'Next question':'See results'}
+$('ans').onclick=e=>{const b=e.target.closest('.a');if(b&&!b.disabled)reveal(b)};
+$('next').onclick=()=>{if(++i<Q.length)return show();$('game').hidden=true;$('setup').hidden=false;const pct=Math.round(100*score/Q.length);Kit.tada();if(pct>=70)Kit.confetti();
+ Kit.modal(`<h2 style="font-size:2.4rem;margin:0">Quiz done!</h2><p style="font-size:1.6rem">${score} of ${Q.length} right (${pct}%)</p>`)};
+
+</script>
+</body></html>

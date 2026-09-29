@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Group Generator</title>
+<style>.stack>label{display:block}.groups{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px}
+.grp{border:4px solid var(--ink);border-radius:20px;box-shadow:5px 5px 0 var(--ink);padding:14px;animation:pop .4s cubic-bezier(.3,1.6,.5,1) both}
+.grp h3{margin:0 0 8px;font-size:1.4rem}.grp li{font-size:1.15rem;font-weight:600;margin:3px 0}.grp li small{font-weight:500;color:#44507a}.grp ul{list-style:none;padding:0;margin:0}</style></head>
+<body>
+<main>
+<div class="grid2">
+ <div class="card stack">
+  <label for="names">Class list (one name per line)</label>
+  <textarea id="names" placeholder="Ava&#10;Ben&#10;Carlos&#10;Dani"></textarea>
+  <label>People per group <input type="number" id="size" value="4" min="2"></label>
+  <label>Keep apart (one pair per line, like Ben, Carlos)<textarea id="apart" style="min-height:80px" placeholder="Ben, Carlos"></textarea></label>
+  <label><input type="checkbox" id="roles" checked> Give each person a job</label>
+  <label>Jobs (one per line)<textarea id="jobs" style="min-height:120px"></textarea></label>
+  <button class="btn big green" id="go">Make groups</button>
+ </div>
+ <div id="out" class="groups"><div class="card center muted">Your groups will show up here.</div></div>
+</div></main>
+<script src="kit.js"></script>
+<script>
+Kit.mount('👥', 'Group Generator');
+
+const $=id=>document.getElementById(id);const BG=['#FFF4CC','#FFE0DC','#E3F7E6','#EFE6FF','#FFE3F2','#DDF6FC'];
+$('names').value=Kit.get('names','');$('apart').value=Kit.get('gg-apart','');$('jobs').value=Kit.get('gg-jobs','Leader\nRecorder\nTimekeeper\nReporter\nMaterials manager');
+['names','apart','jobs'].forEach(k=>$(k).oninput=()=>Kit.set(k==='names'?'names':'gg-'+k,$(k).value));
+$('go').onclick=()=>{const names=Kit.lines($('names').value);if(names.length<2){$('out').innerHTML='<div class="card center">Add at least 2 names.</div>';return}
+ const size=Math.max(2,+$('size').value||2),n=Math.max(1,Math.round(names.length/size));
+ const pairs=Kit.lines($('apart').value).map(l=>l.split(',').map(s=>s.trim().toLowerCase())).filter(p=>p.length>1);
+ let best,bestBad=1e9;
+ for(let t=0;t<800&&bestBad>0;t++){const g=Array.from({length:n},()=>[]);Kit.shuffle(names).forEach((x,i)=>g[i%n].push(x));
+  const bad=g.reduce((s,m)=>{const lm=m.map(x=>x.toLowerCase());return s+pairs.filter(([a,b])=>lm.includes(a)&&lm.includes(b)).length},0);if(bad<bestBad){bestBad=bad;best=g}}
+ const jobs=Kit.lines($('jobs').value);
+ $('out').innerHTML=best.map((m,i)=>`<div class="grp" style="background:${BG[i%6]};animation-delay:${i*.07}s"><h3>Group ${i+1}</h3><ul>${m.map((x,j)=>`<li>${Kit.esc(x)}${$('roles').checked&&jobs[j]?` <small>${Kit.esc(jobs[j])}</small>`:''}</li>`).join('')}</ul></div>`).join('')+
+ (bestBad?`<div class="card">Couldn't keep every pair apart. ${bestBad} pair${bestBad>1?'s are':' is'} still together. Try a different group size.</div>`:'');
+ Kit.tada()};
+
+</script>
+</body></html>

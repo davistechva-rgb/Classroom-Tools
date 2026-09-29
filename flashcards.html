@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Flashcard App</title>
+<style>.fc{display:block;width:100%;aspect-ratio:5/3;perspective:1200px;background:none;border:0;padding:0;cursor:pointer;font:inherit}
+.fc .in{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .5s}.fc.flip .in{transform:rotateY(180deg)}
+.side{position:absolute;inset:0;border:5px solid var(--ink);border-radius:26px;box-shadow:7px 7px 0 var(--ink);backface-visibility:hidden;-webkit-backface-visibility:hidden;display:grid;place-items:center;padding:20px;font-size:clamp(1.6rem,4.5vw,3.2rem);font-weight:700;color:var(--ink);text-align:center;word-break:break-word;line-height:1.2}
+.side.f{background:#FFF4CC;background-image:repeating-linear-gradient(transparent 0 38px,rgba(34,195,230,.25) 38px 40px)}.side.b{background:#E3F7E6;transform:rotateY(180deg)}</style></head>
+<body>
+<main>
+<div class="grid2">
+ <div class="card stack setup">
+  <label for="deck">Your cards. One per line: front | back</label>
+  <textarea id="deck"></textarea>
+  <label><input type="checkbox" id="backFirst"> Show the back first</label>
+  <button class="btn white small" id="shuf">Shuffle</button>
+ </div>
+ <div class="stack">
+  <div class="row" style="justify-content:center"><span class="chip">Card <b id="pos">1</b> of <b id="tot">0</b></span><span class="chip">✅ Got it: <b id="got">0</b></span><span class="chip">📚 Still learning: <b id="lrn">0</b></span></div>
+  <button class="fc" id="card" aria-label="Flip card"><div class="in"><div class="side f" id="front"></div><div class="side b" id="back"></div></div></button>
+  <p class="center muted" style="color:var(--ink)">Tap the card or press space to flip. Arrow keys move between cards.</p>
+  <div class="row" style="justify-content:center">
+   <button class="btn icon white" id="prev" aria-label="Previous">◀</button>
+   <button class="btn pink" id="learn">Still learning</button><button class="btn green" id="know">Got it</button>
+   <button class="btn icon white" id="next" aria-label="Next">▶</button>
+  </div>
+  <div class="row" style="justify-content:center"><button class="btn small white" id="onlyL">Study only "still learning"</button><button class="btn small white" id="all">Study all cards</button></div>
+ </div>
+</div></main>
+<script src="kit.js"></script>
+<script>
+Kit.mount('📝', 'Flashcard App');
+
+const $=id=>document.getElementById(id);
+$('deck').value=Kit.get('fc-deck',`cat | gato
+dog | perro
+house | casa
+red | rojo
+book | libro
+water | agua
+friend | amigo
+school | escuela`);
+let cards=[],i=0,marks=Kit.get('fc-marks',{}),only=false;
+function load(){const all=Kit.lines($('deck').value).map(l=>l.split('|').map(s=>s.trim())).filter(p=>p[0]);cards=only?all.filter(c=>marks[c[0]]==='l'):all;if(i>=cards.length)i=0;show()}
+function show(){$('card').classList.remove('flip');const c=cards[i];const bf=$('backFirst').checked;
+ $('front').textContent=c?(bf?c[1]||'':c[0]):(only?'No cards left to learn! 🎉':'Add some cards');$('back').textContent=c?(bf?c[0]:c[1]||''):'';
+ $('pos').textContent=cards.length?i+1:0;$('tot').textContent=cards.length;
+ const v=Object.values(marks);$('got').textContent=v.filter(x=>x==='g').length;$('lrn').textContent=v.filter(x=>x==='l').length}
+const go=d=>{if(!cards.length)return;i=(i+d+cards.length)%cards.length;show()};
+function mark(m){const c=cards[i];if(!c)return;marks[c[0]]=m;Kit.set('fc-marks',marks);m==='g'?Kit.ding():Kit.tick();if(only&&m==='g'){load()}else go(1)}
+$('card').onclick=()=>{$('card').classList.toggle('flip');Kit.tick()};
+$('prev').onclick=()=>go(-1);$('next').onclick=()=>go(1);$('know').onclick=()=>mark('g');$('learn').onclick=()=>mark('l');
+$('deck').oninput=()=>{Kit.set('fc-deck',$('deck').value);load()};$('backFirst').onchange=show;
+$('shuf').onclick=()=>{$('deck').value=Kit.shuffle(Kit.lines($('deck').value)).join('\n');$('deck').oninput();i=0;show()};
+$('onlyL').onclick=()=>{only=true;i=0;load()};$('all').onclick=()=>{only=false;i=0;load()};
+addEventListener('keydown',e=>{if(/INPUT|TEXTAREA/.test(document.activeElement.tagName))return;if(e.code==='Space'){e.preventDefault();$('card').click()}if(e.key==='ArrowRight')go(1);if(e.key==='ArrowLeft')go(-1)});
+load();
+
+</script>
+</body></html>

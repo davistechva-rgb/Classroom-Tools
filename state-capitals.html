@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>State Capitals Quiz</title>
+<style>.qz-q .big{color:var(--grape)}</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="quiz.js"></script>
+<script>
+Kit.mount('🇺🇸', 'State Capitals Quiz');
+const ST=[["Alabama", "Montgomery", "Southeast"], ["Alaska", "Juneau", "West"], ["Arizona", "Phoenix", "Southwest"], ["Arkansas", "Little Rock", "Southeast"], ["California", "Sacramento", "West"], ["Colorado", "Denver", "West"], ["Connecticut", "Hartford", "Northeast"], ["Delaware", "Dover", "Northeast"], ["Florida", "Tallahassee", "Southeast"], ["Georgia", "Atlanta", "Southeast"], ["Hawaii", "Honolulu", "West"], ["Idaho", "Boise", "West"], ["Illinois", "Springfield", "Midwest"], ["Indiana", "Indianapolis", "Midwest"], ["Iowa", "Des Moines", "Midwest"], ["Kansas", "Topeka", "Midwest"], ["Kentucky", "Frankfort", "Southeast"], ["Louisiana", "Baton Rouge", "Southeast"], ["Maine", "Augusta", "Northeast"], ["Maryland", "Annapolis", "Northeast"], ["Massachusetts", "Boston", "Northeast"], ["Michigan", "Lansing", "Midwest"], ["Minnesota", "Saint Paul", "Midwest"], ["Mississippi", "Jackson", "Southeast"], ["Missouri", "Jefferson City", "Midwest"], ["Montana", "Helena", "West"], ["Nebraska", "Lincoln", "Midwest"], ["Nevada", "Carson City", "West"], ["New Hampshire", "Concord", "Northeast"], ["New Jersey", "Trenton", "Northeast"], ["New Mexico", "Santa Fe", "Southwest"], ["New York", "Albany", "Northeast"], ["North Carolina", "Raleigh", "Southeast"], ["North Dakota", "Bismarck", "Midwest"], ["Ohio", "Columbus", "Midwest"], ["Oklahoma", "Oklahoma City", "Southwest"], ["Oregon", "Salem", "West"], ["Pennsylvania", "Harrisburg", "Northeast"], ["Rhode Island", "Providence", "Northeast"], ["South Carolina", "Columbia", "Southeast"], ["South Dakota", "Pierre", "Midwest"], ["Tennessee", "Nashville", "Southeast"], ["Texas", "Austin", "Southwest"], ["Utah", "Salt Lake City", "West"], ["Vermont", "Montpelier", "Northeast"], ["Virginia", "Richmond", "Southeast"], ["Washington", "Olympia", "West"], ["West Virginia", "Charleston", "Southeast"], ["Wisconsin", "Madison", "Midwest"], ["Wyoming", "Cheyenne", "West"]];const REG=['Northeast','Southeast','Midwest','Southwest','West'];
+Quiz.init({levels:['Name the capital (all 50)','Name the state (all 50)',...REG.map(r=>r+' capitals')],makeQ(lv){
+ const pool=lv<2?ST:ST.filter(s=>s[2]===REG[lv-2]);const [s,c]=Kit.pick(pool);
+ if(lv===1)return{q:`<span class="big">${c}</span> is the capital of which state?`,html:true,answer:s,options:[s,...Quiz.wrong(ST.map(x=>x[0]),s)]};
+ return{q:`What is the capital of <span class="big">${s}</span>?`,html:true,answer:c,options:[c,...Quiz.wrong(pool.length>=4?pool.map(x=>x[1]):ST.map(x=>x[1]),c)]}}});
+</script>
+</body></html>

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Math Problem Generator</title>
+<style>.nameline{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;margin:14px 0 20px;font-weight:600}
+.probs{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:26px 20px}
+.pr{position:relative;font-size:1.8rem;font-weight:600;font-variant-numeric:tabular-nums;text-align:right;padding:6px 14px 0 30px;font-family:"Fredoka",ui-monospace,monospace}
+.pr i{position:absolute;left:0;top:4px;font-size:.85rem;font-style:normal;background:var(--sun);border:2px solid var(--ink);border-radius:50%;width:24px;height:24px;display:grid;place-items:center}
+.pr .o{float:left}.pr hr{border:0;border-top:3px solid var(--ink);margin:4px 0}.pr .k{color:var(--grape);min-height:1.2em;visibility:hidden}.show .pr .k{visibility:visible}
+@media print{.pr i{background:none}.probs{gap:30px 20px}}</style></head>
+<body>
+<main>
+<div class="card stack noprint" style="margin-bottom:20px">
+ <div class="row"><b>Include</b>
+  <label><input type="checkbox" class="op" value="+" checked> Adding</label><label><input type="checkbox" class="op" value="−" checked> Subtracting</label>
+  <label><input type="checkbox" class="op" value="×"> Multiplying</label><label><input type="checkbox" class="op" value="÷"> Dividing</label></div>
+ <div class="row">
+  <label>Level <select id="lvl" style="width:auto"><option value="0">Easy (1 digit)</option><option value="1" selected>Medium (2 digits)</option><option value="2">Hard (3 digits)</option></select></label>
+  <label>Problems <select id="count" style="width:auto"><option>12</option><option selected>20</option><option>30</option><option>40</option></select></label>
+  <label style="flex:1">Title <input type="text" id="title" value="Math Practice"></label>
+ </div>
+ <div class="row"><button class="btn green" id="make">Make new problems</button><button class="btn white" id="key">Show answer key</button><button class="btn white" id="print">Print</button></div>
+</div>
+<div class="card sheet">
+ <h2 id="ptitle" style="margin:0;font-size:2rem;text-align:center"></h2>
+ <div class="nameline"><span>Name: ____________________</span><span>Date: ____________</span></div>
+ <div id="probs" class="probs"></div>
+</div></main>
+<script src="kit.js"></script>
+<script>
+Kit.mount('🔢', 'Math Problem Generator');
+
+const $=id=>document.getElementById(id);const R=Kit.rand;
+$('title').oninput=()=>$('ptitle').textContent=$('title').value;
+function one(op,lv){const lo=[1,10,100][lv],hi=[9,99,999][lv];
+ if(op==='+'){const a=R(lo,hi),b=R(lo,hi);return[a,b,a+b]}
+ if(op==='−'){let a=R(lo,hi),b=R(lo,hi);if(b>a)[a,b]=[b,a];return[a,b,a-b]}
+ if(op==='×'){const a=lv?R(lo,hi):R(0,10),b=lv===2?R(2,20):R(1,9);return[a,b,a*b]}
+ const d=R(2,lv?12:9),q=R(lv?5:1,[9,50,150][lv]);return[d*q,d,q]}
+function make(){const ops=[...document.querySelectorAll('.op:checked')].map(c=>c.value);if(!ops.length){$('probs').innerHTML='<p>Pick at least one type of problem.</p>';return}
+ const lv=+$('lvl').value;$('ptitle').textContent=$('title').value;
+ $('probs').innerHTML=Array.from({length:+$('count').value},(_,i)=>{const op=Kit.pick(ops),[a,b,c]=one(op,lv);return `<div class="pr"><i>${i+1}</i>${a}<br><span class="o">${op}</span>${b}<hr><div class="k">${c}</div></div>`}).join('')}
+$('make').onclick=make;$('key').onclick=()=>{$('probs').classList.toggle('show');$('key').textContent=$('probs').classList.contains('show')?'Hide answer key':'Show answer key'};
+$('print').onclick=()=>print();make();
+
+</script>
+</body></html>
