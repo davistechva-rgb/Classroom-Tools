@@ -1,7 +1,7 @@
 // Classroom Tools service worker
 // Always asks the server for the newest files first (skipping the browser cache),
 // and only uses the saved copy when there is no internet.
-const VERSION = 'ct-v11';
+const VERSION = 'ct-v12';
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(
   caches.keys().then(ks => Promise.all(ks.filter(k => k !== VERSION).map(k => caches.delete(k)))).then(() => self.clients.claim())));
