@@ -6,13 +6,56 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="kit.css">
-<title>Kingdom Builder</title></head>
+<title>Kingdom Builder</title>
+<style>
+.realm{border:5px solid var(--ink);border-radius:24px;box-shadow:6px 6px 0 var(--ink);padding:14px;background:#4DABF7;overflow:hidden}
+.map{display:grid;grid-template-columns:repeat(11,1fr);gap:3px;max-width:880px;margin:0 auto}
+.t{aspect-ratio:1;border-radius:9px;display:grid;place-items:center;font-size:clamp(.9rem,2.6vh,1.6rem);position:relative;border:3px solid transparent;transition:background .3s}
+.t.grass{background:#A9E34B}.t.forest{background:#69DB7C}.t.hill{background:#D8C08A}.t.gold{background:#FFE066}.t.mtn{background:#ADB5BD}.t.water{background:#4DABF7;border-radius:4px}
+.t.own{box-shadow:inset 0 0 0 999px var(--oc)}.t.own::after{content:"";position:absolute;inset:0;border-radius:6px;border:3px solid var(--ob)}
+.t.can{cursor:pointer;animation:glow 1s infinite;border-color:#fff}@keyframes glow{50%{border-color:var(--ink)}}
+.t.can.enemy{border-style:dashed}
+.t .ic{position:relative;z-index:1}
+.legend{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:10px}.legend span{background:#fff;border:3px solid var(--ink);border-radius:99px;padding:1px 10px;font-weight:700;font-size:.85rem}</style></head>
 <body>
 <main></main>
 <script src="kit.js"></script>
-<script src="review.js"></script>
+<script src="play.js"></script>
 <script>
 Kit.mount("👑", "Kingdom Builder");
-Review.start({"mode": "build", "items": ["🏰", "🛡️", "⚔️", "🐴", "🌾", "🏘️", "⛪", "🧱", "🏹", "🐉", "💰", "👑"], "finish": "👑", "stage": "#EFE6FF", "lane": "#FBF8FF", "winText": "Your kingdom is complete!", "how": "Split into teams. Each right answer adds a new piece to your team's creation. First team to finish wins!", "goal": 10});
+
+Play.setup({defTeams:3,how:'Each team starts with a 🏰 castle. Every right answer gives you 1 claim (2 on a streak). Claim land touching your kingdom: 🌾 grass = 1 point, 🌲 forest = 2, 💰 gold mines = 4. ⛰️ Mountains and 🌊 lakes can\'t be claimed. You can even capture an enemy tile next to you, but it costs 2 claims. After 10 rounds, the kingdom with the most points rules the land!',
+start({teams,game}){
+ const $=id=>document.getElementById(id);const C=11,R=7,N=C*R;const n=teams.length;
+ const terr=Array.from({length:N},()=>{const r=Math.random();return r<.08?'mtn':r<.15?'water':r<.27?'forest':r<.33?'gold':'grass'});
+ const corners=[0,C-1,N-C,N-1,Math.floor(C/2),N-1-Math.floor(C/2)];const own=Array(N).fill(-1);
+ teams.forEach((t,i)=>{const k=corners[i];terr[k]='grass';own[k]=i});
+ const castle=new Set(teams.map((t,i)=>corners[i]));const VAL={grass:1,forest:2,gold:4,hill:1};
+ const S=teams.map(()=>({claims:0,captured:0,lost:0}));let roundNo=1;const ROUNDS=10;
+ const IC={grass:'🌾',forest:'🌲',gold:'💰',mtn:'⛰️',water:'🌊'};
+ game.innerHTML=`<div class="pl-score" id="sc"></div><div class="realm"><div class="map" id="map"></div>
+  <div class="legend"><span>🌾 1 pt</span><span>🌲 2 pts</span><span>💰 4 pts</span><span>⛰️ 🌊 can't claim</span><span>⚔️ capture enemy land = 2 claims</span></div></div>
+  <div class="pl-msg" id="msg"></div><div id="ask"></div>`;
+ const pts=i=>own.reduce((s,o,k)=>s+(o===i?(castle.has(k)?3:VAL[terr[k]]||0):0),0);
+ const nb=k=>{const r=Math.floor(k/C),c=k%C;return[[1,0],[-1,0],[0,1],[0,-1]].map(([a,b])=>[r+a,c+b]).filter(([a,b])=>a>=0&&a<R&&b>=0&&b<C).map(([a,b])=>a*C+b)};
+ function draw(can=[]){$('sc').innerHTML=teams.map((t,i)=>`<span style="border-color:${t.color}">${Kit.esc(t.name)}: ${pts(i)} pts · ${own.filter(o=>o===i).length} tiles</span>`).join('')+`<span>Round ${Math.min(roundNo,ROUNDS)} of ${ROUNDS}</span>`;
+  $('map').innerHTML=Array.from({length:N},(_,k)=>{const o=own[k];const st=o>=0?`--oc:${teams[o].color}88;--ob:${teams[o].color}`:'';
+   return `<div class="t ${terr[k]} ${o>=0?'own':''} ${can.includes(k)?'can':''} ${can.includes(k)&&o>=0?'enemy':''}" data-k="${k}" style="${st}"><span class="ic">${castle.has(k)?'🏰':IC[terr[k]]}</span></div>`}).join('')}
+ draw();
+ const options=(i,left)=>{const set=new Set();own.forEach((o,k)=>{if(o===i)nb(k).forEach(x=>{if(own[x]!==i&&terr[x]!=='mtn'&&terr[x]!=='water'&&!castle.has(x)&&(own[x]<0||left>=2))set.add(x)})});return[...set]};
+ async function claim(i,count){let left=count;
+  while(left>0){const can=options(i,left);if(!can.length){$('msg').textContent='No land left to claim!';break}
+   $('msg').innerHTML=`<span class="pl-turn" style="background:${teams[i].color}">${Kit.esc(teams[i].name)}</span> tap a glowing tile to claim it · ${left} claim${left>1?'s':''} left`;draw(can);
+   const k=await new Promise(res=>{$('map').onclick=e=>{const t=e.target.closest('.t.can');if(t){$('map').onclick=null;res(+t.dataset.k)}}});
+   const prev=own[k];if(prev>=0){left-=2;S[i].captured++;S[prev].lost++;Play.banner(`⚔️ ${teams[i].name} captured land from ${teams[prev].name}!`);Kit.tone(160,.3,'sawtooth',.2)}else{left--;Kit.tone(700,.12,'triangle',.15)}
+   own[k]=i;S[i].claims++;draw();const el=$('map').children[k];Play.pop(`+${VAL[terr[k]]}`,el,terr[k]==='gold'?'#FFE066':'#fff');if(terr[k]==='gold')Kit.tada();await Kit.sleep(250)}
+  draw()}
+ async function round(){$('msg').textContent='';const right=await Play.ask($('ask'),teams.map(t=>t.i),{goWord:'Expand!'});
+  for(const i of right)await claim(i,Play.streak[i]>=3?2:1);
+  if(roundNo>=ROUNDS||own.every((o,k)=>o>=0||terr[k]==='mtn'||terr[k]==='water')){
+   return Play.podium('👑','Ruler of the land!',teams.map((t,i)=>pts(i)),{'🗺️ Tiles':teams.map((t,i)=>own.filter(o=>o===i).length),'⚔️ Captured':S.map(s=>s.captured)})}
+  roundNo++;setTimeout(round,900)}
+ round()}});
+
 </script>
 </body></html>

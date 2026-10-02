@@ -6,13 +6,81 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="kit.css">
-<title>Galaxy Battle</title></head>
+<title>Galaxy Battle</title>
+<style>.arc{position:relative;border:5px solid var(--ink);border-radius:24px;box-shadow:6px 6px 0 var(--ink);overflow:hidden;background:#000;touch-action:none}
+.arc canvas{display:block;width:100%;height:auto}
+.arc .over{position:absolute;inset:0;display:grid;place-items:center;background:rgba(11,16,38,.55);z-index:2}
+.arc .over .card{text-align:center;max-width:520px}
+.keys{text-align:center;font-weight:600;margin-top:8px}.keys kbd{border:2px solid var(--ink);border-radius:6px;padding:0 6px;background:#fff;font-family:inherit}</style></head>
 <body>
 <main></main>
 <script src="kit.js"></script>
-<script src="review.js"></script>
+<script src="play.js"></script>
 <script>
 Kit.mount("🌌", "Galaxy Battle");
-Review.start({"mode": "duel", "racer": ["🛸", "🚀", "👾", "🛰️", "👽", "🌠"], "attack": "☄️", "stage": "#1D2B53", "lane": "#FFFFFF", "winText": "Rulers of the galaxy!", "how": "Each right answer lets your team zap the team with the most hearts. Lose all your hearts and you are out. Last team standing wins!", "finish": "🏆", "goal": 5});
+
+Play.setup({needsChoices:true,defTeams:2,how:'Teams take turns flying the starfighter. Alien ships swoop in, and each one carries an answer. Blast the alien with the right answer before they reach your planet! Shooting a wrong alien costs a point but sometimes drops a power-up: ⚡ rapid fire, 🛡️ extra shield, or ✖️2 double points. Dodge the aliens\' red lasers, because you only have 3 shields. The faster you find the right answer, the more points you get!',
+extra:'<label>Waves per team <select id="gw" style="width:auto"><option>2</option><option selected>3</option><option>5</option></select></label>',
+start({teams,game}){
+ const $=id=>document.getElementById(id);const W=960,H=600;const waves=+document.getElementById('gw').value;
+ game.innerHTML=`<div class="pl-score" id="sc"></div><div class="arc" id="arc"><canvas id="cv" width="${W}" height="${H}"></canvas><div class="over" id="over"></div></div>
+  <div class="keys">Move: <kbd>←</kbd> <kbd>→</kbd> or drag · Fire: <kbd>Space</kbd> or tap</div><div class="pl-msg" id="msg"></div>`;
+ const cv=$('cv'),g=cv.getContext('2d');const S=teams.map(()=>({pts:0,hits:0,miss:0,pups:0}));let turn=0,wave=1;
+ const sc=()=>$('sc').innerHTML=teams.map((t,i)=>`<span style="border-color:${t.color};${i===turn?`background:${t.color}`:''}">${Kit.esc(t.name)}: ${S[i].pts}</span>`).join('')+`<span>Wave ${Math.min(wave,waves)} of ${waves}</span>`;
+ const stars=Array.from({length:120},()=>({x:Math.random()*W,y:Math.random()*H,z:Math.random()*2+.5}));
+ const keys={};addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','Space','KeyA','KeyD'].includes(e.code)){keys[e.code]=true;if(e.code==='Space')e.preventDefault()}});addEventListener('keyup',e=>keys[e.code]=false);
+ let ptrX=null,wantFire=false;const toX=e=>{const r=cv.getBoundingClientRect();return (e.clientX-r.left)/r.width*W};
+ cv.addEventListener('pointermove',e=>{if(e.pointerType!=='mouse'&&!e.buttons)return;ptrX=toX(e)});cv.addEventListener('pointerdown',e=>{ptrX=toX(e);wantFire=true});
+ const AL=['👾','👽','🛸','🤖'],COL=['#FF6B5B','#FFC93C','#5DC66E','#22C3E6'];
+ function rr(x,y,w,h,r){g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath()}
+ function overlay(html){$('over').innerHTML=html;$('over').style.display=html?'grid':'none'}
+ function ready(){sc();const t=teams[turn];overlay(`<div class="card"><div style="font-size:3rem">🚀</div><h2 style="margin:4px 0">${Kit.esc(t.name)}, take the controls!</h2><p>Wave ${wave} of ${waves}</p><button class="btn big green" id="launch">Launch!</button></div>`);
+  $('launch').onclick=()=>{overlay('');play()}}
+ function play(){const q=Play.nextQuestion();const s=S[turn];let shields=3,rapid=0,dbl=0,last=0,t0=performance.now(),prev=t0,done=false;
+  const ship={x:W/2};let lasers=[],es=[],drops=[],parts=[];
+  const aliens=q.choices.map((c,k)=>({c,ok:c===q.a,alive:true,bx:120+k*240,ic:AL[k],col:COL[k]}));let fy=60;
+  function boom(x,y,col){for(let k=0;k<26;k++){const a=Math.random()*6.28,v=60+Math.random()*220;parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,l:.7,col})}}
+  function end(msg,good){done=true;setTimeout(()=>{$('msg').innerHTML=msg;turn=(turn+1)%teams.length;if(turn===0)wave++;sc();
+   if(wave>waves)return Play.podium('🌌','Galaxy defended!',S.map(x=>x.pts),{'🎯 Right':S.map(x=>x.hits),'💥 Wrong':S.map(x=>x.miss),'⚡ Power-ups':S.map(x=>x.pups)});ready()},1200)}
+  function frame(now){if(done)return;const dt=Math.min(.05,(now-prev)/1000);prev=now;const t=(now-t0)/1000;
+   // input
+   if(keys.ArrowLeft||keys.KeyA)ship.x-=520*dt;if(keys.ArrowRight||keys.KeyD)ship.x+=520*dt;if(ptrX!=null)ship.x+=(ptrX-ship.x)*Math.min(1,dt*10);ship.x=Math.max(40,Math.min(W-40,ship.x));
+   if((keys.Space||wantFire)&&now-last>(rapid>0?110:300)){lasers.push({x:ship.x,y:H-80});if(rapid>0)lasers.push({x:ship.x-18,y:H-70},{x:ship.x+18,y:H-70});last=now;Kit.tone(1200,.05,'square',.04);wantFire=false}
+   rapid=Math.max(0,rapid-dt);
+   fy+=(10+wave*4)*dt;const fx=Math.sin(t*.9)*70;
+   // draw space
+   g.fillStyle='#0B1026';g.fillRect(0,0,W,H);stars.forEach(st=>{st.y+=st.z*30*dt;if(st.y>H)st.y=0;g.fillStyle=`rgba(255,255,255,${st.z/2.5})`;g.fillRect(st.x,st.y,st.z,st.z)});
+   g.fillStyle='#1E3A8A';g.beginPath();g.ellipse(W/2,H+380,W,420,0,0,6.3);g.fill();g.fillStyle='#2F9E44';g.fillRect(0,H-22,W,22);
+   // question bar
+   g.fillStyle='rgba(255,255,255,.95)';rr(14,10,W-28,46,14);g.fill();g.fillStyle='#1D2B53';g.font='700 24px Fredoka, Trebuchet MS, sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(q.q.length>70?q.q.slice(0,68)+'…':q.q,W/2,34);
+   // shields + timer
+   g.font='22px sans-serif';g.textAlign='left';g.fillText('🛡️'.repeat(shields)+(rapid>0?'  ⚡':'')+(dbl?'  ✖️2':''),20,H-40);
+   // aliens
+   aliens.forEach((a,k)=>{if(!a.alive)return;a.x=a.bx+fx+Math.sin(t*2+k)*14;a.y=fy+60+Math.sin(t*3+k*1.7)*10;
+    g.font='54px sans-serif';g.textAlign='center';g.fillText(a.ic,a.x,a.y);g.fillStyle=a.col;rr(a.x-90,a.y+30,180,40,12);g.fill();g.lineWidth=3;g.strokeStyle='#1D2B53';g.stroke();
+    g.fillStyle='#1D2B53';g.font='700 19px Fredoka, Trebuchet MS, sans-serif';const lb=a.c.length>18?a.c.slice(0,17)+'…':a.c;g.fillText(lb,a.x,a.y+51);
+    if(Math.random()<dt*(0.25+wave*.08))es.push({x:a.x,y:a.y+20})});
+   // lasers
+   g.fillStyle='#7CFFB2';lasers=lasers.filter(l=>{l.y-=760*dt;g.fillRect(l.x-3,l.y-14,6,18);
+    for(const a of aliens){if(a.alive&&Math.abs(l.x-a.x)<70&&l.y<a.y+70&&l.y>a.y-30){a.alive=false;boom(a.x,a.y,a.col);
+      if(a.ok){const speed=Math.max(0,Math.round(3-t/8));const p=(2+speed)*(dbl?2:1);s.pts+=p;s.hits++;sc();Kit.tada();Play.pop(`+${p}`,[cv.getBoundingClientRect().left+a.x/W*cv.getBoundingClientRect().width,cv.getBoundingClientRect().top+a.y/H*cv.getBoundingClientRect().height],'#FFE066');
+       aliens.forEach(o=>{if(o.alive){o.alive=false;boom(o.x,o.y,o.col)}});end(`🎯 Direct hit! <b>${Kit.esc(q.a)}</b> was right. +${p} points`,true)}
+      else{s.pts=Math.max(0,s.pts-1);s.miss++;sc();Kit.tone(160,.3,'sawtooth',.15);if(Math.random()<.45)drops.push({x:a.x,y:a.y,k:Kit.pick(['⚡','🛡️','✖️2'])})}
+      return false}}return l.y>-20});
+   // enemy shots
+   g.fillStyle='#FF4D4D';es=es.filter(e=>{e.y+=300*dt;g.beginPath();g.arc(e.x,e.y,6,0,6.3);g.fill();
+    if(Math.abs(e.x-ship.x)<30&&e.y>H-95&&e.y<H-50){shields--;Kit.tone(100,.3,'sawtooth',.2);boom(ship.x,H-70,'#FF4D4D');return false}return e.y<H});
+   // drops
+   g.font='32px sans-serif';drops=drops.filter(d=>{d.y+=150*dt;g.fillText(d.k,d.x,d.y);if(Math.abs(d.x-ship.x)<40&&d.y>H-100){s.pups++;Kit.ding();
+     if(d.k==='⚡')rapid=6;if(d.k==='🛡️')shields=Math.min(5,shields+1);if(d.k==='✖️2')dbl=1;Play.banner(d.k==='⚡'?'⚡ Rapid fire!':d.k==='🛡️'?'🛡️ Extra shield!':'✖️2 Double points!');return false}return d.y<H});
+   // ship
+   g.font='56px sans-serif';g.fillText('🚀',ship.x,H-70);
+   parts=parts.filter(p=>{p.l-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;g.globalAlpha=Math.max(0,p.l/.7);g.fillStyle=p.col;g.fillRect(p.x,p.y,5,5);g.globalAlpha=1;return p.l>0});
+   if(shields<=0){aliens.forEach(a=>a.alive=false);return end(`💥 Your shields are gone! The answer was <b>${Kit.esc(q.a)}</b>.`)}
+   if(fy>H-260){return end(`👾 The aliens reached the planet! The answer was <b>${Kit.esc(q.a)}</b>.`)}
+   if(!done)requestAnimationFrame(frame)}
+  requestAnimationFrame(frame)}
+ ready()}});
+
 </script>
 </body></html>

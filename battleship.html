@@ -6,13 +6,99 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="kit.css">
-<title>Battleship Review Game</title></head>
+<title>Battleship Review Game</title>
+<style>.bs-wrap{display:grid;grid-template-columns:1fr 1fr;gap:18px}@media(max-width:820px){.bs-wrap{grid-template-columns:1fr}}
+.bs-side{border:5px solid var(--ink);border-radius:22px;padding:10px 12px 12px;box-shadow:6px 6px 0 var(--ink);background:#0E4C7A;color:#fff;position:relative}
+.bs-side.target{outline:6px dashed #FFC93C;outline-offset:4px}
+.bs-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.bs-head h3{margin:0;font-size:1.25rem}.bs-head .pw{font-size:1.2rem}
+.bs-board{display:grid;grid-template-columns:22px repeat(8,1fr);gap:3px}
+.bs-board .lb{display:grid;place-items:center;font-weight:700;font-size:.8rem;color:#BFE6FF}
+.bs-c{aspect-ratio:1;border:0;border-radius:6px;font:inherit;font-size:clamp(.9rem,2.4vh,1.5rem);display:grid;place-items:center;padding:0;position:relative;overflow:hidden;cursor:default;color:#fff;
+ background:linear-gradient(135deg,#2E86C9,#1F6FAE);background-size:200% 200%;animation:wave 6s ease-in-out infinite}
+@keyframes wave{50%{background-position:100% 100%}}
+.bs-side.target .bs-c:not(.shot){cursor:crosshair}.bs-side.target .bs-c:not(.shot):hover,.bs-c.aim{background:#FFC93C;animation:none}
+.bs-c.radar{box-shadow:inset 0 0 0 3px #7CFFB2}
+.bs-c.miss{background:#5FA8DC;animation:none}.bs-c.miss::after{content:"";position:absolute;inset:30%;border:2px solid #fff;border-radius:50%;animation:ripple 1s ease-out}
+@keyframes ripple{from{transform:scale(.2);opacity:1}to{transform:scale(1.6);opacity:0}}
+.bs-c.hit{background:#E8590C;animation:burn 1s infinite alternate}@keyframes burn{to{background:#FF922B}}
+.bs-c.sunk{background:#4A5568;animation:none}
+.bs-fleet{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;font-size:.85rem}
+.bs-fleet span{background:#ffffff22;border-radius:8px;padding:2px 8px}.bs-fleet span.dead{text-decoration:line-through;opacity:.45}
+.bs-log{background:#fff;border:4px solid var(--ink);border-radius:16px;padding:8px 12px;margin-top:12px;font-size:.95rem;max-height:120px;overflow:auto}
+.bs-log div{border-bottom:1px dashed #ccd;padding:2px 0}
+.bs-missile{position:fixed;font-size:2.2rem;z-index:50;pointer-events:none}
+.bs-act{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:10px 0}.bs-act .btn.on{outline:5px solid var(--ink);outline-offset:2px}</style></head>
 <body>
 <main></main>
 <script src="kit.js"></script>
-<script src="review.js"></script>
+<script src="play.js"></script>
 <script>
 Kit.mount("🚢", "Battleship Review Game");
-Review.start({"mode": "grid", "grid": "battleship", "cover": "🔵", "stage": "#CFE8FF", "lane": "#E6F3FF", "goal": 20, "how": "Ships are hidden on the ocean. Each right answer lets that team fire at one square. A hit is worth 2 points, and sinking a whole ship is worth 5. Most points when the board is cleared wins!", "finish": "🏆"});
+
+Play.setup({minTeams:2,maxTeams:2,how:'Two navies, two hidden fleets of 5 ships. Answer right to fire at the enemy ocean. A hit lets you go again. Answer 3 in a row or shoot a floating supply crate to earn power-ups: 📡 Radar scans a 3x3 area, and 💣 Barrage fires at 5 squares at once. Sink the whole enemy fleet to win!',
+start({teams,game}){
+ const N=8,COLS='ABCDEFGH',SHIPS=[['Carrier',5],['Battleship',4],['Cruiser',3],['Submarine',3],['Destroyer',2]];
+ const $=id=>document.getElementById(id);
+ function makeOcean(){const g=Array(N*N).fill(-1);SHIPS.forEach(([n,L],s)=>{for(let t=0;t<800;t++){const h=Math.random()<.5,r=Kit.rand(0,h?N-1:N-L),c=Kit.rand(0,h?N-L:N-1);
+   const cells=[...Array(L)].map((_,j)=>(r+(h?0:j))*N+c+(h?j:0));
+   if(cells.every(x=>g[x]<0&&!near(g,x,s)))return cells.forEach(x=>g[x]=s)}});
+  const water=Kit.shuffle([...g.keys()].filter(k=>g[k]<0));return{g,crate:new Set(water.slice(0,2)),shot:new Set()}}
+ function near(g,x,s){const r=Math.floor(x/N),c=x%N;for(const[dr,dc]of[[1,0],[-1,0],[0,1],[0,-1]]){const rr=r+dr,cc=c+dc;if(rr>=0&&rr<N&&cc>=0&&cc<N&&g[rr*N+cc]>=0&&g[rr*N+cc]!==s)return true}return false}
+ const O=[makeOcean(),makeOcean()];const power=[{radar:0,barrage:0},{radar:0,barrage:0}];const stat=teams.map(()=>({shots:0,hits:0,sunk:0}));
+ const name=k=>COLS[k%N]+(Math.floor(k/N)+1);
+ game.innerHTML=`<div class="bs-wrap">${teams.map((t,i)=>`<div class="bs-side" id="side${i}"><div class="bs-head"><h3>⚓ ${Kit.esc(t.name)}'s ocean</h3><span class="pw" id="pw${i}"></span></div>
+  <div class="bs-board" id="g${i}"><span></span>${[...COLS].map(c=>`<span class="lb">${c}</span>`).join('')}${Array.from({length:N*N},(_,k)=>(k%N===0?`<span class="lb">${k/N+1}</span>`:'')+`<button class="bs-c" data-k="${k}" aria-label="${name(k)}"></button>`).join('')}</div>
+  <div class="bs-fleet" id="fl${i}"></div></div>`).join('')}</div>
+  <div class="pl-msg" id="msg"></div><div id="act"></div><div id="ask"></div><div class="bs-log" id="log"><b>Battle log</b></div>`;
+ const cell=(i,k)=>$('g'+i).querySelector(`[data-k="${k}"]`);
+ const alive=i=>SHIPS.map((s,si)=>[...O[i].shot].filter(k=>O[i].g[k]===si).length<s[1]);
+ function hud(){[0,1].forEach(i=>{const a=alive(i);$('fl'+i).innerHTML=SHIPS.map(([n,L],s)=>`<span class="${a[s]?'':'dead'}">${'■'.repeat(L)} ${n}</span>`).join('');
+  $('pw'+(i))&&($('pw'+i).innerHTML=`${'📡'.repeat(power[i].radar)}${'💣'.repeat(power[i].barrage)}`)})}
+ const log=t=>$('log').insertAdjacentHTML('afterbegin',`<div>${t}</div>`);
+ hud();
+ function missile(el){return new Promise(res=>{const r=el.getBoundingClientRect();const m=document.createElement('div');m.className='bs-missile';m.textContent='🚀';
+  m.style.left=r.left+r.width/2-18+'px';m.style.top='-60px';m.style.transform='rotate(135deg)';document.body.appendChild(m);Kit.tone(700,.5,'sawtooth',.06);
+  m.animate([{top:'-60px'},{top:r.top+r.height/2-20+'px'}],{duration:520,easing:'cubic-bezier(.5,0,1,1)'}).onfinish=()=>{m.remove();res()}})}
+ async function fire(att,k){const def=1-att,oc=O[def];if(oc.shot.has(k))return 'already';oc.shot.add(k);stat[att].shots++;
+  const b=cell(def,k);await missile(b);b.classList.add('shot');const s=oc.g[k];
+  if(s<0){b.classList.add('miss');Kit.tone(260,.35,'sine',.15);
+   if(oc.crate.has(k)){const p=Kit.pick(['radar','barrage']);power[att][p]++;b.textContent='📦';Play.pop(p==='radar'?'📡 Radar!':'💣 Barrage!',b,'#7CFFB2');Play.banner(`📦 Supply crate! ${teams[att].name} got ${p==='radar'?'📡 Radar':'💣 Barrage'}`);log(`${Kit.esc(teams[att].name)} → ${name(k)}: 📦 found a supply crate`);hud();return 'crate'}
+   log(`${Kit.esc(teams[att].name)} → ${name(k)}: splash`);return 'miss'}
+  stat[att].hits++;b.classList.add('hit');b.textContent='🔥';Play.burst(b);Kit.tone(90,.5,'sawtooth',.28);Play.pop('HIT!',b,'#FFC93C');
+  const sunk=[...oc.shot].filter(x=>oc.g[x]===s).length===SHIPS[s][1];
+  if(sunk){stat[att].sunk++;oc.g.forEach((v,j)=>{if(v===s){const c=cell(def,j);c.classList.remove('hit');c.classList.add('sunk');c.textContent='⚓'}});
+   Play.banner(`💥 ${teams[att].name} sunk the ${SHIPS[s][0]}!`);log(`<b>${Kit.esc(teams[att].name)} → ${name(k)}: sunk the ${SHIPS[s][0]}!</b>`)}
+  else log(`${Kit.esc(teams[att].name)} → ${name(k)}: HIT`);
+  hud();return sunk?'sunk':'hit'}
+ const pickCell=(i,hover,single)=>new Promise(res=>{const g=$('g'+i);
+  g.onmouseover=e=>{g.querySelectorAll('.aim').forEach(x=>x.classList.remove('aim'));const b=e.target.closest('.bs-c');if(b&&hover)hover(+b.dataset.k).forEach(k=>{const c=cell(i,k);c&&c.classList.add('aim')})};
+  g.onclick=e=>{const b=e.target.closest('.bs-c');if(!b)return;if(single&&single()&&b.classList.contains('shot'))return;g.onclick=null;g.onmouseover=null;g.querySelectorAll('.aim').forEach(x=>x.classList.remove('aim'));res(+b.dataset.k)}});
+ const area=(k,shape)=>{const r=Math.floor(k/N),c=k%N,out=[];const pts=shape==='plus'?[[0,0],[1,0],[-1,0],[0,1],[0,-1]]:[[-1,-1],[-1,0],[-1,1],[0,-1],[0,0],[0,1],[1,-1],[1,0],[1,1]];
+  pts.forEach(([dr,dc])=>{const rr=r+dr,cc=c+dc;if(rr>=0&&rr<N&&cc>=0&&cc<N)out.push(rr*N+cc)});return out};
+ let turn=Kit.rand(0,1);
+ async function round(){const att=turn,def=1-turn;$('msg').textContent='';$('act').innerHTML='';
+  if(Play.streak[att]>0&&Play.streak[att]%3===0&&!round['s'+att+Play.streak[att]]){round['s'+att+Play.streak[att]]=1;const p=Kit.pick(['radar','barrage']);power[att][p]++;hud();Play.banner(`🔥 Streak bonus! ${teams[att].name} got ${p==='radar'?'📡 Radar':'💣 Barrage'}`)}
+  const r=await Play.ask($('ask'),[att]);
+  if(!r.length){$('msg').textContent=`No shot! ${teams[def].name} takes command.`;turn=def;return setTimeout(round,1300)}
+  let mode='shot';
+  if(power[att].radar||power[att].barrage){
+   $('act').innerHTML=`<div class="bs-act"><button class="btn on" data-m="shot">🎯 Normal shot</button>${power[att].radar?'<button class="btn" data-m="radar">📡 Use Radar</button>':''}${power[att].barrage?'<button class="btn red" data-m="barrage">💣 Use Barrage</button>':''}</div>`;
+   $('act').onclick=e=>{const b=e.target.closest('[data-m]');if(!b)return;mode=b.dataset.m;$('act').querySelectorAll('[data-m]').forEach(x=>x.classList.toggle('on',x===b))}}
+  $('side'+def).classList.add('target');
+  $('msg').innerHTML=`🎯 <span class="pl-turn" style="background:${teams[att].color}">${Kit.esc(teams[att].name)}</span> aim at ${Kit.esc(teams[def].name)}'s ocean!`;
+  const k=await pickCell(def,kk=>mode==='radar'?area(kk,'box'):mode==='barrage'?area(kk,'plus'):[kk],()=>mode==='shot');
+  $('side'+def).classList.remove('target');$('act').innerHTML='';$('act').onclick=null;
+  let kept=false;
+  if(mode==='radar'){power[att].radar--;const ar=area(k,'box');const n=ar.filter(x=>O[def].g[x]>=0&&!O[def].shot.has(x)).length;
+   ar.forEach(x=>cell(def,x).classList.add('radar'));setTimeout(()=>ar.forEach(x=>cell(def,x).classList.remove('radar')),4000);
+   Kit.tone(1200,.1,'sine',.15);Kit.tone(1200,.1,'sine',.15,.3);Play.banner(`📡 Radar: ${n} ship square${n===1?'':'s'} hiding here`);log(`${Kit.esc(teams[att].name)} scanned around ${name(k)}: ${n} found`);hud();kept=true}
+  else if(mode==='barrage'){power[att].barrage--;hud();let any=false;for(const x of area(k,'plus')){const res=await fire(att,x);if(res==='hit'||res==='sunk')any=true}kept=any}
+  else{const res=await fire(att,k);kept=res==='hit'||res==='sunk'}
+  if(!alive(def).some(Boolean)){const sc=teams.map((_,i)=>stat[i].sunk);
+   return Play.podium('🚢',`${teams[att].name} wins the battle!`,sc,{Shots:stat.map(s=>s.shots),Accuracy:stat.map(s=>s.shots?Math.round(100*s.hits/s.shots)+'%':'-')})}
+  $('msg').textContent=kept?'Great shot! Keep firing!':'Your turn is over.';if(!kept)turn=def;setTimeout(round,1500)}
+ round()}});
+
 </script>
 </body></html>

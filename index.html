@@ -125,7 +125,7 @@ function show(){const q=$('q').value.toLowerCase().trim();nav();
  else{const c=CATS[cur];$('ptitle').innerHTML=`<span>${c.emoji}</span>${c.name}`;$('panel').style.setProperty('--cat',c.color);tiles(c.tools.map(t=>[...t.slice(0,4),c.color]))}}
 $('nav').onclick=e=>{const b=e.target.closest('[data-i]');if(!b)return;cur=+b.dataset.i;$('q').value='';try{localStorage.setItem('ct:home-cat',cur)}catch{};show()};
 $('q').oninput=show;addEventListener('resize',()=>{const n=$('tiles').querySelectorAll('.tile').length;if(n)layout(n)});
-$('foot').outerHTML=Kit.LOGO('');document.querySelector('footer.brand').insertAdjacentHTML('beforeend','<span class="ver">Version 12</span>');show();
+$('foot').outerHTML=Kit.LOGO('');document.querySelector('footer.brand').insertAdjacentHTML('beforeend','<span class="ver">Version 18</span>');show();
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).catch(()=>{});
 </script>
 </body></html>

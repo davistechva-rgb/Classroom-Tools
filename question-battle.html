@@ -6,13 +6,74 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="kit.css">
-<title>Question Battle</title></head>
+<title>Question Battle</title>
+<style>.arena{position:relative;border:5px solid var(--ink);border-radius:24px;box-shadow:6px 6px 0 var(--ink);overflow:hidden;padding:14px 10px 18px;
+ background:linear-gradient(#FFE8CC 0 55%,#8CE99A 55%)}
+.crowd{text-align:center;font-size:1.4rem;letter-spacing:.1em;opacity:.8}
+.crowd.cheer span{display:inline-block;animation:cheer .4s 4 alternate}@keyframes cheer{to{transform:translateY(-8px)}}
+.rope-wrap{position:relative;height:150px;margin-top:6px}
+.mud{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);width:120px;height:34px;background:radial-gradient(ellipse,#8B5E34 0 60%,#6B4423 61%);border-radius:50%;border:3px solid var(--ink)}
+.marks{position:absolute;left:4%;right:4%;bottom:44px;display:flex;justify-content:space-between}.marks i{width:3px;height:16px;background:#1D2B5355}.marks i.win{height:30px;background:var(--tomato);width:5px}
+.tug{position:absolute;left:0;right:0;bottom:56px;height:80px}.mid{position:absolute;inset:0;transition:transform .55s cubic-bezier(.3,1.5,.5,1)}
+.rope{position:absolute;left:-45%;right:-45%;top:42px;height:10px;background:repeating-linear-gradient(90deg,#C08A4D 0 10px,#9C6B35 10px 20px);border:2px solid #5C3D1E;border-radius:6px}
+.flag{position:absolute;left:50%;top:22px;transform:translateX(-50%);font-size:1.8rem}
+.side{position:absolute;top:0;font-size:3rem;display:flex;gap:2px;z-index:1}.side.l{left:6%}.side.r{right:6%;transform:scaleX(-1)}
+.tug.pull-l .side.l,.tug.pull-r .side.r{animation:heave .5s}@keyframes heave{50%{transform:translateX(-14px) rotate(-8deg)}}
+.tug.pull-r .side.r{animation-name:heaver}@keyframes heaver{50%{transform:scaleX(-1) translateX(-14px) rotate(-8deg)}}
+.names{display:flex;justify-content:space-between;font-weight:800;font-size:1.3rem;padding:0 6%}
+.buzz{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:14px}
+.bz{font:inherit;font-weight:800;font-size:clamp(1.3rem,3vw,2rem);color:#fff;border:5px solid var(--ink);border-radius:26px;padding:18px 10px;cursor:pointer;box-shadow:0 8px 0 var(--ink);text-shadow:2px 2px 0 var(--ink)}
+.bz small{display:block;font-size:.55em}.bz:active{transform:translateY(8px);box-shadow:none}.bz:disabled{opacity:.35}.bz.lit{animation:lit .3s 3 alternate}@keyframes lit{to{filter:brightness(1.4);transform:scale(1.04)}}
+.qcard{text-align:center;margin-top:14px}.qcard .qt{font-size:clamp(1.4rem,3.4vw,2.3rem);font-weight:700;margin:6px 0}
+.qcard .ans{font-size:1.6rem;font-weight:700;color:var(--grape)}</style></head>
 <body>
 <main></main>
 <script src="kit.js"></script>
-<script src="review.js"></script>
+<script src="play.js"></script>
 <script>
 Kit.mount("🥊", "Question Battle");
-Review.start({"mode": "duel", "racer": ["🥊", "🤖", "🦸", "🐻", "🦁", "🐯"], "attack": "💥", "stage": "#FFE0DC", "lane": "#FFFFFF", "how": "Each right answer lets your team zap the team with the most hearts. Lose all your hearts and you are out. Last team standing wins!", "finish": "🏆", "goal": 5});
+
+Play.setup({minTeams:2,maxTeams:2,how:'Two teams, one rope! Read the question, and the first team to hit their buzzer gets to answer. Team 1 buzzes with the A key or their big button, and Team 2 uses the L key. Right answers pull the rope one step toward you, or two steps on a 3-answer streak. A wrong answer gives the other team a chance to steal. Pull the flag across your line to win! If it gets close, it\'s sudden death: every pull counts double.',
+extra:'<label>Rope length <select id="rl" style="width:auto"><option value="4">Short</option><option value="5" selected>Medium</option><option value="7">Long</option></select></label>',
+start({teams,game}){
+ const $=id=>document.getElementById(id);const LIM=+document.getElementById('rl').value;let pos=0;const S=teams.map(()=>({pulls:0,buzz:0,steals:0}));
+ game.innerHTML=`<div class="arena"><div class="crowd" id="crowd">${[...'🧒👧🧑👦👩🧒👧👦🧑👩'].map(c=>`<span>${c}</span>`).join('')}</div>
+  <div class="names"><span style="color:${teams[0].color}">⬅ ${Kit.esc(teams[0].name)}</span><span style="color:${teams[1].color}">${Kit.esc(teams[1].name)} ➡</span></div>
+  <div class="rope-wrap"><div class="marks">${Array.from({length:LIM*2+1},(_,k)=>`<i class="${k===0||k===LIM*2?'win':''}"></i>`).join('')}</div><div class="mud"></div>
+   <div class="tug" id="tug"><div class="side l">🧑‍🦱🧑</div><div class="mid" id="mid"><div class="rope"></div><div class="flag">🚩</div></div><div class="side r">🧑‍🦰🧑</div></div></div></div>
+  <div class="card qcard" id="qc"></div>
+  <div class="buzz"><button class="bz" id="b0" style="background:${teams[0].color}">🔔 BUZZ<small>${Kit.esc(teams[0].name)} · A key</small></button><button class="bz" id="b1" style="background:${teams[1].color}">🔔 BUZZ<small>${Kit.esc(teams[1].name)} · L key</small></button></div>
+  <div class="pl-msg" id="msg"></div>`;
+ const step=()=>46/LIM; // percent per step, lines up with the tick marks
+ function move(d){pos=Math.max(-LIM,Math.min(LIM,pos+d));$('mid').style.transform=`translateX(${pos*step()}%)`;const t=$('tug');t.classList.remove('pull-l','pull-r');void t.offsetWidth;t.classList.add(d<0?'pull-l':'pull-r');
+  $('crowd').classList.remove('cheer');void $('crowd').offsetWidth;$('crowd').classList.add('cheer');Kit.tone(200,.15,'square',.15);Kit.tone(160,.2,'square',.15,.15)}
+ const sudden=()=>Math.abs(pos)>=LIM-1;
+ let buzzFn=null;addEventListener('keydown',e=>{if(!buzzFn||/INPUT|TEXTAREA/.test(document.activeElement.tagName))return;if(e.code==='KeyA')buzzFn(0);if(e.code==='KeyL')buzzFn(1)});
+ $('b0').onclick=()=>buzzFn&&buzzFn(0);$('b1').onclick=()=>buzzFn&&buzzFn(1);
+ const waitBuzz=(allowed)=>new Promise(res=>{[0,1].forEach(i=>$('b'+i).disabled=!allowed.includes(i));buzzFn=i=>{if(!allowed.includes(i))return;buzzFn=null;S[i].buzz++;
+  $('b'+i).classList.add('lit');Kit.tone(i?660:440,.35,'square',.2);setTimeout(()=>$('b'+i).classList.remove('lit'),900);[0,1].forEach(k=>$('b'+k).disabled=true);res(i)}});
+ const judge=(i,q,steal)=>new Promise(res=>{$('qc').querySelector('[data-j]').innerHTML=`<p><span class="pl-turn" style="background:${teams[i].color}">${Kit.esc(teams[i].name)}</span> ${steal?'tries to steal!':'buzzed first!'} What's your answer?</p>
+  ${q?`<button class="btn grape" id="sa">Show the answer</button> `:''}<button class="btn big green" id="jr">✓ Right</button> <button class="btn big red" id="jw">✗ Wrong</button>`;
+  if(q)$('sa').onclick=()=>{$('qc').querySelector('.ans').hidden=false;$('sa').remove()};$('jr').onclick=()=>res(true);$('jw').onclick=()=>res(false)});
+ let n=0;
+ async function round(){n++;const q=Play.nextQuestion();const has=q.a!=='-';
+  $('qc').innerHTML=`<span class="chip">Question ${n}${sudden()?' · ⚡ SUDDEN DEATH: double pulls!':''}</span><div class="qt">${has?Kit.esc(q.q):'Ask your question! 🎤'}</div><div class="ans" hidden>✅ ${Kit.esc(q.a)}</div><div data-j><p class="muted">Buzz in when you know it!</p><button class="btn white small" id="skip">Nobody knows: skip</button></div>`;
+  $('msg').textContent='';let skip=false;const sk=new Promise(r=>$('skip').onclick=()=>{skip=true;buzzFn=null;r(-1)});
+  const who=await Promise.race([waitBuzz([0,1]),sk]);if(who<0){$('msg').textContent='Skipped!';return setTimeout(round,900)}
+  let ok=await judge(who,has?q:null,false);let winner=ok?who:-1;
+  if(!ok){Kit.tone(150,.4,'sawtooth',.2);const other=1-who;$('qc').querySelector('[data-j]').innerHTML=`<p>❌ Wrong! <b>${Kit.esc(teams[other].name)}</b>, buzz to steal!</p><button class="btn white small" id="skip2">No steal</button>`;
+   const s2=new Promise(r=>$('skip2').onclick=()=>{buzzFn=null;r(-1)});const st=await Promise.race([waitBuzz([other]),s2]);
+   if(st>=0){if(await judge(other,has?q:null,true)){winner=other;S[other].steals++;Play.banner(`🦹 ${teams[other].name} steals it!`)}}}
+  if(has)$('qc').querySelector('.ans').hidden=false;
+  if(winner>=0){let d=(Play.streak[winner]>=3?2:1)*(sudden()?2:1);S[winner].pulls+=d;Play.streak[winner]=(Play.streak[winner]||0)+1;Play.streak[1-winner]=0;
+   if(Play.streak[winner]===3)Play.banner(`🔥 ${teams[winner].name} is on fire! Double pulls`);
+   for(let k=0;k<d;k++){move(winner===0?-1:1);await Kit.sleep(450)}$('msg').textContent=`💪 ${teams[winner].name} pulls ${d} step${d>1?'s':''}!`}
+  else $('msg').textContent='Nobody pulls this time.';
+  if(Math.abs(pos)>=LIM){const w=pos<0?0:1;Kit.tone(80,.8,'sawtooth',.2);
+   return setTimeout(()=>Play.podium('🥊',`${teams[w].name} wins the tug-of-war!`,S.map(s=>s.pulls),{'🔔 Buzzes':S.map(s=>s.buzz),'🦹 Steals':S.map(s=>s.steals)}),700)}
+  if(sudden()&&!round.sd){round.sd=1;Play.banner('⚡ SUDDEN DEATH! Pulls count double')}
+  setTimeout(round,1500)}
+ round()}});
+
 </script>
 </body></html>

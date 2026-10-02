@@ -6,13 +6,68 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="kit.css">
-<title>Underwater Adventure</title></head>
+<title>Underwater Adventure</title>
+<style>
+.ocean{position:relative;border:5px solid var(--ink);border-radius:24px;box-shadow:6px 6px 0 var(--ink);overflow:hidden;height:min(66vh,620px);
+ background:linear-gradient(#74C0FC 0,#1C7ED6 30%,#1864AB 60%,#0B2E59 100%)}
+.ocean .boat{position:absolute;top:-4px;left:50%;transform:translateX(-50%);font-size:2.4rem;z-index:3}
+.lvl{position:absolute;left:0;right:0;border-top:2px dashed #ffffff44;color:#fff;font-size:.7rem;font-weight:700;padding-left:6px}
+.lvl .tr{position:absolute;right:8px;top:4px;font-size:1rem}
+.cols{position:absolute;top:0;bottom:0;left:16%;right:16%;display:flex;justify-content:space-around}
+.col{position:relative;flex:1}
+.diver{position:absolute;left:50%;transform:translate(-50%,-50%);font-size:clamp(1.6rem,4.4vh,2.4rem);transition:top .8s cubic-bezier(.3,1.2,.5,1);text-align:center;line-height:1;z-index:2}
+.diver b{display:block;font-size:.35em;border:2px solid var(--ink);border-radius:99px;padding:0 4px;color:var(--ink);white-space:nowrap}
+.diver .bag{display:block;font-size:.4em}
+.diver.ko{animation:ko 1s}@keyframes ko{50%{transform:translate(-50%,-50%) rotate(180deg) scale(.6)}}
+.fishy{position:absolute;font-size:1.6rem;animation:swim linear infinite;pointer-events:none}@keyframes swim{from{left:-10%}to{left:110%}}
+.bub{position:absolute;bottom:-10px;width:8px;height:8px;border:2px solid #ffffffaa;border-radius:50%;animation:rise linear infinite}@keyframes rise{to{transform:translateY(-700px)}}
+.weed{position:absolute;bottom:0;font-size:1.8rem}
+.o2{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:10px 0}.o2 span{border:3px solid var(--ink);border-radius:99px;padding:2px 12px;font-weight:700;background:#fff}
+.picks{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:10px 0}.picks .btn small{display:block;font-size:.72rem;font-weight:600}</style></head>
 <body>
 <main></main>
 <script src="kit.js"></script>
-<script src="review.js"></script>
+<script src="play.js"></script>
 <script>
 Kit.mount("🐠", "Underwater Adventure");
-Review.start({"mode": "race", "racer": ["🐠", "🐡", "🐙", "🐢", "🦈", "🐬"], "finish": "🐚", "flip": true, "stage": "#9FD8F2", "lane": "#CBEBFA", "winText": "First to the treasure shell!", "how": "Split into teams. Read a question, show the answer, then tap every team that got it right. Each right answer moves that team one space. First to the finish wins!", "goal": 10});
+
+Play.setup({defTeams:3,how:'Dive for sunken treasure, but watch your air! Every right answer lets your diver 🤿 dive deeper and grab treasure (deeper means more valuable), or ⬆️ swim up toward the boat. Treasure only counts once you bring it back to the 🚤 boat. Each round you use oxygen, and carrying treasure uses more. If your oxygen runs out, you faint, drop everything, and get pulled back up. 🦈 Sharks steal treasure! Most treasure banked after 8 rounds wins.',
+start({teams,game}){
+ const $=id=>document.getElementById(id);const DEEP=6;const ROUNDS=8;const TV=[0,1,2,3,5,7,10];const TI=['','🐚','🪙','💍','💎','👑','🏺'];
+ const sharkLv=new Set(Kit.shuffle([2,3,4,5]).slice(0,2));
+ const D=teams.map(()=>({lv:0,bag:[],o2:10,bank:0,faints:0,trips:0}));let roundNo=1;
+ const yOf=l=>8+l*(88/DEEP);
+ game.innerHTML=`<div class="ocean" id="sea"><div class="boat">🚤</div>${Array.from({length:DEEP},(_,k)=>`<div class="lvl" style="top:${yOf(k+1)-6}%">Depth ${k+1}<span class="tr">${TI[k+1]} ${TV[k+1]} pts${sharkLv.has(k+1)?' · 🦈':''}</span></div>`).join('')}
+  ${['🐟','🐠','🐡','🦑'].map((f,k)=>`<span class="fishy" style="top:${25+k*17}%;animation-duration:${14+k*5}s;animation-delay:-${k*3}s">${f}</span>`).join('')}
+  ${Array.from({length:10},(_,k)=>`<span class="bub" style="left:${k*10+3}%;animation-duration:${5+k%4}s;animation-delay:${k*.6}s"></span>`).join('')}
+  <span class="weed" style="left:4%">🌿</span><span class="weed" style="right:6%">🪸</span><div class="cols" id="cols">${teams.map((t,i)=>`<div class="col"><div class="diver" id="dv${i}">🤿<span class="bag" id="bg${i}"></span><b style="background:${t.color}">${Kit.esc(t.name)}</b></div></div>`).join('')}</div></div>
+  <div class="o2" id="o2"></div><div class="pl-msg" id="msg"></div><div id="act"></div><div id="ask"></div>`;
+ function draw(){D.forEach((d,i)=>{$('dv'+i).style.top=yOf(d.lv)+'%';$('bg'+i).textContent=d.bag.map(l=>TI[l]).join('')});
+  $('o2').innerHTML=teams.map((t,i)=>`<span style="border-color:${t.color}">${Kit.esc(t.name)} · 🫧 ${'█'.repeat(Math.max(0,D[i].o2))}${'░'.repeat(Math.max(0,10-D[i].o2))} · 🏦 ${D[i].bank}</span>`).join('')+`<span>Round ${roundNo} of ${ROUNDS}</span>`}
+ draw();
+ const choose=i=>new Promise(res=>{const d=D[i];$('act').innerHTML=`<div class="card center"><span class="pl-turn" style="background:${teams[i].color}">${Kit.esc(teams[i].name)}</span> depth ${d.lv} · 🫧 ${d.o2} air · carrying ${d.bag.length}
+  <div class="picks"><button class="btn" data-m="dive" style="background:#4DABF7" ${d.lv>=DEEP?'disabled':''}>🤿 Dive deeper<small>down 1–2 · grab treasure</small></button><button class="btn green" data-m="up" ${d.lv===0?'disabled':''}>⬆️ Swim up<small>up 3 · bank at the boat</small></button>${d.lv>0?'':'<button class="btn white" data-m="rest">🫧 Refill air<small>stay at the boat</small></button>'}</div></div>`;
+  $('act').onclick=e=>{const b=e.target.closest('[data-m]:not(:disabled)');if(b){$('act').onclick=null;$('act').innerHTML='';res(b.dataset.m)}}});
+ async function bank(i){const d=D[i];if(d.lv===0){if(d.bag.length){const v=d.bag.reduce((s,l)=>s+TV[l],0);d.bank+=v;d.trips++;Play.pop(`+${v} 🏦`,$('dv'+i),'#FFE066');Kit.tada();Play.banner(`🚤 ${teams[i].name} banked ${v} points of treasure!`);d.bag=[]}d.o2=10}}
+ async function act(i){const d=D[i];const m=await choose(i);
+  if(m==='dive'){d.lv=Math.min(DEEP,d.lv+Kit.rand(1,2));draw();await Kit.sleep(800);Kit.tone(300,.3,'sine',.1);
+   if(sharkLv.has(d.lv)&&d.bag.length&&Math.random()<.5){const lost=d.bag.pop();Play.banner(`🦈 A shark stole ${teams[i].name}'s ${TI[lost]}!`);Kit.tone(110,.4,'sawtooth',.2)}
+   else{d.bag.push(d.lv);Play.pop(`${TI[d.lv]} +${TV[d.lv]}`,$('dv'+i),'#FFE066');Kit.ding()}}
+  if(m==='up'){d.lv=Math.max(0,d.lv-3);draw();await Kit.sleep(800);await bank(i)}
+  if(m==='rest'){d.o2=10;Play.pop('🫧 Full air',$('dv'+i),'#fff')}
+  draw()}
+ async function breathe(){for(const [i,d] of D.entries()){if(d.lv===0){d.o2=10;continue}d.o2-=1+Math.ceil(d.bag.length/2);
+   if(d.o2<=0){d.faints++;const el=$('dv'+i);el.classList.add('ko');Kit.tone(160,.6,'sine',.2);Play.banner(`😵 ${teams[i].name} ran out of air and dropped the treasure!`);await Kit.sleep(900);el.classList.remove('ko');d.bag=[];d.lv=0;d.o2=10}}
+  draw()}
+ async function round(){$('msg').textContent='';const right=await Play.ask($('ask'),teams.map(t=>t.i),{goWord:'Dive!'});
+  for(const i of right)await act(i);
+  teams.forEach((t,i)=>{if(!right.includes(i)&&D[i].lv>0){D[i].lv=Math.max(0,D[i].lv-1)}});draw();
+  for(const i of teams.map(t=>t.i))if(D[i].lv===0)await bank(i);
+  await breathe();
+  if(roundNo>=ROUNDS){for(const i of teams.map(t=>t.i)){if(D[i].lv===0)await bank(i)}
+   return Play.podium('🐠','Treasure divers!',D.map(d=>d.bank),{'🚤 Trips':D.map(d=>d.trips),'😵 Faints':D.map(d=>d.faints)})}
+  roundNo++;setTimeout(round,900)}
+ round()}});
+
 </script>
 </body></html>

@@ -6,13 +6,61 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="kit.css">
-<title>Classroom Car Race</title></head>
+<title>Classroom Car Race</title>
+<style>.dice-pop{position:fixed;left:50%;top:40%;transform:translate(-50%,-50%);z-index:55;background:#fff;border:5px solid var(--ink);border-radius:22px;box-shadow:6px 6px 0 var(--ink);padding:10px 24px;text-align:center;font-weight:800;pointer-events:none}
+.dice-pop .d{font-size:4rem;line-height:1}
+.circuit{border:5px solid var(--ink);border-radius:24px;box-shadow:6px 6px 0 var(--ink);overflow:hidden;background:#69B34C}
+.circuit svg{display:block;width:100%;height:auto}
+.board{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-top:12px}
+.car{background:#fff;border:4px solid var(--ink);border-radius:16px;padding:6px 10px;font-weight:700}
+.car .row1{display:flex;justify-content:space-between;align-items:center}.car .pos{font-size:1.4rem}
+.bar{height:10px;border:2px solid var(--ink);border-radius:99px;background:#eee;overflow:hidden;margin:3px 0}.bar i{display:block;height:100%;transition:width .4s}
+.moves{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:10px 0}.moves .btn small{display:block;font-size:.72rem;font-weight:600}</style></head>
 <body>
 <main></main>
 <script src="kit.js"></script>
-<script src="review.js"></script>
+<script src="play.js"></script>
 <script>
 Kit.mount("🏎️", "Classroom Car Race");
-Review.start({"mode": "race", "racer": ["🏎️", "🚗", "🚙", "🚕", "🚓", "🛻"], "finish": "🏁", "flip": true, "stage": "#D9DEE6", "lane": "#F1F3F7", "how": "Split into teams. Read a question, show the answer, then tap every team that got it right. Each right answer moves that team one space. First to the finish wins!", "goal": 10});
+async function rollDie(lo,hi,label){const box=document.createElement('div');box.className='dice-pop';box.innerHTML=`<div>${label||'Rolling…'}</div><div class="d">🎲</div>`;document.body.appendChild(box);
+ const faces=['⚀','⚁','⚂','⚃','⚄','⚅'];let v;for(let k=0;k<12;k++){v=Kit.rand(lo,hi);box.querySelector('.d').textContent=faces[v-1]||v;Kit.tick();await Kit.sleep(55+k*8)}
+ Kit.ding();await Kit.sleep(650);box.remove();return v}
+Play.setup({defTeams:3,how:'Three laps around the speedway! Every team that answers right chooses a move. 🏎️ Drive rolls 2–4 spaces but wears your tires. 🔥 Nitro jumps 6 spaces and uses 2 nitro (you earn 1 nitro for every right answer). 🔧 Pit stop gives you fresh tires and moves 1. Careful: worn tires can make you spin out! A wrong answer means you cruise 1 space. First car to finish 3 laps wins.',
+start({teams,game}){
+ const $=id=>document.getElementById(id);const LAP=20,LAPS=3,END=LAP*LAPS;const CARS=['🏎️','🚗','🚙','🚕','🚓','🛻'];
+ const C=teams.map(()=>({p:0,tire:100,nitro:0,pits:0,spins:0}));
+ game.innerHTML=`<div class="circuit"><svg viewBox="0 0 900 430" id="svg">
+  <rect x="0" y="0" width="900" height="430" fill="#69B34C"/>
+  <path id="trk" d="M220,70 H680 A145,145 0 0 1 680,360 H220 A145,145 0 0 1 220,70 Z" fill="none" stroke="#495057" stroke-width="86"/>
+  <path d="M220,70 H680 A145,145 0 0 1 680,360 H220 A145,145 0 0 1 220,70 Z" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="18 16"/>
+  <path d="M220,70 H680 A145,145 0 0 1 680,360 H220 A145,145 0 0 1 220,70 Z" fill="none" stroke="#E03131" stroke-width="90" stroke-dasharray="14 14" opacity=".25"/>
+  <rect x="440" y="24" width="20" height="92" fill="url(#chk)"/><defs><pattern id="chk" width="10" height="10" patternUnits="userSpaceOnUse"><rect width="5" height="5" fill="#000"/><rect x="5" y="5" width="5" height="5" fill="#000"/><rect x="5" width="5" height="5" fill="#fff"/><rect y="5" width="5" height="5" fill="#fff"/></pattern></defs>
+  <text x="450" y="215" text-anchor="middle" font-size="40">🏟️</text><text x="450" y="262" text-anchor="middle" font-family="Fredoka,sans-serif" font-weight="700" font-size="22" fill="#fff">PIT LANE 🔧</text>
+  <g id="carsG"></g></svg></div><div class="board" id="board"></div><div class="pl-msg" id="msg"></div><div id="act"></div><div id="ask"></div>`;
+ const trk=$('trk'),L=trk.getTotalLength();
+ function draw(){const g=$('carsG');g.innerHTML='';C.forEach((c,i)=>{const d=((c.p%LAP)/LAP+0.5)%1;const pt=trk.getPointAtLength(d*L),pt2=trk.getPointAtLength((d*L+2)%L);
+   const ang=Math.atan2(pt2.y-pt.y,pt2.x-pt.x);const off=(i-(teams.length-1)/2)*22;const x=pt.x-Math.sin(ang)*off,y=pt.y+Math.cos(ang)*off;
+   g.insertAdjacentHTML('beforeend',`<g transform="translate(${x},${y})"><circle r="21" fill="${teams[i].color}" stroke="#1D2B53" stroke-width="3"/><text text-anchor="middle" dy="9" font-size="26" transform="scale(${Math.cos(ang)<0?1:-1},1)">${CARS[i]}</text></g>`)});
+  const order=C.map((c,i)=>i).sort((a,b)=>C[b].p-C[a].p);
+  $('board').innerHTML=order.map((i,r)=>{const c=C[i];return `<div class="car" style="border-color:${teams[i].color}"><div class="row1"><span>${['🥇','🥈','🥉','4th','5th','6th'][r]} ${CARS[i]} ${Kit.esc(teams[i].name)}</span><span>Lap ${Math.min(LAPS,Math.floor(c.p/LAP)+1)}/${LAPS}</span></div>
+   <small>🛞 Tires ${c.tire}%</small><div class="bar"><i style="width:${c.tire}%;background:${c.tire>60?'#51CF66':c.tire>35?'#FFC93C':'#FF6B5B'}"></i></div><small>🔥 Nitro ${'🔥'.repeat(c.nitro)||'none'}</small></div>`}).join('')}
+ draw();
+ async function drive(i,steps){const c=C[i];const before=Math.floor(c.p/LAP);for(let k=0;k<steps&&c.p<END;k++){c.p++;draw();Kit.tone(300+k*40,.06,'sawtooth',.06);await Kit.sleep(140)}
+  if(Math.floor(c.p/LAP)>before&&c.p<END)Play.banner(`🏁 ${teams[i].name} starts lap ${Math.floor(c.p/LAP)+1}!`)}
+ const choose=i=>new Promise(res=>{const c=C[i];$('act').innerHTML=`<div class="card center"><span class="pl-turn" style="background:${teams[i].color}">${Kit.esc(teams[i].name)}</span> your move (🛞 ${c.tire}% · 🔥 ${c.nitro})
+  <div class="moves"><button class="btn" data-m="drive">🏎️ Drive<small>2–4 spaces · −15% tires</small></button><button class="btn red" data-m="nitro" ${c.nitro<2?'disabled':''}>🔥 Nitro<small>6 spaces · uses 2 nitro</small></button><button class="btn white" data-m="pit">🔧 Pit stop<small>fresh tires · 1 space</small></button></div></div>`;
+  $('act').onclick=e=>{const b=e.target.closest('[data-m]:not(:disabled)');if(b){$('act').onclick=null;$('act').innerHTML='';res(b.dataset.m)}}});
+ async function turn(i){const c=C[i];const m=await choose(i);
+  if(m==='pit'){c.tire=100;c.pits++;Play.pop('🔧 Fresh tires!',$('board'),'#fff');Kit.tone(800,.1,'square',.1);Kit.tone(1000,.1,'square',.1,.15);await drive(i,1);return}
+  if(c.tire<35&&Math.random()<.4){c.spins++;c.tire=Math.max(0,c.tire-5);draw();Play.banner(`💫 ${teams[i].name} spun out on worn tires!`);Kit.tone(150,.6,'sawtooth',.2);await Kit.sleep(600);return}
+  if(m==='nitro'){c.nitro-=2;c.tire=Math.max(0,c.tire-25);Play.banner(`🔥 NITRO! ${teams[i].name} blasts ahead!`);await drive(i,6);return}
+  const r=await rollDie(2,4,'🏎️ Drive');c.tire=Math.max(0,c.tire-15);await drive(i,r)}
+ async function round(){$('msg').textContent='';const right=await Play.ask($('ask'),teams.map(t=>t.i),{goWord:'Race!'});
+  right.forEach(i=>{C[i].nitro=Math.min(4,C[i].nitro+1+(Play.streak[i]>=3?1:0))});draw();
+  for(const i of teams.map(t=>t.i)){if(right.includes(i))await turn(i);else{C[i].tire=Math.max(0,C[i].tire-5);await drive(i,1)}
+   if(C[i].p>=END){Kit.confetti();return Play.podium('🏁',`${teams[i].name} takes the checkered flag!`,C.map(c=>c.p),{'🔧 Pit stops':C.map(c=>c.pits),'💫 Spins':C.map(c=>c.spins)})}}
+  setTimeout(round,1100)}
+ round()}});
+
 </script>
 </body></html>

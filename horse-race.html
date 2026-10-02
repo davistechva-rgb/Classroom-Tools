@@ -6,13 +6,57 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="kit.css">
-<title>Horse Race</title></head>
+<title>Horse Race</title>
+<style>.dice-pop{position:fixed;left:50%;top:40%;transform:translate(-50%,-50%);z-index:55;background:#fff;border:5px solid var(--ink);border-radius:22px;box-shadow:6px 6px 0 var(--ink);padding:10px 24px;text-align:center;font-weight:800;pointer-events:none}
+.dice-pop .d{font-size:4rem;line-height:1}
+.track{border:5px solid var(--ink);border-radius:24px;box-shadow:6px 6px 0 var(--ink);overflow:hidden;background:#5DB453}
+.stands{background:repeating-linear-gradient(90deg,#E03131 0 40px,#fff 40px 80px);height:26px;border-bottom:4px solid var(--ink);display:flex;align-items:center;justify-content:space-around;font-size:1.1rem}
+.lane{position:relative;display:grid;grid-template-columns:repeat(21,1fr);border-bottom:3px dashed #ffffff88;background:#C9A26B}
+.lane:nth-child(odd){background:#BF955C}
+.lane .sp{height:clamp(54px,10vh,84px);display:grid;place-items:center;font-size:clamp(.8rem,2.4vh,1.5rem);border-right:1px solid #00000014}
+.lane .sp.fin{background:repeating-conic-gradient(#fff 0 25%,#1D2B53 0 50%) 0 0/14px 14px}
+.lane .nm{position:absolute;left:4px;top:2px;font-size:.7rem;font-weight:800;background:#fff;border:2px solid var(--ink);border-radius:99px;padding:0 6px;z-index:2}
+.horse{position:absolute;top:50%;font-size:clamp(2rem,6vh,3.2rem);transform:translate(-50%,-50%) scaleX(-1);transition:left .9s cubic-bezier(.3,1.2,.5,1);z-index:3;line-height:1}
+.horse.run{animation:gallop .25s 4}@keyframes gallop{50%{margin-top:-8px}}
+.horse.trip{animation:trip .8s}@keyframes trip{40%{transform:translate(-50%,-50%) scaleX(-1) rotate(30deg)}}
+.stam{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:10px 0}.stam span{border:3px solid var(--ink);border-radius:99px;padding:2px 12px;font-weight:700;background:#fff}
+.moves{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:10px 0}.moves .btn small{display:block;font-size:.72rem;font-weight:600}</style></head>
 <body>
 <main></main>
 <script src="kit.js"></script>
-<script src="review.js"></script>
+<script src="play.js"></script>
 <script>
 Kit.mount("🐎", "Horse Race");
-Review.start({"mode": "race", "racer": "🏇", "finish": "🏆", "flip": true, "stage": "#CDEFC2", "lane": "#E9F9DF", "winText": "First across the finish line!", "how": "Split into teams. Read a question, show the answer, then tap every team that got it right. Each right answer moves that team one space. First to the finish wins!", "goal": 10});
+async function rollDie(lo,hi,label){const box=document.createElement('div');box.className='dice-pop';box.innerHTML=`<div>${label||'Rolling…'}</div><div class="d">🎲</div>`;document.body.appendChild(box);
+ const faces=['⚀','⚁','⚂','⚃','⚄','⚅'];let v;for(let k=0;k<12;k++){v=Kit.rand(lo,hi);box.querySelector('.d').textContent=faces[v-1]||v;Kit.tick();await Kit.sleep(55+k*8)}
+ Kit.ding();await Kit.sleep(650);box.remove();return v}
+Play.setup({defTeams:3,how:'Place your bets and race to the finish! Every team that answers right picks a speed. 🐴 Trot rolls 1–3 and rests your horse. 🏇 Gallop rolls 2–6 but costs 1 stamina, and 🔥 Sprint rolls 4–8 but costs 2. The 🚧 hurdles are tricky: gallop or sprint over one and you might clip it and fall back. A wrong answer means your horse rests and gets back 1 stamina. First horse across the finish line wins!',
+start({teams,game}){
+ const $=id=>document.getElementById(id);const LEN=20,HURDLES=[5,10,15],WATER=13;
+ const Hs=teams.map(()=>({pos:0,st:4,falls:0,rolled:0}));
+ game.innerHTML=`<div class="track"><div class="stands">🧑‍🤝‍🧑 📣 👒 🎩 🧑‍🤝‍🧑 📣 👒 🎩 🧑‍🤝‍🧑</div><div id="lanes">${teams.map((t,i)=>`<div class="lane" id="ln${i}"><span class="nm" style="background:${t.color}">${Kit.esc(t.name)}</span>
+  ${Array.from({length:LEN+1},(_,k)=>`<div class="sp ${k===LEN?'fin':''}">${HURDLES.includes(k)?'🚧':k===WATER?'💧':k===0?'🚪':''}</div>`).join('')}<div class="horse" id="hs${i}">🏇</div></div>`).join('')}</div></div>
+  <div class="stam" id="stam"></div><div class="pl-msg" id="msg"></div><div id="act"></div><div id="ask"></div>`;
+ const place=i=>{$('hs'+i).style.left=`calc(${(Hs[i].pos+.5)/(LEN+1)*100}%)`};teams.forEach((_,i)=>place(i));
+ const stam=()=>$('stam').innerHTML=teams.map((t,i)=>`<span style="border-color:${t.color}">${Kit.esc(t.name)} · ${'⚡'.repeat(Hs[i].st)}${'·'.repeat(Math.max(0,6-Hs[i].st))} · space ${Hs[i].pos}/${LEN}</span>`).join('');stam();
+ const choose=i=>new Promise(res=>{const h=Hs[i];$('act').innerHTML=`<div class="card center"><span class="pl-turn" style="background:${teams[i].color}">${Kit.esc(teams[i].name)}</span> pick a speed
+  <div class="moves"><button class="btn white" data-m="trot">🐴 Trot<small>roll 1–3 · +1 stamina</small></button><button class="btn" data-m="gallop" ${h.st<1?'disabled':''}>🏇 Gallop<small>roll 2–6 · −1 stamina</small></button><button class="btn red" data-m="sprint" ${h.st<2?'disabled':''}>🔥 Sprint<small>roll 4–8 · −2 stamina</small></button></div></div>`;
+  $('act').onclick=e=>{const b=e.target.closest('[data-m]:not(:disabled)');if(b){$('act').onclick=null;$('act').innerHTML='';res(b.dataset.m)}}});
+ async function run(i){const h=Hs[i];const m=await choose(i);let roll;
+  if(m==='trot'){roll=await rollDie(1,3,'🐴 Trot');h.st=Math.min(6,h.st+1)}else if(m==='gallop'){roll=await rollDie(2,6,'🏇 Gallop');h.st--}else{roll=await rollDie(4,8,'🔥 Sprint');h.st-=2}
+  h.rolled+=roll;let target=Math.min(LEN,h.pos+roll);const crossed=[...HURDLES,WATER].filter(x=>x>h.pos&&x<=target);let fell=false;
+  for(const x of crossed){const risk=m==='trot'?0:m==='gallop'?.25:.45;if(Math.random()<risk){target=x-1;fell=true;h.falls++;break}}
+  const el=$('hs'+i);el.classList.remove('run','trip');void el.offsetWidth;el.classList.add('run');h.pos=target;place(i);
+  for(let k=0;k<4;k++)Kit.tone(240+k*30,.06,'square',.08,k*.18);await Kit.sleep(950);
+  if(fell){el.classList.add('trip');Kit.tone(130,.4,'sawtooth',.2);Play.pop('Clipped it!',el,'#FF6B5B');$('msg').textContent=`${teams[i].name} clipped an obstacle and stopped short!`;await Kit.sleep(700)}
+  else $('msg').textContent=`${teams[i].name} moves ${roll}!`;stam()}
+ async function round(){$('msg').textContent='And they\'re off!';const right=await Play.ask($('ask'),teams.map(t=>t.i),{goWord:'Race!'});
+  teams.forEach((t,i)=>{if(!right.includes(i)){Hs[i].st=Math.min(6,Hs[i].st+1)}});stam();
+  for(const i of right){await run(i);if(Hs[i].pos>=LEN)break}
+  const fin=Hs.map((h,i)=>h.pos>=LEN?i:-1).filter(i=>i>=0);
+  if(fin.length){Kit.confetti();return Play.podium('🏆',`${teams[fin[0]].name} wins the race!`,Hs.map(h=>h.pos),{'🎲 Spaces rolled':Hs.map(h=>h.rolled),'💥 Stumbles':Hs.map(h=>h.falls)})}
+  setTimeout(round,1200)}
+ round()}});
+
 </script>
 </body></html>

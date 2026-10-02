@@ -6,13 +6,81 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="kit.css">
-<title>Castle Defense</title></head>
+<title>Castle Defense</title>
+<style>.field{border:5px solid var(--ink);border-radius:24px;box-shadow:6px 6px 0 var(--ink);overflow:hidden;background:#7CB86A}
+.top{}
+.hud{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:10px}.hud span{border:3px solid var(--ink);border-radius:99px;padding:3px 12px;font-weight:700;background:#fff}
+.lane{display:grid;grid-template-columns:clamp(60px,9vw,96px) repeat(10,1fr);border-bottom:4px solid #5A8F4C;position:relative}
+.lane:last-child{border-bottom:0}
+.wall{background:repeating-linear-gradient(0deg,#ADB5BD 0 14px,#868E96 14px 16px),#ADB5BD;display:grid;place-items:center;font-size:2rem;border-right:5px solid var(--ink)}
+.sq{aspect-ratio:1;display:grid;place-items:center;position:relative;font-size:clamp(1.3rem,3.6vh,2.1rem);background:#E9C46A}
+.sq.grass{background:#8BC97A}
+.sq.slot{background:#B1E09F;box-shadow:inset 0 0 0 3px #4E8A3E;cursor:default}
+.field.build .sq.slot{cursor:pointer;animation:glow 1.2s infinite}@keyframes glow{50%{box-shadow:inset 0 0 0 3px #4E8A3E,0 0 0 4px #FFC93C}}
+.tower{position:relative;line-height:1}.tower sup{position:absolute;top:-6px;right:-10px;font-size:.45em;background:#fff;border:2px solid var(--ink);border-radius:99px;padding:0 4px;font-weight:800}
+.en{position:absolute;inset:0;display:grid;place-items:center;transition:transform .5s}.en small{position:absolute;bottom:0;font-size:.4em;font-weight:800;background:#fff;border:2px solid var(--ink);border-radius:99px;padding:0 4px}
+.en.slow{filter:hue-rotate(180deg) saturate(.6)}
+.en.hit{animation:eh .3s}@keyframes eh{50%{transform:scale(1.3);filter:brightness(2)}}
+.shot{position:fixed;font-size:1.3rem;z-index:50;pointer-events:none}
+.shop{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:10px 0}
+.shop .btn small{display:block;font-size:.72rem;font-weight:600}.shop .btn.on{outline:5px solid var(--ink);outline-offset:2px}</style></head>
 <body>
 <main></main>
 <script src="kit.js"></script>
-<script src="review.js"></script>
+<script src="play.js"></script>
 <script>
 Kit.mount("🏰", "Castle Defense");
-Review.start({"mode": "boss", "boss": "👹", "bossName": "The Ogre Army", "attack": "🏹", "stage": "#DDE7F5", "goal": 20, "bossAttack": "The ogres hit the castle walls!", "winTitle": "The castle is safe!", "loseTitle": "The ogres broke through!", "how": "The whole class defends the castle! Every right answer fires an arrow at the ogre army. If nobody gets it right, the ogres hit the walls and you lose a heart. Drive them away before your 5 hearts are gone!", "finish": "🏆"});
+
+Play.setup({defTeams:3,how:'Monsters are marching on your castle in 6 waves! Every right answer earns 🪙 gold for the kingdom (more on a streak). Spend gold to build towers on the green squares. 🏹 Archers shoot far, 💣 Cannons hit hard and splash, and ❄️ Ice towers slow monsters down. Tap a tower to upgrade it (up to level 3). Then send the wave: monsters that reach the wall damage it. Survive all 6 waves to win!',
+start({teams,game}){
+ const $=id=>document.getElementById(id);const L=3,C=10;const SLOTS=[[0,1],[0,4],[0,7],[1,2],[1,5],[1,8],[2,1],[2,4],[2,7]];
+ const T={archer:{ic:'🏹',cost:3,name:'Archer',d:'1 dmg, long range'},cannon:{ic:'💣',cost:5,name:'Cannon',d:'2 dmg + splash'},ice:{ic:'❄️',cost:4,name:'Ice',d:'slows monsters'}};
+ const M={goblin:{ic:'👺',hp:2,sp:1},orc:{ic:'👹',hp:4,sp:1},bat:{ic:'🦇',hp:1,sp:2},troll:{ic:'🧌',hp:8,sp:1},boss:{ic:'🐲',hp:16,sp:1}};
+ const WAVES=[['goblin','goblin','goblin'],['goblin','goblin','bat','bat'],['orc','goblin','orc','bat','goblin'],['orc','orc','bat','bat','troll'],['troll','orc','orc','bat','bat','goblin','goblin'],['boss','troll','orc','orc','bat','bat']];
+ let gold=4,wall=15,wave=0,mons=[],towers={};const earned=teams.map(()=>0),built=teams.map(()=>0);let kills=0;
+ game.innerHTML=`<div class="hud" id="hud"></div><div class="field" id="field">${Array.from({length:L},(_,r)=>`<div class="lane"><div class="wall">🏰</div>${Array.from({length:C},(_,c)=>`<div class="sq ${SLOTS.some(s=>s[0]===r&&s[1]===c)?'slot':((r+c)%3?'':'grass')}" id="q${r}-${c}" data-r="${r}" data-c="${c}"></div>`).join('')}</div>`).join('')}</div>
+  <div class="pl-msg" id="msg"></div><div id="act"></div><div id="ask"></div>`;
+ const hud=()=>$('hud').innerHTML=`<span>🌊 Wave ${Math.min(wave+1,6)} of 6</span><span>🪙 ${gold} gold</span><span>🧱 Wall ${'❤️'.repeat(Math.ceil(wall/3))} ${wall}/15</span><span>☠️ ${kills} defeated</span>`;
+ function drawTowers(){SLOTS.forEach(([r,c])=>{const t=towers[r+'-'+c];$(`q${r}-${c}`).innerHTML=t?`<span class="tower">${T[t.k].ic}${t.lv>1?`<sup>${t.lv}</sup>`:''}</span>`:''})}
+ function drawMons(){document.querySelectorAll('.en').forEach(e=>e.remove());mons.forEach(m=>{if(m.hp<=0||m.c>=C)return;const sq=$(`q${m.r}-${Math.max(0,m.c)}`);if(!sq||m.c<0)return;
+  sq.insertAdjacentHTML('beforeend',`<div class="en ${m.slow?'slow':''}" id="m${m.id}">${M[m.k].ic}<small>${m.hp}</small></div>`)})}
+ hud();drawTowers();
+ function zap(from,to,ic){return new Promise(res=>{const a=from.getBoundingClientRect(),b=to.getBoundingClientRect();const s=document.createElement('div');s.className='shot';s.textContent=ic;document.body.appendChild(s);
+  s.animate([{left:a.left+a.width/2-10+'px',top:a.top+5+'px'},{left:b.left+b.width/2-10+'px',top:b.top+b.height/2-10+'px'}],{duration:260}).onfinish=()=>{s.remove();res()}})}
+ async function shop(){$('field').classList.add('build');let pick='archer';
+  $('act').innerHTML=`<div class="card center"><b>🔨 Build phase</b> · 🪙 <span id="g">${gold}</span> gold. Pick a tower, then tap a green square. Tap a tower to upgrade it.
+   <div class="shop">${Object.entries(T).map(([k,t])=>`<button class="btn white ${k===pick?'on':''}" data-k="${k}">${t.ic} ${t.name} · ${t.cost}🪙<small>${t.d}</small></button>`).join('')}</div>
+   <button class="btn big red" id="sendW">⚔️ Send wave ${wave+1}!</button></div>`;
+  $('act').onclick=e=>{const b=e.target.closest('[data-k]');if(b){pick=b.dataset.k;$('act').querySelectorAll('[data-k]').forEach(x=>x.classList.toggle('on',x===b))}};
+  $('field').onclick=e=>{const sq=e.target.closest('.sq.slot');if(!sq)return;const key=sq.dataset.r+'-'+sq.dataset.c;const t=towers[key];
+   if(t){const cost=T[t.k].cost;if(t.lv>=3){$('msg').textContent='That tower is already max level!';return}if(gold<cost){$('msg').textContent=`Upgrading costs ${cost} gold.`;Kit.tone(150,.2,'sawtooth',.1);return}gold-=cost;t.lv++;Play.pop('⬆️ Level '+t.lv,sq,'#FFE066')}
+   else{const cost=T[pick].cost;if(gold<cost){$('msg').textContent=`You need ${cost} gold for a ${T[pick].name}.`;Kit.tone(150,.2,'sawtooth',.1);return}gold-=cost;towers[key]={k:pick,lv:1};Play.pop(T[pick].ic+' built!',sq,'#fff')}
+   Kit.ding();drawTowers();hud();$('g').textContent=gold};
+  await new Promise(res=>$('sendW').onclick=res);$('field').classList.remove('build');$('field').onclick=null;$('act').innerHTML=''}
+ async function fight(){let id=0;mons=WAVES[wave].map((k,j)=>({id:id++,k,hp:M[k].hp+Math.floor(wave/2),max:M[k].hp,r:Kit.rand(0,L-1),c:C+Math.floor(j/2)*2+(j%2),slow:false}));
+  Play.banner(`🌊 Wave ${wave+1}: ${WAVES[wave].length} monsters!`);await Kit.sleep(900);
+  for(let step=0;step<40;step++){
+   // towers fire at the closest monster in their lane within range
+   for(const [key,t] of Object.entries(towers)){const [r,c]=key.split('-').map(Number);const range=t.k==='archer'?5:3;
+    const tg=mons.filter(m=>m.hp>0&&m.r===r&&m.c>=0&&m.c<C&&Math.abs(m.c-c)<=range).sort((a,b)=>a.c-b.c)[0];if(!tg)continue;
+    await zap($(`q${r}-${c}`),$(`q${tg.r}-${tg.c}`),t.k==='archer'?'➶':t.k==='cannon'?'⚫':'❄️');
+    if(t.k==='ice'){tg.slow=true;tg.hp-=t.lv>=3?1:0}else{tg.hp-=t.k==='cannon'?2*t.lv:t.lv;if(t.k==='cannon')mons.filter(m=>m!==tg&&m.r===r&&Math.abs(m.c-tg.c)<=1&&m.hp>0).forEach(m=>m.hp-=t.lv)}
+    if(tg.hp<=0){kills++;Kit.tone(500,.1,'square',.1)}else Kit.tick();drawMons();hud()}
+   // monsters move
+   for(const m of mons){if(m.hp<=0||m.c<0)continue;const sp=m.slow?Math.max(1,M[m.k].sp-1)*(step%2):M[m.k].sp;m.c-=sp;m.slow=false;
+    if(m.c<0){wall-=m.k==='boss'?5:m.k==='troll'?3:1;m.hp=0;Kit.tone(90,.4,'sawtooth',.25);Play.pop('💥 Wall hit!',$('field'),'#FF6B5B');if(wall<=0)break}}
+   drawMons();hud();await Kit.sleep(420);
+   if(wall<=0||mons.every(m=>m.hp<=0))break}
+  mons=[];drawMons()}
+ async function loop(){
+  while(wave<6&&wall>0){
+   $('msg').textContent='Answer to earn gold!';const right=await Play.ask($('ask'),teams.map(t=>t.i),{goWord:'Collect gold!'});
+   right.forEach(i=>{const g=3+(Play.streak[i]>=3?2:0);gold+=g;earned[i]+=g});if(right.length){Kit.tada();Play.pop(`+${right.reduce((s,i)=>s+3+(Play.streak[i]>=3?2:0),0)} 🪙`,$('hud'),'#FFE066')}hud();
+   const r2=await Play.ask($('ask'),teams.map(t=>t.i),{goWord:'Collect gold!'});r2.forEach(i=>{const g=3+(Play.streak[i]>=3?2:0);gold+=g;earned[i]+=g});hud();
+   await shop();await fight();
+   if(wall<=0)break;wave++;if(wave<6)Play.banner(`✅ Wave cleared! +2 bonus gold`);gold+=2;hud()}
+  const won=wall>0;Play.podium(won?'🏰':'💀',won?'The castle is safe!':'The castle has fallen…',earned,{'🧱 Wall left':teams.map(()=>Math.max(0,wall)),'☠️ Defeated':teams.map(()=>kills)})}
+ loop()}});
+
 </script>
 </body></html>

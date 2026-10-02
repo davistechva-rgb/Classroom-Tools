@@ -6,13 +6,59 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="kit.css">
-<title>Archery Challenge</title></head>
+<title>Archery Challenge</title>
+<style>.arc{position:relative;border:5px solid var(--ink);border-radius:24px;box-shadow:6px 6px 0 var(--ink);overflow:hidden;touch-action:none;background:#000}
+.arc canvas{display:block;width:100%;height:auto}
+.arc .over{position:absolute;inset:0;display:grid;place-items:center;background:rgba(11,16,38,.5);z-index:2}.arc .over .card{text-align:center;max-width:520px}
+.keys{text-align:center;font-weight:600;margin-top:8px}.keys kbd{border:2px solid var(--ink);border-radius:6px;padding:0 6px;background:#fff;font-family:inherit}
+.aimbtn{display:flex;justify-content:center;margin-top:10px}</style></head>
 <body>
 <main></main>
 <script src="kit.js"></script>
-<script src="review.js"></script>
+<script src="play.js"></script>
 <script>
 Kit.mount("🏹", "Archery Challenge");
-Review.start({"mode": "grid", "grid": "target", "cover": "🏹", "stage": "#E3F7E6", "lane": "#FFFFFF", "goal": 20, "how": "Each right answer earns an arrow. Pick a square to see where it landed. Bullseyes are worth 10! Most points wins.", "finish": "🏆"});
+
+Play.setup({defTeams:2,how:'Every right answer earns 2 arrows (3 on a streak). To shoot, stop the moving sight twice: first the side-to-side sight, then the up-and-down sight. Tap STOP or press the space bar. Watch the 🚩 wind flag: wind pushes your arrow sideways, so aim against it! The target moves farther away every round. Bullseye = 10 points. Highest score after 5 rounds wins.',
+start({teams,game}){
+ const $=id=>document.getElementById(id);const W=960,H=560;const S=teams.map(()=>({pts:0,arrows:0,bulls:0}));let turn=0,roundNo=1;const ROUNDS=5;
+ game.innerHTML=`<div class="pl-score" id="sc"></div><div class="arc"><canvas id="cv" width="${W}" height="${H}"></canvas></div><div class="aimbtn"><button class="btn big red" id="stop" hidden>🛑 STOP</button></div><div class="keys">Stop the sight: <kbd>Space</kbd> or tap STOP</div><div class="pl-msg" id="msg"></div><div id="ask"></div>`;
+ const cv=$('cv'),g=cv.getContext('2d');let phase='idle',ax=0,ay=0,wind=0,hits=[],t0=performance.now(),arrowsLeft=0,fly=null;
+ const sc=()=>$('sc').innerHTML=teams.map((t,i)=>`<span style="border-color:${t.color};${i===turn?`background:${t.color}`:''}">${Kit.esc(t.name)}: ${S[i].pts}</span>`).join('')+`<span>Round ${Math.min(roundNo,ROUNDS)} of ${ROUNDS} · 📏 ${20+roundNo*10} m</span>`;
+ const tR=()=>Math.max(70,150-roundNo*14);const TX=W/2,TY=H/2-10;
+ function draw(now){const t=(now-t0)/1000;const sky=g.createLinearGradient(0,0,0,H);sky.addColorStop(0,'#A5D8FF');sky.addColorStop(.6,'#E7F5FF');sky.addColorStop(.6,'#8BC97A');sky.addColorStop(1,'#5DB453');g.fillStyle=sky;g.fillRect(0,0,W,H);
+  // trees
+  g.font='44px sans-serif';g.textAlign='center';g.textBaseline='middle';[60,150,820,900].forEach((x,k)=>g.fillText('🌲',x,H*.6-20+(k%2)*10));
+  // target stand + rings
+  const r=tR();g.fillStyle='#8B5E34';g.fillRect(TX-8,TY,16,H*.6-TY+40);
+  [['#fff',1],['#1D2B53',.8],['#339AF0',.6],['#FF6B5B',.4],['#FFD43B',.2]].forEach(([c,f])=>{g.fillStyle=c;g.beginPath();g.arc(TX,TY,r*f,0,6.3);g.fill();g.strokeStyle='#1D2B53';g.lineWidth=2;g.stroke()});
+  hits.forEach(h=>{g.font='26px sans-serif';g.fillText('🏹',h.x+10,h.y-10);g.fillStyle='#1D2B53';g.beginPath();g.arc(h.x,h.y,5,0,6.3);g.fill()});
+  // wind flag
+  g.fillStyle='#fff';g.fillRect(W-140,20,126,56);g.strokeStyle='#1D2B53';g.lineWidth=3;g.strokeRect(W-140,20,126,56);g.fillStyle='#1D2B53';g.font='700 18px Fredoka, sans-serif';
+  g.fillText(`Wind ${wind>0?'→':wind<0?'←':''} ${Math.abs(wind)}`,W-77,40);g.font='26px sans-serif';g.save();g.translate(W-77,62);g.scale(wind<0?-1:1,1);g.fillText('🚩',Math.sin(t*8)*2,0);g.restore();
+  // moving sights
+  const sw=r*1.5;if(phase==='x'){ax=Math.sin(t*(2.2+roundNo*.25))*sw}if(phase==='y'){ay=Math.sin(t*(2.6+roundNo*.25))*sw}
+  if(phase==='x'||phase==='y'){g.strokeStyle='#C92A2A';g.lineWidth=4;g.beginPath();g.moveTo(TX+ax,TY-sw-20);g.lineTo(TX+ax,TY+sw+20);g.stroke();
+   if(phase==='y'){g.beginPath();g.moveTo(TX-sw-20,TY+ay);g.lineTo(TX+sw+20,TY+ay);g.stroke()}}
+  if(fly){const p=Math.min(1,(now-fly.t)/500);const x=fly.sx+(fly.x-fly.sx)*p,y=fly.sy+(fly.y-fly.sy)*p-Math.sin(p*3.14)*80;g.font=`${60-30*p}px sans-serif`;g.fillText('➶',x,y);if(p>=1){const f=fly;fly=null;land(f)}}
+  g.fillStyle='rgba(255,255,255,.95)';g.fillRect(14,H-50,230,38);g.fillStyle='#1D2B53';g.font='700 20px Fredoka, sans-serif';g.textAlign='left';g.fillText(`Arrows: ${'🏹'.repeat(arrowsLeft)}`,24,H-30);g.textAlign='center';
+  requestAnimationFrame(draw)}
+ requestAnimationFrame(draw);
+ function stop(){if(phase==='x'){phase='y';Kit.tick();return}if(phase==='y'){phase='flying';$('stop').hidden=true;Kit.tone(700,.15,'triangle',.15);
+   const x=TX+ax+wind*tR()*0.12,y=TY+ay;fly={sx:W/2,sy:H+20,x,y,t:performance.now()}}}
+ $('stop').onclick=stop;addEventListener('keydown',e=>{if(e.code==='Space'&&(phase==='x'||phase==='y')){e.preventDefault();stop()}});
+ let done;
+ function land(f){const d=Math.hypot(f.x-TX,f.y-TY)/tR();const pts=d<=.2?10:d<=.4?8:d<=.6?6:d<=.8?4:d<=1?2:0;
+  S[turn].pts+=pts;S[turn].arrows++;if(pts===10){S[turn].bulls++;Play.banner('🎯 BULLSEYE!');Kit.tada();Kit.confetti(50)}else pts?Kit.ding():Kit.tone(150,.3,'sine',.15);
+  if(pts)hits.push({x:f.x,y:f.y});const r=cv.getBoundingClientRect();Play.pop(pts?`+${pts}`:'Miss!',[r.left+f.x/W*r.width,r.top+f.y/H*r.height],pts?'#FFE066':'#fff');sc();
+  setTimeout(()=>{arrowsLeft--;if(arrowsLeft>0)shoot();else done()},900)}
+ function shoot(){wind=Kit.rand(-3,3);phase='x';$('stop').hidden=false;$('msg').innerHTML=`<span class="pl-turn" style="background:${teams[turn].color}">${Kit.esc(teams[turn].name)}</span> stop the sight! ${wind?`Wind ${wind>0?'→':'←'} ${Math.abs(wind)}: aim ${wind>0?'left':'right'}!`:'No wind!'}`}
+ async function play(){sc();hits=[];phase='idle';$('msg').textContent='';const r=await Play.ask($('ask'),[turn]);
+  if(r.length){arrowsLeft=Play.streak[turn]>=3?3:2;await new Promise(res=>{done=res;shoot()})}else $('msg').textContent='No arrows this time.';
+  phase='idle';turn=(turn+1)%teams.length;if(turn===0)roundNo++;
+  if(roundNo>ROUNDS)return Play.podium('🏹','Master archers!',S.map(s=>s.pts),{'🏹 Arrows':S.map(s=>s.arrows),'🎯 Bullseyes':S.map(s=>s.bulls)});
+  setTimeout(play,1000)}
+ play()}});
+
 </script>
 </body></html>

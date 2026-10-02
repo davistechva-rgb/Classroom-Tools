@@ -6,13 +6,61 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="kit.css">
-<title>Iceberg Challenge</title></head>
+<title>Iceberg Challenge</title>
+<style>
+.sea{border:5px solid var(--ink);border-radius:24px;box-shadow:6px 6px 0 var(--ink);overflow:hidden;padding:16px;background:repeating-linear-gradient(160deg,#1C7ED6 0 22px,#228BE6 22px 44px)}
+.sun{text-align:right;font-size:2.2rem;margin:-8px 0 -10px}
+.ice{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;max-width:820px;margin:0 auto}
+.tile{aspect-ratio:1;border-radius:14px;display:grid;place-items:center;font-size:clamp(1.2rem,3.4vh,2rem);position:relative;transition:background .4s,transform .4s}
+.tile.s2{background:linear-gradient(135deg,#F8F9FA,#D0EBFF);border:3px solid #A5D8FF;box-shadow:0 4px 0 #74C0FC}
+.tile.s1{background:linear-gradient(135deg,#E7F5FF,#A5D8FF);border:3px dashed #4DABF7}
+.tile.s1::after{content:"";position:absolute;inset:20%;background:linear-gradient(45deg,transparent 46%,#4DABF7 47% 53%,transparent 54%),linear-gradient(-30deg,transparent 46%,#4DABF7 47% 52%,transparent 53%)}
+.tile.s0{background:transparent;border:3px solid transparent;transform:scale(.6)}
+.tile .fish{position:absolute;top:2px;right:4px;font-size:.6em}
+.tile.can{cursor:pointer;outline:4px solid #FFC93C;outline-offset:2px;animation:pulse 1s infinite}@keyframes pulse{50%{outline-color:#fff}}
+.peng{position:relative;z-index:2;line-height:1;text-align:center}.peng b{display:block;font-size:.35em;border:2px solid var(--ink);border-radius:99px;padding:0 4px;color:var(--ink);white-space:nowrap}
+.peng.fall{animation:fall .9s}@keyframes fall{to{transform:translateY(20px) scale(.2) rotate(180deg);opacity:0}}
+.lives{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:10px 0}.lives span{border:3px solid var(--ink);border-radius:99px;padding:2px 12px;font-weight:700;background:#fff}
+.moves{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:10px 0}.moves .btn small{display:block;font-size:.72rem;font-weight:600}</style></head>
 <body>
 <main></main>
 <script src="kit.js"></script>
-<script src="review.js"></script>
+<script src="play.js"></script>
 <script>
 Kit.mount("🧊", "Iceberg Challenge");
-Review.start({"mode": "race", "racer": "🐧", "finish": "🐟", "stage": "#DDF6FC", "lane": "#F4FCFF", "flip": true, "winText": "The first penguin reached the fish!", "how": "Penguins hop from iceberg to iceberg. Each right answer moves your penguin one hop. First penguin to the fish wins!", "goal": 10});
+
+Play.setup({defTeams:3,how:'The sun is melting the ice! Each team is a penguin with 2 lives. Every right answer lets your penguin either 🐧 hop up to 2 tiles (grab 🐟 fish on the way!) or 🧊 freeze a cracked or melted tile next to you back into solid ice. After everyone moves, the sun melts more ice, and cracked ice ➜ water. Fall in and you lose a life. Every 3 fish earns a life back. Last penguin standing, or the most fish after 10 rounds, wins!',
+start({teams,game}){
+ const $=id=>document.getElementById(id);const C=8,R=5,N=C*R;const ice=Array(N).fill(2);const fish=new Set();
+ const starts=Kit.shuffle([...Array(N).keys()]);const P=teams.map((t,i)=>({at:starts[i],lives:2,fish:0,out:false,falls:0}));
+ const addFish=()=>{const free=[...Array(N).keys()].filter(k=>ice[k]>0&&!fish.has(k)&&!P.some(p=>p.at===k));Kit.shuffle(free).slice(0,3).forEach(k=>fish.add(k))};addFish();let roundNo=1;
+ game.innerHTML=`<div class="sea"><div class="sun" id="sun">☀️</div><div class="ice" id="ice"></div></div><div class="lives" id="lv"></div><div class="pl-msg" id="msg"></div><div id="act"></div><div id="ask"></div>`;
+ function draw(can=[]){$('ice').innerHTML=Array.from({length:N},(_,k)=>{const p=P.findIndex(x=>!x.out&&x.at===k);return `<div class="tile s${ice[k]} ${can.includes(k)?'can':''}" data-k="${k}">${fish.has(k)&&ice[k]>0?'<span class="fish">🐟</span>':''}${p>=0?`<span class="peng" id="pg${p}">🐧<b style="background:${teams[p].color}">${Kit.esc(teams[p].name)}</b></span>`:''}</div>`}).join('');
+  $('lv').innerHTML=teams.map((t,i)=>`<span style="border-color:${t.color};opacity:${P[i].out?.4:1}">${Kit.esc(t.name)} · ${P[i].out?'💦 out':'❤️'.repeat(P[i].lives)} · 🐟 ${P[i].fish}</span>`).join('')+`<span>Round ${roundNo} of 10</span>`}
+ draw();
+ const nb=(k,d)=>{const r=Math.floor(k/C),c=k%C,out=[];for(let dr=-d;dr<=d;dr++)for(let dc=-d;dc<=d;dc++){if(Math.abs(dr)+Math.abs(dc)<1||Math.abs(dr)+Math.abs(dc)>d)continue;const rr=r+dr,cc=c+dc;if(rr>=0&&rr<R&&cc>=0&&cc<C)out.push(rr*C+cc)}return out};
+ const pickTile=(can)=>new Promise(res=>{draw(can);$('ice').onclick=e=>{const t=e.target.closest('.tile.can');if(t){$('ice').onclick=null;res(+t.dataset.k)}}});
+ const alive=()=>P.map((p,i)=>p.out?-1:i).filter(i=>i>=0);
+ async function act(i){const p=P[i];const hops=nb(p.at,2).filter(k=>ice[k]>0&&!P.some((q,j)=>j!==i&&!q.out&&q.at===k));const fixes=nb(p.at,1).filter(k=>ice[k]<2);
+  const m=await new Promise(res=>{$('act').innerHTML=`<div class="card center"><span class="pl-turn" style="background:${teams[i].color}">${Kit.esc(teams[i].name)}</span> what will your penguin do?
+   <div class="moves"><button class="btn" data-m="hop" ${hops.length?'':'disabled'}>🐧 Hop<small>up to 2 tiles</small></button><button class="btn" data-m="fix" style="background:#A5D8FF" ${fixes.length?'':'disabled'}>🧊 Freeze<small>repair ice next to you</small></button></div></div>`;
+   $('act').onclick=e=>{const b=e.target.closest('[data-m]:not(:disabled)');if(b){$('act').onclick=null;$('act').innerHTML='';res(b.dataset.m)}};if(!hops.length&&!fixes.length){$('act').innerHTML='';res('none')}});
+  if(m==='hop'){$('msg').textContent='Tap a glowing tile to hop there.';const k=await pickTile(hops);p.at=k;Kit.tone(600,.1,'triangle',.15);
+   if(fish.has(k)){fish.delete(k);p.fish++;Play.pop('+1 🐟',$('ice').children[k],'#fff');Kit.ding();if(p.fish%3===0&&p.lives<3){p.lives++;Play.banner(`🐟🐟🐟 ${teams[i].name} gets a life back!`)}}}
+  if(m==='fix'){$('msg').textContent='Tap a glowing tile to freeze it solid.';const k=await pickTile(fixes);ice[k]=2;Kit.tone(1000,.15,'sine',.15);Play.pop('🧊 Frozen!',$('ice').children[k],'#fff')}
+  $('msg').textContent='';draw()}
+ async function melt(){$('sun').textContent='🌞';Kit.tone(300,.5,'sine',.1);const count=3+roundNo;const solid=[...Array(N).keys()].filter(k=>ice[k]>0);
+  for(const k of Kit.shuffle(solid).slice(0,count)){ice[k]--;}draw();await Kit.sleep(700);
+  for(const i of alive()){const p=P[i];if(ice[p.at]===0){p.lives--;p.falls++;const el=$('pg'+i);el&&el.classList.add('fall');Kit.tone(160,.5,'sine',.25);await Kit.sleep(900);
+    if(p.lives<=0){p.out=true;Play.banner(`💦 ${teams[i].name} is out!`)}else{const safe=[...Array(N).keys()].filter(k=>ice[k]===2&&!P.some(q=>!q.out&&q.at===k));p.at=safe.length?Kit.pick(safe):p.at;Play.banner(`💦 ${teams[i].name} fell in! A friendly seal pushes them back up`)}
+    draw()}}
+  if(roundNo%2===0)addFish();$('sun').textContent='☀️';draw()}
+ async function round(){$('msg').textContent='';const right=await Play.ask($('ask'),alive(),{goWord:'Move!'});
+  for(const i of right)await act(i);await melt();
+  const a=alive();if(a.length<=1||roundNo>=10){const sc=P.map(p=>p.fish+(p.out?0:5)+p.lives);
+   return Play.podium('🐧',a.length===1?`${teams[a[0]].name} is the last penguin standing!`:a.length?'The ice survivors!':'Everyone fell in!',sc,{'🐟 Fish':P.map(p=>p.fish),'💦 Falls':P.map(p=>p.falls)})}
+  roundNo++;draw();setTimeout(round,1100)}
+ round()}});
+
 </script>
 </body></html>

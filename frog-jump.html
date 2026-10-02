@@ -6,13 +6,103 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="kit.css">
-<title>Frog Jump</title></head>
+<title>Frog Jump</title>
+<style>.fj{position:relative;height:min(66vh,620px);border:5px solid var(--ink);border-radius:24px;overflow:hidden;box-shadow:6px 6px 0 var(--ink);background:#2F95C8;user-select:none}
+.fj .row{position:absolute;left:0;right:0}
+.fj .bank{background:#7CCB6A;background-image:radial-gradient(#5DB453 2px,transparent 3px);background-size:22px 22px}
+.fj .island{background:#8BD17A;background-image:radial-gradient(#6CBF5C 2px,transparent 3px);background-size:18px 18px;border-top:3px solid #4E9A3F;border-bottom:3px solid #4E9A3F}
+.fj .island::after{content:"🚩 Checkpoint";position:absolute;right:8px;top:50%;transform:translateY(-50%);font-weight:700;font-size:.8rem;background:#fff;border:2px solid var(--ink);border-radius:99px;padding:0 8px}
+.fj .goal{background:#F2D98C;background-image:radial-gradient(#E6C76A 1.5px,transparent 2px);background-size:14px 14px}
+.fj .goal::after{content:"🏖️ Beach";position:absolute;right:8px;top:50%;transform:translateY(-50%);font-weight:700;font-size:.8rem;background:#fff;border:2px solid var(--ink);border-radius:99px;padding:0 8px}
+.fj .water{background:linear-gradient(180deg,#2F95C8,#3BA6D8);overflow:hidden}
+.fj .water::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(100deg,transparent 0 30px,rgba(255,255,255,.12) 30px 34px,transparent 34px 70px);animation:flow var(--fs,6s) linear infinite}
+@keyframes flow{to{transform:translateX(var(--fd,70px))}}
+.fj .pad{position:absolute;top:10%;height:80%;display:grid;place-items:center;font-size:clamp(1rem,3vh,1.6rem)}
+.fj .pad.lily{background:radial-gradient(circle at 50% 50%,#86E05F 0 52%,#4CAF50 53%);border-radius:50%;border:3px solid #2E7D32;clip-path:polygon(0 0,46% 0,50% 45%,54% 0,100% 0,100% 100%,0 100%)}
+.fj .pad.log{background:linear-gradient(180deg,#A0703F,#7B5229);border:3px solid #4E3218;border-radius:14px;box-shadow:inset 0 0 0 4px #8B5E34}
+.fj .pad.turtle{background:none;font-size:clamp(1.4rem,4vh,2.2rem);transition:opacity .4s,transform .4s}.fj .pad.turtle.under{opacity:.25;transform:scale(.7)}
+.fj .pad.croc{background:none;font-size:clamp(1.8rem,5vh,2.8rem)}
+.fj .pad .fly{position:absolute;top:-30%;font-size:.9em;animation:buzz .6s infinite alternate}@keyframes buzz{to{transform:translate(4px,-3px)}}
+.fj .frog{position:absolute;font-size:clamp(1.6rem,4.6vh,2.6rem);transform:translate(-50%,-50%);z-index:3;line-height:1;text-align:center;transition:top .4s cubic-bezier(.3,1.5,.5,1)}
+.fj .frog b{display:block;font-size:.38em;border:2px solid var(--ink);border-radius:99px;padding:0 6px;white-space:nowrap;color:var(--ink)}
+.fj .frog.hop span{display:inline-block;animation:hop .4s}@keyframes hop{50%{transform:scale(1.6) translateY(-10px)}}
+.fj .frog.splash{animation:splash .9s}@keyframes splash{50%{transform:translate(-50%,-50%) scale(.1) rotate(200deg);opacity:.1}}
+.fj .frog.active b{animation:pulse 1s infinite}@keyframes pulse{50%{box-shadow:0 0 0 5px #fff}}
+.fj .reed{position:absolute;bottom:0;font-size:1.3rem;pointer-events:none}
+.jumpbar{display:flex;justify-content:center;gap:12px;margin-top:12px;flex-wrap:wrap;align-items:center}
+.jt{width:160px;height:12px;border:3px solid var(--ink);border-radius:99px;background:#fff;overflow:hidden}.jt i{display:block;height:100%;background:var(--grass)}
+.fj-legend{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;font-weight:600;margin-top:8px;font-size:.95rem}</style></head>
 <body>
 <main></main>
 <script src="kit.js"></script>
-<script src="review.js"></script>
+<script src="play.js"></script>
 <script>
 Kit.mount("🐸", "Frog Jump");
-Review.start({"mode": "race", "racer": "🐸", "finish": "🪷", "stage": "#CFEFD9", "lane": "#BFE7F2", "winText": "First frog to the lily pad!", "how": "Split into teams. Read a question, show the answer, then tap every team that got it right. Each right answer moves that team one space. First to the finish wins!", "goal": 10});
+
+Play.setup({how:'Hop across two rivers to the beach! Answer right to earn a jump, then tap JUMP (or press the space bar) when something safe is under your frog. 🪷 Lily pads and 🪵 logs are safe. 🐢 Turtles dive underwater sometimes, so only land on one that is up (they stay up while you ride them). 🐊 Crocodiles bite! Land on a 🪰 fly to eat it: 2 flies lets you Super Jump two rows at once. Fall in and you swim back to your last 🚩 checkpoint.',
+start({teams,game}){
+ // rows: 0 start bank, 1-3 river, 4 island checkpoint, 5-7 river, 8 beach
+ const ROWS=9,ISLAND=4,GOAL=8;const n=teams.length;
+ const kind=r=>r===0?'bank':r===ISLAND?'island':r===GOAL?'goal':'water';
+ game.innerHTML=`<div class="pl-score" id="sc"></div><div class="fj" id="riv"></div>
+  <div class="fj-legend"><span>🪷 Lily pad: safe</span><span>🪵 Log: safe</span><span>🐢 Turtle: safe when up</span><span>🐊 Croc: danger!</span><span>🪰 Fly: 2 = Super Jump</span></div>
+  <div class="pl-msg" id="msg"></div><div class="jumpbar" id="jb"></div><div id="ask"></div>`;
+ const $=id=>document.getElementById(id),riv=$('riv');const rh=100/ROWS;const rowTop=r=>(ROWS-1-r)*rh;
+ riv.innerHTML=Array.from({length:ROWS},(_,r)=>`<div class="row ${kind(r)}" style="top:${rowTop(r)}%;height:${rh}%;--fs:${4+r%3*2}s;--fd:${r%2?70:-70}px" id="row${r}"></div>`).join('')
+  +['🌾','🌿','🌾'].map((e,k)=>`<span class="reed" style="left:${8+k*40}%;bottom:${rh*0.1}%">${e}</span>`).join('');
+ // build each river row: a mix of lily pads, logs, turtles and the odd crocodile
+ const lanes={};
+ for(let r=1;r<GOAL;r++){if(kind(r)!=='water')continue;const lvl=r>ISLAND?2:1;
+  const type=Kit.pick(lvl===1?['lily','lily','log','turtle']:['lily','log','turtle','turtle']);
+  const items=type==='log'?[{t:'log',w:24,base:5},{t:'log',w:24,base:55}]:[{t:type,w:12,base:6},{t:type,w:12,base:36},{t:type,w:12,base:66}];
+  if(Math.random()<(lvl===2?.5:.25)){const ci=Kit.rand(0,items.length-1);items[ci]={t:'croc',w:13,base:items[ci].base}}
+  items.forEach((it,k)=>{it.fly=Math.random()<.3;it.phase=Math.random()*6});
+  lanes[r]={speed:(0.07+r*0.012+(lvl-1)*0.03)*(r%2?1:-1),phase:Math.random(),span:100-Math.max(...items.map(i=>i.base+i.w))+Math.min(...items.map(i=>i.base))-2,items};
+  $('row'+r).innerHTML=items.map(it=>`<div class="pad ${it.t}" style="width:${it.w}%">${it.t==='turtle'?'🐢🐢':it.t==='croc'?'🐊':''}${it.fly?'<span class="fly">🪰</span>':''}</div>`).join('')}
+ const off=(r,t)=>{const L=lanes[r];const u=((L.phase+L.speed*t)%2+2)%2;return (u<1?u:2-u)*L.span-Math.min(...L.items.map(i=>i.base))+1};
+ const itemX=(r,k,t)=>{const it=lanes[r].items[k];return it.base+off(r,t)+it.w/2};
+ const turtleUp=(r,k,t)=>F.some(f=>f.row==r&&f.ride===k)||Math.sin(t*0.9+lanes[r].items[k].phase)>-0.35; // a turtle never dives while a frog is riding it
+ const F=teams.map((tm,i)=>({row:0,x:(i+1)*100/(n+1),home:(i+1)*100/(n+1),ride:-1,check:0,flies:0,splashes:0,best:0}));
+ riv.insertAdjacentHTML('beforeend',F.map((f,i)=>`<div class="frog" id="f${i}"><span>🐸</span><b style="background:${teams[i].color}">${Kit.esc(teams[i].name)}</b></div>`).join(''));
+ const sc=()=>$('sc').innerHTML=teams.map((t,i)=>`<span style="border-color:${t.color}">${Kit.esc(t.name)}: row ${F[i].row}/${GOAL} · 🪰${F[i].flies}</span>`).join('');sc();
+ let t0=performance.now(),run=true;
+ function frame(now){if(!run)return;const t=(now-t0)/1000;
+  for(const r in lanes){const els=$('row'+r).children;lanes[r].items.forEach((it,k)=>{els[k].style.left=(itemX(r,k,t)-it.w/2)+'%';if(it.t==='turtle')els[k].classList.toggle('under',!turtleUp(r,k,t))})}
+  F.forEach((f,i)=>{if(f.ride>=0&&lanes[f.row])f.x=itemX(f.row,f.ride,t);
+   // a frog on a diving turtle gets dunked
+   const el=$('f'+i);el.style.left=Math.min(97,Math.max(3,f.x))+'%';el.style.top=(rowTop(f.row)+rh/2)+'%'});
+  requestAnimationFrame(frame)}
+ requestAnimationFrame(frame);
+ async function fall(i,why){const f=F[i];f.splashes++;const el=$('f'+i);el.classList.add('splash');Kit.tone(160,.5,'sine',.25);Play.burst(el,['#BFE6FF','#fff','#7CC4EE']);
+  $('msg').textContent=why;await Kit.sleep(900);el.classList.remove('splash');f.row=f.check;f.ride=-1;f.x=f.home;f.dunking=false;sc()}
+ async function jump(i,rows){const f=F[i],t=(performance.now()-t0)/1000;let target=f.row+rows;if(target>GOAL)target=GOAL;
+  const el=$('f'+i);el.classList.remove('hop');void el.offsetWidth;el.classList.add('hop');Kit.tone(520,.1,'triangle',.2);Kit.tone(780,.1,'triangle',.2,.08);
+  if(kind(target)!=='water'){f.row=target;f.ride=-1;if(target===ISLAND){f.check=ISLAND;f.x=Math.min(95,Math.max(5,f.x));Play.banner(`🚩 ${teams[i].name} reached the checkpoint!`)}f.best=Math.max(f.best,f.row);sc();return target===GOAL?'win':'safe'}
+  const L=lanes[target];let hit=-1;L.items.forEach((it,k)=>{if(Math.abs(itemX(target,k,t)-f.x)<it.w/2+1.5)hit=k});
+  f.row=target;f.ride=-1;f.best=Math.max(f.best,f.row);
+  if(hit<0){await Kit.sleep(300);await fall(i,'Splash! Nothing to land on.');return 'splash'}
+  const it=L.items[hit];
+  if(it.t==='croc'){await Kit.sleep(250);Kit.tone(90,.4,'sawtooth',.3);await fall(i,'CHOMP! 🐊 The crocodile got you!');return 'splash'}
+  if(it.t==='turtle'&&!turtleUp(target,hit,t)){await Kit.sleep(300);await fall(i,'Splash! That turtle was underwater.');return 'splash'}
+  f.ride=hit;if(it.fly){it.fly=false;f.flies++;const fl=$('row'+target).children[hit].querySelector('.fly');fl&&fl.remove();Play.pop('+1 🪰',el,'#7CFFB2');Kit.tada()}else Kit.ding();
+  sc();return 'ok'}
+ let turn=0;
+ async function round(){const i=turn;$('msg').textContent='';$('jb').innerHTML='';document.querySelectorAll('.frog').forEach((e,k)=>e.classList.toggle('active',k===i));
+  const r=await Play.ask($('ask'),[i]);
+  if(!r.length){$('msg').textContent=`No jump for ${teams[i].name} this time.`;turn=(turn+1)%teams.length;return setTimeout(round,1300)}
+  const canSuper=F[i].flies>=2;let rows=1;
+  $('jb').innerHTML=`<span class="pl-turn" style="background:${teams[i].color}">${Kit.esc(teams[i].name)}</span>
+   ${canSuper?'<button class="btn white" id="sup">🪰🪰 Super Jump (2 rows)</button>':''}<button class="btn big green" id="jump">🐸 JUMP!</button><div class="jt" title="Time left to jump"><i id="jt" style="width:100%"></i></div>`;
+  if(canSuper)$('sup').onclick=()=>{rows=rows===1?2:1;$('sup').classList.toggle('green',rows===2);$('sup').textContent=rows===2?'🚀 Super Jump ON':'🪰🪰 Super Jump (2 rows)'};
+  $('msg').textContent='Wait for something safe, then JUMP!';
+  const res=await new Promise(done=>{let left=12;const tv=setInterval(()=>{left-=.1;$('jt')&&($('jt').style.width=left/12*100+'%');if(left<=0){finish(null)}},100);
+   const finish=async v=>{clearInterval(tv);removeEventListener('keydown',key);$('jb').innerHTML='';if(v===null){$('msg').textContent='Too slow! The frog stayed put.';return done('wait')}
+    if(rows===2)F[i].flies-=2;done(await jump(i,rows))};
+   const key=e=>{if(e.code==='Space'){e.preventDefault();finish(1)}};$('jump').onclick=()=>finish(1);addEventListener('keydown',key)});
+  if(res==='win'){run=false;const sc2=F.map(f=>f.best);return Play.podium('🏖️',`${teams[i].name} made it to the beach!`,sc2.map((v,k)=>k===i?v+1:v),{'🪰 Flies':F.map(f=>f.flies),'💦 Splashes':F.map(f=>f.splashes)})}
+  if(res==='ok')$('msg').textContent='Nice landing! 🪷';else if(res==='safe')$('msg').textContent='Safe on dry land!';
+  turn=(turn+1)%teams.length;setTimeout(round,1400)}
+ round()}});
+
 </script>
 </body></html>

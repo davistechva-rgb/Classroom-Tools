@@ -6,13 +6,54 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="kit.css">
-<title>Space Race</title></head>
+<title>Space Race</title>
+<style>
+.space{position:relative;border:5px solid var(--ink);border-radius:24px;box-shadow:6px 6px 0 var(--ink);overflow:hidden;background:radial-gradient(ellipse at 30% 30%,#2B2F77,#0B1026 70%);padding:12px}
+.space .st{position:absolute;width:2px;height:2px;background:#fff;border-radius:50%;animation:tw 2s infinite alternate}@keyframes tw{to{opacity:.2}}
+.route{position:relative;display:grid;grid-template-columns:repeat(25,1fr);gap:3px;margin:6px 0;z-index:1}
+.cell{aspect-ratio:1;border-radius:50%;background:#ffffff22;display:grid;place-items:center;font-size:clamp(.75rem,2.2vh,1.3rem);position:relative}
+.cell.pl{background:none;font-size:clamp(1.3rem,3.6vh,2.2rem)}.cell small{position:absolute;bottom:-14px;font-size:.5rem;color:#fff;white-space:nowrap}
+.rk{position:absolute;top:50%;transform:translate(-50%,-50%) rotate(45deg);transition:left .8s cubic-bezier(.3,1.3,.5,1);font-size:clamp(1.3rem,3.6vh,2rem);z-index:2}
+.rk.go::after{content:"🔥";position:absolute;left:-60%;top:60%;font-size:.6em;transform:rotate(-45deg)}
+.lane{position:relative;margin:4px 0 14px}.lane .nm{color:#fff;font-weight:800;font-size:.85rem}
+.fuel{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:10px 0}.fuel span{border:3px solid var(--ink);border-radius:99px;padding:2px 12px;font-weight:700;background:#fff}
+.burn{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:10px 0}.burn .btn small{display:block;font-size:.72rem;font-weight:600}
+.legend{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;color:#fff;font-weight:600;font-size:.85rem;position:relative;z-index:1}</style></head>
 <body>
 <main></main>
 <script src="kit.js"></script>
-<script src="review.js"></script>
+<script src="play.js"></script>
 <script>
 Kit.mount("🚀", "Space Race");
-Review.start({"mode": "race", "racer": "🚀", "finish": "🪐", "stage": "#1D2B53", "lane": "#2B3F8C", "winText": "First to land on the planet!", "how": "Split into teams. Read a question, show the answer, then tap every team that got it right. Each right answer moves that team one space. First to the finish wins!", "goal": 10});
+
+Play.setup({defTeams:3,how:'Fly from Earth all the way to Saturn! Every right answer gives your rocket ⛽ fuel (more on a streak). Then decide how much to burn: each fuel moves you one space. Plan your landing! ☄️ Asteroids knock you back 2, 🌀 wormholes zoom you ahead 3, and 🕳️ black holes pull you back 4. Land exactly on a 🪐 planet to refuel for free. A wrong answer means you drift 1 space. First rocket to reach Saturn wins!',
+start({teams,game}){
+ const $=id=>document.getElementById(id);const LEN=24;const PL={6:['🌙','Moon'],12:['🔴','Mars'],18:['🟠','Jupiter'],24:['🪐','Saturn']};
+ const hz={};const free=[...Array(LEN).keys()].filter(k=>k>1&&!PL[k]);Kit.shuffle(free).slice(0,9).forEach((k,j)=>hz[k]=j<4?'☄️':j<7?'🌀':'🕳️');
+ const R=teams.map(()=>({pos:0,fuel:2,used:0,events:0}));
+ const stars=Array.from({length:60},()=>`<span class="st" style="left:${Math.random()*100}%;top:${Math.random()*100}%;animation-delay:${Math.random()*2}s"></span>`).join('');
+ const route=()=>Array.from({length:LEN+1},(_,k)=>`<div class="cell ${PL[k]||k===0?'pl':''}">${k===0?'🌍':PL[k]?PL[k][0]:hz[k]||''}${PL[k]?`<small>${PL[k][1]}</small>`:''}</div>`).join('');
+ game.innerHTML=`<div class="space">${stars}${teams.map((t,i)=>`<div class="lane"><div class="nm"><span style="color:${t.color}">●</span> ${Kit.esc(t.name)}</div><div class="route" id="rt${i}">${route()}<div class="rk" id="rk${i}">🚀</div></div></div>`).join('')}
+  <div class="legend"><span>☄️ back 2</span><span>🌀 ahead 3</span><span>🕳️ back 4</span><span>🪐 land exactly = refuel</span></div></div>
+  <div class="fuel" id="fuel"></div><div class="pl-msg" id="msg"></div><div id="act"></div><div id="ask"></div>`;
+ const put=i=>$('rk'+i).style.left=`${(R[i].pos+.5)/(LEN+1)*100}%`;teams.forEach((_,i)=>put(i));
+ const hud=()=>$('fuel').innerHTML=teams.map((t,i)=>`<span style="border-color:${t.color}">${Kit.esc(t.name)} · ⛽ ${R[i].fuel} · space ${R[i].pos}/${LEN}</span>`).join('');hud();
+ async function fly(i,n){const r=R[i];const el=$('rk'+i);el.classList.add('go');r.pos=Math.min(LEN,r.pos+n);put(i);Kit.tone(200,.6,'sawtooth',.08);await Kit.sleep(850);el.classList.remove('go');
+  if(r.pos>=LEN)return;const h=hz[r.pos];
+  if(PL[r.pos]){r.fuel+=3;Play.pop('+3 ⛽',el,'#8CE99A');Play.banner(`🪐 ${teams[i].name} refueled at ${PL[r.pos][1]}!`)}
+  else if(h){r.events++;const d=h==='☄️'?-2:h==='🌀'?3:-4;Play.pop(h+(d>0?' +':' ')+d,el,d>0?'#99E9F2':'#FF6B5B');d>0?Kit.tada():Kit.tone(100,.5,'sawtooth',.2);
+   $('msg').textContent=h==='☄️'?'Asteroid field! Knocked back 2.':h==='🌀'?'Wormhole! Zoom ahead 3!':'Black hole! Pulled back 4!';r.pos=Math.max(0,Math.min(LEN,r.pos+d));await Kit.sleep(400);put(i);await Kit.sleep(800)}
+  hud()}
+ const burn=i=>new Promise(res=>{const r=R[i];const max=Math.min(r.fuel,LEN-r.pos);
+  $('act').innerHTML=`<div class="card center"><span class="pl-turn" style="background:${teams[i].color}">${Kit.esc(teams[i].name)}</span> how much fuel will you burn? (⛽ ${r.fuel})
+   <div class="burn">${Array.from({length:Math.max(1,max)},(_,k)=>k+1).map(n=>{const lands=r.pos+n;const tag=PL[lands]?PL[lands][0]+' refuel':hz[lands]||'';return `<button class="btn ${n===max?'red':'white'}" data-n="${n}" ${n>r.fuel?'disabled':''}>🔥 ${n}<small>${tag||'land on space '+lands}</small></button>`}).join('')}</div></div>`;
+  $('act').onclick=e=>{const b=e.target.closest('[data-n]:not(:disabled)');if(b){$('act').onclick=null;$('act').innerHTML='';res(+b.dataset.n)}}});
+ async function round(){$('msg').textContent='';const right=await Play.ask($('ask'),teams.map(t=>t.i),{goWord:'Fuel up!'});
+  right.forEach(i=>{const g=2+(Play.streak[i]>=3?1:0);R[i].fuel+=g;Play.pop(`+${g} ⛽`,$('rk'+i),'#FFE066')});hud();
+  for(const i of teams.map(t=>t.i)){if(right.includes(i)){if(R[i].fuel>0){const n=await burn(i);R[i].fuel-=n;R[i].used+=n;hud();await fly(i,n)}}else{await fly(i,1)}
+   if(R[i].pos>=LEN)return Play.podium('🪐',`${teams[i].name} reached Saturn first!`,R.map(r=>r.pos),{'⛽ Fuel burned':R.map(r=>r.used),'☄️ Space events':R.map(r=>r.events)})}
+  setTimeout(round,1200)}
+ round()}});
+
 </script>
 </body></html>

@@ -6,13 +6,92 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="kit.css">
-<title>Wizard Battle</title></head>
+<title>Wizard Battle</title>
+<style>.wb{position:relative;border:5px solid var(--ink);border-radius:24px;padding:18px 14px 14px;box-shadow:6px 6px 0 var(--ink);overflow:hidden;
+ background:radial-gradient(ellipse at 50% 120%,#6B4FC9 0,#2B1F6B 55%,#140F3A 100%)}
+.wb .star{position:absolute;width:3px;height:3px;background:#fff;border-radius:50%;animation:tw 2s infinite alternate}@keyframes tw{to{opacity:.2}}
+.wb .moon{position:absolute;right:4%;top:6%;font-size:2.6rem}
+.wz-row{position:relative;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;z-index:1}
+.wz{background:rgba(255,255,255,.95);border:4px solid var(--ink);border-radius:20px;padding:8px 10px 10px;text-align:center;transition:opacity .5s,transform .2s;position:relative}
+.wz .ic{font-size:clamp(2.6rem,8vh,4rem);line-height:1.1;display:inline-block;animation:bob 2.4s ease-in-out infinite}@keyframes bob{50%{transform:translateY(-6px)}}
+.wz .nm{font-weight:700;font-size:1.1rem}
+.bar{height:14px;border:3px solid var(--ink);border-radius:99px;background:#eee;overflow:hidden;margin:4px 0}.bar i{display:block;height:100%;transition:width .5s}
+.bar.hp i{background:linear-gradient(90deg,#FF6B5B,#5DC66E)}.bar.mp i{background:linear-gradient(90deg,#4DABF7,#9B6BF2)}
+.lbl{display:flex;justify-content:space-between;font-size:.8rem;font-weight:700}
+.wz .sh{display:inline-block;margin-top:4px;border:3px solid var(--ink);border-radius:999px;padding:1px 10px;font-weight:700;font-size:.9rem}
+.wz.out{opacity:.4}.wz.out .ic{animation:none}
+.wz.pickable{cursor:crosshair;outline:5px dashed #FFC93C;outline-offset:3px}.wz.me{outline:5px solid #fff;outline-offset:3px}
+.wz.hit{animation:shake .5s}@keyframes shake{25%{transform:translateX(-10px) rotate(-4deg)}50%{transform:translateX(9px) rotate(3deg)}75%{transform:translateX(-5px)}}
+.wz .aura{position:absolute;inset:-4px;border-radius:20px;pointer-events:none;animation:aura .8s}@keyframes aura{from{box-shadow:0 0 0 0 var(--ac)}to{box-shadow:0 0 0 22px transparent}}
+.chart{text-align:center;font-weight:700;margin-top:12px;color:#fff;position:relative;z-index:1}
+.book{background:#FFF8E7;border:5px solid var(--ink);border-radius:20px;box-shadow:6px 6px 0 var(--ink);padding:12px;margin-top:14px}
+.book h3{margin:0 0 8px;text-align:center}.spells{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.spell{font:inherit;text-align:left;border:4px solid var(--ink);border-radius:14px;padding:8px 10px;background:#fff;cursor:pointer;box-shadow:0 4px 0 var(--ink);color:var(--ink)}
+.spell b{display:block;font-size:1.05rem}.spell small{display:block;line-height:1.2}.spell .cost{float:right;font-weight:800;color:#5F3DC4}
+.spell:disabled{opacity:.4;cursor:not-allowed}.spell.on{outline:5px solid #9B6BF2;outline-offset:2px}
+.els{display:flex;gap:10px;justify-content:center;margin:10px 0;flex-wrap:wrap}.els .btn.on{outline:5px solid var(--ink);outline-offset:2px}
+.orb{position:fixed;width:34px;height:34px;border-radius:50%;z-index:50;pointer-events:none;display:grid;place-items:center;font-size:1.6rem}</style></head>
 <body>
 <main></main>
 <script src="kit.js"></script>
-<script src="review.js"></script>
+<script src="play.js"></script>
 <script>
 Kit.mount("🧙", "Wizard Battle");
-Review.start({"mode": "duel", "racer": ["🧙", "🧚", "🦄", "🐉", "🧞", "🔮"], "attack": "✨", "stage": "#2B3F8C", "lane": "#FFFFFF", "winText": "The last wizard standing!", "how": "Each right answer lets your team zap the team with the most hearts. Lose all your hearts and you are out. Last team standing wins!", "finish": "🏆", "goal": 5});
+
+Play.setup({defTeams:3,how:'Every wizard has 10 health and a magic shield of 🔥 fire, 💧 water, or 🌿 nature. Every team that answers right gains 2 mana (3 if they are on a streak), then opens their spellbook. 🔥 beats 🌿, 🌿 beats 💧, 💧 beats 🔥. Hit a weak shield for double damage, but a matching shield cuts the damage. Spend mana on bolts, blasts, healing, a new shield, or a chain spell that hits everyone. Last wizard standing wins!',
+start({teams,game}){
+ const $=id=>document.getElementById(id);
+ const EL={fire:['🔥','#FF922B'],water:['💧','#339AF0'],nature:['🌿','#51CF66']},BEATS={fire:'nature',nature:'water',water:'fire'};
+ const ICON=['🧙','🧚','🧞','🦹','🧝','🧛'];const MAXHP=10,MAXMP=6;
+ const SPELLS=[{id:'bolt',n:'⚡ Element Bolt',c:1,d:'Hit one wizard: 1 damage, or 2 against a weak shield.'},{id:'blast',n:'☄️ Element Blast',c:3,d:'Hit one wizard: 3 damage, or 5 against a weak shield.'},
+  {id:'heal',n:'💚 Healing Light',c:2,d:'Get back 3 health.'},{id:'ward',n:'🛡️ Pick Your Shield',c:1,d:'Choose your shield. It stays until you change it.'},{id:'chain',n:'🌀 Chain Storm',c:4,d:'1 damage to every other wizard. Ignores shields.'}];
+ const W=teams.map(()=>({hp:MAXHP,mp:1,sh:Kit.pick(Object.keys(EL)),lock:false,dealt:0,cast:0,koRound:0}));let roundNo=1;
+ const stars=Array.from({length:40},()=>`<span class="star" style="left:${Math.random()*100}%;top:${Math.random()*55}%;animation-delay:${Math.random()*2}s"></span>`).join('');
+ game.innerHTML=`<div class="wb"><div class="moon">🌙</div>${stars}<div class="wz-row" id="arena"></div><div class="chart">🔥 beats 🌿 · 🌿 beats 💧 · 💧 beats 🔥</div></div>
+  <div class="pl-msg" id="msg"></div><div id="book"></div><div id="ask"></div>`;
+ function draw(){$('arena').innerHTML=teams.map((t,i)=>{const w=W[i];return `<div class="wz ${w.hp<=0?'out':''}" id="w${i}" data-i="${i}" style="border-color:${t.color}">
+  <div class="ic">${w.hp<=0?'👻':ICON[i]}</div><div class="nm" style="color:${t.color}">${Kit.esc(t.name)}</div>
+  <div class="lbl"><span>❤️ Health</span><span>${Math.max(0,w.hp)}/${MAXHP}</span></div><div class="bar hp"><i style="width:${Math.max(0,w.hp)/MAXHP*100}%"></i></div>
+  <div class="lbl"><span>✨ Mana</span><span>${w.mp}/${MAXMP}</span></div><div class="bar mp"><i style="width:${w.mp/MAXMP*100}%"></i></div>
+  <div class="sh" style="background:${EL[w.sh][1]}">${EL[w.sh][0]} ${w.sh} shield${w.lock?' 🔒':''}</div></div>`}).join('')}
+ draw();
+ const alive=()=>W.map((w,i)=>w.hp>0?i:-1).filter(i=>i>=0);
+ const orb=(from,to,el)=>new Promise(res=>{const a=$('w'+from).getBoundingClientRect(),b=$('w'+to).getBoundingClientRect();const o=document.createElement('div');o.className='orb';
+  o.style.background=`radial-gradient(circle,#fff,${EL[el][1]})`;o.style.boxShadow=`0 0 20px 6px ${EL[el][1]}`;o.textContent=EL[el][0];document.body.appendChild(o);
+  Kit.tone(500,.4,'sine',.12);o.animate([{left:a.left+a.width/2-17+'px',top:a.top+30+'px',transform:'scale(.5)'},{left:(a.left+b.left)/2+a.width/2-17+'px',top:Math.min(a.top,b.top)-60+'px',transform:'scale(1.3)'},{left:b.left+b.width/2-17+'px',top:b.top+40+'px',transform:'scale(1)'}],{duration:650,easing:'ease-in-out'}).onfinish=()=>{o.remove();res()}});
+ function aura(i,col){const el=$('w'+i);el.insertAdjacentHTML('beforeend',`<div class="aura" style="--ac:${col}"></div>`);setTimeout(()=>{const a=el.querySelector('.aura');a&&a.remove()},800)}
+ function damage(src,tg,amt,el){const w=W[tg];w.hp-=amt;W[src].dealt+=amt;if(w.hp<=0&&!w.koRound){w.koRound=roundNo;w.hp=0}draw();const e=$('w'+tg);e.classList.add('hit');Play.burst(e,[EL[el]?EL[el][1]:'#B197FC','#fff']);
+  Play.pop(amt?`−${amt}`:'Blocked!',e,amt>=2?'#FF6B5B':'#fff');amt>=2?Kit.tone(110,.5,'sawtooth',.25):amt?Kit.tone(240,.25,'square',.15):Kit.tone(900,.2,'sine',.15);
+  if(w.hp<=0)Play.banner(`👻 ${teams[tg].name} is knocked out!`)}
+ const pickTarget=(i,any)=>new Promise(res=>{document.querySelectorAll('.wz').forEach(w=>{const j=+w.dataset.i;w.classList.toggle('pickable',j!==i&&W[j].hp>0)});
+  $('arena').onclick=e=>{const w=e.target.closest('.wz.pickable');if(!w)return;$('arena').onclick=null;document.querySelectorAll('.wz').forEach(x=>x.classList.remove('pickable'));res(+w.dataset.i)}});
+ const pickElement=(txt)=>new Promise(res=>{$('els').innerHTML=`<span style="font-weight:700">${txt}</span>`+Object.entries(EL).map(([k,v])=>`<button class="btn" data-e="${k}" style="background:${v[1]};color:#fff">${v[0]} ${k}</button>`).join('');
+  $('els').onclick=e=>{const b=e.target.closest('[data-e]');if(!b)return;$('els').onclick=null;$('els').innerHTML='';res(b.dataset.e)}});
+ async function turnFor(i){const w=W[i];
+  while(w.hp>0&&alive().length>1){
+   document.querySelectorAll('.wz').forEach(x=>x.classList.toggle('me',+x.dataset.i===i));
+   $('book').innerHTML=`<div class="book"><h3><span class="pl-turn" style="background:${teams[i].color}">${Kit.esc(teams[i].name)}</span>'s spellbook · ✨ ${w.mp} mana</h3>
+    <div class="spells">${SPELLS.map(s=>`<button class="spell" data-s="${s.id}" ${w.mp<s.c||(s.id==='heal'&&w.hp>=MAXHP)?'disabled':''}><span class="cost">${s.c}✨</span><b>${s.n}</b><small>${s.d}</small></button>`).join('')}
+    <button class="spell" data-s="done" style="background:#E9ECEF"><b>✋ Done</b><small>Save the rest of your mana for later.</small></button></div><div class="els" id="els"></div></div>`;
+   const sid=await new Promise(res=>{$('book').onclick=e=>{const b=e.target.closest('.spell:not(:disabled)');if(b){$('book').onclick=null;b.classList.add('on');res(b.dataset.s)}}});
+   if(sid==='done')break;const sp=SPELLS.find(s=>s.id===sid);
+   if(sid==='heal'){w.mp-=sp.c;w.hp=Math.min(MAXHP,w.hp+3);w.cast++;draw();aura(i,'#51CF66');Play.pop('+3 ❤️',$('w'+i),'#8CE99A');Kit.tone(660,.3,'sine',.2);Kit.tone(990,.4,'sine',.15,.15);$('msg').textContent=`${teams[i].name} heals up!`;continue}
+   if(sid==='ward'){const e=await pickElement('Pick your new shield:');w.mp-=sp.c;w.sh=e;w.lock=true;w.cast++;draw();aura(i,EL[e][1]);Kit.tone(800,.2,'triangle',.15);$('msg').textContent=`${teams[i].name} raises a ${e} shield!`;continue}
+   if(sid==='chain'){w.mp-=sp.c;w.cast++;draw();Play.banner(`🌀 ${teams[i].name} casts Chain Storm!`);for(const j of alive().filter(j=>j!==i)){await orb(i,j,'water');damage(i,j,1,'water')}continue}
+   const el=await pickElement('Pick your spell element:');$('msg').textContent='Now tap a wizard to hit.';const tg=await pickTarget(i);w.mp-=sp.c;w.cast++;draw();
+   await orb(i,tg,el);const sh=W[tg].sh;const strong=BEATS[el]===sh,weak=el===sh;
+   const amt=sid==='bolt'?(strong?2:weak?0:1):(strong?5:weak?1:3);
+   damage(i,tg,amt,el);$('msg').innerHTML=strong?'💥 Super effective!':weak?'The shield soaked up most of it.':'Direct hit!';await Kit.sleep(500)}
+  document.querySelectorAll('.wz').forEach(x=>x.classList.remove('me'));$('book').innerHTML=''}
+ async function round(){$('msg').textContent=`Round ${roundNo}`;
+  const right=await Play.ask($('ask'),alive(),{goWord:'Open spellbooks!'});
+  right.forEach(i=>{const gain=Play.streak[i]>=2?3:2;W[i].mp=Math.min(MAXMP,W[i].mp+gain);Play.pop(`+${gain}✨`,$('w'+i),'#B197FC')});draw();
+  if(!right.length)$('msg').textContent='No one gains mana this round.';
+  for(const i of right){if(alive().length<2)break;if(W[i].hp>0)await turnFor(i)}
+  const a=alive();if(a.length<=1){const sc=W.map((w,k)=>w.hp>0?100+w.hp:w.koRound);
+   return Play.podium('🧙',a.length?`${teams[a[0]].name} is the last wizard standing!`:"It's a draw!",sc.map(v=>v>100?v-100:0),{'💥 Damage':W.map(w=>w.dealt),'📜 Spells':W.map(w=>w.cast)})}
+  roundNo++;W.forEach(w=>{if(!w.lock&&w.hp>0)w.sh=Kit.pick(Object.keys(EL))});draw();$('msg').textContent='Unlocked shields shift with the wind…';setTimeout(round,1400)}
+ round()}});
+
 </script>
 </body></html>

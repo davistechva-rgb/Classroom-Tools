@@ -6,13 +6,57 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="kit.css">
-<title>Spelling Bee Arena</title></head>
+<title>Spelling Bee Arena</title>
+<style>
+.hive{border:5px solid var(--ink);border-radius:24px;box-shadow:6px 6px 0 var(--ink);padding:14px;background:#FFF3BF;background-image:radial-gradient(circle at 20px 20px,#FFE066 18px,transparent 19px);background-size:40px 36px}
+.bees{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.bee{background:#fff;border:4px solid var(--ink);border-radius:18px;padding:8px;text-align:center;transition:opacity .4s}
+.bee .ic{font-size:2.8rem;display:inline-block;animation:buzz 1.2s ease-in-out infinite}@keyframes buzz{50%{transform:translate(4px,-6px) rotate(5deg)}}
+.bee.out{opacity:.35}.bee.out .ic{animation:none;filter:grayscale(1)}.bee.me{outline:5px solid #FFC93C;outline-offset:3px}
+.comb{display:flex;flex-wrap:wrap;justify-content:center;gap:2px;margin-top:4px;min-height:22px}.comb i{font-style:normal;font-size:1rem}
+.stage{background:#fff;border:5px solid var(--ink);border-radius:22px;box-shadow:6px 6px 0 var(--ink);padding:16px;margin-top:14px;text-align:center}
+.speak{font-size:3rem;width:120px;height:120px;border-radius:50%;background:var(--sun);border:6px solid var(--ink);box-shadow:5px 5px 0 var(--ink);cursor:pointer}
+.lv{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:10px 0}.lv .btn small{display:block;font-size:.72rem;font-weight:600}
+.spell{font:inherit;font-size:2rem;font-weight:700;text-align:center;letter-spacing:.12em;max-width:440px;width:100%;border:4px solid var(--ink);border-radius:16px;padding:8px;margin-top:10px;text-transform:lowercase}
+.reveal{font-size:2rem;font-weight:800;letter-spacing:.15em;margin-top:8px}</style></head>
 <body>
 <main></main>
 <script src="kit.js"></script>
-<script src="review.js"></script>
+<script src="play.js"></script>
 <script>
 Kit.mount("🐝", "Spelling Bee Arena");
-Review.start({"mode": "race", "racer": "🐝", "finish": "🍯", "flip": true, "stage": "#FFF4CC", "lane": "#FFFBEA", "winText": "First bee to the honey!", "how": "Say a spelling word out loud. Each team writes it down, then show the answer. Every team that spelled it right flies one space closer to the honey!", "goal": 10});
+
+const WORDS={easy:[['jump','The frog likes to jump.'],['green','Grass is green.'],['happy','I feel happy today.'],['sleep','Babies sleep a lot.'],['friend','She is my best friend.'],['train','The train is fast.'],['plant','Water the plant.'],['smile','Give me a big smile.'],['water','Drink your water.'],['house','My house is blue.'],['every','Every dog barks.'],['three','I have three cats.'],['play','Let us play outside.'],['night','The moon shines at night.'],['story','Read me a story.']],
+ medium:[['because','I stayed in because it rained.'],['different','Every snowflake is different.'],['favorite','Pizza is my favorite.'],['beautiful','The sunset is beautiful.'],['enough','Do we have enough chairs?'],['surprise','The party was a surprise.'],['caught','He caught the ball.'],['library','We borrow books at the library.'],['answer','Raise your hand to answer.'],['through','We walked through the park.'],['animal','The elephant is a big animal.'],['minute','Wait one minute.'],['special','Today is a special day.'],['weather','The weather is sunny.'],['thought','I thought about my answer.']],
+ hard:[['necessary','Sleep is necessary.'],['separate','Separate the red and blue blocks.'],['restaurant','We ate at a restaurant.'],['February','My birthday is in February.'],['rhythm','Clap to the rhythm.'],['vacuum','Vacuum the rug.'],['calendar','Check the calendar.'],['knowledge','Books give us knowledge.'],['environment','Protect the environment.'],['occasion','A birthday is a special occasion.'],['tomorrow','See you tomorrow.'],['bicycle','I ride my bicycle.'],['exercise','Exercise keeps you strong.'],['experiment','We did a science experiment.'],['government','The government makes laws.']]};
+Play.setup({defTeams:3,noQuestions:true,how:'Welcome to the Spelling Bee Arena! Each team is a bee with 2 wings. On your turn, choose how hard you want your word: 🌼 easy (1 honey), 🌻 medium (2), or 🌺 hard (3). Tap 🔊 to hear the word, or hear it slowly or in a sentence. Then type the spelling. Spell it right to fill your honeycomb. Spell it wrong and you lose a wing! After 2 wrong, your bee is out. Most honey after 5 rounds (or the last bee buzzing) wins!',
+extra:'<details style="width:100%"><summary style="cursor:pointer"><b>Use my own spelling words</b> (optional)</summary><p class="muted">One per line: word | sentence. These replace the medium list.</p><textarea id="myW" style="min-height:100px"></textarea></details>',
+start({teams,game}){
+ const $=id=>document.getElementById(id);const mine=Kit.lines(document.getElementById('myW').value).map(l=>l.split('|').map(s=>s.trim()));if(mine.length)WORDS.medium=mine;
+ const B=teams.map(()=>({wings:2,honey:0,right:0,tries:0}));let turn=0,roundNo=1;const ROUNDS=5;const used=new Set();
+ game.innerHTML=`<div class="hive"><div class="bees" id="bees"></div></div><div class="stage" id="stage"></div>`;
+ const draw=()=>$('bees').innerHTML=teams.map((t,i)=>`<div class="bee ${B[i].wings<=0?'out':''} ${i===turn?'me':''}" style="border-color:${t.color}"><div class="ic">🐝</div><div><b>${Kit.esc(t.name)}</b></div>
+  <div>${'🪽'.repeat(B[i].wings)}${'·'.repeat(2-B[i].wings)}</div><div class="comb">${'<i>🍯</i>'.repeat(B[i].honey)}</div><small>${B[i].honey} honey</small></div>`).join('');
+ const say=(t,rate=.85)=>{if(!('speechSynthesis' in window))return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.rate=rate;u.lang='en-US';speechSynthesis.speak(u)};
+ const alive=()=>B.map((b,i)=>b.wings>0?i:-1).filter(i=>i>=0);
+ async function play(){draw();if(alive().length<=1||roundNo>ROUNDS){const a=alive();
+   return Play.podium('🐝',a.length===1&&teams.length>1?`${teams[a[0]].name} is the last bee buzzing!`:'Spelling Bee champions!',B.map(b=>b.honey+(b.wings>0?1:0)),{'✅ Spelled':B.map(b=>`${b.right}/${b.tries}`),'🪽 Wings':B.map(b=>b.wings)})}
+  if(B[turn].wings<=0){next();return}
+  const t=teams[turn];$('stage').innerHTML=`<span class="pl-turn" style="background:${t.color}">${Kit.esc(t.name)}</span> · Round ${roundNo} of ${ROUNDS}<p><b>Pick your word level:</b></p>
+   <div class="lv"><button class="btn green" data-l="easy">🌼 Easy<small>+1 honey</small></button><button class="btn" data-l="medium">🌻 Medium<small>+2 honey</small></button><button class="btn red" data-l="hard">🌺 Hard<small>+3 honey</small></button></div>`;
+  const lv=await new Promise(res=>$('stage').onclick=e=>{const b=e.target.closest('[data-l]');if(b){$('stage').onclick=null;res(b.dataset.l)}});
+  let pool=WORDS[lv].filter(w=>!used.has(w[0]));if(!pool.length)pool=WORDS[lv];const [w,sent]=Kit.pick(pool);used.add(w);const val={easy:1,medium:2,hard:3}[lv];
+  $('stage').innerHTML=`<span class="pl-turn" style="background:${t.color}">${Kit.esc(t.name)}</span> · ${lv} word<br><br><button class="speak" id="sp" aria-label="Hear the word">🔊</button>
+   <div class="lv"><button class="btn white small" id="slow">🐢 Slowly</button><button class="btn white small" id="sen">📖 In a sentence</button></div>
+   <input class="spell" id="inp" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="type the spelling"><br><button class="btn big green" id="go" style="margin-top:10px">✓ Final answer</button><div class="reveal" id="rv"></div>`;
+  $('sp').onclick=()=>say(w);$('slow').onclick=()=>say(w,.45);$('sen').onclick=()=>say(`${w}. ${sent||''} ${w}.`);setTimeout(()=>say(w),400);$('inp').focus();
+  await new Promise(res=>{$('go').onclick=res;$('inp').onkeydown=e=>{if(e.key==='Enter')res()}});
+  const ok=$('inp').value.trim().toLowerCase()===w.toLowerCase();const b=B[turn];b.tries++;$('go').disabled=true;
+  if(ok){b.honey+=val;b.right++;$('rv').innerHTML=`✅ ${w}`;Kit.tada();Kit.confetti(40);Play.pop(`+${val} 🍯`,$('rv'),'#FFE066')}
+  else{b.wings--;$('rv').innerHTML=`❌ It's spelled <span style="color:var(--grape)">${w}</span>`;Kit.tone(150,.4,'sawtooth',.2);if(b.wings<=0)Play.banner(`🐝 ${t.name}'s bee is out!`)}
+  draw();setTimeout(next,2200)}
+ function next(){const start=turn;do{turn=(turn+1)%teams.length;if(turn===0)roundNo++}while(B[turn].wings<=0&&turn!==start&&alive().length);play()}
+ play()}});
+
 </script>
 </body></html>

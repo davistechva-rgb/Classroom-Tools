@@ -6,13 +6,62 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="kit.css">
-<title>Build a City</title></head>
+<title>Build a City</title>
+<style>
+.cities{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.city{border:5px solid var(--ink);border-radius:22px;box-shadow:5px 5px 0 var(--ink);padding:10px;background:linear-gradient(#BDE8FF,#E7F5FF)}
+.city h3{margin:0;text-align:center}.city .stats{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:6px 0;font-weight:700;font-size:.85rem}
+.city .stats span{background:#fff;border:2px solid var(--ink);border-radius:99px;padding:0 8px}
+.lots{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:#868E96;padding:6px;border-radius:12px}
+.lot{aspect-ratio:1;background:#8BC97A;border-radius:8px;display:grid;place-items:center;font-size:clamp(1.2rem,3.4vh,2rem);position:relative}
+.lot.built{background:#DEE2E6;animation:pop .4s cubic-bezier(.3,1.6,.5,1)}
+.city.building .lot:not(.built){cursor:pointer;outline:3px dashed #FFC93C;outline-offset:-3px}.city.building{outline:5px solid #FFC93C;outline-offset:3px}
+.lot.burn{animation:burn .4s 4}@keyframes burn{50%{background:#FF922B}}
+.shop{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:10px 0}
+.shop .btn{text-align:left;font-size:.95rem;padding:6px 10px}.shop .btn small{display:block;font-size:.72rem;font-weight:600}.shop .btn.on{outline:5px solid var(--ink);outline-offset:2px}</style></head>
 <body>
 <main></main>
 <script src="kit.js"></script>
-<script src="review.js"></script>
+<script src="play.js"></script>
 <script>
 Kit.mount("🏙️", "Build a City");
-Review.start({"mode": "build", "items": ["🏠", "🏢", "🏫", "🏥", "🏪", "🏦", "🏬", "⛲", "🚦", "🏟️", "🏭", "🌳"], "finish": "🏙️", "stage": "#DDF6FC", "lane": "#F4FBFE", "winText": "Your city is complete!", "how": "Split into teams. Each right answer adds a new piece to your team's creation. First team to finish wins!", "goal": 10});
+
+Play.setup({defTeams:3,how:'Each team is mayor of its own city! Every right answer earns 🪙 3 coins (4 on a streak), and some buildings earn coins every round too. Spend coins to build on your 16 lots. 🏠 Houses bring people, 🏫 schools bring people and happiness, 🌳 parks make people happy, 🏪 shops and 🏭 factories make money (factories make people unhappy), and 🚒 fire stations protect against fires. After 8 rounds, the highest City Score (people + happiness × 2) wins!',
+start({teams,game}){
+ const $=id=>document.getElementById(id);
+ const B={house:{ic:'🏠',c:2,pop:4,hap:0,inc:0,n:'House'},shop:{ic:'🏪',c:3,pop:0,hap:1,inc:1,n:'Shop'},park:{ic:'🌳',c:1,pop:0,hap:2,inc:0,n:'Park'},school:{ic:'🏫',c:4,pop:3,hap:2,inc:0,n:'School'},factory:{ic:'🏭',c:4,pop:1,hap:-2,inc:2,n:'Factory'},fire:{ic:'🚒',c:3,pop:0,hap:1,inc:0,n:'Fire station'}};
+ const Cs=teams.map(()=>({coins:3,lots:Array(16).fill(null),earned:0,lost:0}));let roundNo=1;const ROUNDS=8;
+ const st=c=>{let pop=0,hap=0,inc=0;c.lots.forEach(k=>{if(k){pop+=B[k].pop;hap+=B[k].hap;inc+=B[k].inc}});return{pop,hap,inc,score:pop+hap*2}};
+ game.innerHTML=`<div class="pl-score" id="sc"></div><div class="cities" id="cities"></div><div class="pl-msg" id="msg"></div><div id="act"></div><div id="ask"></div>`;
+ function draw(){$('sc').innerHTML=`<span>Round ${Math.min(roundNo,ROUNDS)} of ${ROUNDS}</span>`;
+  $('cities').innerHTML=teams.map((t,i)=>{const c=Cs[i],s=st(c);return `<div class="city" id="ct${i}" style="border-color:${t.color}"><h3>${Kit.esc(t.name)}</h3>
+   <div class="stats"><span>🪙 ${c.coins}</span><span>👥 ${s.pop}</span><span>😊 ${s.hap}</span><span>📈 +${s.inc}/rd</span><span>⭐ ${s.score}</span></div>
+   <div class="lots">${c.lots.map((k,j)=>`<div class="lot ${k?'built':''}" data-j="${j}">${k?B[k].ic:''}</div>`).join('')}</div></div>`}).join('')}
+ draw();
+ async function build(i){const c=Cs[i];let pick='house';const el=$('ct'+i);
+  const panel=()=>{$('act').innerHTML=`<div class="card center"><span class="pl-turn" style="background:${teams[i].color}">${Kit.esc(teams[i].name)}</span> 🪙 ${c.coins} coins. Pick a building, then tap an empty lot in your city.
+   <div class="shop">${Object.entries(B).map(([k,b])=>`<button class="btn ${k===pick?'on':'white'}" data-b="${k}" ${b.c>c.coins?'disabled':''}>${b.ic} ${b.n} · ${b.c}🪙<small>${[b.pop?`+${b.pop} 👥`:'',b.hap?`${b.hap>0?'+':''}${b.hap} 😊`:'',b.inc?`+${b.inc}🪙/rd`:'',k==='fire'?'stops fires':''].filter(Boolean).join(' ')}</small></button>`).join('')}</div>
+   <button class="btn green" id="doneB">✅ Done building</button></div>`};
+  panel();document.getElementById('ct'+i).classList.add('building');
+  await new Promise(res=>{$('act').onclick=e=>{const b=e.target.closest('[data-b]:not(:disabled)');if(b){pick=b.dataset.b;panel();document.getElementById('ct'+i).classList.add('building')}if(e.target.id==='doneB')res()};
+   $('cities').onclick=e=>{const lot=e.target.closest(`#ct${i} .lot:not(.built)`);if(!lot)return;const b=B[pick];if(c.coins<b.c){Kit.tone(150,.2,'sawtooth',.1);return}
+    c.coins-=b.c;c.lots[+lot.dataset.j]=pick;Kit.ding();draw();Play.pop(b.ic+' built!',$('ct'+i),'#fff');panel();document.getElementById('ct'+i).classList.add('building');
+    if(!c.lots.includes(null)||Object.values(B).every(x=>x.c>c.coins))res()}});
+  $('act').onclick=null;$('cities').onclick=null;$('act').innerHTML='';draw()}
+ async function events(){const r=Math.random();
+  if(r<.3){const i=Kit.rand(0,teams.length-1);const c=Cs[i];if(c.lots.includes('fire')){Play.banner(`🚒 A fire in ${teams[i].name}'s city was put out!`)}else{const b=c.lots.map((k,j)=>k&&k!=='park'?j:-1).filter(j=>j>=0);if(b.length){const j=Kit.pick(b);const lot=$('ct'+i).querySelectorAll('.lot')[j];lot.classList.add('burn');Kit.tone(110,.5,'sawtooth',.2);await Kit.sleep(1200);c.lots[j]=null;c.lost++;Play.banner(`🔥 Fire! ${teams[i].name} lost a building. Build a 🚒!`)}}}
+  else if(r<.5){Play.banner('🎉 City festival! Cities with a park get +2 coins');Cs.forEach(c=>{if(c.lots.includes('park'))c.coins+=2})}
+  else if(r<.65){Play.banner('📦 New families move in! +1 coin per house');Cs.forEach(c=>c.coins+=c.lots.filter(k=>k==='house').length)}
+  draw();await Kit.sleep(600)}
+ async function round(){$('msg').textContent='';
+  Cs.forEach((c,i)=>{const inc=st(c).inc;if(inc){c.coins+=inc;c.earned+=inc}});draw();
+  const right=await Play.ask($('ask'),teams.map(t=>t.i),{goWord:'Collect taxes!'});
+  right.forEach(i=>{const g=Play.streak[i]>=3?4:3;Cs[i].coins+=g;Cs[i].earned+=g;Play.pop(`+${g} 🪙`,$('ct'+i),'#FFE066')});draw();
+  for(const i of teams.map(t=>t.i))if(Cs[i].coins>=1&&Cs[i].lots.includes(null))await build(i);
+  await events();
+  if(roundNo>=ROUNDS){const S=Cs.map(st);return Play.podium('🏙️','The best city is…',S.map(s=>s.score),{'👥 People':S.map(s=>s.pop),'😊 Happy':S.map(s=>s.hap),'🔥 Lost':Cs.map(c=>c.lost)})}
+  roundNo++;setTimeout(round,900)}
+ round()}});
+
 </script>
 </body></html>

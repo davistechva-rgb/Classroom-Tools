@@ -6,13 +6,62 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="kit.css">
-<title>Build a World</title></head>
+<title>Build a World</title>
+<style>
+.space{border:5px solid var(--ink);border-radius:24px;box-shadow:6px 6px 0 var(--ink);padding:14px;background:radial-gradient(circle,#1E2A5A,#0B1026 75%);position:relative;overflow:hidden}
+.space .st{position:absolute;width:2px;height:2px;background:#fff;border-radius:50%}
+.planet{display:grid;grid-template-columns:repeat(9,1fr);gap:3px;max-width:640px;margin:0 auto;position:relative;z-index:1}
+.cell{aspect-ratio:1;border-radius:8px;display:grid;place-items:center;font-size:clamp(1rem,3vh,1.7rem);background:#2F4A85;position:relative}
+.cell.off{visibility:hidden}.cell.land{background:#E9ECEF}.cell.mine::after{content:"";position:absolute;inset:0;border-radius:8px;border:3px solid var(--oc)}
+.cell.can{cursor:pointer;background:#4C6EF5;animation:glow 1s infinite}@keyframes glow{50%{background:#748FFC}}
+.cell.new{animation:pop .45s cubic-bezier(.3,1.6,.5,1)}
+.hand{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:10px 0}
+.card2{font:inherit;width:150px;border:4px solid var(--ink);border-radius:16px;background:#fff;padding:8px;cursor:pointer;box-shadow:0 5px 0 var(--ink);text-align:center;color:var(--ink)}
+.card2 .e{font-size:2.6rem}.card2 b{display:block}.card2 small{display:block;font-size:.72rem;line-height:1.2}.card2.on{outline:5px solid #FFC93C;outline-offset:2px}
+.rules{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:10px;position:relative;z-index:1}.rules span{background:#fff;border:2px solid var(--ink);border-radius:99px;padding:0 8px;font-size:.8rem;font-weight:700}</style></head>
 <body>
 <main></main>
 <script src="kit.js"></script>
-<script src="review.js"></script>
+<script src="play.js"></script>
 <script>
 Kit.mount("🌎", "Build a World");
-Review.start({"mode": "build", "items": ["🌊", "⛰️", "🌋", "🏝️", "🌲", "🌵", "🦒", "🐘", "🐋", "🦜", "☁️", "🌈"], "finish": "🌎", "stage": "#DDF6FC", "lane": "#EEF9F0", "winText": "Your world is complete!", "how": "Split into teams. Each right answer adds a new piece to your team's creation. First team to finish wins!", "goal": 10});
+
+Play.setup({defTeams:3,how:'Build a whole planet together, but score for your own team! Every right answer lets you draw 3 world cards and pick one (2 on a streak), then place it anywhere on the planet. Pieces score more next to the right neighbors: 🌲 forests love 🌊 oceans, 🦒 animals need 🌲 forests or 🌾 plains, 🌋 volcanoes in the 🌊 ocean make islands, 🧊 ice belongs near ⛰️ mountains, and 🏘️ villages want both water and forest. Plan your combos and block other teams! Highest score when the planet is full (or after 8 rounds) wins.',
+start({teams,game}){
+ const $=id=>document.getElementById(id);const C=9,R=7,N=C*R;
+ const inPlanet=k=>{const r=Math.floor(k/C),c=k%C;const dx=(c-4)/4.6,dy=(r-3)/3.6;return dx*dx+dy*dy<=1.02};
+ const E={ocean:['🌊','Ocean','+1, and helps neighbors'],forest:['🌲','Forest','+2 next to 🌊'],plains:['🌾','Plains','+1, +1 next to 🌊'],mountain:['⛰️','Mountain','+1 for each ⛰️/🧊 nearby'],
+  animals:['🦒','Animals','+3 next to 🌲 or 🌾'],volcano:['🌋','Volcano','+3 if next to 🌊'],ice:['🧊','Ice','+2 next to ⛰️'],desert:['🌵','Desert','+2 if no 🌊 nearby'],village:['🏘️','Village','+4 next to 🌊 AND 🌲']};
+ const grid=Array(N).fill(null);const owner=Array(N).fill(-1);const S=teams.map(()=>({pts:0,placed:0,combos:0}));let roundNo=1;const ROUNDS=8;
+ const nb=k=>{const r=Math.floor(k/C),c=k%C;const o=[];for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++){if(!a&&!b)continue;const rr=r+a,cc=c+b;if(rr>=0&&rr<R&&cc>=0&&cc<C)o.push(rr*C+cc)}return o};
+ function score(k,e){const ns=nb(k).map(x=>grid[x]).filter(Boolean);const has=t=>ns.includes(t);
+  switch(e){case'ocean':return 1;case'forest':return has('ocean')?3:1;case'plains':return has('ocean')?2:1;case'mountain':return 1+ns.filter(t=>t==='mountain'||t==='ice').length;
+   case'animals':return has('forest')||has('plains')?4:1;case'volcano':return has('ocean')?4:1;case'ice':return has('mountain')?3:1;case'desert':return has('ocean')?1:3;case'village':return has('ocean')&&has('forest')?5:1}}
+ const stars=Array.from({length:50},()=>`<span class="st" style="left:${Math.random()*100}%;top:${Math.random()*100}%"></span>`).join('');
+ game.innerHTML=`<div class="pl-score" id="sc"></div><div class="space">${stars}<div class="planet" id="pl"></div>
+  <div class="rules">${Object.values(E).map(e=>`<span>${e[0]} ${e[2]}</span>`).join('')}</div></div><div class="pl-msg" id="msg"></div><div id="act"></div><div id="ask"></div>`;
+ function draw(can=[],fresh=-1){$('sc').innerHTML=teams.map((t,i)=>`<span style="border-color:${t.color}">${Kit.esc(t.name)}: ${S[i].pts}</span>`).join('')+`<span>Round ${Math.min(roundNo,ROUNDS)} of ${ROUNDS}</span>`;
+  $('pl').innerHTML=Array.from({length:N},(_,k)=>`<div class="cell ${inPlanet(k)?'':'off'} ${grid[k]?'land':''} ${owner[k]>=0?'mine':''} ${can.includes(k)?'can':''} ${k===fresh?'new':''}" data-k="${k}" style="${owner[k]>=0?`--oc:${teams[owner[k]].color}`:''}">${grid[k]?E[grid[k]][0]:''}</div>`).join('')}
+ // seed the planet with a few oceans
+ Kit.shuffle([...Array(N).keys()].filter(inPlanet)).slice(0,5).forEach(k=>grid[k]='ocean');draw();
+ const empty=()=>[...Array(N).keys()].filter(k=>inPlanet(k)&&!grid[k]);
+ async function placeFor(i){const opts=Kit.shuffle(Object.keys(E)).slice(0,3);let pick=null;
+  $('act').innerHTML=`<div class="card center"><span class="pl-turn" style="background:${teams[i].color}">${Kit.esc(teams[i].name)}</span> pick a card, then tap an empty spot on the planet
+   <div class="hand">${opts.map(o=>`<button class="card2" data-e="${o}"><div class="e">${E[o][0]}</div><b>${E[o][1]}</b><small>${E[o][2]}</small></button>`).join('')}</div></div>`;
+  pick=await new Promise(res=>{$('act').onclick=e=>{const b=e.target.closest('[data-e]');if(b){$('act').querySelectorAll('.card2').forEach(x=>x.classList.toggle('on',x===b));res(b.dataset.e)}}});
+  draw(empty());
+  // preview each spot's points on hover via title
+  $('pl').querySelectorAll('.cell.can').forEach(c=>c.title=`Worth ${score(+c.dataset.k,pick)} here`);
+  const k=await new Promise(res=>{$('pl').onclick=e=>{const c=e.target.closest('.cell.can');if(c){$('pl').onclick=null;res(+c.dataset.k)}};
+   $('act').onclick=e=>{const b=e.target.closest('[data-e]');if(b){pick=b.dataset.e;$('act').querySelectorAll('.card2').forEach(x=>x.classList.toggle('on',x===b))}}});
+  $('act').onclick=null;$('act').innerHTML='';
+  const p=score(k,pick);grid[k]=pick;owner[k]=i;S[i].pts+=p;S[i].placed++;if(p>=3)S[i].combos++;draw([],k);
+  Play.pop(`+${p}`,$('pl').children[k],p>=3?'#FFE066':'#fff');p>=3?Kit.tada():Kit.ding();if(p>=4)Play.banner(`✨ ${E[pick][1]} combo! +${p}`);await Kit.sleep(400)}
+ async function round(){$('msg').textContent='';const right=await Play.ask($('ask'),teams.map(t=>t.i),{goWord:'Draw cards!'});
+  for(const i of right){for(let n=0;n<(Play.streak[i]>=3?2:1);n++){if(!empty().length)break;await placeFor(i)}}
+  if(!empty().length||roundNo>=ROUNDS)return Play.podium('🌎','The world is complete!',S.map(s=>s.pts),{'🧩 Pieces':S.map(s=>s.placed),'✨ Combos':S.map(s=>s.combos)});
+  roundNo++;setTimeout(round,900)}
+ round()}});
+
 </script>
 </body></html>

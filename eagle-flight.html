@@ -6,13 +6,63 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="kit.css">
-<title>Eagle Flight</title></head>
+<title>Eagle Flight</title>
+<style>.arc{position:relative;border:5px solid var(--ink);border-radius:24px;box-shadow:6px 6px 0 var(--ink);overflow:hidden;background:#000;touch-action:none}
+.arc canvas{display:block;width:100%;height:auto}
+.arc .over{position:absolute;inset:0;display:grid;place-items:center;background:rgba(11,16,38,.55);z-index:2}
+.arc .over .card{text-align:center;max-width:520px}
+.keys{text-align:center;font-weight:600;margin-top:8px}.keys kbd{border:2px solid var(--ink);border-radius:6px;padding:0 6px;background:#fff;font-family:inherit}</style></head>
 <body>
 <main></main>
 <script src="kit.js"></script>
-<script src="review.js"></script>
+<script src="play.js"></script>
 <script>
 Kit.mount("🦅", "Eagle Flight");
-Review.start({"mode": "climb", "racer": "🦅", "finish": "☀️", "stage": "#CFE8FF", "lane": "#EEF7FF", "winText": "Flying highest of all!", "how": "Each right answer helps your eagle fly higher. First eagle to the sun wins!", "goal": 10});
+
+Play.setup({needsChoices:true,defTeams:2,how:'Teams take turns flying the eagle through the mountains. Steer up and down to grab 🪶 feathers (+1) and dodge ⛈️ storm clouds (−1). Then a gate comes with 4 doors, each with an answer. Fly through the door with the right answer for +3! Hit a wrong door and you bonk. Every lap gets faster.',
+extra:'<label>Gates per team <select id="eg" style="width:auto"><option>2</option><option selected>3</option><option>5</option></select></label>',
+start({teams,game}){
+ const $=id=>document.getElementById(id);const W=960,H=600,LANES=4,LH=(H-80)/LANES;const laps=+document.getElementById('eg').value;
+ game.innerHTML=`<div class="pl-score" id="sc"></div><div class="arc" id="arc"><canvas id="cv" width="${W}" height="${H}"></canvas><div class="over" id="over"></div></div>
+  <div class="keys">Steer: <kbd>↑</kbd> <kbd>↓</kbd> or drag up and down</div><div class="pl-msg" id="msg"></div>`;
+ const cv=$('cv'),g=cv.getContext('2d');const S=teams.map(()=>({pts:0,gates:0,feathers:0,zaps:0}));let turn=0,lap=1;
+ const sc=()=>$('sc').innerHTML=teams.map((t,i)=>`<span style="border-color:${t.color};${i===turn?`background:${t.color}`:''}">${Kit.esc(t.name)}: ${S[i].pts}</span>`).join('')+`<span>Lap ${Math.min(lap,laps)} of ${laps}</span>`;
+ const keys={};addEventListener('keydown',e=>{if(['ArrowUp','ArrowDown','KeyW','KeyS'].includes(e.code)){keys[e.code]=true;e.preventDefault()}});addEventListener('keyup',e=>keys[e.code]=false);
+ let ptrY=null;cv.addEventListener('pointermove',e=>{if(e.pointerType!=='mouse'&&!e.buttons)return;const r=cv.getBoundingClientRect();ptrY=(e.clientY-r.top)/r.height*H});cv.addEventListener('pointerdown',e=>{const r=cv.getBoundingClientRect();ptrY=(e.clientY-r.top)/r.height*H});
+ const COL=['#FF6B5B','#FFC93C','#5DC66E','#22C3E6'];
+ function rr(x,y,w,h,r){g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath()}
+ function overlay(html){$('over').innerHTML=html;$('over').style.display=html?'grid':'none'}
+ const mts=Array.from({length:8},(_,k)=>({x:k*160,h:120+Math.random()*120}));
+ function ready(){sc();overlay(`<div class="card"><div style="font-size:3rem">🦅</div><h2 style="margin:4px 0">${Kit.esc(teams[turn].name)}, spread your wings!</h2><p>Lap ${lap} of ${laps}</p><button class="btn big green" id="fly">Fly!</button></div>`);$('fly').onclick=()=>{overlay('');play()}}
+ function play(){const q=Play.nextQuestion();const s=S[turn];const speed=230+lap*45;let y=H/2,prev=performance.now(),done=false,dist=0;
+  const gateX=W+speed*7;let gx=gateX;const items=[];for(let k=0;k<9;k++)items.push({x:W+120+k*speed*0.7,lane:Kit.rand(0,LANES-1),k:Math.random()<.35?'cloud':'feather',got:false});
+  const doors=q.choices;let flash=0;
+  function end(msg){done=true;setTimeout(()=>{$('msg').innerHTML=msg;turn=(turn+1)%teams.length;if(turn===0)lap++;sc();
+   if(lap>laps)return Play.podium('🦅','Highest flyers!',S.map(x=>x.pts),{'🚪 Right gates':S.map(x=>x.gates),'🪶 Feathers':S.map(x=>x.feathers),'⛈️ Zaps':S.map(x=>x.zaps)});ready()},1000)}
+  function frame(now){if(done)return;const dt=Math.min(.05,(now-prev)/1000);prev=now;dist+=speed*dt;
+   if(keys.ArrowUp||keys.KeyW)y-=360*dt;if(keys.ArrowDown||keys.KeyS)y+=360*dt;if(ptrY!=null)y+=(ptrY-y)*Math.min(1,dt*8);y=Math.max(70,Math.min(H-30,y));
+   // sky + mountains
+   const sky=g.createLinearGradient(0,0,0,H);sky.addColorStop(0,'#74C0FC');sky.addColorStop(1,'#D0EBFF');g.fillStyle=sky;g.fillRect(0,0,W,H);
+   g.fillStyle='#ADB5BD';mts.forEach(m=>{m.x-=speed*.25*dt;if(m.x<-200)m.x+=W+300;g.beginPath();g.moveTo(m.x,H);g.lineTo(m.x+100,H-m.h);g.lineTo(m.x+200,H);g.fill();g.fillStyle='#fff';g.beginPath();g.moveTo(m.x+80,H-m.h+24);g.lineTo(m.x+100,H-m.h);g.lineTo(m.x+120,H-m.h+24);g.fill();g.fillStyle='#ADB5BD'});
+   // question
+   g.fillStyle='rgba(255,255,255,.95)';rr(14,10,W-28,46,14);g.fill();g.fillStyle='#1D2B53';g.font='700 24px Fredoka, Trebuchet MS, sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(q.q.length>70?q.q.slice(0,68)+'…':q.q,W/2,34);
+   const ex=170;const myLane=Math.min(LANES-1,Math.max(0,Math.floor((y-70)/LH)));
+   // items
+   items.forEach(it=>{if(it.got)return;it.x-=speed*dt;if(it.x>gx-60)it.got=true;const iy=70+it.lane*LH+LH/2;g.font=it.k==='cloud'?'60px sans-serif':'40px sans-serif';g.fillText(it.k==='cloud'?'⛈️':'🪶',it.x,iy);
+    if(Math.abs(it.x-ex)<40&&Math.abs(iy-y)<LH*.45){it.got=true;if(it.k==='feather'){s.pts++;s.feathers++;Kit.ding();Play.pop('+1 🪶',[cv.getBoundingClientRect().left+ex/W*cv.getBoundingClientRect().width,cv.getBoundingClientRect().top+y/H*cv.getBoundingClientRect().height],'#fff')}
+     else{s.pts=Math.max(0,s.pts-1);s.zaps++;flash=.3;Kit.tone(90,.4,'sawtooth',.25)}sc()}});
+   // gate
+   gx-=speed*dt;for(let k=0;k<LANES;k++){const top=70+k*LH;g.fillStyle='#5C3D2E';g.fillRect(gx-16,top,32,8);g.fillRect(gx-16,top+LH-8,32,8);
+    g.fillStyle=COL[k];g.globalAlpha=.85;rr(gx-110,top+14,220,LH-28,14);g.fill();g.globalAlpha=1;g.lineWidth=3;g.strokeStyle='#1D2B53';g.stroke();
+    g.fillStyle='#1D2B53';g.font='700 22px Fredoka, Trebuchet MS, sans-serif';g.fillText(doors[k].length>16?doors[k].slice(0,15)+'…':doors[k],gx,top+LH/2)}
+   // eagle
+   g.font='64px sans-serif';g.save();g.translate(ex,y);g.scale(-1,1);g.fillText('🦅',0,0);g.restore();
+   if(flash>0){flash-=dt;g.fillStyle=`rgba(255,255,255,${flash*2})`;g.fillRect(0,0,W,H);g.font='80px sans-serif';g.fillText('⚡',ex,y-50)}
+   if(gx<ex){const pick=doors[myLane];if(pick===q.a){const p=3;s.pts+=p;s.gates++;sc();Kit.tada();Kit.confetti(40);return end(`🚪 Through the right door! <b>${Kit.esc(q.a)}</b> +3`)}
+    Kit.tone(120,.5,'sawtooth',.2);return end(`💫 Bonk! That door said "${Kit.esc(pick)}". The answer was <b>${Kit.esc(q.a)}</b>.`)}
+   requestAnimationFrame(frame)}
+  requestAnimationFrame(frame)}
+ ready()}});
+
 </script>
 </body></html>

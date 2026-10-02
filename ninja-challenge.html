@@ -6,13 +6,59 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="kit.css">
-<title>Ninja Challenge</title></head>
+<title>Ninja Challenge</title>
+<style>
+.dojo{position:relative;border:5px solid var(--ink);border-radius:24px;box-shadow:6px 6px 0 var(--ink);overflow:hidden;height:min(46vh,400px);background:linear-gradient(#FFE3E3,#FFF5F5 55%,#C8A27A 55%)}
+.dojo .sun{position:absolute;left:50%;top:10%;transform:translateX(-50%);width:120px;height:120px;border-radius:50%;background:#FF6B6B;opacity:.6}
+.dojo .ninja{position:absolute;left:18%;bottom:44%;font-size:4rem;transition:transform .2s;z-index:2}
+.dojo .ninja.jump{transform:translateY(-90px) rotate(-20deg)}.dojo .ninja.duck{transform:scaleY(.55) translateY(36px)}.dojo .ninja.slash{transform:rotate(20deg) translateX(14px)}
+.dojo .ninja.fall{animation:nf .8s}@keyframes nf{50%{transform:rotate(90deg) translateY(30px)}}
+.dojo .obs{position:absolute;left:58%;bottom:44%;font-size:3.4rem;z-index:1;animation:come .35s ease-out}@keyframes come{from{left:100%}}
+.dojo .obs.high{bottom:66%}
+.dojo .prompt{position:absolute;right:6%;top:12%;background:#fff;border:5px solid var(--ink);border-radius:20px;padding:6px 18px;font-size:2.6rem;font-weight:800;z-index:3;text-align:center}
+.dojo .prompt small{display:block;font-size:.35em}
+.dojo .tbar{position:absolute;left:4%;right:4%;top:4%;height:12px;border:3px solid var(--ink);border-radius:99px;background:#fff;overflow:hidden;z-index:3}.dojo .tbar i{display:block;height:100%;background:var(--grass)}
+.belts{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:12px}
+.belt{background:#fff;border:4px solid var(--ink);border-radius:16px;padding:8px;text-align:center;font-weight:700}.belt .bl{height:14px;border:3px solid var(--ink);border-radius:6px;margin:6px 0}
+.qte{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:12px}.qte .btn{font-size:1.4rem;min-width:130px}</style></head>
 <body>
 <main></main>
 <script src="kit.js"></script>
-<script src="review.js"></script>
+<script src="play.js"></script>
 <script>
 Kit.mount("🥷", "Ninja Challenge");
-Review.start({"mode": "climb", "racer": "🥷", "finish": "🏯", "stage": "#EFE6FF", "lane": "#F8F4FF", "winText": "First ninja to the temple!", "how": "Ninjas race up the wall to the temple. Each right answer moves your ninja one step up. First to the top wins!", "goal": 10});
+
+Play.setup({defTeams:3,how:'Train to become a black belt ninja! Every right answer starts an obstacle course run. Obstacles come one after another. React fast: ⬆️ JUMP over logs, ⬇️ DUCK under flying stars, and ⚔️ SLASH through bamboo (use the arrow keys plus Space, or tap the buttons). Clear the whole course to earn the next belt. Each belt makes the course longer and faster. First to the ⚫ black belt wins!',
+start({teams,game}){
+ const $=id=>document.getElementById(id);const BELTS=[['White','#fff'],['Yellow','#FFE066'],['Orange','#FFA94D'],['Green','#51CF66'],['Blue','#339AF0'],['Black','#212529']];
+ const N=teams.map(()=>({belt:0,cleared:0,fails:0,best:0}));
+ const OB={jump:{ic:'🪵',key:'ArrowUp',lbl:'⬆️ JUMP'},duck:{ic:'⭐',key:'ArrowDown',lbl:'⬇️ DUCK',high:true},slash:{ic:'🎋',key:'Space',lbl:'⚔️ SLASH'}};
+ game.innerHTML=`<div class="dojo" id="dojo"><div class="sun"></div><div class="ninja" id="nj">🥷</div></div>
+  <div class="qte" id="qte">${Object.entries(OB).map(([k,o])=>`<button class="btn white" data-q="${k}">${o.lbl}</button>`).join('')}</div>
+  <div class="belts" id="belts"></div><div class="pl-msg" id="msg"></div><div id="ask"></div>`;
+ const belts=()=>$('belts').innerHTML=teams.map((t,i)=>`<div class="belt" style="border-color:${t.color}">${Kit.esc(t.name)}<div class="bl" style="background:${BELTS[N[i].belt][1]}"></div>${BELTS[N[i].belt][0]} belt</div>`).join('');belts();
+ let want=null;const press=k=>{if(want)want(k)};
+ $('qte').onclick=e=>{const b=e.target.closest('[data-q]');if(b)press(b.dataset.q)};
+ addEventListener('keydown',e=>{const m={ArrowUp:'jump',ArrowDown:'duck',Space:'slash'}[e.code];if(m&&want){e.preventDefault();press(m)}});
+ async function run(i){const n=N[i];const len=3+n.belt,time=Math.max(900,2200-n.belt*250);const nj=$('nj');
+  for(let s=0;s<len;s++){const k=Kit.pick(Object.keys(OB));const o=OB[k];
+   $('dojo').insertAdjacentHTML('beforeend',`<div class="obs ${o.high?'high':''}" id="ob">${o.ic}</div><div class="prompt" id="pr">${o.lbl.split(' ')[0]}<small>${o.lbl.split(' ')[1]} · ${s+1}/${len}</small></div><div class="tbar"><i id="tb" style="width:100%"></i></div>`);
+   const t0=performance.now();let iv=setInterval(()=>{const p=1-(performance.now()-t0)/time;$('tb')&&($('tb').style.width=Math.max(0,p*100)+'%')},30);
+   const got=await new Promise(res=>{want=res;setTimeout(()=>res(null),time)});want=null;clearInterval(iv);
+   nj.className='ninja '+(got||'');
+   const ok=got===k;await Kit.sleep(250);['ob','pr'].forEach(id=>$(id)&&$(id).remove());$('dojo').querySelector('.tbar').remove();
+   if(!ok){nj.className='ninja fall';n.fails++;Kit.tone(130,.4,'sawtooth',.2);Play.pop(got?'Wrong move!':'Too slow!',nj,'#FF6B5B');await Kit.sleep(800);nj.className='ninja';return false}
+   Kit.tone(600+s*60,.1,'triangle',.15);Play.pop('✓',nj,'#8CE99A');await Kit.sleep(200);nj.className='ninja'}
+  return true}
+ let turn=0;
+ async function round(){const i=turn;$('msg').textContent='';const r=await Play.ask($('ask'),[i]);
+  if(r.length){$('msg').innerHTML=`<span class="pl-turn" style="background:${teams[i].color}">${Kit.esc(teams[i].name)}</span> get ready…`;await Kit.sleep(900);$('msg').textContent='GO!';
+   const ok=await run(i);if(ok){N[i].belt++;N[i].cleared++;belts();Kit.tada();Play.banner(`🥋 ${teams[i].name} earned the ${BELTS[N[i].belt][0]} belt!`);
+    if(N[i].belt>=BELTS.length-1){await Kit.sleep(900);return Play.podium('🥷',`${teams[i].name} is a black belt ninja!`,N.map(n=>n.belt),{'✅ Courses':N.map(n=>n.cleared),'💥 Falls':N.map(n=>n.fails)})}}
+   else $('msg').textContent='Keep training! Try again next turn.'}
+  else $('msg').textContent='No run this turn.';
+  turn=(turn+1)%teams.length;setTimeout(round,1200)}
+ round()}});
+
 </script>
 </body></html>

@@ -6,13 +6,81 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="kit.css">
-<title>Balloon Pop Challenge</title></head>
+<title>Balloon Pop Challenge</title>
+<style>.bp{position:relative;height:min(66vh,600px);border:5px solid var(--ink);border-radius:24px;overflow:hidden;box-shadow:6px 6px 0 var(--ink);background:linear-gradient(#8FD3FF,#D8F1FF 70%,#EAF8FF)}
+.bp .sun{position:absolute;right:6%;top:16%;font-size:3.4rem;animation:spin 30s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+.bp .cloud{position:absolute;font-size:var(--s,3rem);opacity:.9;animation:drift var(--d,40s) linear infinite;left:-15%}@keyframes drift{to{left:110%}}
+.bp .hills{position:absolute;left:-5%;right:-5%;bottom:-40px;height:120px;background:radial-gradient(ellipse at 20% 100%,#6CC25B 0 55%,transparent 56%),radial-gradient(ellipse at 70% 100%,#5DB453 0 60%,transparent 61%);z-index:1}
+.bp .bird{position:absolute;font-size:1.6rem;animation:fly 12s linear infinite;left:-10%;z-index:1}@keyframes fly{to{left:110%}}
+.bp .q{position:absolute;top:10px;left:10px;right:10px;z-index:6;background:#fff;border:4px solid var(--ink);border-radius:18px;padding:8px 14px;text-align:center;font-weight:700;font-size:clamp(1.15rem,2.8vw,1.9rem)}
+.bp .tbar{position:absolute;left:10px;right:10px;top:calc(10px + 4.2em);height:10px;z-index:6;border:3px solid var(--ink);border-radius:99px;background:#fff;overflow:hidden}.bp .tbar i{display:block;height:100%;background:var(--grass)}
+.bp .wind{position:absolute;left:50%;top:40%;transform:translateX(-50%);z-index:6;font-weight:800;font-size:1.6rem;background:#fff;border:3px solid var(--ink);border-radius:99px;padding:2px 16px;animation:pop .4s}
+.bln{position:absolute;bottom:-32%;width:clamp(110px,14vw,165px);aspect-ratio:.8;border:0;padding:0;background:none;cursor:pointer;font:inherit;z-index:3}
+.bln .b{width:100%;height:84%;border-radius:50% 50% 47% 47%/55% 55% 45% 45%;border:4px solid var(--ink);display:grid;place-items:center;padding:10px 8px;font-weight:700;font-size:clamp(.9rem,1.8vw,1.25rem);color:var(--ink);line-height:1.1;word-break:break-word;position:relative;
+ box-shadow:inset -12px -14px 0 rgba(0,0,0,.13),inset 12px 10px 0 rgba(255,255,255,.35)}
+.bln .b::after{content:"";position:absolute;bottom:-9px;left:50%;transform:translateX(-50%);border:8px solid transparent;border-top-color:var(--ink)}
+.bln .s{width:2px;height:16%;background:var(--ink);margin:0 auto}
+.bln.gold .b{background:linear-gradient(135deg,#FFE066,#F59F00)!important;animation:shine 1s infinite alternate}@keyframes shine{to{filter:brightness(1.25)}}
+.bln.bomb .b{background:#343A40!important;color:#fff;font-size:2rem}
+.bln.popd{animation:popb .3s forwards;pointer-events:none}@keyframes popb{to{transform:scale(1.7);opacity:0}}
+.bln.frozen .b{box-shadow:inset 0 0 0 5px #A5D8FF,inset -12px -14px 0 rgba(0,0,0,.13)}
+.bp-ctl{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:12px;align-items:center}
+.bp-legend{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;font-weight:600;margin-top:8px;font-size:.95rem}</style></head>
 <body>
 <main></main>
 <script src="kit.js"></script>
-<script src="review.js"></script>
+<script src="play.js"></script>
 <script>
 Kit.mount("🎈", "Balloon Pop Challenge");
-Review.start({"mode": "grid", "grid": "balloon", "cover": "🎈", "stage": "#FFE3F2", "lane": "#FFF4FA", "goal": 20, "how": "Each right answer lets that team pop a balloon. Most balloons hold points, one hides a big star, and a couple hide bombs that take points away! Most points wins.", "finish": "🏆"});
+
+Play.setup({needsChoices:true,defTeams:2,how:'Teams take turns. Answer balloons float up into the sky. Tap the right one before it gets away! A ⭐ golden balloon is worth double. 💣 Bomb balloons cost a point. Get 3 in a row for a combo bonus. Popping a golden balloon also earns ❄️ Freeze, which slows the balloons on a later turn. Watch out for wind gusts, and the balloons get faster every round!',
+extra:'<label>Rounds <select id="bpR" style="width:auto"><option>3</option><option selected>5</option><option>8</option></select></label>',
+start({teams,game}){
+ const rounds=+document.getElementById('bpR').value;const $=id=>document.getElementById(id);
+ const COLS=['#FF6B5B','#FFC93C','#5DC66E','#22C3E6','#9B6BF2','#FF8FC7'];
+ const S=teams.map(()=>({pts:0,combo:0,gold:0,freeze:0,pops:0,right:0}));let turn=0,round=1,raf;
+ game.innerHTML=`<div class="pl-score" id="sc"></div><div class="bp" id="sky"></div>
+  <div class="bp-legend"><span>⭐ Golden balloon = double points + ❄️ Freeze</span><span>💣 Bomb = −1</span><span>🔥 3 in a row = +1 combo bonus</span></div>
+  <div class="pl-msg" id="msg"></div><div class="bp-ctl" id="ctl"></div>`;
+ const scene=()=>`<div class="sun">☀️</div>${[['☁️','3.4rem','48s','12%','-20s'],['☁️','2.4rem','36s','28%','-8s'],['☁️','4rem','60s','6%','-35s']].map(([e,s,d,t,dl])=>`<div class="cloud" style="--s:${s};--d:${d};top:${t};animation-delay:${dl}">${e}</div>`).join('')}<div class="bird" style="top:22%">🐦</div><div class="hills"></div>`;
+ $('sky').innerHTML=scene();
+ const sc=()=>$('sc').innerHTML=teams.map((t,i)=>`<span style="border-color:${t.color};${i===turn?`background:${t.color}`:''}">${Kit.esc(t.name)}: ${S[i].pts}${S[i].combo>=2?` 🔥${S[i].combo}`:''}${S[i].freeze?' ❄️'.repeat(S[i].freeze):''}</span>`).join('')+`<span>Round ${Math.min(round,rounds)} of ${rounds}</span>`;
+ function ready(){sc();const s=S[turn],t=teams[turn];$('msg').innerHTML='';
+  $('ctl').innerHTML=`<button class="btn big green" id="rel">🎈 ${Kit.esc(t.name)}: release the balloons!</button>${s.freeze?'<button class="btn white" id="fz">❄️ Use Freeze</button>':''}`;
+  let freeze=false;if(s.freeze)$('fz').onclick=()=>{freeze=!freeze;$('fz').textContent=freeze?'❄️ Freeze ON':'❄️ Use Freeze';$('fz').classList.toggle('green',freeze)};
+  $('rel').onclick=()=>{if(freeze)s.freeze--;$('ctl').innerHTML='';launch(freeze)}}
+ function launch(freeze){const q=Play.nextQuestion();const sky=$('sky');sky.innerHTML=scene()+`<div class="q">${Kit.esc(q.q)}</div><div class="tbar"><i id="tb"></i></div>`;
+  let dur=Math.max(3.4,9-(round-1)*1.05);if(freeze)dur*=1.8;
+  const gold=Math.random()<.3,bombs=round>=2?(round>=4?2:1):0;
+  const list=q.choices.map(c=>({c,kind:gold&&c===q.a?'gold':'norm'}));for(let b=0;b<bombs;b++)list.push({c:'💣',kind:'bomb'});
+  const slots=Kit.shuffle([...Array(list.length).keys()]);const w=100/list.length;
+  const bl=list.map((it,k)=>{const el=document.createElement('button');el.className='bln '+(it.kind==='gold'?'gold':it.kind==='bomb'?'bomb':'')+(freeze?' frozen':'');
+   el.innerHTML=`<div class="b" style="background:${COLS[k%COLS.length]}">${it.kind==='bomb'?'💣':Kit.esc(it.c)}${it.kind==='gold'?'<span style="position:absolute;top:4px;right:10px">⭐</span>':''}</div><div class="s"></div>`;
+   el.style.left=`calc(${slots[k]*w+w/2}% - clamp(55px,7vw,82px))`;el.dataset.k=k;sky.appendChild(el);return{el,it,delay:Math.random()*1.6,sway:Math.random()*6.28,dx:0}});
+  const gust=round>=3&&Math.random()<.6?(Math.random()<.5?-1:1):0;let gustOn=false;
+  const t0=performance.now();let over=false;
+  const end=(msg)=>{if(over)return;over=true;cancelAnimationFrame(raf);$('msg').innerHTML=msg;
+   bl.forEach(b=>{if(b.it.c===q.a&&b.it.kind!=='bomb')b.el.querySelector('.b').style.outline='6px solid #fff'});
+   setTimeout(()=>{turn=(turn+1)%teams.length;if(turn===0)round++;
+    if(round>rounds){sc();return Play.podium('🎈','Balloon Pop champions!',S.map(s=>s.pts),{'⭐ Golden':S.map(s=>s.gold),'🎈 Pops':S.map(s=>`${s.right}/${s.pops}`)})}ready()},1900)};
+  sky.onclick=e=>{const b=e.target.closest('.bln');if(!b||over||b.classList.contains('popd'))return;const o=bl[+b.dataset.k];const s=S[turn];
+   b.classList.add('popd');Play.burst(b,[o.el.querySelector('.b').style.background||'#FFC93C','#fff','#FFC93C']);Kit.tone(1400,.08,'square',.12);
+   if(o.it.kind==='bomb'){s.pts--;s.combo=0;sc();Kit.tone(80,.6,'sawtooth',.3);Play.pop('−1 💣',b,'#FF6B5B');$('msg').textContent='BOOM! A bomb balloon. Keep looking!';return}
+   s.pops++;
+   if(o.it.c===q.a){s.right++;s.combo++;let pts=o.it.kind==='gold'?2:1;let txt=`+${pts}`;
+    if(o.it.kind==='gold'){s.gold++;s.freeze++;txt+=' ⭐';Play.banner(`⭐ Golden balloon! ${teams[turn].name} earned ❄️ Freeze`)}
+    if(s.combo>=3){pts++;txt+=' 🔥';if(s.combo===3)Play.banner(`🔥 ${teams[turn].name} combo! +1 bonus every pop`)}
+    s.pts+=pts;sc();Play.pop(txt,b,'#FFE066');Kit.tada();Kit.confetti(40);end(`💥 Pop! That's right! +${pts} for ${Kit.esc(teams[turn].name)}`)}
+   else{s.combo=0;sc();Kit.tone(150,.4,'sawtooth',.2);Play.pop('✗',b,'#FF6B5B');end(`Oops! The answer was <b>${Kit.esc(q.a)}</b>.`)}};
+  function frame(now){const t=(now-t0)/1000;let gone=0;
+   if(gust&&!gustOn&&t>dur*0.35){gustOn=true;sky.insertAdjacentHTML('beforeend',`<div class="wind">${gust<0?'💨 ← Wind gust!':'Wind gust! → 💨'}</div>`);Kit.tone(200,.8,'sine',.08);setTimeout(()=>{const wd=sky.querySelector('.wind');wd&&wd.remove()},1500)}
+   bl.forEach(b=>{const p=Math.max(0,(t-b.delay)/dur);if(gustOn)b.dx+=gust*0.9;
+    b.el.style.bottom=(-32+p*150)+'%';b.el.style.transform=`translateX(${Math.sin(t*1.4+b.sway)*16+b.dx}px) rotate(${Math.sin(t*1.4+b.sway)*5}deg)`;
+    if(p>=1||b.el.classList.contains('popd'))gone++});
+   $('tb')&&($('tb').style.width=Math.max(0,100-100*t/(dur+1.6))+'%');
+   if(gone===bl.length)return end(`The balloons floated away! The answer was <b>${Kit.esc(q.a)}</b>.`);raf=requestAnimationFrame(frame)}
+  raf=requestAnimationFrame(frame)}
+ ready()}});
+
 </script>
 </body></html>

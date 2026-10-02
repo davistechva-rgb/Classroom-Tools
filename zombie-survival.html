@@ -6,13 +6,72 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="kit.css">
-<title>Zombie Survival</title></head>
+<title>Zombie Survival</title>
+<style>.town{position:relative;border:5px solid var(--ink);border-radius:24px;box-shadow:6px 6px 0 var(--ink);overflow:hidden;padding:14px;transition:background 1.2s}
+.town.day{background:linear-gradient(#8FD3FF,#D8F1FF 60%,#9CCC65 60%)}.town.night{background:linear-gradient(#0B1026,#1E2A5A 60%,#2F4A2F 60%)}
+.sky{position:absolute;top:8px;right:14px;font-size:2.6rem;transition:all 1.2s}
+.town .info{position:relative;z-index:1;display:inline-block;background:#fff;border:3px solid var(--ink);border-radius:99px;padding:2px 14px;font-weight:800;margin-bottom:10px}
+.houses{position:relative;z-index:1;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px}
+.house{background:#FFF4E6;border:4px solid var(--ink);border-radius:16px 16px 10px 10px;padding:8px;text-align:center;position:relative}
+.house::before{content:"";position:absolute;left:-6px;right:-6px;top:-26px;height:30px;background:var(--roof,#C92A2A);border:4px solid var(--ink);clip-path:polygon(50% 0,100% 100%,0 100%)}
+.house h3{margin:4px 0;font-size:1.05rem}.house .ppl{font-size:1.5rem;min-height:1.9rem;letter-spacing:-.1em}
+.house .res{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;font-weight:700;font-size:.9rem;margin-top:6px}
+.house .res span{background:#fff;border:2px solid var(--ink);border-radius:10px;padding:2px}
+.house .boards{font-size:1.1rem;min-height:1.4rem}.house.over{opacity:.5;filter:grayscale(1)}
+.house.attacked{animation:att .4s 3}@keyframes att{50%{transform:translateX(-6px);background:#FFC9C9}}
+.horde{position:relative;z-index:1;text-align:center;font-size:2rem;min-height:2.6rem;margin-top:10px}
+.horde span{display:inline-block;animation:shamble 1s ease-in-out infinite alternate}@keyframes shamble{to{transform:translateX(8px) rotate(6deg)}}
+.event{background:#FFF3BF;border:4px solid var(--ink);border-radius:16px;padding:8px 14px;margin:10px auto;max-width:680px;text-align:center;font-weight:700}
+.scav{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:10px 0}.scav .btn small{display:block;font-size:.72rem;font-weight:600}</style></head>
 <body>
 <main></main>
 <script src="kit.js"></script>
-<script src="review.js"></script>
+<script src="play.js"></script>
 <script>
 Kit.mount("🧟", "Zombie Survival");
-Review.start({"mode": "boss", "boss": "🧟", "bossName": "The Zombie Horde", "attack": "🔦", "stage": "#E3F7E6", "goal": 20, "bossAttack": "The zombies get closer!", "winTitle": "You survived the night!", "loseTitle": "The zombies got in!", "how": "The whole class teams up! Every right answer hits the boss. If nobody gets it right, the boss strikes back and the class loses a heart. Beat the boss before your 5 hearts run out!", "finish": "🏆"});
+
+Play.setup({defTeams:3,how:'Each team runs a shelter with 5 survivors. Survive 7 nights! During the day, every team that answers right goes scavenging: 🪵 wood builds barricades, 🥫 food feeds your people, and 🔦 gear helps fight. At night the horde attacks, and it grows bigger every night. Barricades and gear stop zombies, and anything that gets through costs a survivor. Every survivor eats each night, so don\'t run out of food! The team with the most survivors after night 7 wins.',
+start({teams,game}){
+ const $=id=>document.getElementById(id);const ROOF=['#C92A2A','#1971C2','#E67700','#2B8A3E','#7048E8','#C2255C'];
+ const S=teams.map(()=>({ppl:5,wood:1,food:4,gear:0,lost:0,found:0}));let night=1;
+ game.innerHTML=`<div class="town day" id="town"><div class="sky" id="sky">☀️</div><div class="info" id="info"></div><div class="houses" id="houses"></div><div class="horde" id="horde"></div></div>
+  <div id="event"></div><div class="pl-msg" id="msg"></div><div id="act"></div><div id="ask"></div>`;
+ const draw=()=>{$('info').textContent=`Night ${night} of 7`;$('houses').innerHTML=teams.map((t,i)=>{const s=S[i];return `<div class="house ${s.ppl<=0?'over':''}" id="h${i}" style="--roof:${ROOF[i]}">
+  <h3>${Kit.esc(t.name)}</h3><div class="ppl">${s.ppl>0?'🧑'.repeat(s.ppl):'🧟'}</div><div class="boards">${'🪵'.repeat(Math.min(s.wood,8))}${s.wood>8?'+':''}</div>
+  <div class="res"><span title="Barricade">🪵 ${s.wood}</span><span title="Food">🥫 ${s.food}</span><span title="Gear">🔦 ${s.gear}</span></div></div>`}).join('')};
+ draw();
+ const alive=()=>S.map((s,i)=>s.ppl>0?i:-1).filter(i=>i>=0);
+ const scav=i=>new Promise(res=>{$('act').innerHTML=`<div class="card center"><span class="pl-turn" style="background:${teams[i].color}">${Kit.esc(teams[i].name)}</span> where do you scavenge?
+  <div class="scav"><button class="btn" data-s="wood" style="background:#D9A066">🪵 Lumber yard<small>+3 wood</small></button><button class="btn green" data-s="food">🥫 Grocery store<small>+3 food</small></button><button class="btn" data-s="gear" style="background:#A5D8FF">🔦 Hardware store<small>+1 gear</small></button><button class="btn white" data-s="risk">🎲 Spooky mall<small>Big reward… or trouble</small></button></div></div>`;
+  $('act').onclick=e=>{const b=e.target.closest('[data-s]');if(b){$('act').onclick=null;$('act').innerHTML='';res(b.dataset.s)}}});
+ async function day(){$('town').className='town day';$('sky').textContent='☀️';$('horde').innerHTML='';$('msg').textContent=`Day ${night}: time to scavenge!`;
+  for(let k=0;k<2;k++){const right=await Play.ask($('ask'),alive(),{goWord:'Go scavenge!'});
+   for(const i of right){const c=await scav(i);const s=S[i];const bonus=Play.streak[i]>=3?1:0;s.found++;
+    if(c==='wood'){s.wood+=3+bonus;Play.pop(`+${3+bonus} 🪵`,$('h'+i),'#FFD8A8')}
+    if(c==='food'){s.food+=3+bonus;Play.pop(`+${3+bonus} 🥫`,$('h'+i),'#B2F2BB')}
+    if(c==='gear'){s.gear+=1+bonus;Play.pop(`+${1+bonus} 🔦`,$('h'+i),'#A5D8FF')}
+    if(c==='risk'){const roll=Math.random();if(roll<.35){s.wood+=3;s.food+=3;s.gear+=1;Play.banner(`🎉 ${teams[i].name} found a supply truck!`)}else if(roll<.6){s.ppl=Math.min(9,s.ppl+1);Play.banner(`🙋 ${teams[i].name} rescued a survivor!`)}else if(roll<.85){s.food+=1;Play.pop('+1 🥫',$('h'+i))}else{s.ppl--;s.lost++;Play.banner(`😱 ${teams[i].name} ran into zombies! −1 survivor`)}}
+    Kit.ding();draw();await Kit.sleep(400)}}}
+ async function nightfall(){$('town').className='town night';$('sky').textContent='🌕';Kit.tone(110,1.4,'sine',.15);await Kit.sleep(900);
+  // random night event
+  const ev=Kit.pick(['none','none','fog','moon','radio','storm']);let extra=0;let evtxt='';
+  if(ev==='fog'){evtxt='🌫️ Thick fog tonight. The zombies get lost, and the horde is smaller.';extra=-1}
+  if(ev==='moon'){evtxt='🌕 Blood moon! The horde is bigger tonight.';extra=2}
+  if(ev==='storm'){evtxt='⛈️ A storm knocks down 1 board on every barricade.';S.forEach(s=>{if(s.wood>0)s.wood--})}
+  if(ev==='radio'){const a=alive();if(a.length){const i=Kit.pick(a);S[i].ppl=Math.min(9,S[i].ppl+1);evtxt=`📻 A radio call! A survivor finds ${teams[i].name}'s shelter.`}}
+  $('event').innerHTML=evtxt?`<div class="event">${evtxt}</div>`:'';draw();
+  const size=Math.max(1,night+1+extra);$('horde').innerHTML=Array.from({length:Math.min(size*2,16)},(_,k)=>`<span style="animation-delay:${k*.1}s">🧟</span>`).join('');
+  $('msg').textContent=`🧟 The horde attacks! Each shelter faces ${size} zombies.`;await Kit.sleep(1400);
+  for(const i of alive()){const s=S[i];const el=$('h'+i);el.classList.add('attacked');Kit.tone(90,.3,'sawtooth',.2);
+   let z=size;const block=Math.min(z,s.wood);z-=block;s.wood-=Math.ceil(block/2);const fight=Math.min(z,s.gear*2);z-=fight;
+   const lost=Math.min(s.ppl,z);s.ppl-=lost;s.lost+=lost;
+   Play.pop(lost?`−${lost} 🧑`:'Safe! 🛡️',el,lost?'#FF6B5B':'#8CE99A');draw();await Kit.sleep(700)}
+  // dinner
+  for(const i of alive()){const s=S[i];const need=Math.ceil(s.ppl/2);if(s.food>=need)s.food-=need;else{s.food=0;s.ppl--;s.lost++;Play.pop('😩 Hungry! −1',$('h'+i),'#FF6B5B')}}
+  draw();await Kit.sleep(900);$('event').innerHTML=''}
+ async function loop(){while(night<=7&&alive().length){await day();await nightfall();if(night<7)Play.banner(`🌅 Dawn of day ${night+1}`);night++;await Kit.sleep(800)}
+  const best=Math.max(...S.map(s=>s.ppl));Play.podium(best?'🌅':'🧟',best?'You survived the zombie apocalypse!':'The zombies took over…',S.map(s=>s.ppl),{'🧑 Lost':S.map(s=>s.lost),'🎒 Trips':S.map(s=>s.found)})}
+ loop()}});
+
 </script>
 </body></html>

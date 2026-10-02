@@ -6,13 +6,68 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="kit.css">
-<title>Treasure Hunt</title></head>
+<title>Treasure Hunt</title>
+<style>.th{position:relative;border:5px solid var(--ink);border-radius:24px;padding:22px;box-shadow:6px 6px 0 var(--ink);overflow:hidden;
+ background:repeating-linear-gradient(115deg,#2F95C8 0 26px,#3BA6D8 26px 52px)}
+.th::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(115deg,transparent 0 40px,rgba(255,255,255,.12) 40px 44px);animation:sea 8s linear infinite}@keyframes sea{to{transform:translateX(60px)}}
+.ship{position:absolute;font-size:2.2rem;z-index:2;animation:sail 26s linear infinite}@keyframes sail{0%{left:-8%;top:2%}25%{left:92%;top:2%}26%{left:96%;top:2%;transform:scaleX(-1)}50%{left:96%;top:84%;transform:scaleX(-1)}75%{left:-6%;top:86%;transform:scaleX(-1)}76%{transform:none}100%{left:-8%;top:2%}}
+.th-grid{position:relative;z-index:1;display:grid;grid-template-columns:repeat(10,1fr);gap:3px;max-width:820px;margin:0 auto;padding:10px;border-radius:40px;background:#E6C76A;box-shadow:0 0 0 8px #F2D98C,0 0 0 14px rgba(255,255,255,.35)}
+.th-c{aspect-ratio:1;border:0;border-radius:9px;background:#F2D98C;font:inherit;font-weight:700;font-size:clamp(.85rem,2.4vh,1.45rem);display:grid;place-items:center;padding:0;color:var(--ink);cursor:default;line-height:1;position:relative}
+.th-c.grass{background:#9CD67F}.th-c.palm::before{content:"🌴";font-size:1.2em}.th-c.rock{background:#ADB5BD}.th-c.rock::before{content:"🪨"}
+.th-c.dug{background:#B08A4F;box-shadow:inset 0 4px 8px rgba(0,0,0,.35)}.th-c.dug::before{content:none}
+.th-c small{position:absolute;bottom:2px;right:4px;font-size:.55em}
+.th.dig .th-c:not(.dug):not(.rock){cursor:pointer}.th.dig .th-c:not(.dug):not(.rock):hover{background:#FFE066;transform:scale(1.08);z-index:2}
+.th-c.pulse{animation:pulse 1s 3}@keyframes pulse{50%{box-shadow:0 0 0 5px #fff}}
+.legend{position:relative;z-index:1;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+.legend span{background:#fff;border:3px solid var(--ink);border-radius:999px;padding:1px 10px;font-weight:700;font-size:.85rem}
+.inv{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:10px}
+.clues{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:8px}</style></head>
 <body>
 <main></main>
 <script src="kit.js"></script>
-<script src="review.js"></script>
+<script src="play.js"></script>
 <script>
 Kit.mount("🏴‍☠️", "Treasure Hunt");
-Review.start({"mode": "grid", "grid": "treasure", "cover": "🟫", "stage": "#F7E3B5", "lane": "#EAD3A0", "goal": 20, "how": "Each right answer lets that team dig up one square of the island. Find coins, gems, and the crown, but watch out for snakes! Most treasure wins.", "finish": "🏆"});
+
+Play.setup({defTeams:3,how:'The legendary 👑 Golden Chest is buried on Skull Island, and lots of other loot too! Answer right to dig one square. 💰 Coins = 3 points, 💎 Gems = 5, and the 👑 Golden Chest = 15 and ends the hunt. Every empty hole shows how many steps away the chest is (🔥 1 is red hot). Watch for 🐍 snakes (−2 points). Find 🧭 compasses that point at the chest, ⛏️ shovels that give a bonus dig, and 📜 map scraps with clues. Rocks can\'t be dug. Most points when the chest is found wins!',
+start({teams,game}){
+ const C=10,R=7,N=C*R;const $=id=>document.getElementById(id);
+ const cells=[...Array(N).keys()];const rocks=new Set(Kit.shuffle(cells).slice(0,6));
+ const open=Kit.shuffle(cells.filter(k=>!rocks.has(k)));
+ const chest=open[0];const cr=Math.floor(chest/C),cc=chest%C;
+ const loot={};const put=(icon,n)=>{for(let j=0;j<n;j++){const k=open.find(x=>x!==chest&&!loot[x]);loot[k]=icon}};
+ Kit.shuffle(open);put('💰',5);put('💎',3);put('🐍',4);put('🧭',2);put('⛏️',2);put('📜',3);
+ const clues=Kit.shuffle([`The chest is in row ${cr+1}.`,`The chest is in column ${cc+1}.`,`The chest is in the ${cr<R/2?'north':'south'} half of the island.`,`The chest is on the ${cc<C/2?'west':'east'} side of the island.`]);let ci=0;
+ const S=teams.map(()=>({pts:0,coins:0,gems:0,snakes:0,digs:0}));
+ const heat=d=>d===1?['🔥','#FF8787']:d===2?['♨️','#FFA94D']:d===3?['🌤️','#FFE066']:d===4?['🌥️','#DEE2E6']:['🧊','#A5D8FF'];
+ game.innerHTML=`<div class="pl-score" id="sc"></div><div class="th" id="isle"><div class="ship">🏴‍☠️</div>
+  <div class="th-grid" id="g">${cells.map(k=>`<button class="th-c ${rocks.has(k)?'rock':((k*37+11)%13)<3?'grass':''} ${!rocks.has(k)&&(k*13)%11===0?'palm':''}" data-k="${k}" aria-label="Row ${Math.floor(k/C)+1} column ${k%C+1}"></button>`).join('')}</div>
+  <div class="legend"><span>🔥 1 step</span><span>♨️ 2</span><span>🌤️ 3</span><span>🌥️ 4</span><span>🧊 5+</span><span>💰 +3</span><span>💎 +5</span><span>👑 +15</span><span>🐍 −2</span></div></div>
+  <div class="clues" id="clues"></div><div class="pl-msg" id="msg"></div><div id="ask"></div>`;
+ const sc=()=>$('sc').innerHTML=teams.map((t,i)=>`<span style="border-color:${t.color}">${Kit.esc(t.name)}: ${S[i].pts} pts</span>`).join('');sc();
+ const cell=k=>$('g').children[k];
+ const arrow=k=>{const r=Math.floor(k/C),c=k%C,dr=Math.sign(cr-r),dc=Math.sign(cc-c);return {'-1,-1':'↖️','-1,0':'⬆️','-1,1':'↗️','0,-1':'⬅️','0,1':'➡️','1,-1':'↙️','1,0':'⬇️','1,1':'↘️'}[dr+','+dc]||'🎯'};
+ const pickDig=()=>new Promise(res=>{$('isle').classList.add('dig');$('g').onclick=e=>{const b=e.target.closest('.th-c:not(.dug):not(.rock)');if(b){$('g').onclick=null;$('isle').classList.remove('dig');res(+b.dataset.k)}}});
+ async function dig(i){const k=await pickDig();const b=cell(k);const s=S[i];s.digs++;b.classList.add('dug');Kit.tone(220,.12,'square',.1);Kit.tone(180,.12,'square',.1,.12);
+  if(k===chest){b.textContent='👑';b.style.background='#FFD43B';s.pts+=15;sc();Play.burst(b,['#FFD43B','#fff','#FAB005']);Play.pop('+15 👑',b,'#FFE066');return 'chest'}
+  const it=loot[k];const d=Math.max(Math.abs(Math.floor(k/C)-cr),Math.abs(k%C-cc));const [hi,hc]=heat(d);b.style.background=hc;
+  if(it==='💰'){s.pts+=3;s.coins++;b.innerHTML='💰';Play.pop('+3',b,'#FFE066');Kit.ding();$('msg').textContent='Coins! +3'}
+  else if(it==='💎'){s.pts+=5;s.gems++;b.innerHTML='💎';Play.pop('+5',b,'#99E9F2');Kit.tada();$('msg').textContent='A gem! +5'}
+  else if(it==='🐍'){s.pts-=2;s.snakes++;b.innerHTML='🐍';Play.pop('−2',b,'#FF6B5B');Kit.tone(120,.5,'sawtooth',.2);$('msg').textContent='Hisss! A snake bit you. −2'}
+  else if(it==='🧭'){b.innerHTML=`🧭<small>${arrow(k)}</small>`;Play.banner(`🧭 The compass points ${arrow(k)}`);$('msg').textContent=`A compass! The chest is that way: ${arrow(k)}`;$('clues').insertAdjacentHTML('beforeend',`<span class="chip">🧭 From row ${Math.floor(k/C)+1}, col ${k%C+1}: ${arrow(k)}</span>`)}
+  else if(it==='📜'){const cl=clues[ci++%clues.length];b.innerHTML='📜';Play.banner('📜 Map scrap!');$('msg').textContent=cl;$('clues').insertAdjacentHTML('beforeend',`<span class="chip">📜 ${cl}</span>`)}
+  else if(it==='⛏️'){b.innerHTML='⛏️';Play.banner(`⛏️ Shovel! ${teams[i].name} digs again!`);sc();return 'again'}
+  else{b.innerHTML=`${hi}<small>${d}</small>`;$('msg').textContent=d===1?'Red hot! The chest is right next to this hole!':`Empty… the chest is ${d} steps away.`}
+  b.classList.add('pulse');sc();return 'ok'}
+ let turn=0;
+ async function round(){const i=turn;$('msg').textContent='';
+  const r=await Play.ask($('ask'),[i]);
+  if(r.length){let res;do{$('msg').innerHTML=`⛏️ <span class="pl-turn" style="background:${teams[i].color}">${Kit.esc(teams[i].name)}</span> pick a square to dig!`;res=await dig(i);if(res==='again')await Kit.sleep(900)}while(res==='again');
+   if(res==='chest'){Object.keys(loot).forEach(k=>{const b=cell(k);if(!b.classList.contains('dug')){b.style.opacity=.55;b.innerHTML=loot[k]}});
+    return Play.podium('👑',`${teams[i].name} found the Golden Chest!`,S.map(s=>s.pts),{'💰':S.map(s=>s.coins),'💎':S.map(s=>s.gems),'🐍':S.map(s=>s.snakes)})}}
+  else $('msg').textContent='No digging this time.';
+  turn=(turn+1)%teams.length;setTimeout(round,1600)}
+ round()}});
+
 </script>
 </body></html>

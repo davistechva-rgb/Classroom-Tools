@@ -6,13 +6,56 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="kit.css">
-<title>Train Race</title></head>
+<title>Train Race</title>
+<style>.dice-pop{position:fixed;left:50%;top:40%;transform:translate(-50%,-50%);z-index:55;background:#fff;border:5px solid var(--ink);border-radius:22px;box-shadow:6px 6px 0 var(--ink);padding:10px 24px;text-align:center;font-weight:800;pointer-events:none}
+.dice-pop .d{font-size:4rem;line-height:1}
+.rail{border:5px solid var(--ink);border-radius:24px;box-shadow:6px 6px 0 var(--ink);overflow:hidden;background:#A9D18E;padding:10px 10px 4px}
+.line{position:relative;margin:26px 0 14px}
+.line .nm{position:absolute;left:0;top:-24px;font-weight:800;font-size:.85rem;background:#fff;border:2px solid var(--ink);border-radius:99px;padding:0 8px}
+.tracks{display:grid;grid-template-columns:repeat(25,1fr);position:relative;background:repeating-linear-gradient(90deg,#7B5229 0 4px,transparent 4px 18px),linear-gradient(transparent 38%,#868E96 38% 46%,transparent 46% 58%,#868E96 58% 66%,transparent 66%)}
+.tk{aspect-ratio:1;display:grid;place-items:center;font-size:clamp(.8rem,2.2vh,1.3rem);position:relative}
+.tk.st::before{content:"🏠";position:absolute;top:-70%;font-size:.9em}.tk .cargo{position:absolute;top:-62%;right:-10%;font-size:.7em}
+.tk.jn{background:#FFE066;border-radius:50%}
+.bridge{position:absolute;top:-30px;height:26px;border:3px dashed #E8590C;border-bottom:0;border-radius:40px 40px 0 0;display:grid;place-items:center;font-size:.7rem;font-weight:800;color:#C92A2A}
+.train{position:absolute;top:50%;transform:translate(-100%,-50%) scaleX(-1);font-size:clamp(1.2rem,3.2vh,1.9rem);white-space:nowrap;transition:left .7s ease-in-out;z-index:2;line-height:1}
+.train.smoke::after{content:"💨";position:absolute;right:-20px;top:-14px;font-size:.7em}
+.moves{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:10px 0}.moves .btn small{display:block;font-size:.72rem;font-weight:600}
+.sc2{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:10px 0}.sc2 span{border:3px solid var(--ink);border-radius:99px;padding:2px 12px;font-weight:700;background:#fff}</style></head>
 <body>
 <main></main>
 <script src="kit.js"></script>
-<script src="review.js"></script>
+<script src="play.js"></script>
 <script>
 Kit.mount("🚂", "Train Race");
-Review.start({"mode": "race", "racer": "🚂", "finish": "🚉", "flip": true, "stage": "#EFE6FF", "lane": "#F8F4FF", "how": "Split into teams. Read a question, show the answer, then tap every team that got it right. Each right answer moves that team one space. First to the finish wins!", "goal": 10});
+async function rollDie(lo,hi,label){const box=document.createElement('div');box.className='dice-pop';box.innerHTML=`<div>${label||'Rolling…'}</div><div class="d">🎲</div>`;document.body.appendChild(box);
+ const faces=['⚀','⚁','⚂','⚃','⚄','⚅'];let v;for(let k=0;k<12;k++){v=Kit.rand(lo,hi);box.querySelector('.d').textContent=faces[v-1]||v;Kit.tick();await Kit.sleep(55+k*8)}
+ Kit.ding();await Kit.sleep(650);box.remove();return v}
+Play.setup({defTeams:3,how:'Run your railroad! Every right answer rolls the dice to move your train (a bigger die on a streak). Stop exactly on a 🏠 station to load a 📦 cargo crate (+2 points each). At the yellow 🔀 junctions you choose a route: the ⚠️ shortcut skips 3 spaces but might be blocked by cows 🐄 or rocks 🪨, or take the safe long way. The first train to the final station gets +6 points, and when it arrives, the most points wins. So collect cargo, but don\'t fall too far behind!',
+start({teams,game}){
+ const $=id=>document.getElementById(id);const LEN=24,JN=[4,11,17],STN=[3,7,10,14,16,20,22];
+ const T=teams.map(()=>({pos:0,cargo:0,pts:0,blocked:0,short:0,taken:new Set()}));
+ game.innerHTML=`<div class="rail">${teams.map((t,i)=>`<div class="line"><span class="nm" style="background:${t.color}">${Kit.esc(t.name)}</span><div class="tracks" id="tr${i}">
+  ${Array.from({length:LEN+1},(_,k)=>`<div class="tk ${STN.includes(k)?'st':''} ${JN.includes(k)?'jn':''}" id="c${i}-${k}">${k===0?'🏁':k===LEN?'🏛️':JN.includes(k)?'🔀':''}${STN.includes(k)?'<span class="cargo">📦</span>':''}</div>`).join('')}
+  ${JN.map(j=>`<div class="bridge" style="left:${(j+.5)/(LEN+1)*100}%;width:${4/(LEN+1)*100}%">⚠️ shortcut</div>`).join('')}<div class="train" id="tn${i}">🚂</div></div></div>`).join('')}</div>
+  <div class="sc2" id="sc"></div><div class="pl-msg" id="msg"></div><div id="act"></div><div id="ask"></div>`;
+ const put=i=>{const el=$('tn'+i);el.style.left=`${(T[i].pos+1)/(LEN+1)*100}%`;el.textContent='🚂'+'🚃'.repeat(Math.min(T[i].cargo,4))};teams.forEach((_,i)=>put(i));
+ const sc=()=>$('sc').innerHTML=teams.map((t,i)=>`<span style="border-color:${t.color}">${Kit.esc(t.name)} · 📦 ${T[i].cargo} · ⭐ ${T[i].pts} pts</span>`).join('');sc();
+ const route=(i,j)=>new Promise(res=>{$('act').innerHTML=`<div class="card center"><span class="pl-turn" style="background:${teams[i].color}">${Kit.esc(teams[i].name)}</span> 🔀 junction! Which way?
+  <div class="moves"><button class="btn red" data-r="short">⚠️ Shortcut<small>skip 3 spaces · 40% chance blocked</small></button><button class="btn green" data-r="long">🛤️ Long way<small>safe, no shortcut</small></button></div></div>`;
+  $('act').onclick=e=>{const b=e.target.closest('[data-r]');if(b){$('act').onclick=null;$('act').innerHTML='';res(b.dataset.r)}}});
+ async function move(i,steps){const t=T[i];const el=$('tn'+i);el.classList.add('smoke');
+  for(let k=0;k<steps&&t.pos<LEN;k++){t.pos++;put(i);Kit.tone(k%2?260:300,.08,'square',.06);await Kit.sleep(280);
+   if(JN.includes(t.pos)&&k<steps-1){const r=await route(i,t.pos);if(r==='short'){t.short++;if(Math.random()<.4){t.blocked++;Play.banner(`${Kit.pick(['🐄 Cows','🪨 A rockslide'])} blocked ${teams[i].name}'s shortcut!`);Kit.tone(120,.5,'sawtooth',.2);el.classList.remove('smoke');return}
+     t.pos=Math.min(LEN,t.pos+3);put(i);Play.pop('⚡ +3',el,'#FFE066');Kit.tada();await Kit.sleep(600)}}}
+  el.classList.remove('smoke');
+  if(STN.includes(t.pos)&&!t.taken.has(t.pos)){t.taken.add(t.pos);t.cargo++;t.pts+=2;put(i);const cg=$(`c${i}-${t.pos}`).querySelector('.cargo');cg&&cg.remove();Play.pop('+2 📦',el,'#FFE066');Kit.ding()}
+  sc()}
+ async function round(){$('msg').textContent='All aboard!';const right=await Play.ask($('ask'),teams.map(t=>t.i),{goWord:'Full steam!'});
+  for(const i of right){const big=Play.streak[i]>=3;const r=await rollDie(big?2:1,big?6:4,big?'🔥 Streak roll':'🚂 Roll');await move(i,r);
+   if(T[i].pos>=LEN){T[i].pts+=6;sc();Play.banner(`🏛️ ${teams[i].name} reached the final station! +6`);await Kit.sleep(900);
+    return Play.podium('🚂','All trains stop! Final scores:',T.map(t=>t.pts),{'📦 Cargo':T.map(t=>t.cargo),'⚠️ Shortcuts':T.map(t=>t.short),'🐄 Blocked':T.map(t=>t.blocked)})}}
+  if(!right.length)$('msg').textContent='The trains wait at the signal…';setTimeout(round,1200)}
+ round()}});
+
 </script>
 </body></html>

@@ -6,13 +6,63 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="kit.css">
-<title>Grow a Tree</title></head>
+<title>Grow a Tree</title>
+<style>
+.garden{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.plot{position:relative;border:5px solid var(--ink);border-radius:22px;box-shadow:5px 5px 0 var(--ink);overflow:hidden;height:clamp(260px,42vh,380px);background:var(--sky,#BDE8FF)}
+.plot .ground{position:absolute;left:0;right:0;bottom:0;height:22%;background:#8D6E63;border-top:6px solid var(--grass,#69B34C)}
+.plot .tree{position:absolute;left:50%;bottom:16%;transform:translateX(-50%);line-height:1;transition:font-size .8s cubic-bezier(.3,1.5,.5,1);text-align:center}
+.plot .tree .fx{position:absolute;inset:0;display:flex;flex-wrap:wrap;justify-content:center;align-content:flex-start;font-size:.22em;padding-top:12%}
+.plot .nm{position:absolute;top:6px;left:50%;transform:translateX(-50%);font-weight:800;background:#fff;border:3px solid var(--ink);border-radius:99px;padding:0 10px;white-space:nowrap;z-index:2}
+.plot .stage{position:absolute;top:38px;left:50%;transform:translateX(-50%);font-weight:700;font-size:.8rem;background:#ffffffcc;border-radius:99px;padding:0 8px;white-space:nowrap}
+.plot .res{position:absolute;bottom:6px;left:6px;right:6px;display:flex;justify-content:space-around;font-weight:800;z-index:2}
+.plot .res span{background:#fff;border:2px solid var(--ink);border-radius:10px;padding:1px 6px;font-size:.9rem}
+.plot .need{position:absolute;top:60px;left:50%;transform:translateX(-50%);font-size:.75rem;font-weight:700;background:#fff;border:2px dashed var(--ink);border-radius:10px;padding:1px 6px;white-space:nowrap}
+.plot.grow{animation:grow .8s}@keyframes grow{40%{box-shadow:0 0 0 8px #8CE99A,5px 5px 0 var(--ink)}}
+.flake{position:absolute;top:-10px;font-size:1rem;animation:fallf linear infinite;pointer-events:none}@keyframes fallf{to{transform:translateY(420px) rotate(360deg)}}
+.season{display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;margin-bottom:10px;font-weight:800;font-size:1.2rem}
+.season span{background:#fff;border:3px solid var(--ink);border-radius:99px;padding:2px 14px}
+.picks{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:10px 0}.picks .btn small{display:block;font-size:.72rem;font-weight:600}</style></head>
 <body>
 <main></main>
 <script src="kit.js"></script>
-<script src="review.js"></script>
+<script src="play.js"></script>
 <script>
 Kit.mount("🌳", "Grow a Tree");
-Review.start({"mode": "build", "items": ["🌱", "🌿", "🍃", "🌳", "🍎", "🌸", "🐦", "🍐", "🦋", "🐝", "🍊", "🐿️"], "finish": "🌳", "stage": "#E3F7E6", "lane": "#F2FBEF", "winText": "Your tree is fully grown!", "how": "Split into teams. Each right answer adds a new piece to your team's creation. First team to finish wins!", "goal": 10});
+
+Play.setup({defTeams:3,how:'Grow your seed into a fruit tree through 7 stages! Each stage needs 💧 water, ☀️ sun, and 🪱 soil (bigger trees need more). Every right answer lets your team gather one resource (2 on a streak), or hire 🐞 ladybugs to guard against pests. Your tree grows by itself as soon as it has enough. Seasons change: summer brings drought, winter makes growing cost more sun, and 🐛 pests may eat your supplies. First fruit tree wins!',
+start({teams,game}){
+ const $=id=>document.getElementById(id);
+ const ST=[['🌰','Seed'],['🌱','Sprout'],['🌿','Seedling'],['🪴','Sapling'],['🌲','Young tree'],['🌳','Big tree'],['🌸','Blossoming'],['🍎','Fruit tree']];
+ const SEAS=[['🌷','Spring','#BDE8FF','#69B34C'],['☀️','Summer','#FFE8A3','#8BC34A'],['🍂','Fall','#FFD8A8','#C79A3C'],['❄️','Winter','#DDE7F2','#E9ECEF']];
+ const P=teams.map(()=>({st:0,w:1,s:1,soil:0,bugs:0,gath:0,lost:0}));let roundNo=1;const season=()=>SEAS[Math.floor((roundNo-1)/2)%4];
+ const need=st=>{const n=st<3?1:st<6?2:3;const extraSun=season()[1]==='Winter'?1:0;return{w:n,s:n+extraSun,soil:n}};
+ game.innerHTML=`<div class="season" id="seas"></div><div class="garden" id="gd"></div><div class="pl-msg" id="msg"></div><div id="act"></div><div id="ask"></div>`;
+ function draw(grew=[]){const se=season();$('seas').innerHTML=`<span>${se[0]} ${se[1]}</span><span>Round ${roundNo}</span>`;
+  $('gd').innerHTML=teams.map((t,i)=>{const p=P[i],nd=need(p.st);const size=1.6+p.st*0.75;
+   const flakes=se[1]==='Winter'?Array.from({length:6},(_,k)=>`<span class="flake" style="left:${k*17}%;animation-duration:${3+k%3}s;animation-delay:${k*.4}s">❄️</span>`).join(''):se[1]==='Fall'?Array.from({length:4},(_,k)=>`<span class="flake" style="left:${10+k*22}%;animation-duration:${4+k}s">🍂</span>`).join(''):'';
+   return `<div class="plot ${grew.includes(i)?'grow':''}" id="pl${i}" style="--sky:${se[2]};--grass:${se[3]}">${flakes}<div class="nm" style="border-color:${t.color}">${Kit.esc(t.name)}</div><div class="stage">${p.st+1}/8 · ${ST[p.st][1]}</div>
+    ${p.st<7?`<div class="need">Next: 💧${nd.w} ☀️${nd.s} 🪱${nd.soil}</div>`:''}<div class="ground"></div><div class="tree" style="font-size:${size}rem">${ST[p.st][0]}${p.bugs?`<span style="position:absolute;right:-.6em;top:0;font-size:.3em">🐞</span>`:''}</div>
+    <div class="res"><span>💧 ${p.w}</span><span>☀️ ${p.s}</span><span>🪱 ${p.soil}</span></div></div>`}).join('')}
+ draw();
+ const gather=i=>new Promise(res=>{$('act').innerHTML=`<div class="card center"><span class="pl-turn" style="background:${teams[i].color}">${Kit.esc(teams[i].name)}</span> what will you gather?${Play.streak[i]>=3?' (🔥 streak: double!)':''}
+  <div class="picks"><button class="btn" data-g="w" style="background:#74C0FC">💧 Water</button><button class="btn" data-g="s">☀️ Sun</button><button class="btn" data-g="soil" style="background:#C9A26B">🪱 Soil</button><button class="btn white" data-g="bugs">🐞 Ladybugs<small>stop the next pest attack</small></button></div></div>`;
+  $('act').onclick=e=>{const b=e.target.closest('[data-g]');if(b){$('act').onclick=null;$('act').innerHTML='';res(b.dataset.g)}}});
+ function tryGrow(){const grew=[];P.forEach((p,i)=>{while(p.st<7){const n=need(p.st);if(p.w>=n.w&&p.s>=n.s&&p.soil>=n.soil){p.w-=n.w;p.s-=n.s;p.soil-=n.soil;p.st++;grew.push(i)}else break}});
+  draw(grew);grew.forEach(i=>{Play.pop('🌱 Grew!',$('pl'+i),'#B2F2BB');Kit.tone(660,.15,'sine',.15);Kit.tone(990,.2,'sine',.12,.1)});return grew}
+ async function events(){const se=season()[1];const r=Math.random();let txt='';
+  if(se==='Summer'&&r<.5){txt='☀️ Drought! Every tree loses 1 water.';P.forEach(p=>{if(p.w>0){p.w--;p.lost++}})}
+  else if(se==='Spring'&&r<.45){txt='🌧️ Spring rain! Every tree gets +1 water.';P.forEach(p=>p.w++)}
+  else if(r<.4){const i=Kit.rand(0,teams.length-1);const p=P[i];if(p.bugs){p.bugs--;txt=`🐛 Pests came for ${teams[i].name}'s tree, but the 🐞 ladybugs stopped them!`}else{const k=Kit.pick(['w','s','soil'].filter(k=>p[k]>0));if(k){p[k]--;p.lost++;txt=`🐛 Pests ate ${teams[i].name}'s ${k==='w'?'water':k==='s'?'sun':'soil'}!`}}}
+  else if(se==='Fall'&&r<.7){txt='🍂 Falling leaves make rich soil. +1 soil for everyone.';P.forEach(p=>p.soil++)}
+  if(txt){Play.banner(txt.split('!')[0]+'!');$('msg').textContent=txt;draw();await Kit.sleep(1300)}}
+ async function round(){draw();const right=await Play.ask($('ask'),teams.map(t=>t.i),{goWord:'Gather!'});
+  for(const i of right){const g=await gather(i);const amt=Play.streak[i]>=3?2:1;P[i].gath+=amt;if(g==='bugs')P[i].bugs+=1;else P[i][g]+=amt;Kit.ding();draw();tryGrow()}
+  await events();tryGrow();
+  const done=P.map((p,i)=>p.st>=7?i:-1).filter(i=>i>=0);if(done.length){await Kit.sleep(600);
+   return Play.podium('🍎',`${teams[done[0]].name} grew a fruit tree!`,P.map(p=>p.st+1),{'🧺 Gathered':P.map(p=>p.gath),'🐛 Lost':P.map(p=>p.lost)})}
+  const old=season()[1];roundNo++;if(season()[1]!==old)Play.banner(`${season()[0]} ${season()[1]} is here!`);setTimeout(round,1000)}
+ round()}});
+
 </script>
 </body></html>

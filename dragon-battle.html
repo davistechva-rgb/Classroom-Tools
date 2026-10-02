@@ -6,13 +6,90 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="kit.css">
-<title>Dragon Battle</title></head>
+<title>Dragon Battle</title>
+<style>.cave{position:relative;border:5px solid var(--ink);border-radius:24px;padding:16px;box-shadow:6px 6px 0 var(--ink);overflow:hidden;
+ background:radial-gradient(ellipse at 50% 110%,#FF6B00 0,#8B1E00 30%,#3B0A0A 65%,#1A0505 100%)}
+.cave .rock{position:absolute;font-size:2rem;opacity:.5}
+.cave.rage{animation:rage 1.2s infinite alternate}@keyframes rage{to{box-shadow:inset 0 0 80px #ff000088,6px 6px 0 var(--ink)}}
+.dg{text-align:center;position:relative;z-index:1}
+.dg .name{color:#FFD8A8;font-weight:800;font-size:1.3rem;letter-spacing:.04em}
+.dg .phase{display:inline-block;margin:4px 0;border:3px solid var(--ink);border-radius:99px;padding:1px 12px;font-weight:700;background:#FFE066}
+.dg .body{font-size:clamp(5rem,15vh,8.5rem);line-height:1.05;display:inline-block;animation:breathe 3s ease-in-out infinite}
+@keyframes breathe{50%{transform:scale(1.04) translateY(-4px)}}
+.dg .body.hit{animation:dhit .45s}@keyframes dhit{25%{transform:translateX(-16px) rotate(-6deg);filter:brightness(2)}60%{transform:translateX(12px) rotate(4deg)}}
+.dg .body.charge{animation:charge .5s infinite alternate}@keyframes charge{to{transform:scale(1.12);filter:drop-shadow(0 0 22px #FF922B)}}
+.dg .body.dead{animation:die 1.4s forwards}@keyframes die{to{transform:rotate(80deg) translateY(60px) scale(.6);opacity:0}}
+.dhp{max-width:560px;margin:6px auto;height:24px;border:4px solid var(--ink);border-radius:99px;background:#2b0b0b;overflow:hidden;position:relative}
+.dhp i{display:block;height:100%;background:linear-gradient(90deg,#C92A2A,#FF922B);transition:width .5s}
+.dhp b{position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:.8rem;text-shadow:1px 1px 0 #000}
+.dhp .m1,.dhp .m2{position:absolute;top:0;bottom:0;width:3px;background:#FFE066}
+.heroes{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:14px;position:relative;z-index:1}
+.hero{background:#fff;border:4px solid var(--ink);border-radius:18px;padding:8px;text-align:center;position:relative;transition:opacity .4s}
+.hero .ic{font-size:2.4rem;line-height:1.1}.hero.ko{opacity:.45}.hero.ko .ic{filter:grayscale(1)}
+.hero .hb{height:12px;border:3px solid var(--ink);border-radius:99px;overflow:hidden;background:#eee;margin:4px 0}.hero .hb i{display:block;height:100%;background:linear-gradient(90deg,#FF6B5B,#5DC66E);transition:width .4s}
+.hero .tag{position:absolute;top:-12px;right:-8px;font-size:1.6rem}
+.hero.hit{animation:hh .5s}@keyframes hh{30%{transform:translateY(6px);background:#FFC9C9}}
+.hero.pickable{cursor:pointer;outline:5px dashed #5DC66E;outline-offset:3px}
+.acts{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:10px 0}
+.acts .btn small{display:block;font-size:.75rem;font-weight:600}
+.flame{position:fixed;font-size:2.4rem;z-index:50;pointer-events:none}</style></head>
 <body>
 <main></main>
 <script src="kit.js"></script>
-<script src="review.js"></script>
+<script src="play.js"></script>
 <script>
 Kit.mount("🐉", "Dragon Battle");
-Review.start({"mode": "boss", "boss": "🐉", "bossName": "The Great Dragon", "attack": "⚔️", "stage": "#FFE0DC", "goal": 20, "bossAttack": "The dragon breathes fire! 🔥", "winTitle": "The dragon is defeated!", "how": "The whole class teams up! Every right answer hits the boss. If nobody gets it right, the boss strikes back and the class loses a heart. Beat the boss before your 5 hearts run out!", "finish": "🏆"});
+
+Play.setup({defTeams:3,how:'Your teams are heroes fighting the Great Dragon together! Every team that answers right picks an action: ⚔️ Attack the dragon, 💚 Heal any hero (even a knocked-out one), or 🛡️ Shield yourself from the next attack. Then the dragon strikes back. It gets angrier as it gets hurt, and in its last phase it charges up a huge fire breath. When you see the warning, shield up! Beat the dragon before every hero is knocked out.',
+extra:'<label>Dragon <select id="dLv" style="width:auto"><option value="9">Young</option><option value="13" selected>Grown</option><option value="18">Ancient</option></select></label>',
+start({teams,game}){
+ const $=id=>document.getElementById(id);const n=teams.length;const MAXD=+document.getElementById('dLv').value*n;let dhp=MAXD,charged=false,roundNo=1;
+ const H=teams.map(()=>({hp:10,sh:false,dmg:0,heals:0,ko:0}));const ICON=['🛡️','🏹','🪄','🗡️','🔨','🪓'];
+ const rocks=['🪨','💎','🦴','🪨','🕸️'].map((r,k)=>`<span class="rock" style="left:${8+k*20}%;top:${k%2?6:72}%">${r}</span>`).join('');
+ game.innerHTML=`<div class="cave" id="cave">${rocks}<div class="dg"><div class="name">THE GREAT DRAGON</div><div class="phase" id="ph"></div><br><div class="body" id="dr">🐉</div>
+  <div class="dhp"><i id="dhp"></i><span class="m1" style="left:60%"></span><span class="m2" style="left:25%"></span><b id="dhpt"></b></div></div><div class="heroes" id="heroes"></div></div>
+  <div class="pl-msg" id="msg"></div><div id="act"></div><div id="ask"></div>`;
+ const phase=()=>dhp/MAXD>0.6?1:dhp/MAXD>0.25?2:3;
+ function draw(){$('dhp').style.width=100*dhp/MAXD+'%';$('dhpt').textContent=`${dhp} / ${MAXD}`;const p=phase();
+  $('ph').textContent=['','Phase 1: Awake','Phase 2: Enraged 😡','Phase 3: Final Fury 🔥'][p];$('cave').classList.toggle('rage',p>=2);
+  $('heroes').innerHTML=teams.map((t,i)=>`<div class="hero ${H[i].hp<=0?'ko':''}" id="h${i}" data-i="${i}" style="border-color:${t.color}">${H[i].sh?'<span class="tag">🛡️</span>':''}
+   <div class="ic">${H[i].hp<=0?'💫':ICON[i]}</div><b style="color:${t.color}">${Kit.esc(t.name)}</b><div class="hb"><i style="width:${H[i].hp*10}%"></i></div><small>${H[i].hp<=0?'Knocked out':H[i].hp+' / 10 ❤️'}</small></div>`).join('')}
+ draw();
+ const alive=()=>H.map((h,i)=>h.hp>0?i:-1).filter(i=>i>=0);
+ function flames(toEl){const r=toEl.getBoundingClientRect(),d=$('dr').getBoundingClientRect();for(let k=0;k<6;k++){const f=document.createElement('div');f.className='flame';f.textContent='🔥';document.body.appendChild(f);
+  f.animate([{left:d.left+d.width/2+'px',top:d.top+d.height/2+'px',transform:'scale(.4)'},{left:r.left+r.width/2-20+(k-3)*8+'px',top:r.top+10+'px',transform:'scale(1.3)',opacity:.9}],{duration:500,delay:k*60,easing:'ease-in'}).onfinish=()=>f.remove()}
+  return Kit.sleep(500+6*60)}
+ async function hurt(i,amt){const h=H[i];if(h.sh){h.sh=false;draw();Play.pop('Blocked! 🛡️',$('h'+i),'#A5D8FF');Kit.tone(900,.2,'sine',.15);return}
+  h.hp=Math.max(0,h.hp-amt);draw();const el=$('h'+i);el.classList.add('hit');Play.pop('−'+amt,el,'#FF6B5B');Kit.tone(120,.4,'sawtooth',.22);
+  if(h.hp<=0){h.ko++;Play.banner(`💫 ${teams[i].name} is knocked out!`)}}
+ const choose=(i)=>new Promise(res=>{const ko=H.some(h=>h.hp<=0);
+  $('act').innerHTML=`<div class="card center"><span class="pl-turn" style="background:${teams[i].color}">${Kit.esc(teams[i].name)}</span> choose your move${Play.streak[i]>=3?' (🔥 streak: +1 attack)':''}
+   <div class="acts"><button class="btn red" data-a="atk">⚔️ Attack<small>2 damage, may crit!</small></button><button class="btn green" data-a="heal">💚 Heal<small>+3 to any hero${ko?', revives':''}</small></button><button class="btn" data-a="sh" style="background:#A5D8FF">🛡️ Shield<small>Block the next hit</small></button></div></div>`;
+  $('act').onclick=e=>{const b=e.target.closest('[data-a]');if(b){$('act').onclick=null;$('act').innerHTML='';res(b.dataset.a)}}});
+ const pickHero=()=>new Promise(res=>{$('msg').textContent='Tap a hero to heal.';document.querySelectorAll('.hero').forEach(h=>{if(H[+h.dataset.i].hp<10)h.classList.add('pickable')});
+  if(!document.querySelector('.hero.pickable')){document.querySelectorAll('.hero').forEach(h=>h.classList.add('pickable'))}
+  $('heroes').onclick=e=>{const h=e.target.closest('.hero.pickable');if(h){$('heroes').onclick=null;document.querySelectorAll('.hero').forEach(x=>x.classList.remove('pickable'));res(+h.dataset.i)}}});
+ async function round(){$('msg').textContent=`Round ${roundNo}`;
+  if(charged)$('msg').innerHTML='⚠️ <b>The dragon is charging FIRE BREATH!</b> Shield up!';
+  const right=await Play.ask($('ask'),alive(),{goWord:'Take action!'});
+  for(const i of right){if(dhp<=0)break;const a=await choose(i);
+   if(a==='atk'){let dmg=2+(Play.streak[i]>=3?1:0);const crit=Math.random()<.2;if(crit)dmg*=2;dhp=Math.max(0,dhp-dmg);H[i].dmg+=dmg;
+    const dr=$('dr');dr.classList.remove('hit');void dr.offsetWidth;dr.classList.add('hit');Play.burst(dr,['#FFE066','#fff','#FF922B']);Play.pop((crit?'CRIT! ':'')+'−'+dmg,dr,crit?'#FFE066':'#fff');
+    Kit.tone(crit?1500:300,.15,'square',.18);if(crit)Play.banner(`💥 Critical hit by ${teams[i].name}!`);draw();await Kit.sleep(500)}
+   if(a==='heal'){const tg=await pickHero();const was=H[tg].hp;H[tg].hp=Math.min(10,H[tg].hp+3);H[i].heals++;draw();Play.pop('+'+(H[tg].hp-was)+' ❤️',$('h'+tg),'#8CE99A');Kit.tone(660,.3,'sine',.2);Kit.tone(990,.3,'sine',.15,.12);
+    if(was<=0)Play.banner(`✨ ${teams[tg].name} is back in the fight!`);$('msg').textContent='';await Kit.sleep(300)}
+   if(a==='sh'){H[i].sh=true;draw();Kit.tone(800,.2,'triangle',.18);await Kit.sleep(300)}}
+  if(dhp<=0){$('dr').classList.add('dead');Kit.tone(70,1.2,'sawtooth',.3);await Kit.sleep(1300);
+   return Play.podium('🐉','The dragon is defeated!',H.map(h=>h.dmg),{'💚 Heals':H.map(h=>h.heals),'💫 KOs':H.map(h=>h.ko)})}
+  // the dragon strikes back
+  await Kit.sleep(400);const p=phase();const al=alive();
+  if(charged){charged=false;$('dr').classList.remove('charge');Play.banner('🔥 FIRE BREATH!');for(const i of al){await flames($('h'+i));await hurt(i,4)}}
+  else if(p===3&&roundNo%2===0){charged=true;$('dr').classList.add('charge');Play.banner('⚠️ The dragon takes a deep breath…');Kit.tone(200,1,'sine',.15)}
+  else{const targets=Kit.shuffle(al).slice(0,p===1?1:2);const atk=Kit.pick(p===1?['claws','tail']:['claws','tail','bite']);
+   $('msg').textContent=`The dragon attacks with its ${atk}!`;for(const i of targets){await flames($('h'+i));await hurt(i,atk==='bite'?3:2)}}
+  if(!alive().length){await Kit.sleep(600);return Play.podium('🐉','The dragon wins this time…',H.map(h=>h.dmg),{'💚 Heals':H.map(h=>h.heals),'💫 KOs':H.map(h=>h.ko)})}
+  roundNo++;setTimeout(round,1300)}
+ round()}});
+
 </script>
 </body></html>

@@ -6,13 +6,67 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="kit.css">
-<title>Island Survival</title></head>
+<title>Island Survival</title>
+<style>
+.isles{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.isle{position:relative;border:5px solid var(--ink);border-radius:22px;box-shadow:5px 5px 0 var(--ink);overflow:hidden;padding:10px;transition:background 1s;
+ background:radial-gradient(ellipse at 50% 85%,#F2D98C 0 32%,#3BA6D8 33%)}
+.isle.night{background:radial-gradient(ellipse at 50% 85%,#B59B5C 0 32%,#1C3D6E 33%)}
+.isle h3{margin:0;text-align:center;background:#fff;border:3px solid var(--ink);border-radius:99px;display:inline-block;padding:0 12px}
+.isle .scene{font-size:2rem;text-align:center;margin:10px 0 4px;min-height:2.6rem}
+.meter{display:grid;grid-template-columns:28px 1fr 30px;align-items:center;gap:6px;margin:4px 0;background:#ffffffdd;border-radius:10px;padding:2px 6px;font-weight:700;font-size:.85rem}
+.meter .b{height:12px;border:2px solid var(--ink);border-radius:99px;background:#eee;overflow:hidden}.meter .b i{display:block;height:100%;transition:width .5s}
+.isle .hp{text-align:center;font-size:1.2rem;background:#ffffffdd;border-radius:10px;margin-top:4px}
+.isle.saved{outline:6px solid #FFE066;outline-offset:3px}.isle.gone{filter:grayscale(1);opacity:.6}
+.isle.shake{animation:sh .5s}@keyframes sh{30%{transform:translateX(-6px)}60%{transform:translateX(6px)}}
+.wx{text-align:center;font-weight:800;font-size:1.2rem;margin-bottom:10px}.wx span{background:#fff;border:3px solid var(--ink);border-radius:99px;padding:2px 14px}
+.picks{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:10px 0}.picks .btn small{display:block;font-size:.72rem;font-weight:600}</style></head>
 <body>
 <main></main>
 <script src="kit.js"></script>
-<script src="review.js"></script>
+<script src="play.js"></script>
 <script>
 Kit.mount("🏝️", "Island Survival");
-Review.start({"mode": "build", "items": ["🪵", "🥥", "🔥", "⛺", "🐟", "🍌", "🪨", "💧", "🛶", "🧭", "🪢", "🚩"], "finish": "🛶", "stage": "#FFF4CC", "lane": "#FFFBEA", "winText": "You built everything you need to survive!", "how": "You are stranded on an island! Each right answer collects a supply for your team. First team to gather everything survives!", "goal": 10});
+
+Play.setup({defTeams:3,how:'Shipwrecked! Each team has 3 needs: 🍖 food, 💧 water, and 🛖 shelter. They drop a little every night. If any need hits zero, your team loses a ❤️ heart. Every right answer lets you do one job: 🎣 fish, 🥥 gather coconuts, 🌧️ collect rainwater, 🪵 build your hut, or 🔥 add wood to your signal fire. Build the signal fire to 6 and a ship rescues you! Watch the weather: storms, heat waves, and sharks change everything. First team rescued wins, or the strongest camp after 10 days.',
+start({teams,game}){
+ const $=id=>document.getElementById(id);const MAX=10;
+ const I=teams.map(()=>({food:6,water:6,shelter:4,fire:0,hp:3,saved:false,gone:false,jobs:0}));let day=1;let wx='☀️ Sunny';let shark=false;
+ game.innerHTML=`<div class="wx" id="wx"></div><div class="isles" id="isles"></div><div class="pl-msg" id="msg"></div><div id="act"></div><div id="ask"></div>`;
+ const col=v=>v>6?'#51CF66':v>3?'#FFC93C':'#FF6B5B';
+ function draw(night=false){$('wx').innerHTML=`<span>Day ${day} of 10</span> <span>${wx}</span>`;
+  $('isles').innerHTML=teams.map((t,i)=>{const s=I[i];return `<div class="isle ${night?'night':''} ${s.saved?'saved':''} ${s.gone?'gone':''}" id="is${i}"><h3 style="border-color:${t.color}">${Kit.esc(t.name)}</h3>
+   <div class="scene">${s.saved?'🚢🎉':s.gone?'🪦':`🌴${s.shelter>=6?'🛖':s.shelter>=3?'⛺':'🪵'}${s.fire>0?'🔥'.repeat(Math.min(3,Math.ceil(s.fire/2))):''}🧑`}</div>
+   ${[['🍖','food'],['💧','water'],['🛖','shelter'],['🔥','fire']].map(([e,k])=>`<div class="meter"><span>${e}</span><div class="b"><i style="width:${(k==='fire'?s[k]/6:s[k]/MAX)*100}%;background:${k==='fire'?'#FF922B':col(s[k])}"></i></div><span>${s[k]}${k==='fire'?'/6':''}</span></div>`).join('')}
+   <div class="hp">${'❤️'.repeat(s.hp)}${'🖤'.repeat(3-s.hp)}</div></div>`}).join('')}
+ draw();
+ const alive=()=>I.map((s,i)=>!s.gone&&!s.saved?i:-1).filter(i=>i>=0);
+ const job=i=>new Promise(res=>{$('act').innerHTML=`<div class="card center"><span class="pl-turn" style="background:${teams[i].color}">${Kit.esc(teams[i].name)}</span> pick a job${Play.streak[i]>=3?' (🔥 streak: +1 bonus)':''}
+  <div class="picks"><button class="btn" data-j="fish" style="background:#74C0FC" ${shark?'disabled':''}>🎣 Fish<small>${shark?'🦈 too dangerous today':'+4 food'}</small></button><button class="btn" data-j="coco" style="background:#C9A26B">🥥 Coconuts<small>+2 food +2 water</small></button>
+  <button class="btn" data-j="rain" style="background:#A5D8FF">🌧️ Rainwater<small>+4 water${wx.includes('Rain')||wx.includes('Storm')?' (+2 rain bonus)':''}</small></button><button class="btn" data-j="hut" style="background:#D8C08A">🪵 Build hut<small>+3 shelter</small></button><button class="btn red" data-j="fire">🔥 Signal fire<small>+1 toward rescue</small></button></div></div>`;
+  $('act').onclick=e=>{const b=e.target.closest('[data-j]:not(:disabled)');if(b){$('act').onclick=null;$('act').innerHTML='';res(b.dataset.j)}}});
+ const add=(s,k,v)=>s[k]=Math.min(k==='fire'?6:MAX,s[k]+v);
+ async function night(){draw(true);Kit.tone(220,.8,'sine',.08);await Kit.sleep(800);
+  for(const i of alive()){const s=I[i];s.food-=1;s.water-=1;if(day%2===0)s.shelter-=1;
+   if(wx.includes('Heat'))s.water-=1;if(wx.includes('Storm')&&s.shelter<6){s.shelter-=2;$('is'+i).classList.add('shake')}
+   let hurt=false;['food','water','shelter'].forEach(k=>{if(s[k]<=0){s[k]=0;hurt=true}});
+   if(hurt){s.hp--;Play.pop('−1 ❤️',$('is'+i),'#FF6B5B');Kit.tone(130,.4,'sawtooth',.2)}if(s.hp<=0){s.gone=true;Play.banner(`🪦 ${teams[i].name}'s camp didn't make it`)}}
+  draw(true);await Kit.sleep(1000)}
+ function weather(){const r=Math.random();shark=false;
+  if(r<.2){wx='⛈️ Storm';Play.banner('⛈️ A storm is coming! Huts below 6 get damaged tonight')}else if(r<.35){wx='🌡️ Heat wave';Play.banner('🌡️ Heat wave! Everyone gets thirsty')}
+  else if(r<.5){wx='🌧️ Rain';Play.banner('🌧️ Rain! Rainwater collecting is extra good')}else if(r<.62){wx='🦈 Sharks';shark=true;Play.banner('🦈 Sharks near the reef! No fishing today')}
+  else if(r<.72){wx='🦀 Crab parade';Play.banner('🦀 Crabs on the beach! +2 food for every camp');alive().forEach(i=>add(I[i],'food',2))}else wx='☀️ Sunny'}
+ async function round(){weather();draw();$('msg').textContent='';
+  const right=await Play.ask($('ask'),alive(),{goWord:'Get to work!'});
+  for(const i of right){const s=I[i];const j=await job(i);const b=Play.streak[i]>=3?1:0;s.jobs++;
+   if(j==='fish')add(s,'food',4+b);if(j==='coco'){add(s,'food',2+b);add(s,'water',2)}if(j==='rain')add(s,'water',4+b+(wx.includes('Rain')||wx.includes('Storm')?2:0));if(j==='hut')add(s,'shelter',3+b);
+   if(j==='fire'){add(s,'fire',1+b);if(s.fire>=6){s.saved=true;draw();Kit.tada();Kit.confetti();Play.banner(`🚢 A ship sees ${teams[i].name}'s signal fire!`);await Kit.sleep(1400);
+     return Play.podium('🚢',`${teams[i].name} got rescued!`,I.map(x=>x.fire*3+x.hp*2+(x.saved?10:0)),{'❤️ Hearts':I.map(x=>x.hp),'🔥 Fire':I.map(x=>x.fire),'🛠️ Jobs':I.map(x=>x.jobs)})}}
+   Kit.ding();draw();await Kit.sleep(200)}
+  await night();
+  if(!alive().length||day>=10){return Play.podium('🏝️',day>=10?'10 days survived!':'The island won…',I.map(x=>x.fire*3+x.hp*2+x.food+x.water+x.shelter),{'❤️ Hearts':I.map(x=>x.hp),'🔥 Fire':I.map(x=>x.fire),'🛠️ Jobs':I.map(x=>x.jobs)})}
+  day++;setTimeout(round,900)}
+ round()}});
+
 </script>
 </body></html>

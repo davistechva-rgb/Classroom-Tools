@@ -6,13 +6,67 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="kit.css">
-<title>Forest Adventure</title></head>
+<title>Forest Adventure</title>
+<style>.dice-pop{position:fixed;left:50%;top:40%;transform:translate(-50%,-50%);z-index:55;background:#fff;border:5px solid var(--ink);border-radius:22px;box-shadow:6px 6px 0 var(--ink);padding:10px 24px;text-align:center;font-weight:800;pointer-events:none}
+.dice-pop .d{font-size:4rem;line-height:1}
+.board{border:5px solid var(--ink);border-radius:24px;box-shadow:6px 6px 0 var(--ink);padding:14px;background:#2F9E44;background-image:radial-gradient(#37B24D 3px,transparent 4px);background-size:30px 30px}
+.path{display:grid;grid-template-columns:repeat(10,1fr);gap:6px;max-width:900px;margin:0 auto}
+.sp{aspect-ratio:1.15;border-radius:14px;background:#E9D8A6;border:3px solid #8D6E63;display:grid;place-items:center;font-size:clamp(1rem,2.8vh,1.6rem);position:relative}
+.sp small{position:absolute;top:1px;left:4px;font-size:.5em;font-weight:800;color:#8D6E63}
+.sp .tok{position:absolute;bottom:-4px;display:flex;gap:1px}.sp .tok i{width:14px;height:14px;border-radius:50%;border:2px solid var(--ink);display:inline-block}
+.tree{font-size:1.4rem;display:grid;place-items:center}
+.inv{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-top:12px}
+.pack{background:#fff;border:4px solid var(--ink);border-radius:16px;padding:6px 10px;font-weight:700}
+.pack .items{font-size:1.3rem;min-height:1.6rem}
+.cardx{background:#FFF8E7;border:5px solid var(--ink);border-radius:20px;box-shadow:6px 6px 0 var(--ink);padding:14px;margin:12px auto;max-width:560px;text-align:center;animation:pop .45s cubic-bezier(.3,1.6,.5,1)}
+.cardx .big{font-size:3rem}.moves{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:10px 0}</style></head>
 <body>
 <main></main>
 <script src="kit.js"></script>
-<script src="review.js"></script>
+<script src="play.js"></script>
 <script>
 Kit.mount("🌲", "Forest Adventure");
-Review.start({"mode": "race", "racer": "🥾", "finish": "🏕️", "stage": "#CDEFC2", "lane": "#E9F9DF", "winText": "First to make it to camp!", "how": "Split into teams. Read a question, show the answer, then tap every team that got it right. Each right answer moves that team one space. First to the finish wins!", "goal": 10});
+async function rollDie(lo,hi,label){const box=document.createElement('div');box.className='dice-pop';box.innerHTML=`<div>${label||'Rolling…'}</div><div class="d">🎲</div>`;document.body.appendChild(box);
+ const faces=['⚀','⚁','⚂','⚃','⚄','⚅'];let v;for(let k=0;k<12;k++){v=Kit.rand(lo,hi);box.querySelector('.d').textContent=faces[v-1]||v;Kit.tick();await Kit.sleep(55+k*8)}
+ Kit.ding();await Kit.sleep(650);box.remove();return v}
+Play.setup({defTeams:3,how:'Hike through the forest to the 🏕️ campsite! Right answers roll a full die 🎲 (1–6), and wrong answers only shuffle 1–2 spaces. Where you land matters: 🍄 mushrooms give you an item, ❓ spaces draw an adventure card, 🌉 bridges are shortcuts, 🌧️ mud slows you down, and 🐻 bears chase you back unless you have 🍯 honey. Items help you: 🗺️ a map lets you move 1 more or 1 less, 🍯 honey keeps bears away, and 🔦 a flashlight gets you through the dark cave. First to camp wins!',
+start({teams,game}){
+ const $=id=>document.getElementById(id);const LEN=39;
+ const TYPE={};[3,9,15,22,28,34].forEach(k=>TYPE[k]='shroom');[5,12,18,25,31,36].forEach(k=>TYPE[k]='card');[7,20].forEach(k=>TYPE[k]='bridge');[11,27].forEach(k=>TYPE[k]='mud');[14,24,33].forEach(k=>TYPE[k]='bear');TYPE[30]='cave';
+ const IC={shroom:'🍄',card:'❓',bridge:'🌉',mud:'🌧️',bear:'🐻',cave:'🕳️'};
+ const P=teams.map(()=>({pos:0,items:[],mud:false,cards:0,bears:0}));
+ // serpentine order: 4 rows of 10
+ const cellOf=k=>{const r=Math.floor(k/10),c=k%10;return r*10+(r%2?9-c:c)};
+ game.innerHTML=`<div class="board"><div class="path" id="path"></div></div><div class="inv" id="inv"></div><div id="card"></div><div class="pl-msg" id="msg"></div><div id="act"></div><div id="ask"></div>`;
+ function draw(){const cells=Array(40).fill('');for(let k=0;k<=LEN;k++){const toks=P.map((p,i)=>p.pos===k?`<i style="background:${teams[i].color}"></i>`:'').join('');
+   cells[cellOf(k)]=`<div class="sp"><small>${k}</small>${k===0?'🥾':k===LEN?'🏕️':IC[TYPE[k]]||''}<span class="tok">${toks}</span></div>`}
+  $('path').innerHTML=cells.join('');
+  $('inv').innerHTML=teams.map((t,i)=>`<div class="pack" style="border-color:${t.color}">🎒 ${Kit.esc(t.name)} · space ${P[i].pos}/${LEN}${P[i].mud?' · 🌧️ muddy':''}<div class="items">${P[i].items.join(' ')||'<span class="muted" style="font-size:.9rem">empty</span>'}</div></div>`).join('')}
+ draw();
+ const ITEMS=['🍯','🗺️','🔦'];
+ const CARDS=[['🫐','Wild blueberries! Eat a snack and hike 2 spaces ahead.',p=>p.pos+=2],['🌫️','Thick fog. You get lost and walk back 2 spaces.',p=>p.pos=Math.max(0,p.pos-2)],
+  ['🐿️','A friendly squirrel shows you a shortcut: +3 spaces!',p=>p.pos+=3],['🦉','A wise owl gives you a map.',p=>p.items.push('🗺️')],['🐝','You find a beehive and grab some honey.',p=>p.items.push('🍯')],
+  ['🌧️','Rainstorm! Your boots get muddy (next roll −1).',p=>p.mud=true],['🦌','A deer leads you along a hidden path: +4 spaces!',p=>p.pos+=4],['🪨','A rockslide blocks the trail. Back 3 spaces.',p=>p.pos=Math.max(0,p.pos-3)],
+  ['🔦','A park ranger lends you a flashlight.',p=>p.items.push('🔦')],['🦋','You stop to watch butterflies. No move, but it was lovely.',p=>{}],['🛶','You borrow a canoe and paddle 3 spaces ahead!',p=>p.pos+=3],['🎒','You find a lost backpack with a random item!',p=>p.items.push(Kit.pick(ITEMS))]];
+ async function land(i,depth=0){const p=P[i];const t=TYPE[p.pos];if(depth>2)return;
+  if(t==='shroom'){const it=Kit.pick(ITEMS);p.items.push(it);Play.pop(`+${it}`,$('inv').children[i],'#fff');Kit.ding();$('msg').textContent=`Under the mushroom: a ${it}!`}
+  if(t==='bridge'){p.pos=Math.min(LEN,p.pos+4);Play.banner(`🌉 ${teams[i].name} crosses the bridge: +4!`);draw();await Kit.sleep(600);return land(i,depth+1)}
+  if(t==='mud'){p.mud=true;$('msg').textContent='🌧️ Muddy trail! Your next roll is 1 less.'}
+  if(t==='bear'){const h=p.items.indexOf('🍯');if(h>=0){p.items.splice(h,1);Play.banner(`🍯 ${teams[i].name} gave the bear honey. It lets you pass!`)}else{p.bears++;p.pos=Math.max(0,p.pos-4);Kit.tone(110,.5,'sawtooth',.2);Play.banner(`🐻 A bear chases ${teams[i].name} back 4 spaces!`)}}
+  if(t==='cave'){const f=p.items.indexOf('🔦');if(f>=0){p.items.splice(f,1);p.pos+=3;Play.banner(`🔦 ${teams[i].name} lights up the cave and finds a tunnel: +3!`)}else $('msg').textContent='🕳️ A dark cave. Without a flashlight, you wait here.'}
+  if(t==='card'){p.cards++;const c=Kit.pick(CARDS);$('card').innerHTML=`<div class="cardx"><div class="big">${c[0]}</div><b>Adventure card</b><p style="font-size:1.2rem">${c[1]}</p></div>`;Kit.tone(880,.15,'triangle',.12);c[2](p);p.pos=Math.min(LEN,p.pos);await Kit.sleep(1800);$('card').innerHTML='';draw();if(TYPE[p.pos]&&TYPE[p.pos]!=='card')return land(i,depth+1)}
+  p.pos=Math.min(LEN,p.pos);draw()}
+ async function move(i,roll){const p=P[i];if(p.mud){roll=Math.max(1,roll-1);p.mud=false}
+  if(p.items.includes('🗺️')&&p.pos+roll<LEN){const opts=[roll-1,roll,roll+1].filter(x=>x>=1);const pick=await new Promise(res=>{$('act').innerHTML=`<div class="card center"><span class="pl-turn" style="background:${teams[i].color}">${Kit.esc(teams[i].name)}</span> rolled ${roll}. Use your 🗺️ map?
+    <div class="moves">${opts.map(o=>{const at=Math.min(LEN,p.pos+o);return `<button class="btn ${o===roll?'white':''}" data-o="${o}">${o===roll?'Keep':'Move'} ${o} ➜ ${at===LEN?'🏕️':IC[TYPE[at]]||'space '+at}</button>`}).join('')}</div></div>`;
+    $('act').onclick=e=>{const b=e.target.closest('[data-o]');if(b){$('act').onclick=null;$('act').innerHTML='';res(+b.dataset.o)}}});if(pick!==roll)p.items.splice(p.items.indexOf('🗺️'),1);roll=pick}
+  for(let k=0;k<roll&&p.pos<LEN;k++){if(TYPE[p.pos]==='cave'&&!p.items.includes('🔦')&&k>0)break;p.pos++;draw();Kit.tone(400+k*30,.06,'triangle',.08);await Kit.sleep(200)}
+  if(p.pos<LEN)await land(i)}
+ async function round(){$('msg').textContent='';const right=await Play.ask($('ask'),teams.map(t=>t.i),{goWord:'Hike!'});
+  for(const i of teams.map(t=>t.i)){const roll=right.includes(i)?await rollDie(1,6,`🎲 ${teams[i].name}`):await rollDie(1,2,`🐌 ${teams[i].name}`);await move(i,roll);
+   if(P[i].pos>=LEN){Kit.confetti();return Play.podium('🏕️',`${teams[i].name} made it to camp!`,P.map(p=>p.pos),{'❓ Cards':P.map(p=>p.cards),'🐻 Bear chases':P.map(p=>p.bears),'🎒 Items':P.map(p=>p.items.length)})}}
+  setTimeout(round,900)}
+ round()}});
+
 </script>
 </body></html>

@@ -6,13 +6,59 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="kit.css">
-<title>Target Practice</title></head>
+<title>Target Practice</title>
+<style>.arc{position:relative;border:5px solid var(--ink);border-radius:24px;box-shadow:6px 6px 0 var(--ink);overflow:hidden;touch-action:none;background:#000}
+.arc canvas{display:block;width:100%;height:auto}
+.arc .over{position:absolute;inset:0;display:grid;place-items:center;background:rgba(11,16,38,.5);z-index:2}.arc .over .card{text-align:center;max-width:520px}
+.keys{text-align:center;font-weight:600;margin-top:8px}.keys kbd{border:2px solid var(--ink);border-radius:6px;padding:0 6px;background:#fff;font-family:inherit}</style></head>
 <body>
 <main></main>
 <script src="kit.js"></script>
-<script src="review.js"></script>
+<script src="play.js"></script>
 <script>
 Kit.mount("🎯", "Target Practice");
-Review.start({"mode": "grid", "grid": "target", "cover": "❔", "stage": "#FFF4CC", "lane": "#FFFFFF", "goal": 20, "how": "Each right answer earns a shot. Pick a square to see where your shot landed. Bullseyes are worth 10! Most points wins.", "finish": "🏆"});
+
+Play.setup({defTeams:2,how:'Step right up to the carnival shooting gallery! Every right answer earns your team 3 shots (5 on a streak). Then click or tap the moving targets before time runs out. 🦆 Ducks are worth 1, 🎯 targets 3, 🍾 bottles 2 (and the whole stack falls!), and the tiny fast ⭐ stars are worth 5. Missing doesn\'t cost anything, but shots run out fast. Most points after 5 rounds wins!',
+start({teams,game}){
+ const $=id=>document.getElementById(id);const W=960,H=560;const S=teams.map(()=>({pts:0,shots:0,hits:0,stars:0}));let turn=0,roundNo=1;const ROUNDS=5;
+ game.innerHTML=`<div class="pl-score" id="sc"></div><div class="arc"><canvas id="cv" width="${W}" height="${H}"></canvas><div class="over" id="over" style="display:none"></div></div><div class="keys">Aim and shoot: click or tap the targets</div><div class="pl-msg" id="msg"></div><div id="ask"></div>`;
+ const cv=$('cv'),g=cv.getContext('2d');let shots=0,live=false,items=[],parts=[],aim={x:W/2,y:H/2},deadline=0,raf;
+ const sc=()=>$('sc').innerHTML=teams.map((t,i)=>`<span style="border-color:${t.color};${i===turn?`background:${t.color}`:''}">${Kit.esc(t.name)}: ${S[i].pts}</span>`).join('')+`<span>Round ${Math.min(roundNo,ROUNDS)} of ${ROUNDS}</span>`;
+ const pos=e=>{const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)/r.width*W,y:(e.clientY-r.top)/r.height*H}};
+ cv.addEventListener('pointermove',e=>aim=pos(e));
+ function spawn(){items=[];for(let row=0;row<3;row++){const y=150+row*120,dir=row%2?-1:1,sp=(90+row*40+roundNo*12)*dir;
+   for(let k=0;k<5;k++)items.push({k:row===1&&k%2?'target':'duck',x:k*210+(row*70),y,sp,r:row===1&&k%2?30:34,alive:true})}
+  for(let k=0;k<3;k++)items.push({k:'bottle',x:820,y:470-k*44,sp:0,r:20,alive:true,stack:true});
+  items.push({k:'star',x:-40,y:90,sp:380+roundNo*30,r:18,alive:true})}
+ function draw(t){g.fillStyle='#7B2D26';g.fillRect(0,0,W,H);for(let k=0;k<W;k+=60){g.fillStyle=k/60%2?'#C92A2A':'#F8F9FA';g.beginPath();g.moveTo(k,0);g.lineTo(k+60,0);g.lineTo(k+30,50);g.fill()}
+  g.fillStyle='#5C3D2E';[190,310,430].forEach(y=>g.fillRect(0,y+30,W,12));g.fillStyle='#8B5E34';g.fillRect(760,490,140,20);
+  g.textAlign='center';g.textBaseline='middle';
+  items.forEach(it=>{if(!it.alive)return;if(it.sp){it.x+=it.sp*.016;if(it.k==='star'){if(it.x>W+40)it.x=-40}else{if(it.x>W+60)it.x=-60;if(it.x<-60)it.x=W+60}}
+   const bob=it.k==='duck'?Math.sin(t*6+it.x/50)*4:0;g.font=`${it.r*1.9}px sans-serif`;g.save();g.translate(it.x,it.y+bob);if(it.sp<0&&it.k==='duck')g.scale(-1,1);g.fillText({duck:'🦆',target:'🎯',bottle:'🍾',star:'⭐'}[it.k],0,0);g.restore()});
+  parts=parts.filter(p=>{p.l-=.016;p.x+=p.vx*.016;p.y+=p.vy*.016;p.vy+=500*.016;g.globalAlpha=Math.max(0,p.l);g.fillStyle=p.c;g.fillRect(p.x,p.y,6,6);g.globalAlpha=1;return p.l>0});
+  // crosshair
+  g.strokeStyle='#fff';g.lineWidth=3;g.beginPath();g.arc(aim.x,aim.y,22,0,6.3);g.moveTo(aim.x-34,aim.y);g.lineTo(aim.x+34,aim.y);g.moveTo(aim.x,aim.y-34);g.lineTo(aim.x,aim.y+34);g.stroke();
+  // hud
+  g.fillStyle='rgba(255,255,255,.95)';g.fillRect(14,H-50,300,38);g.fillStyle='#1D2B53';g.font='700 22px Fredoka, sans-serif';g.textAlign='left';
+  g.fillText(`${'🔫'.repeat(0)}Shots: ${'●'.repeat(shots)}${live?`  ⏱️ ${Math.max(0,Math.ceil((deadline-performance.now())/1000))}s`:''}`,26,H-30)}
+ function loop(now){draw(now/1000);if(live&&(shots<=0||now>deadline)){live=false;$('msg').textContent=shots<=0?'Out of shots!':'Time\'s up!';setTimeout(next,1200)}raf=requestAnimationFrame(loop)}
+ spawn();raf=requestAnimationFrame(loop);
+ cv.addEventListener('pointerdown',e=>{aim=pos(e);if(!live||shots<=0)return;shots--;S[turn].shots++;Kit.tone(160,.08,'square',.15);
+  const hit=items.filter(it=>it.alive&&Math.hypot(it.x-aim.x,it.y-aim.y)<it.r+8).sort((a,b)=>b.r-a.r)[0];
+  if(!hit){parts.push({x:aim.x,y:aim.y,vx:0,vy:0,l:.3,c:'#fff'});return}
+  const val={duck:1,target:3,bottle:2,star:5}[hit.k];let gained=val;hit.alive=false;
+  if(hit.stack){items.filter(it=>it.stack&&it.alive&&it.y<hit.y).forEach(it=>{it.alive=false;gained+=2})}
+  if(hit.k==='star')S[turn].stars++;S[turn].pts+=gained;S[turn].hits++;sc();
+  for(let k=0;k<18;k++){const a=Math.random()*6.28;parts.push({x:hit.x,y:hit.y,vx:Math.cos(a)*200,vy:Math.sin(a)*200-100,l:.8,c:['#FFE066','#fff','#FF922B'][k%3]})}
+  const r=cv.getBoundingClientRect();Play.pop(`+${gained}`,[r.left+hit.x/W*r.width,r.top+hit.y/H*r.height],'#FFE066');hit.k==='star'?Kit.tada():Kit.ding()});
+ async function next(){turn=(turn+1)%teams.length;if(turn===0)roundNo++;sc();
+  if(roundNo>ROUNDS){cancelAnimationFrame(raf);return Play.podium('🎯','Sharpshooters!',S.map(s=>s.pts),{'🎯 Hits':S.map(s=>`${s.hits}/${s.shots}`),'⭐ Stars':S.map(s=>s.stars)})}
+  play()}
+ async function play(){sc();$('msg').textContent='';if(items.filter(i=>i.alive).length<6)spawn();
+  const r=await Play.ask($('ask'),[turn]);
+  if(!r.length){$('msg').textContent='No shots this time.';return setTimeout(next,1000)}
+  shots=Play.streak[turn]>=3?5:3;deadline=performance.now()+9000;live=true;$('msg').innerHTML=`<span class="pl-turn" style="background:${teams[turn].color}">${Kit.esc(teams[turn].name)}</span> FIRE! 🎯`;cv.scrollIntoView({block:'center',behavior:'smooth'})}
+ play()}});
+
 </script>
 </body></html>
