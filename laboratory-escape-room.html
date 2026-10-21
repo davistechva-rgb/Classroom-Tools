@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Laboratory Escape Room</title>
+<style>
+.lab{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:860px){.lab{grid-template-columns:1fr}}
+.lab-bench{background:linear-gradient(#DDE7F0 0 72%,#6C7A8C 72% 76%,#A3B1C2 76%);border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);padding:16px;position:relative}
+.lab-shelf{display:flex;justify-content:space-around;gap:6px;flex-wrap:wrap;min-height:150px;align-items:flex-end;padding-bottom:4px;border-bottom:8px solid #8B5A2B}
+.vial{width:58px;height:120px;border:4px solid var(--ink);border-top:0;border-radius:0 0 26px 26px;position:relative;background:rgba(255,255,255,.55);cursor:pointer;padding:0;font:inherit;overflow:hidden;transition:transform .2s}
+.vial::before{content:"";position:absolute;left:-8px;right:-8px;top:0;height:8px;background:var(--ink);border-radius:4px}
+.vial .liq{position:absolute;left:0;right:0;bottom:0;height:70%;background:var(--c);border-top:3px solid rgba(255,255,255,.6)}
+.vial .lb{position:absolute;left:50%;top:14px;transform:translateX(-50%);background:#fff;border:2px solid var(--ink);border-radius:4px;font-weight:800;font-size:.85rem;padding:0 4px;z-index:2}
+.vial.locked .liq{display:none}.vial.locked::after{content:"🔒";position:absolute;inset:0;display:grid;place-items:center;font-size:1.6rem}
+.vial.used{opacity:.3;cursor:default}
+.vial:not(.locked):not(.used):hover{transform:translateY(-6px) rotate(-6deg)}
+.lab-mid{display:flex;justify-content:center;align-items:flex-end;gap:30px;margin-top:20px}
+.beaker{width:150px;height:170px;border:6px solid var(--ink);border-top:0;border-radius:0 0 30px 30px;position:relative;background:rgba(255,255,255,.6);overflow:hidden}
+.beaker::before{content:"";position:absolute;left:-12px;right:-12px;top:0;height:10px;background:var(--ink);border-radius:5px;z-index:3}
+.beaker .liq{position:absolute;left:0;right:0;bottom:0;height:0;background:#9ad;transition:height .6s,background .6s}
+.beaker.boil .liq{animation:boil .3s infinite alternate}@keyframes boil{to{transform:translateY(-4px)}}
+.beaker.fizz::after{content:"💨💨💨";position:absolute;top:-6px;left:0;right:0;text-align:center;font-size:2rem;animation:fz 1s}@keyframes fz{to{transform:translateY(-40px);opacity:0}}
+.burner{text-align:center}
+.burner .fl{font-size:2.4rem;transition:transform .3s;display:block;transform:scale(var(--s,0))}
+.therm{font:800 1.4rem ui-monospace,Consolas,monospace;background:#fff;border:3px solid var(--ink);border-radius:10px;padding:2px 10px}
+.recipe{background:#fff;border:5px solid var(--ink);border-radius:18px;box-shadow:6px 6px 0 var(--ink);padding:14px;background-image:repeating-linear-gradient(#fff 0 28px,#E6EEF9 28px 30px)}
+.recipe ol{margin:6px 0 0;padding-left:26px;font-weight:700;font-size:1.12rem}
+.recipe li{margin:6px 0}.recipe li.lk{color:#9aa}.recipe li.done{text-decoration:line-through;color:var(--grass)}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="escape.js"></script>
+<script>
+Kit.mount("🧪", "Laboratory Escape Room");
+
+Esc.setup({intro:'🧪⚗️', minutes:15,
+how:'The lab door only opens for someone holding the antidote! The vials are locked, and so are the steps of the recipe. Answer questions to unlock vials and recipe steps. Then follow the recipe exactly: pour vials into the beaker in order and heat it to the right temperature. One wrong move and the potion fizzes, so you start the mix over!',
+start({room}){
+ const $=id=>document.getElementById(id);
+ const V=[['A','#FF5148','Dragon red'],['B','#3B8CFF','Ocean blue'],['C','#FFD43B','Sun yellow'],['D','#40C057','Frog green'],['E','#B15CFF','Wizard purple'],['F','#F7F7F7','Cloud white']];
+ const order=Kit.shuffle([0,1,2,3,4,5]).slice(0,4);const temp=Kit.pick([40,55,70,85,95]);
+ const steps=[...order.map(i=>({t:'pour',v:i})),{t:'heat',v:temp}];window.__sol={order:order.map(i=>V[i][0]),temp};
+ room.innerHTML=`<div class="lab"><div class="lab-bench"><div class="lab-shelf" id="shelf">${V.map((v,i)=>`<button class="vial locked" data-v="${i}" style="--c:${v[1]}" aria-label="Vial ${v[0]}"><span class="lb">${v[0]}</span><span class="liq"></span></button>`).join('')}</div>
+  <div class="lab-mid"><div class="beaker" id="bk"><div class="liq" id="bl"></div></div><div class="burner"><span class="fl" id="fl">🔥</span><input type="range" id="heat" min="20" max="100" step="5" value="20" aria-label="Heat"><div><span class="therm" id="th">20°C</span></div><button class="btn small" id="setheat">Heat it</button></div></div>
+  <div class="row" style="justify-content:center;margin-top:12px"><button class="btn white small" id="dump">🗑️ Dump the beaker</button></div></div>
+  <div class="recipe"><b>📋 Antidote recipe</b><ol id="rec"></ol><div class="muted" style="margin-top:8px">Unlock a vial before you can pour it.</div></div></div>`;
+ const unlockedV=new Set(),unlockedS=new Set();let mix=[],heated=false,busy=false;
+ const rec=()=>$('rec').innerHTML=steps.map((s,i)=>{const d=i<mix.length+(heated?1:0);if(!unlockedS.has(i))return `<li class="lk">🔒 Locked step <button class="btn small grape" data-s="${i}">Unlock</button></li>`;
+   return `<li class="${d?'done':''}">${s.t==='pour'?`Pour vial <b>${V[s.v][0]}</b> (${V[s.v][2]})`:`Heat to <b>${s.v}°C</b>`}</li>`}).join('');rec();
+ const color=()=>{if(!mix.length)return '#9ad';let r=0,g=0,b=0;mix.forEach(i=>{const h=V[i][1];r+=parseInt(h.slice(1,3),16);g+=parseInt(h.slice(3,5),16);b+=parseInt(h.slice(5,7),16)});const n=mix.length;return `rgb(${r/n|0},${g/n|0},${b/n|0})`};
+ const fill=()=>{$('bl').style.height=mix.length*18+'%';$('bl').style.background=color()};
+ const fizz=async why=>{const bk=$('bk');bk.classList.remove('fizz');void bk.offsetWidth;bk.classList.add('fizz');Kit.tone(180,.6,'sawtooth',.18);Esc.penalize();Esc.msg('💥 '+why+' The beaker fizzed over! Start the mix again.');await Kit.sleep(900);mix=[];heated=false;fill();rec();room.querySelectorAll('.vial.used').forEach(v=>v.classList.remove('used'))};
+ Esc.stat(`🧪 0 of ${steps.length} steps`);Esc.msg('Unlock recipe steps and vials.');
+ room.onclick=async e=>{const b=e.target.closest('button');if(!b||busy)return;
+  if(b.dataset.s!=null){busy=true;const ok=await Esc.ask({icon:'📋',title:'Unlock a recipe step'});busy=false;if(ok){unlockedS.add(+b.dataset.s);rec()}return}
+  if(b.classList.contains('vial')){const i=+b.dataset.v;
+   if(b.classList.contains('locked')){busy=true;const ok=await Esc.ask({icon:'🧪',title:`Unlock vial ${V[i][0]}`});busy=false;if(ok){unlockedV.add(i);b.classList.remove('locked')}return}
+   if(b.classList.contains('used'))return;
+   const want=steps[mix.length];if(!want||want.t!=='pour'||want.v!==i){fizz(`Vial ${V[i][0]} wasn't next.`);return}
+   mix.push(i);b.classList.add('used');Kit.tone(500+mix.length*80,.2,'sine',.2);fill();rec();Esc.stat(`🧪 ${mix.length} of ${steps.length} steps`);return}
+  if(b.id==='dump'){mix=[];heated=false;fill();rec();room.querySelectorAll('.vial.used').forEach(v=>v.classList.remove('used'));Esc.stat(`🧪 0 of ${steps.length} steps`)}
+  if(b.id==='setheat'){const t=+$('heat').value;if(mix.length<order.length){fizz('You heated it too early.');return}
+   $('bk').classList.add('boil');await Kit.sleep(900);$('bk').classList.remove('boil');
+   if(t!==temp){fizz(`${t}°C was the wrong temperature.`);return}
+   heated=true;rec();Esc.stat(`🧪 ${steps.length} of ${steps.length} steps`);$('bl').style.background='radial-gradient(#fff,#7CFFB2)';Kit.ding();await Kit.sleep(700);
+   Esc.win('🧪','Antidote made!','The potion glows green and the lab door slides open.')}};
+ $('heat').oninput=()=>{const t=+$('heat').value;$('th').textContent=t+'°C';$('fl').style.setProperty('--s',(t-20)/80*1.2)};
+}});
+</script>
+</body></html>

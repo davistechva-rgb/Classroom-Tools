@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Detective Challenge</title>
+<style>
+.dc-wrap{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:860px){.dc-wrap{grid-template-columns:1fr}}
+.dc-board{background:#B98A5C;background-image:radial-gradient(rgba(0,0,0,.08) 1.5px,transparent 2px);background-size:12px 12px;border:6px solid #6B4423;border-radius:18px;box-shadow:6px 6px 0 var(--ink);padding:14px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.dc-ev{background:#fff;border:3px solid var(--ink);border-radius:4px;padding:10px 8px 8px;text-align:center;font-weight:700;min-height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;position:relative;box-shadow:3px 3px 0 rgba(0,0,0,.25)}
+.dc-ev::before{content:"📌";position:absolute;top:-14px;left:50%;transform:translateX(-50%);font-size:1.3rem}
+.dc-ev:nth-child(odd){transform:rotate(-2deg)}.dc-ev:nth-child(3n){transform:rotate(2.5deg)}
+.dc-ev.locked{background:#E9DCC9;color:#7a6650}
+.dc-ev .ic{font-size:2.2rem}
+.dc-ev.on{animation:pop .45s cubic-bezier(.3,1.6,.5,1)}
+.dc-note{background:#fff;border:5px solid var(--ink);border-radius:18px;box-shadow:6px 6px 0 var(--ink);padding:14px;background-image:repeating-linear-gradient(#fff 0 30px,#D7E8FF 30px 32px)}
+.dc-note h3{margin:0 0 6px}
+.dc-cat{margin-bottom:10px}
+.dc-cat .t{font-weight:800;margin-bottom:4px}
+.dc-chips{display:flex;flex-wrap:wrap;gap:6px}
+.dc-chip{font:inherit;font-weight:700;border:3px solid var(--ink);border-radius:12px;background:#fff;padding:4px 10px;cursor:pointer;color:var(--ink)}
+.dc-chip.x{text-decoration:line-through;opacity:.4;background:#FFD9D4}
+.dc-chip.pick{background:var(--sun);outline:3px solid var(--ink);outline-offset:2px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="escape.js"></script>
+<script>
+Kit.mount("🔎", "Detective Challenge");
+
+Esc.setup({intro:'🔎📋', minutes:20,
+how:'A mystery at school! Figure out WHO did it, WHERE it happened, and WHAT they used. Every piece of evidence on the cork board is locked behind a question. Each clue proves one person, place, or thing is NOT part of the crime. Tap names in the detective notebook to cross them out. When one of each is left, choose them and solve the case.',
+start({room}){
+ const $=id=>document.getElementById(id);
+ const WHO=[['👩‍🍳','Chef Rosa'],['🧑‍🏫','Coach Lee'],['👨‍🔬','Dr. Patel'],['💂','Officer Kim'],['🧑‍🎨','Ms. Brush'],['👷','Mr. Fixit']];
+ const WHERE=[['📚','Library'],['🍽️','Cafeteria'],['🏀','Gym'],['🎵','Music room'],['🔬','Science lab'],['🌳','Playground']];
+ const WHAT=[['🍌','Banana peel'],['🧪','Slime jar'],['🎈','Water balloon'],['🪶','Feather duster'],['🧻','Toilet paper'],['🥁','Drum']];
+ const CRIMES=['covered the principal\'s car in sticky notes','hid every pencil in the school','glued the trophies to the shelf','made the fire drill bell play music'];
+ const crime=Kit.pick(CRIMES);
+ const ans={who:Kit.rand(0,5),where:Kit.rand(0,5),what:Kit.rand(0,5)};window.__sol={who:WHO[ans.who][1],where:WHERE[ans.where][1],what:WHAT[ans.what][1]};
+ const LIST={who:WHO,where:WHERE,what:WHAT};
+ // evidence: eliminate the 5 innocent items from each category, some clues remove two at once
+ const SAY={who:(a,b)=>b?`${a[0]} ${a[1]} and ${b[0]} ${b[1]} were together at a meeting.`:`${a[0]} ${a[1]} was on a field trip all day.`,
+  where:(a,b)=>b?`The ${a[1]} ${a[0]} and the ${b[1]} ${b[0]} were locked all afternoon.`:`The cameras show nobody in the ${a[1]} ${a[0]}.`,
+  what:(a,b)=>b?`The ${a[1]} ${a[0]} and the ${b[1]} ${b[0]} were still in the closet, untouched.`:`The ${a[1]} ${a[0]} has no fingerprints on it.`};
+ let ev=[];for(const k of ['who','where','what']){const inn=Kit.shuffle([0,1,2,3,4,5].filter(i=>i!==ans[k]));
+  // one pair clue + three single clues per category = 4 clues each
+  ev.push({k,ids:[inn[0],inn[1]]},{k,ids:[inn[2]]},{k,ids:[inn[3]]},{k,ids:[inn[4]]})}
+ ev=Kit.shuffle(ev);
+ room.innerHTML=`<div class="es-note" style="display:block;transform:none;margin-bottom:14px;font-size:1.15rem">🚨 Someone <b>${crime}</b>! Find out who, where, and with what.</div>
+ <div class="dc-wrap"><div class="dc-board" id="board">${ev.map((e,i)=>`<div class="dc-ev locked" id="e${i}"><span class="ic">🗂️</span>Evidence ${i+1}<button class="btn small grape" data-q="${i}">Unlock</button></div>`).join('')}</div>
+ <div class="dc-note"><h3>📓 Detective notebook</h3>${['who','where','what'].map(k=>`<div class="dc-cat"><div class="t">${k==='who'?'🧍 Who?':k==='where'?'📍 Where?':'🔧 With what?'}</div><div class="dc-chips">${LIST[k].map((x,i)=>`<button class="dc-chip" data-k="${k}" data-i="${i}">${x[0]} ${x[1]}</button>`).join('')}</div></div>`).join('')}
+ <p class="muted" style="margin:6px 0">Tap once to cross out. Tap a crossed-out name again to bring it back.</p>
+ <div class="row" style="justify-content:center"><button class="btn red" id="solve">⚖️ Solve the case</button></div></div></div>`;
+ let busy=false,n=0;Esc.stat(`🗂️ 0 of ${ev.length} evidence`);Esc.msg('Unlock evidence on the cork board.');
+ $('board').onclick=async e=>{const b=e.target.closest('[data-q]');if(!b||busy)return;busy=true;const i=+b.dataset.q;const ok=await Esc.ask({icon:'🗂️',title:`Evidence ${i+1}`});busy=false;if(!ok)return;
+  const E=ev[i],L=LIST[E.k];const el=$('e'+i);el.className='dc-ev on';el.innerHTML=`<span class="ic">${E.k==='who'?'📸':E.k==='where'?'🗝️':'🧤'}</span>${SAY[E.k](L[E.ids[0]],L[E.ids[1]])}`;n++;Esc.stat(`🗂️ ${n} of ${ev.length} evidence`)};
+ room.querySelector('.dc-note').addEventListener('click',e=>{const c=e.target.closest('.dc-chip');if(!c)return;c.classList.toggle('x');Kit.tick()});
+ $('solve').onclick=()=>{const ov=document.createElement('div');ov.className='es-ov';
+  const pick={};ov.innerHTML=`<div class="es-q"><div class="ic">⚖️</div><h2>Make your accusation</h2>${['who','where','what'].map(k=>`<div class="dc-cat"><div class="t">${k==='who'?'Who did it?':k==='where'?'Where?':'With what?'}</div><div class="dc-chips" style="justify-content:center">${LIST[k].map((x,i)=>`<button class="dc-chip" data-k="${k}" data-i="${i}">${x[0]} ${x[1]}</button>`).join('')}</div></div>`).join('')}
+  <div class="fb" id="dfb"></div><div class="row" style="justify-content:center"><button class="btn green" id="go">Accuse!</button><button class="btn white" id="no">Not yet</button></div></div>`;document.body.appendChild(ov);
+  ov.onclick=e=>{const c=e.target.closest('.dc-chip');if(c){ov.querySelectorAll(`[data-k="${c.dataset.k}"]`).forEach(x=>x.classList.remove('pick'));c.classList.add('pick');pick[c.dataset.k]=+c.dataset.i;Kit.tick()}};
+  ov.querySelector('#no').onclick=()=>ov.remove();
+  ov.querySelector('#go').onclick=()=>{if(Object.keys(pick).length<3){ov.querySelector('#dfb').textContent='Pick one of each.';return}
+   const right=['who','where','what'].filter(k=>pick[k]===ans[k]).length;
+   if(right===3){ov.remove();Esc.win('🔎','Case solved!',`${WHO[ans.who][0]} ${WHO[ans.who][1]} did it in the ${WHERE[ans.where][1]} with the ${WHAT[ans.what][1]}!`)}
+   else{Esc.penalize();Kit.tone(150,.4,'sawtooth',.2);ov.remove();Esc.msg(`❌ The judge isn't convinced. ${right} of your 3 picks ${right===1?'is':'are'} right.`)}}};
+}});
+</script>
+</body></html>

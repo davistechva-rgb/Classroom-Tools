@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Mystery Puzzle Room</title>
+<style>
+.mp-wrap{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:22px;align-items:center}
+@media (max-width:860px){.mp-wrap{grid-template-columns:1fr}}
+.mp-frame{background:#8B5A2B;border:6px solid var(--ink);border-radius:16px;box-shadow:7px 7px 0 var(--ink);padding:14px;max-width:560px;width:100%;margin:0 auto}
+.mp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;aspect-ratio:1;background:#5A3A1A}
+.mp-t{border:0;padding:0;cursor:pointer;background-color:#2E3A59;background-repeat:no-repeat;position:relative;border-radius:4px;color:#fff;font:800 2.6rem/1 inherit;font-family:inherit;transition:transform .2s,box-shadow .2s}
+.mp-t.hid{background-image:none!important;background:repeating-linear-gradient(45deg,#3A4870 0 12px,#33416A 12px 24px)}
+.mp-t.hid::after{content:"?";position:absolute;inset:0;display:grid;place-items:center;font-size:3rem;color:#FFC93C}
+.mp-t.sel{box-shadow:inset 0 0 0 6px #FFC93C;transform:scale(.95)}
+.mp-t.home{box-shadow:inset 0 0 0 3px rgba(93,198,110,.0)}
+.mp-done .mp-t{border-radius:0}.mp-done .mp-grid{gap:0}
+.mp-side{text-align:center}
+.mp-lock{background:#fff;border:5px solid var(--ink);border-radius:20px;box-shadow:6px 6px 0 var(--ink);padding:16px;margin-top:14px}
+.mp-lock input{font-size:1.6rem!important;text-align:center;text-transform:uppercase;letter-spacing:.15em}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="escape.js"></script>
+<script>
+Kit.mount("🧩", "Mystery Puzzle Room");
+
+Esc.setup({intro:'🧩🖼️', minutes:15,
+extra:`<label>Secret word in the picture (optional) <input type="text" id="mpWord" maxlength="10" placeholder="Leave empty for a random word" style="width:auto"></label>`,
+read:()=>({word:(document.getElementById('mpWord').value||'').replace(/[^a-z]/gi,'').toUpperCase().slice(0,10)}),
+how:'A painting on the wall has been cut into nine scrambled pieces, and the password to the door is hidden in it! Click a piece and answer its question to turn it face up. Then tap two pieces to swap them until the picture is whole. Read the secret word and type it into the door lock.',
+start({room,extra}){
+ const $=id=>document.getElementById(id);
+ const WORDS=['OWL','MOON','TIGER','CASTLE','ROCKET','PLANET','DRAGON','PIRATE','JUNGLE','GALAXY','PUZZLE','WIZARD'];
+ const word=extra.word&&extra.word.length>=2?extra.word:Kit.pick(WORDS);window.__sol={word};
+ // paint the picture
+ const S=600,cv=document.createElement('canvas');cv.width=cv.height=S;const g=cv.getContext('2d');
+ const sky=g.createLinearGradient(0,0,0,S);sky.addColorStop(0,'#7EC8F2');sky.addColorStop(.6,'#CDEBFF');g.fillStyle=sky;g.fillRect(0,0,S,S);
+ g.fillStyle='#FFD447';g.beginPath();g.arc(480,110,62,0,7);g.fill();
+ g.fillStyle='#fff';[[110,90],[250,70]].forEach(([x,y])=>{g.beginPath();g.arc(x,y,30,0,7);g.arc(x+34,y-12,36,0,7);g.arc(x+70,y,28,0,7);g.fill()});
+ g.fillStyle='#6A8CA8';g.beginPath();g.moveTo(0,420);g.lineTo(150,230);g.lineTo(300,420);g.fill();g.fillStyle='#577A96';g.beginPath();g.moveTo(200,420);g.lineTo(400,200);g.lineTo(600,420);g.fill();
+ g.fillStyle='#fff';g.beginPath();g.moveTo(400,200);g.lineTo(438,242);g.lineTo(362,242);g.fill();
+ g.fillStyle='#5DC66E';g.fillRect(0,410,S,190);g.fillStyle='#4AAE5B';for(let i=0;i<14;i++){g.beginPath();g.arc(i*48,420,34,Math.PI,0);g.fill()}
+ // banner with the word across the middle
+ g.fillStyle='#FFF6C9';g.strokeStyle='#1D2B53';g.lineWidth=8;g.beginPath();g.roundRect(40,250,520,120,24);g.fill();g.stroke();
+ g.fillStyle='#FF6B5B';g.textAlign='center';g.textBaseline='middle';let fs=110;g.font=`900 ${fs}px Fredoka, Trebuchet MS, sans-serif`;while(g.measureText(word).width>480){fs-=6;g.font=`900 ${fs}px Fredoka, Trebuchet MS, sans-serif`}
+ g.lineWidth=10;g.strokeStyle='#1D2B53';g.strokeText(word,300,314);g.fillText(word,300,314);
+ g.font='60px serif';g.fillText('🌲',70,500);g.fillText('🏡',300,500);g.fillText('🌲',530,500);g.fillText('🦉',140,175);
+ const url=cv.toDataURL();
+ // pos[cell] = piece index; start scrambled (no piece in its home spot)
+ let pos;do{pos=Kit.shuffle([0,1,2,3,4,5,6,7,8])}while(pos.some((p,i)=>p===i));
+ const open=new Set();
+ room.innerHTML=`<div class="mp-wrap"><div class="mp-frame" id="frame"><div class="mp-grid" id="grid"></div></div>
+  <div class="mp-side"><div class="es-note" style="font-size:1.15rem">🖼️ Flip every piece, then swap them<br>until the picture is whole.</div>
+  <div class="mp-lock"><div style="font-size:2.4rem">🚪🔤</div><form id="f" class="es-type"><input type="text" id="pw" placeholder="Password" autocomplete="off" aria-label="Password"><button class="btn green">Unlock</button></form></div></div></div>`;
+ let sel=null;
+ const draw=()=>{$('grid').innerHTML=pos.map((p,c)=>{const x=p%3,y=Math.floor(p/3);return `<button class="mp-t ${open.has(p)?'':'hid'} ${sel===c?'sel':''}" data-c="${c}" aria-label="Piece ${c+1}" style="background-image:url(${url});background-size:300% 300%;background-position:${x*50}% ${y*50}%"></button>`}).join('');
+  const whole=pos.every((p,i)=>p===i)&&open.size===9;$('frame').classList.toggle('mp-done',whole);if(whole&&!draw.said){draw.said=1;Kit.tada();Esc.msg('🖼️ The picture is whole! What does the banner say?')}};
+ draw();let busy=false;Esc.stat('🧩 0 of 9 pieces');Esc.msg('Click a piece to answer its question.');
+ $('grid').onclick=async e=>{const t=e.target.closest('.mp-t');if(!t||busy)return;const c=+t.dataset.c,p=pos[c];
+  if(!open.has(p)){busy=true;const ok=await Esc.ask({icon:'🧩',title:'Turn this piece over'});busy=false;if(!ok)return;open.add(p);Esc.stat(`🧩 ${open.size} of 9 pieces`);sel=null;draw();
+   if(open.size===9)Esc.msg('All pieces are face up. Tap two pieces to swap them.');return}
+  if(sel===null){sel=c;Kit.tick();draw();return}
+  if(sel===c){sel=null;draw();return}
+  if(!open.has(pos[sel])){sel=c;draw();return}
+  [pos[sel],pos[c]]=[pos[c],pos[sel]];sel=null;Kit.tone(520,.08,'triangle',.15);draw()};
+ $('f').onsubmit=e=>{e.preventDefault();const v=$('pw').value.replace(/[^a-z]/gi,'').toUpperCase();
+  if(v===word)Esc.win('🖼️','You escaped!',`The secret word was ${word}.`);else{Esc.penalize();Kit.tone(150,.4,'sawtooth',.2);$('pw').select();Esc.msg('❌ Wrong password.')}};
+}});
+</script>
+</body></html>

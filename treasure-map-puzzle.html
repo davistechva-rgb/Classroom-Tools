@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Treasure Map Puzzle</title>
+<style>
+.tm-wrap{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:860px){.tm-wrap{grid-template-columns:1fr}}
+.tm-map{background:#3FA7D6;border:6px solid var(--ink);border-radius:20px;box-shadow:7px 7px 0 var(--ink);padding:10px;max-width:600px;margin:0 auto;width:100%}
+.tm-grid{display:grid;grid-template-columns:repeat(10,1fr);aspect-ratio:1;position:relative}
+.tm-c{display:grid;place-items:center;font-size:clamp(1rem,3.2vh,1.9rem);border:1px dashed rgba(255,255,255,.18);line-height:1;position:relative}
+.tm-c.land{background:#F1D79A;border-color:rgba(120,90,40,.18)}
+.tm-c.grass{background:#9BD27A}
+.tm-c.trail{background-image:radial-gradient(#B1452B 22%,transparent 26%)}
+.tm-c.dug::after{content:"🕳️";font-size:.8em;opacity:.8}
+.tm-me{position:absolute;width:10%;height:10%;display:grid;place-items:center;font-size:clamp(1.4rem,4vh,2.4rem);transition:left .25s,top .25s;z-index:2;filter:drop-shadow(0 2px 0 rgba(0,0,0,.3))}
+.tm-axis{display:flex;justify-content:space-around;color:#fff;font-weight:800;font-size:.85rem}
+.tm-ctl{display:grid;grid-template-columns:repeat(3,64px);gap:6px;justify-content:center;margin:12px 0}
+.tm-ctl .btn{padding:8px 0}
+.tm-pieces{display:grid;gap:10px}
+.tm-p{background:#F6E7C1;border:4px solid #8B5A2B;border-radius:6px;padding:10px 12px;font-weight:700;font-size:1.15rem;box-shadow:4px 4px 0 var(--ink);clip-path:polygon(0 4%,8% 0,30% 5%,55% 0,80% 6%,100% 0,98% 50%,100% 96%,70% 100%,40% 95%,12% 100%,0 94%,3% 50%)}
+.tm-p.lock{background:#E7E0D0;color:#8a7d66}
+.tm-p.cur{outline:4px solid var(--grass)}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="escape.js"></script>
+<script>
+Kit.mount("🗺️", "Treasure Map Puzzle");
+
+Esc.setup({intro:'🗺️🏴‍☠️', minutes:15,
+how:'The captain tore the treasure map into five pieces! Answer questions to get each piece. Every piece gives one direction, like "3 steps EAST." Start at the ⛵ ship and walk the pirate step by step using the arrow buttons or the arrow keys. Follow all five directions in order, then DIG. Digging in the wrong spot costs time!',
+start({room}){
+ const $=id=>document.getElementById(id);const N=10;
+ // island: land cells; build a path of 5 legs on land from a beach start
+ const DIRS={N:[0,-1,'NORTH ⬆️'],S:[0,1,'SOUTH ⬇️'],E:[1,0,'EAST ➡️'],W:[-1,0,'WEST ⬅️']};
+ let legs,start,end,land;
+ for(let tries=0;tries<500;tries++){
+  land=new Set();for(let y=1;y<N-1;y++)for(let x=1;x<N-1;x++){const d=Math.hypot(x-4.5,(y-4.5)*1.1);if(d<4.2+Math.random()*.6)land.add(y*N+x)}
+  const beach=[...land].filter(c=>{const x=c%N,y=Math.floor(c/N);return [[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy])=>!land.has((y+dy)*N+x+dx))});
+  start=Kit.pick(beach);let x=start%N,y=Math.floor(start/N);legs=[];let ok=true,last='';const visited=new Set([start]);
+  for(let k=0;k<5&&ok;k++){const opts=Kit.shuffle(Object.keys(DIRS).filter(d=>d!==last));let done=false;
+   for(const d of opts){for(const n of Kit.shuffle([2,3,4,1])){const[dx,dy]=DIRS[d];let good=true;const cells=[];for(let s=1;s<=n;s++){const c=(y+dy*s)*N+x+dx*s;if(!land.has(c)||visited.has(c)){good=false;break}cells.push(c)}
+     if(good){cells.forEach(c=>visited.add(c));x+=dx*n;y+=dy*n;legs.push([d,n]);last=d;done=true;break}}if(done)break}
+   if(!done)ok=false}
+  end=y*N+x;if(ok&&legs.length===5)break}
+ window.__sol={legs,start,end};
+ const deco=new Map();[...land].forEach(c=>{if(c===start)return;const r=Math.random();if(r<.12)deco.set(c,'🌴');else if(r<.16)deco.set(c,'🪨');else if(r<.18)deco.set(c,'🦀')});
+ room.innerHTML=`<div class="tm-wrap"><div><div class="tm-map"><div class="tm-grid" id="grid">${Array.from({length:N*N},(_,c)=>`<div class="tm-c ${land.has(c)?'land':''}" id="c${c}">${c===start?'⛵':deco.get(c)||(land.has(c)?'':Math.random()<.04?'🐟':'')}</div>`).join('')}<div class="tm-me" id="me">🏴‍☠️</div></div></div>
+  <div class="tm-ctl"><span></span><button class="btn white" data-m="N" aria-label="North">⬆️</button><span></span><button class="btn white" data-m="W" aria-label="West">⬅️</button><button class="btn" id="dig">⛏️</button><button class="btn white" data-m="E" aria-label="East">➡️</button><span></span><button class="btn white" data-m="S" aria-label="South">⬇️</button><span></span></div>
+  <div class="row" style="justify-content:center"><button class="btn white small" id="back">⛵ Back to the ship</button></div></div>
+  <div><div class="es-note" style="margin-bottom:12px">🧭 North is the top of the map.</div><div class="tm-pieces" id="pcs"></div></div></div>`;
+ let me=start,got=0,busy=false,steps=0;const put=()=>{const x=me%N,y=Math.floor(me/N);$('me').style.left=x*10+'%';$('me').style.top=y*10+'%'};put();
+ const pcs=()=>$('pcs').innerHTML=legs.map((l,i)=>i<got?`<div class="tm-p">📜 Piece ${i+1}: walk <b>${l[1]} step${l[1]>1?'s':''} ${DIRS[l[0]][2]}</b></div>`:`<div class="tm-p lock">📜 Piece ${i+1}: torn off… ${i===got?`<button class="btn small grape" data-q>Win this piece</button>`:''}</div>`).join('');pcs();
+ $('pcs').onclick=async e=>{if(!e.target.closest('[data-q]')||busy)return;busy=true;const ok=await Esc.ask({icon:'📜',title:`Map piece ${got+1}`});busy=false;if(!ok)return;got++;pcs();Esc.stat(`📜 ${got} of 5 pieces`);if(got===5)Esc.msg('You have the whole map! Follow it from the ship, then dig.')};
+ const move=d=>{const[dx,dy]=DIRS[d];const x=me%N+dx,y=Math.floor(me/N)+dy;if(x<0||y<0||x>=N||y>=N)return;const c=y*N+x;
+  if(!land.has(c)){Kit.tone(200,.1,'sine',.15);Esc.msg('🌊 That\'s water! Pirates can\'t swim here.');return}me=c;steps++;$('c'+c).classList.add('trail');Kit.tick();put()};
+ room.querySelector('.tm-ctl').onclick=e=>{const b=e.target.closest('[data-m]');if(b)move(b.dataset.m)};
+ document.addEventListener('keydown',e=>{if(Esc.over||document.querySelector('.es-ov'))return;const m={ArrowUp:'N',ArrowDown:'S',ArrowLeft:'W',ArrowRight:'E'}[e.key];if(m){e.preventDefault();move(m)}});
+ $('back').onclick=()=>{me=start;room.querySelectorAll('.trail').forEach(t=>t.classList.remove('trail'));put()};
+ $('dig').onclick=async()=>{if(me===start){Esc.msg('Walk away from the ship first!');return}
+  if(me===end){$('c'+end).textContent='💰';Kit.ding();await Kit.sleep(600);Esc.win('💰','Treasure found!','You followed the map perfectly. Arrr!')}
+  else{$('c'+me).classList.add('dug');Esc.penalize();Kit.tone(130,.3,'square',.15);Esc.msg('⛏️ Just sand and a crab. Wrong spot!')}};
+ Esc.stat('📜 0 of 5 pieces');Esc.msg('Win the first map piece.');
+}});
+</script>
+</body></html>

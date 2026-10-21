@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Historical Mystery</title>
+<style>
+.hm-hall{background:linear-gradient(#F3E5C8,#E6D3AC);border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);padding:16px}
+.hm-cases{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px}
+.hm-case{background:rgba(255,255,255,.55);border:4px solid var(--ink);border-radius:16px;padding:10px;text-align:center;min-height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;position:relative;box-shadow:inset 0 -14px 0 #8B5A2B}
+.hm-case .sym{position:absolute;top:6px;left:8px;font-size:1.5rem}
+.hm-case .ic{font-size:2.8rem}
+.hm-case .yr{font:800 1.4rem ui-monospace,Consolas,monospace;background:#1D2B53;color:#FFC93C;border-radius:8px;padding:0 10px}
+.hm-case .tx{font-weight:700;font-size:1rem;line-height:1.2}
+.hm-case.locked{background:repeating-linear-gradient(45deg,#d9c9a6 0 10px,#cfbd98 10px 20px)}
+.hm-vault{margin-top:18px;background:linear-gradient(#7E8AA0,#5B667C);border:6px solid var(--ink);border-radius:24px;padding:14px;text-align:center;color:#fff;box-shadow:6px 6px 0 var(--ink)}
+.hm-slots{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:10px 0}
+.hm-slots button{width:64px;height:64px;font-size:2rem;border:4px solid var(--ink);border-radius:50%;background:#fff;cursor:pointer;color:var(--ink)}
+.hm-pick{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.hm-pick button{font-size:1.8rem;width:56px;height:56px;border:4px solid var(--ink);border-radius:14px;background:#FFF6C9;cursor:pointer}
+.hm-pick button:disabled{opacity:.25}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="escape.js"></script>
+<script>
+Kit.mount("🏛️", "Historical Mystery");
+
+Esc.setup({intro:'🏛️⏳', minutes:15,
+extra:`<details><summary style="cursor:pointer"><b>Use my own events</b> (optional)</summary><p class="muted">One per line: event | year. Use at least 5. Leave empty to use the built-in history events.</p><textarea id="hmEv" style="min-height:120px" placeholder="Columbus reaches the Americas | 1492"></textarea></details>`,
+read:()=>({ev:Kit.lines(document.getElementById('hmEv').value).map(l=>l.split('|').map(s=>s.trim())).filter(p=>p[0]&&/^-?\d+$/.test(p[1]||''))}),
+how:'Thieves scrambled the museum\'s history exhibit, and the vault won\'t open until the artifacts are back in order! Answer a question to unlock each display case. Every artifact shows an event, a year, and a symbol. Enter the symbols into the vault from OLDEST to NEWEST.',
+start({room,extra}){
+ const $=id=>document.getElementById(id);
+ const BUILT=[['🏺','The Great Pyramid of Giza is finished',-2560],['🏟️','The Colosseum opens in Rome',80],['🏯','The Great Wall of China is extended by the Ming',1368],['⛵','Columbus reaches the Americas',1492],['🖨️','Gutenberg prints his famous Bible',1455],['🚢','The Mayflower lands at Plymouth',1620],['🏘️','Jamestown, Virginia is founded',1607],['📜','The Declaration of Independence is signed',1776],['🏛️','The U.S. Constitution is written',1787],['🗺️','Lewis and Clark start their journey west',1804],['💡','Edison shows his light bulb',1879],['📞','Bell makes the first telephone call',1876],['✈️','The Wright brothers fly at Kitty Hawk',1903],['🚗','The Model T car goes on sale',1908],['🌕','Astronauts walk on the Moon',1969],['💻','The World Wide Web is invented',1989],['🗽','The Statue of Liberty is dedicated',1886],['🚂','The Transcontinental Railroad is finished',1869]];
+ const SYM=['🌙','⭐','🔺','💠','🍀','🔶','❤️','🌀'];
+ const n=6;let evs=(extra.ev.length>=5?extra.ev.map(p=>['📜',p[0],+p[1]]):BUILT);
+ // pick events with distinct years
+ const pickd=[];for(const e of Kit.shuffle(evs)){if(!pickd.some(p=>p[2]===e[2]))pickd.push(e);if(pickd.length===Math.min(n,evs.length))break}
+ const items=pickd.map((e,i)=>({ic:e[0],tx:e[1],yr:e[2],sym:SYM[i]}));
+ const sorted=[...items].sort((a,b)=>a.yr-b.yr).map(x=>x.sym);window.__sol={order:sorted};
+ const yrs=y=>y<0?`${-y} BC`:y<1000?`${y} AD`:y;
+ room.innerHTML=`<div class="hm-hall"><div class="hm-cases" id="cases">${items.map((it,i)=>`<div class="hm-case locked" id="h${i}"><span class="ic">🖼️</span><button class="btn small grape" data-q="${i}">Unlock case</button></div>`).join('')}</div>
+  <div class="hm-vault"><div style="font-size:2.4rem">🏦</div><b>Vault: symbols from OLDEST to NEWEST</b><div class="hm-slots" id="slots"></div><div class="hm-pick" id="pick"></div>
+  <div class="row" style="justify-content:center;margin-top:10px"><button class="btn white small" id="clr">Clear</button><button class="btn green" id="go">Open the vault</button></div></div></div>`;
+ const seq=[];const draw=()=>{$('slots').innerHTML=items.map((_,i)=>`<button data-rm="${i}" aria-label="Slot ${i+1}">${seq[i]||''}</button>`).join('');$('pick').innerHTML=SYM.slice(0,items.length).map(s=>`<button data-sym="${s}" ${seq.includes(s)?'disabled':''}>${s}</button>`).join('')};draw();
+ let busy=false,got=0;Esc.stat(`🖼️ 0 of ${items.length} cases`);Esc.msg('Unlock the display cases to see the artifacts.');
+ room.onclick=async e=>{const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.q!=null&&!busy){busy=true;const i=+b.dataset.q;const ok=await Esc.ask({icon:'🏛️',title:'Unlock this display case'});busy=false;if(!ok)return;const it=items[i];
+   $('h'+i).className='hm-case';$('h'+i).innerHTML=`<span class="sym">${it.sym}</span><span class="ic">${it.ic}</span><span class="yr">${yrs(it.yr)}</span><span class="tx">${Kit.esc(it.tx)}</span>`;got++;Esc.stat(`🖼️ ${got} of ${items.length} cases`)}
+  if(b.dataset.sym&&seq.length<items.length){seq.push(b.dataset.sym);Kit.tick();draw()}
+  if(b.dataset.rm!=null){seq.splice(+b.dataset.rm,1);draw()}
+  if(b.id==='clr'){seq.length=0;draw()}
+  if(b.id==='go'){if(seq.join()===sorted.join()){Kit.ding();Esc.win('🏛️','The vault is open!','Every artifact is back in order, from oldest to newest.')}
+   else{Esc.penalize();Kit.tone(150,.4,'sawtooth',.2);const right=seq.filter((s,i)=>s===sorted[i]).length;Esc.msg(`❌ The vault buzzes. ${right} symbol${right===1?' is':'s are'} in the right spot.`)}}};
+}});
+</script>
+</body></html>

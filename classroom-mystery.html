@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Classroom Mystery</title>
+<style>
+.cm-case{background:#FFF6C9;border:5px solid var(--ink);border-radius:20px;box-shadow:6px 6px 0 var(--ink);padding:12px 18px;margin-bottom:16px;font-size:1.2rem}
+.cm-case b{color:var(--tomato)}
+.cm-sus{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.cm-s{position:relative;background:#fff;border:4px solid var(--ink);border-radius:18px;box-shadow:4px 4px 0 var(--ink);padding:10px 8px;text-align:center;cursor:pointer;font:inherit;color:var(--ink);transition:transform .15s,opacity .3s}
+.cm-s:hover{transform:translateY(-3px)}
+.cm-s .face{font-size:3.2rem;line-height:1.1;position:relative;display:inline-block}
+.cm-s .hat{position:absolute;left:50%;top:-22px;transform:translateX(-50%);font-size:2rem}
+.cm-s .nm{font-weight:800;font-size:1.15rem}
+.cm-s .tr{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:6px}
+.cm-s .tr span{font-size:.8rem;font-weight:700;border:2px solid var(--ink);border-radius:99px;padding:0 7px;background:#F4FAFF}
+.cm-s .shirt{display:block;height:12px;border:3px solid var(--ink);border-radius:8px 8px 3px 3px;margin:4px auto 0;width:60%}
+.cm-s.x{opacity:.38;filter:grayscale(1)}
+.cm-s.x::after{content:"✕";position:absolute;inset:0;display:grid;place-items:center;font-size:6rem;color:var(--tomato);font-weight:900;opacity:.8}
+.cm-clues{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-top:16px}
+.cm-clue{border:4px dashed rgba(29,43,83,.35);border-radius:14px;padding:12px;min-height:76px;display:grid;place-items:center;text-align:center;font-weight:700}
+.cm-clue.on{border:4px solid var(--ink);background:#E9F6FF;box-shadow:4px 4px 0 var(--ink);animation:pop .45s cubic-bezier(.3,1.6,.5,1)}
+.cm-bar{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px}
+.cm-acc .cm-s{cursor:pointer}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="escape.js"></script>
+<script>
+Kit.mount("🕵️", "Classroom Mystery");
+
+Esc.setup({intro:'🕵️🐹', minutes:15,
+how:'Someone took the class hamster\'s snack! There are eight suspects. Every question you answer reveals a clue about the culprit. Click a suspect to cross them out when a clue rules them out. When you\'re sure who did it, press Accuse. A wrong accusation costs time!',
+start({room}){
+ const $=id=>document.getElementById(id);
+ const CASES=[['🐹','the class hamster\'s snack'],['🖍️','the teacher\'s special marker'],['🍪','the last cookie from the party'],['⭐','the gold star sticker sheet'],['🏆','the spelling bee trophy']];
+ const cs=Kit.pick(CASES);
+ const NAMES=Kit.shuffle(['Avery','Blake','Casey','Drew','Emery','Finley','Gray','Harper','Jules','Kai','Logan','Morgan','Parker','Quinn','Riley','Sky']);
+ const FACES=['🧒','👦','👧','🧑','👩','👨','🧒🏽','👦🏾','👧🏻','🧑🏿'];
+ const SHIRTS=[['red','#FF6B5B'],['blue','#22C3E6'],['green','#5DC66E'],['yellow','#FFC93C']];
+ const W=x=>x.slice(x.indexOf(' ')+1),E=x=>x.slice(0,x.indexOf(' '));
+ const PETS=['🐶 dog','🐱 cat','🐟 fish','🦜 bird'];
+ const SPORTS=['⚽ soccer','🏀 basketball','🎨 art club','🎵 band'];
+ // make 8 unique suspects
+ let sus=[];const key=s=>[s.hat,s.glasses,s.shirt,s.pet,s.club,s.lunch].join();const seen=new Set();
+ while(sus.length<8){const s={name:NAMES[sus.length],face:Kit.pick(FACES),hat:Math.random()<.5,glasses:Math.random()<.5,shirt:Kit.pick(SHIRTS),pet:Kit.pick(PETS),club:Kit.pick(SPORTS),lunch:Math.random()<.5?'brings lunch':'buys lunch'};
+  if(!seen.has(key(s))){seen.add(key(s));sus.push(s)}}
+ const culprit=Kit.rand(0,7);const C=sus[culprit];window.__sol={culprit:C.name};
+ // candidate clues: each is a true statement about the culprit with the set of suspects it rules out
+ const facts=[
+  [`The culprit ${C.hat?'was wearing':'was NOT wearing'} a hat 🧢.`,s=>s.hat!==C.hat],
+  [`The culprit ${C.glasses?'wears':'does NOT wear'} glasses 👓.`,s=>s.glasses!==C.glasses],
+  [`A thread from a <b>${C.shirt[0]}</b> shirt was found by the scene.`,s=>s.shirt[0]!==C.shirt[0]],
+  [`The culprit has a <b>${W(C.pet)}</b> at home. ${E(C.pet)}`,s=>s.pet!==C.pet],
+  [`The culprit had to hurry off to <b>${W(C.club)}</b>. ${E(C.club)}`,s=>s.club!==C.club],
+  [`The culprit ${C.lunch}. 🥪`,s=>s.lunch!==C.lunch],
+  ...['red','blue','green','yellow'].filter(c=>c!==C.shirt[0]).map(c=>[`Nobody in a <b>${c}</b> shirt was near the scene.`,s=>s.shirt[0]===c]),
+  ...PETS.filter(p=>p!==C.pet).map(p=>[`The culprit is allergic to ${W(p)==="fish"?"fish":W(p)+"s"}, so they don't own one.`,s=>s.pet===p])];
+ // choose clues greedily until only the culprit is left, then add one extra for a 5-6 clue game
+ let alive=new Set(sus.map((_,i)=>i)),clues=[];const pool=Kit.shuffle(facts);
+ while(alive.size>1){pool.sort((a,b)=>sus.filter((s,i)=>alive.has(i)&&b[1](s)).length-sus.filter((s,i)=>alive.has(i)&&a[1](s)).length);
+  const pickN=Math.min(pool.length-1,Kit.rand(0,2));let f=pool.splice(pickN,1)[0];if(!sus.some((s,i)=>alive.has(i)&&f[1](s))){f=pool.shift()}
+  if(!f)break;clues.push(f);sus.forEach((s,i)=>{if(f[1](s))alive.delete(i)})}
+ clues=Kit.shuffle(clues);
+ room.innerHTML=`<div class="cm-case">📁 <b>Case file:</b> ${cs[0]} Somebody took ${cs[1]}! Answer questions to reveal clues, cross out suspects, and accuse the culprit.</div>
+  <div class="cm-sus" id="sus">${sus.map((s,i)=>`<button class="cm-s" data-i="${i}" aria-label="${s.name}"><span class="face">${s.hat?'<span class="hat">🧢</span>':''}${s.face}</span>${s.glasses?'<div>👓</div>':'<div style="height:1.4em"></div>'}<span class="shirt" style="background:${s.shirt[1]}"></span>
+   <div class="nm">${s.name}</div><div class="tr"><span>${s.pet}</span><span>${s.club}</span><span>${s.lunch==='brings lunch'?'🥪 brings lunch':'🍕 buys lunch'}</span></div></button>`).join('')}</div>
+  <div class="cm-clues" id="clues">${clues.map((_,i)=>`<div class="cm-clue" id="c${i}"><button class="btn grape small" data-q="${i}">🔍 Clue ${i+1}</button></div>`).join('')}</div>
+  <div class="cm-bar"><button class="btn red big" id="acc">👉 Accuse!</button></div>`;
+ let busy=false,got=0;Esc.stat(`🔍 0 of ${clues.length} clues`);Esc.msg('Reveal clues, then tap suspects to cross them out.');
+ $('clues').onclick=async e=>{const b=e.target.closest('[data-q]');if(!b||busy)return;busy=true;const i=+b.dataset.q;const ok=await Esc.ask({icon:'🔍',title:`Clue ${i+1}`});busy=false;if(!ok)return;
+  const c=$('c'+i);c.classList.add('on');c.innerHTML=clues[i][0];got++;Esc.stat(`🔍 ${got} of ${clues.length} clues`)};
+ let accusing=false;
+ $('sus').onclick=async e=>{const b=e.target.closest('.cm-s');if(!b)return;const i=+b.dataset.i;
+  if(!accusing){b.classList.toggle('x');Kit.tick();return}
+  accusing=false;$('sus').classList.remove('cm-acc');$('acc').textContent='👉 Accuse!';
+  if(i===culprit){Kit.ding();Esc.win('🕵️',`It was ${C.name}!`,`Case closed. ${C.name} took ${cs[1]}. Great detective work!`)}
+  else{Esc.penalize();Kit.tone(150,.4,'sawtooth',.2);b.classList.add('x');Esc.msg(`❌ ${sus[i].name} has an alibi! Keep investigating.`)}};
+ $('acc').onclick=()=>{accusing=!accusing;$('sus').classList.toggle('cm-acc',accusing);$('acc').textContent=accusing?'Cancel':'👉 Accuse!';Esc.msg(accusing?'Tap the suspect you are accusing.':'')};
+}});
+</script>
+</body></html>

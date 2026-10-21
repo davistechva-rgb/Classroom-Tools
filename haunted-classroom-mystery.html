@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Haunted Classroom Mystery</title>
+<style>
+.hc-room{position:relative;aspect-ratio:16/9;max-height:62vh;margin:0 auto;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);overflow:hidden;cursor:none;touch-action:none;
+ background:linear-gradient(#3B3557 0 66%,#2B2440 66%);user-select:none}
+.hc-room .it{position:absolute;font-size:clamp(1.8rem,5.5vh,3.6rem);line-height:1;transform:translate(-50%,-50%)}
+.hc-ghost{position:absolute;transform:translate(-50%,-50%);font-size:clamp(1.6rem,4.5vh,3rem);background:none;border:0;padding:6px;cursor:pointer;opacity:.9;animation:float 2.6s ease-in-out infinite;z-index:1}
+.hc-ghost.got{opacity:0;pointer-events:none;transition:opacity .6s}
+@keyframes float{50%{margin-top:-10px}}
+.hc-dark{position:absolute;inset:0;pointer-events:none;z-index:3;background:radial-gradient(circle var(--r,110px) at var(--x,50%) var(--y,50%),rgba(0,0,0,0) 0,rgba(0,0,0,.25) 55%,rgba(5,3,15,.97) 100%)}
+.hc-letters{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:14px 0}
+.hc-letters span{width:56px;height:62px;display:grid;place-items:center;font:800 2rem ui-monospace,Consolas,monospace;background:#fff;border:4px solid var(--ink);border-radius:12px;box-shadow:3px 3px 0 var(--ink)}
+.hc-letters span.no{background:#3B3557;color:#776f99}
+.hc-candle{font-size:1.4rem;font-weight:700}
+.hc-lightsw{position:absolute;right:10px;top:10px;z-index:4;cursor:pointer}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="escape.js"></script>
+<script>
+Kit.mount("👻", "Haunted Classroom Mystery");
+
+Esc.setup({intro:'👻🔦', minutes:15,
+extra:`<label>Flashlight size <select id="hcR" style="width:auto"><option value="90">Small (spooky)</option><option value="130" selected>Medium</option><option value="190">Big (easier)</option></select></label>`,
+read:()=>({r:+document.getElementById('hcR').value}),
+how:'The lights went out, and friendly ghosts are hiding around the dark classroom! Move your flashlight (mouse or finger) to find them. Click a ghost and answer its question, and it gives you one letter. When you have every letter, unscramble them into the magic word that turns the lights back on.',
+start({room,extra}){
+ const $=id=>document.getElementById(id);
+ const WORDS=['GHOST','SPOOK','CANDY','WITCH','RAVEN','MAGIC','BROOM','NIGHT','SHADOW','LANTERN'];
+ const word=Kit.pick(WORDS);window.__sol={word};
+ const ITEMS=[['🪑',20,74],['🪑',44,76],['🪑',68,74],['🖥️',12,52],['📚',86,48],['🕸️',6,10],['🕸️',94,8],['🎃',82,80],['🧹',94,62],['🪟',50,18],['🕰️',28,16],['🦇',70,14],['🗑️',8,86],['📦',58,58],['🧸',34,58]];
+ const spots=Kit.shuffle([[14,30],[38,32],[62,34],[86,26],[24,62],[52,72],[76,60],[90,86],[40,88],[64,88],[30,44],[72,44]]).slice(0,word.length);
+ const letters=Kit.shuffle([...word]);
+ room.innerHTML=`<div class="hc-room" id="rm">${ITEMS.map(i=>`<span class="it" style="left:${i[1]}%;top:${i[2]}%">${i[0]}</span>`).join('')}
+  ${spots.map((s,i)=>`<button class="hc-ghost" data-g="${i}" style="left:${s[0]}%;top:${s[1]}%;animation-delay:${i*.4}s" aria-label="Ghost">👻</button>`).join('')}<div class="hc-dark" id="dark"></div></div>
+  <div class="hc-letters" id="let"></div>
+  <form class="es-type" id="f"><input type="text" id="ans" placeholder="Magic word" autocomplete="off" aria-label="Magic word"><button class="btn green">💡 Lights on</button></form>`;
+ const rm=$('rm'),dk=$('dark');dk.style.setProperty('--r',extra.r+'px');
+ const aim=e=>{const r=rm.getBoundingClientRect();dk.style.setProperty('--x',(e.clientX-r.left)+'px');dk.style.setProperty('--y',(e.clientY-r.top)+'px')};
+ rm.addEventListener('pointermove',aim);rm.addEventListener('pointerdown',aim);
+ const got=[];const drawL=()=>$('let').innerHTML=Array.from({length:word.length},(_,i)=>i<got.length?`<span>${got[i]}</span>`:`<span class="no">?</span>`).join('');drawL();
+ let busy=false;
+ rm.onclick=async e=>{const g=e.target.closest('.hc-ghost');if(!g||busy||g.classList.contains('got'))return;
+  // only catchable when lit
+  const r=rm.getBoundingClientRect(),gr=g.getBoundingClientRect();const lx=parseFloat(dk.style.getPropertyValue('--x'))||0,ly=parseFloat(dk.style.getPropertyValue('--y'))||0;
+  if(Math.hypot(gr.left+gr.width/2-r.left-lx,gr.top+gr.height/2-r.top-ly)>extra.r){return}
+  busy=true;Kit.tone(300,.4,'sine',.15);Kit.tone(450,.5,'sine',.1,.2);const ok=await Esc.ask({icon:'👻',title:'Boo! Answer my question…'});busy=false;if(!ok)return;
+  g.classList.add('got');const L=letters[got.length];got.push(L);drawL();Esc.stat(`👻 ${got.length} of ${word.length} ghosts`);
+  await Esc.reward('👻',`The ghost whispers a letter…<br><b>${L}</b>`);
+  Esc.msg(got.length===word.length?'Every ghost found! Unscramble the letters into the magic word.':'Keep searching the dark…')};
+ $('f').onsubmit=e=>{e.preventDefault();if(Esc.same($('ans').value,word)){dk.style.transition='opacity 1s';dk.style.opacity=0;Kit.ding();setTimeout(()=>Esc.win('💡','Lights on!',`The magic word was ${word}. The ghosts wave goodbye. 👋👻`),900)}
+  else{Esc.penalize();Kit.tone(150,.4,'sawtooth',.2);$('ans').select();Esc.msg('❌ The lights flicker but stay off…')}};
+ Esc.stat(`👻 0 of ${word.length} ghosts`);Esc.msg('Move the flashlight around the room to find ghosts.');
+ dk.style.setProperty('--x','50%');dk.style.setProperty('--y','50%');
+}});
+</script>
+</body></html>

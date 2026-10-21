@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Castle Escape</title>
+<style>
+.ca-wrap{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:860px){.ca-wrap{grid-template-columns:1fr}}
+.ca-map{display:grid;grid-template-columns:repeat(4,1fr);gap:0;background:#2B2440;border:6px solid var(--ink);border-radius:20px;box-shadow:7px 7px 0 var(--ink);padding:12px;max-width:600px;margin:0 auto;width:100%}
+.ca-r{aspect-ratio:1;position:relative;background:#8E8AA0;border:3px solid #4A4560;display:grid;place-items:center;text-align:center;font-weight:700;font-size:.8rem;color:#fff;transition:background .4s}
+.ca-r.fog{background:#1B1730;color:transparent}
+.ca-r.fog>*{visibility:hidden}
+.ca-r .e{font-size:clamp(1.4rem,4.2vh,2.4rem);line-height:1}
+.ca-r.here{background:#C9A86A;box-shadow:inset 0 0 0 4px #FFC93C}
+.ca-r.seen{background:#6E6A84}
+.ca-r .me{position:absolute;top:4px;right:6px;font-size:1.4rem}
+.ca-door{position:absolute;background:#8B5A2B;border:2px solid #4A2C12;z-index:2;display:grid;place-items:center;font-size:.8rem}
+.ca-door.h{width:30%;height:12px;left:35%;top:-8px}.ca-door.v{height:30%;width:12px;top:35%;left:-8px}
+.ca-door.open{background:#F1D79A}
+.ca-door.k-red{background:#FF5148}.ca-door.k-blue{background:#3B8CFF}.ca-door.k-gold{background:#FFC93C}
+.ca-side{display:grid;gap:12px}
+.ca-box{background:#fff;border:5px solid var(--ink);border-radius:18px;box-shadow:5px 5px 0 var(--ink);padding:12px}
+.ca-moves{display:grid;grid-template-columns:repeat(3,auto);gap:6px;justify-content:center}
+.ca-torch{font-size:1.8rem;letter-spacing:.1em}
+.ca-torch .out{filter:grayscale(1);opacity:.35}
+.ca-inv{display:flex;gap:8px;flex-wrap:wrap;font-size:1.6rem;min-height:2rem}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="escape.js"></script>
+<script>
+Kit.mount("🏰", "Castle Escape");
+
+Esc.setup({intro:'🏰🗝️', minutes:20,
+how:'You\'re trapped in the castle dungeon! Explore room by room to reach the 🌟 tower exit. A guard blocks every new room with a riddle question. Colored doors need a matching key, so search for 🔴 🔵 and 🟡 keys. You have three torches 🔥: every wrong answer blows one out. Lose them all and you\'re back in the dungeon!',
+start({room}){
+ const $=id=>document.getElementById(id);const N=4;
+ const id=(x,y)=>y*N+x;const start=id(0,N-1),exit=id(N-1,0);
+ // doors between neighbors: keyed doors on a few edges, ensure solvable by placing keys in reachable rooms
+ const KEYS=[['red','🔴'],['blue','🔵'],['gold','🟡']];
+ const edges={};const ek=(a,b)=>a<b?a+'-'+b:b+'-'+a;
+ for(let y=0;y<N;y++)for(let x=0;x<N;x++){if(x<N-1)edges[ek(id(x,y),id(x+1,y))]={};if(y<N-1)edges[ek(id(x,y),id(x,y+1))]={}}
+ // some walls: remove a few edges but keep connectivity
+ const all=Kit.shuffle(Object.keys(edges));
+ const conn=()=>{const seen=new Set([start]),st=[start];while(st.length){const c=st.pop();for(const k in edges){const[a,b]=k.split('-').map(Number);if(a===c&&!seen.has(b)){seen.add(b);st.push(b)}if(b===c&&!seen.has(a)){seen.add(a);st.push(a)}}}return seen.size===N*N};
+ for(const k of all.slice(0,6)){const v=edges[k];delete edges[k];if(!conn())edges[k]=v}
+ // place locks progressively: rooms reachable without key X get key X
+ const reach=(have)=>{const seen=new Set([start]),st=[start];while(st.length){const c=st.pop();for(const k in edges){const[a,b]=k.split('-').map(Number);const e=edges[k];if(e.lock&&!have.includes(e.lock))continue;const n=a===c?b:b===c?a:null;if(n!=null&&!seen.has(n)){seen.add(n);st.push(n)}}}return seen};
+ const keyAt={};const have=[];
+ for(const[k]of KEYS){const r0=reach(have);// lock an edge on the boundary of the reachable area that leads further (prefer toward exit)
+  const cands=Object.keys(edges).filter(e=>{if(edges[e].lock)return false;const[a,b]=e.split('-').map(Number);return r0.has(a)!==r0.has(b)||(r0.has(a)&&r0.has(b))});
+  const prefer=cands.filter(e=>{const[a,b]=e.split('-').map(Number);return !(a===start||b===start)});const e=Kit.pick(prefer.length?prefer:cands);if(!e)break;edges[e].lock=k;
+  const r1=reach(have);const spots=[...r1].filter(c=>c!==start&&c!==exit&&keyAt[c]==null);if(!spots.length){delete edges[e].lock;break}keyAt[Kit.pick(spots)]=k;have.push(k)}
+ if(!reach(KEYS.map(k=>k[0])).has(exit)){for(const k in edges)delete edges[k].lock}
+ window.__sol={keyAt,edges:JSON.parse(JSON.stringify(edges))};
+ const NAMES=['Dungeon','Armory','Kitchen','Library','Great Hall','Chapel','Throne Room','Stables','Treasury','Garden','Dragon Den','Wizard Study','Gallery','Ballroom','Bell Room','Tower'];
+ const EM=['⛓️','⚔️','🍗','📚','🏛️','🕯️','👑','🐎','💰','🌹','🐉','🔮','🖼️','💃','🔔','🌟'];
+ const order=Kit.shuffle([...Array(N*N).keys()].filter(c=>c!==start&&c!==exit));const nm={},em={};order.forEach((c,i)=>{nm[c]=NAMES[i+1];em[c]=EM[i+1]});nm[start]='Dungeon';em[start]='⛓️';nm[exit]='Tower exit';em[exit]='🌟';
+ let me=start,torches=3;const seen=new Set([start]),inv=new Set(),beaten=new Set([start]);
+ room.innerHTML=`<div class="ca-wrap"><div class="ca-map" id="map"></div><div class="ca-side">
+  <div class="ca-box"><b>Torches</b><div class="ca-torch" id="tor"></div></div>
+  <div class="ca-box"><b>Keys</b><div class="ca-inv" id="inv"></div></div>
+  <div class="ca-box"><b>Move</b><div class="ca-moves"><span></span><button class="btn white" data-m="0,-1" aria-label="North">⬆️</button><span></span><button class="btn white" data-m="-1,0" aria-label="West">⬅️</button><span class="btn" style="pointer-events:none">🧍</span><button class="btn white" data-m="1,0" aria-label="East">➡️</button><span></span><button class="btn white" data-m="0,1" aria-label="South">⬇️</button><span></span></div><div class="muted" style="text-align:center;margin-top:6px">Or tap a room next to you.</div></div></div></div>`;
+ const draw=()=>{let h='';for(let y=0;y<N;y++)for(let x=0;x<N;x++){const c=id(x,y);const vis=seen.has(c)||[[0,1],[1,0],[0,-1],[-1,0]].some(([dx,dy])=>{const n=id(x+dx,y+dy);return x+dx>=0&&y+dy>=0&&x+dx<N&&y+dy<N&&seen.has(n)&&edges[ek(c,n)]});
+   const up=y>0?edges[ek(c,id(x,y-1))]:null,lf=x>0?edges[ek(c,id(x-1,y))]:null;const dr=(e,cls)=>e?`<span class="ca-door ${cls} ${e.lock&&!inv.has(e.lock)?'k-'+e.lock:'open'}">${e.lock&&!inv.has(e.lock)?'🔒':''}</span>`:'';
+   h+=`<div class="ca-r ${c===me?'here':seen.has(c)?'seen':vis?'':'fog'}" data-c="${c}">${dr(up,'h')}${dr(lf,'v')}<div><span class="e">${seen.has(c)||c===exit&&vis?em[c]:'❔'}</span><br>${seen.has(c)?nm[c]:''}${keyAt[c]&&seen.has(c)&&!inv.has(keyAt[c])?'<br>🗝️':''}</div>${c===me?'<span class="me">🧍</span>':''}</div>`}
+  $('map').innerHTML=h;$('tor').innerHTML=[0,1,2].map(i=>`<span class="${i<torches?'':'out'}">🔥</span>`).join('');$('inv').innerHTML=[...inv].map(k=>KEYS.find(x=>x[0]===k)[1]).join(' ')||'<span class="muted" style="font-size:1rem">None yet</span>';
+  Esc.stat(`🏰 ${seen.size} of ${N*N} rooms`)};draw();
+ let busy=false;
+ const go=async c=>{if(busy)return;const x=me%N,y=Math.floor(me/N),cx=c%N,cy=Math.floor(c/N);if(Math.abs(cx-x)+Math.abs(cy-y)!==1)return;const e=edges[ek(me,c)];
+  if(!e){Esc.msg('🧱 A solid stone wall.');Kit.tone(120,.15,'square',.1);return}
+  if(e.lock&&!inv.has(e.lock)){Esc.msg(`🔒 This door needs the ${KEYS.find(k=>k[0]===e.lock)[1]} key.`);Kit.tone(200,.2,'sine',.15);return}
+  if(!beaten.has(c)){busy=true;const ok=await Esc.ask({icon:'💂',title:`The guard of the ${seen.has(c)?nm[c]:'next room'} asks…`,once:true});busy=false;
+   if(!ok){torches--;draw();Kit.tone(160,.5,'sawtooth',.15);if(torches<=0){Esc.msg('💨 Your last torch went out! The guards march you back to the dungeon.');await Esc.reward('💨','All torches out!<br>Back to the dungeon…');torches=3;me=start;draw();return}
+    Esc.msg('💨 A torch blew out. Try that door again!');return}beaten.add(c)}
+  me=c;seen.add(c);Kit.tone(420,.08,'triangle',.15);
+  if(keyAt[c]&&!inv.has(keyAt[c])){inv.add(keyAt[c]);draw();await Esc.reward('🗝️',`You found the ${KEYS.find(k=>k[0]===keyAt[c])[1]} key!`)}
+  draw();if(c===exit){Kit.ding();await Kit.sleep(400);Esc.win('🏰','You escaped the castle!',`You explored ${seen.size} rooms with ${torches} torch${torches===1?'':'es'} still burning.`)}};
+ $('map').onclick=e=>{const r=e.target.closest('.ca-r');if(r)go(+r.dataset.c)};
+ room.querySelector('.ca-moves').onclick=e=>{const b=e.target.closest('[data-m]');if(!b)return;const[dx,dy]=b.dataset.m.split(',').map(Number);const x=me%N+dx,y=Math.floor(me/N)+dy;if(x<0||y<0||x>=N||y>=N)return;go(id(x,y))};
+ document.addEventListener('keydown',e=>{if(Esc.over||document.querySelector('.es-ov'))return;const m={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0]}[e.key];if(!m)return;e.preventDefault();const x=me%N+m[0],y=Math.floor(me/N)+m[1];if(x<0||y<0||x>=N||y>=N)return;go(id(x,y))});
+ Esc.msg('Find the tower exit 🌟. It\'s somewhere at the top right.');
+}});
+</script>
+</body></html>
