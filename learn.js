@@ -107,6 +107,16 @@ const Learn = (() => {
     Kit.modal(`<div style="font-size:4rem;line-height:1.1">${icon}</div><h2 style="font-size:2.2rem;margin:6px 0">${title}</h2><p style="font-size:1.25rem">${text || ''}</p>${again ? '<button class="btn green" data-close id="lnAgain">Play again</button>' : ''}`);
     if (again) $('lnAgain').onclick = again;
   }
+  /* One class list shared by every tool that needs names. */
+  const ROSTER_DEF = 'Ava\nLeo\nMia\nSam\nZoe\nEli\nNoah\nLiv\nMax\nIvy\nBen\nAna\nKai\nRuby\nOwen\nJade';
+  const roster = () => Kit.lines(Kit.get('class-roster', ROSTER_DEF));
+  function rosterEditor(box) {
+    const d = document.createElement('details');
+    d.innerHTML = `<summary>👥 Class list <span class="muted" style="font-weight:400">(shared with the other tools, tap to edit)</span></summary><textarea spellcheck="false" style="min-height:160px;margin-top:8px"></textarea>`;
+    box.appendChild(d); const ta = d.querySelector('textarea'); ta.value = Kit.get('class-roster', ROSTER_DEF);
+    ta.oninput = () => { Kit.set('class-roster', ta.value); box.dispatchEvent(new Event('roster')); };
+    return d;
+  }
   const pts = (n) => n === 1 ? '1 point' : n + ' points';
-  return { list, teams, teamPicker, burst, flash, drag, finish, pts, slug };
+  return { roster, rosterEditor, list, teams, teamPicker, burst, flash, drag, finish, pts, slug };
 })();

@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Daily Brain Teaser</title>
+<style>
+main{max-width:1300px}
+.bt2-card{background:#fff;border:7px solid var(--ink);border-radius:30px;box-shadow:9px 9px 0 var(--ink);padding:clamp(18px,3.4vw,38px);position:relative}
+.bt2-kind{position:absolute;top:-18px;left:24px;background:var(--kc);color:#fff;border:4px solid var(--ink);border-radius:99px;padding:2px 16px;font-weight:800}
+.bt2-q{font-size:clamp(1.7rem,4.4vw,3rem);font-weight:800;line-height:1.2;white-space:pre-wrap}
+.bt2-hints{display:grid;gap:8px;margin-top:16px}
+.bt2-h{border:4px dashed #D5DEEE;border-radius:16px;padding:10px 14px;font-weight:700;font-size:1.2rem;color:#9AA6C3}
+.bt2-h.open{border:4px solid var(--ink);background:#FFF6C9;color:var(--ink);animation:pop .4s}
+.bt2-a{margin-top:16px;border:5px solid var(--ink);border-radius:20px;padding:14px;font-weight:800;font-size:clamp(1.5rem,3.6vw,2.4rem);text-align:center;background:repeating-linear-gradient(45deg,#E8EEF8 0 14px,#DCE4F1 14px 28px);color:transparent;cursor:pointer;position:relative}
+.bt2-a::after{content:"👀 Tap to reveal the answer";position:absolute;inset:0;display:grid;place-items:center;color:#55607E;font-size:1.1rem}
+.bt2-a.open{background:#C9F1D2;color:var(--ink)}.bt2-a.open::after{display:none}
+.bt2-top{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:26px}
+.bt2-y{margin-top:16px;background:rgba(255,255,255,.85);border:4px solid var(--ink);border-radius:18px;padding:10px 14px;font-weight:700}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🧠", "Daily Brain Teaser");
+const $=id=>document.getElementById(id);const KC={Riddle:'#9B6BF2',Logic:'#22C3E6',Math:'#FF9F43',Word:'#5DC66E',Picture:'#FF8FC7'};
+const DEF=`Riddle | What has hands but can't clap? | It's found on a wall or a wrist. | It tells you something all day long. | A clock
+Riddle | What gets wetter the more it dries? | You use it after a bath. | It hangs in the bathroom. | A towel
+Riddle | What has a neck but no head? | You might find it in the kitchen. | You pour things out of it. | A bottle
+Riddle | What has many keys but can't open a single lock? | It makes music. | You press the keys with your fingers. | A piano
+Riddle | What can you catch but not throw? | You might get it in winter. | Achoo! | A cold
+Riddle | The more you take, the more you leave behind. What are they? | You make them when you walk. | Look down at the sand. | Footsteps
+Logic | A farmer has 17 sheep. All but 9 run away. How many are left? | Read "all but 9" very carefully. | "All but 9" means 9 stayed. | 9 sheep
+Logic | Mia is taller than Leo. Leo is taller than Sam. Who is the shortest? | Draw them in a line by height. | Mia > Leo > Sam | Sam
+Logic | What comes next: Monday, Wednesday, Friday, …? | Look at how many days get skipped. | Skip one day each time. | Sunday
+Logic | How many months have 28 days? | Think about every month, not just February. | Every month has at least 28 days. | All 12 months
+Math | I am a number. Double me and add 4 and you get 20. What am I? | Work backwards: take away 4 first. | 20 − 4 = 16, then half of 16. | 8
+Math | If 3 cats catch 3 mice in 3 minutes, how many cats catch 100 mice in 100 minutes? | How long does it take one cat to catch one mouse? | Each cat catches 1 mouse every 3 minutes. | 3 cats
+Math | What two numbers add up to 10 and multiply to 21? | Try pairs that make 10: 1 and 9, 2 and 8… | 3 + 7 = 10 | 3 and 7
+Math | A brick weighs 2 pounds plus half a brick. How much does the brick weigh? | Half a brick is the same as 2 pounds. | So a whole brick is 2 + 2. | 4 pounds
+Word | What 5-letter word becomes shorter when you add two letters to it? | It's a joke about the word itself. | Add "er" to the end. | Short (shorter)
+Word | Which word is spelled wrong in every dictionary? | Read the question again… very literally. | The answer is the word in the question. | "Wrong"
+Word | What starts with T, ends with T, and has T in it? | It holds a drink. | You pour tea out of it. | A teapot
+Picture | 🐟 + 🥣 = ? Name the food! | Fish… and a bowl. | It's a bowl full of fish. | A fishbowl
+Picture | ☀️ + 🌻 = ? | Put the two words together. | Sun + flower | Sunflower
+Picture | 🌈 + 🐟 = ? | It's a kind of fish. | Rainbow + fish | Rainbow trout (or rainbow fish!)`;
+const st=Kit.get('bt2-state',{text:DEF,solved:{},offset:0});
+const rows=()=>Kit.lines(st.text).map(l=>l.split('|').map(s=>s.trim())).filter(r=>r.length>=3);
+const dn=d=>Math.floor(new Date(d).setHours(12)/864e5);
+const pick=d=>{const r=rows();return r[((dn(d)+st.offset)%r.length+r.length)%r.length]};
+document.querySelector('main').innerHTML=`<div class="bt2-top"><b id="dt" style="font-size:1.3rem;color:#fff;text-shadow:2px 2px 0 var(--ink)"></b><span class="ln-pill" id="sk"></span><button class="btn white small" id="an">🔀 Another one</button><button class="btn white small" id="ed">✏️ Teasers</button></div>
+<div class="bt2-card" id="cd"></div><div class="row" style="justify-content:center;margin-top:16px"><button class="btn" id="hn">💡 Show a hint</button><button class="btn green" id="ok">🎉 We solved it!</button></div><div class="bt2-y" id="y"></div>
+<div class="card stack" id="edc" hidden style="margin-top:14px"><b>✏️ Brain teasers</b><span class="muted">One per line: kind (Riddle, Logic, Math, Word, Picture) | question | hint | hint | answer (the last part is always the answer).</span><textarea id="ta" style="min-height:220px"></textarea><button class="btn green" id="sv">✓ Save</button></div>`;
+let cur,hints=0;
+function draw(){cur=pick(new Date());hints=0;const [k,q,...rest]=cur;const ans=rest[rest.length-1],hs=rest.slice(0,-1);$('cd').style.setProperty('--kc',KC[k]||'#1D2B53');
+ $('cd').innerHTML=`<span class="bt2-kind" style="--kc:${KC[k]||'#1D2B53'}">🧠 ${Kit.esc(k)}</span><div class="bt2-q">${Kit.esc(q)}</div><div class="bt2-hints">${hs.map((h,i)=>`<div class="bt2-h" data-h="${i}">💡 Hint ${i+1}</div>`).join('')}</div><div class="bt2-a" id="a">${Kit.esc(ans)}</div>`;
+ $('dt').textContent='🧠 '+new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});
+ let s=0,d=new Date();while(st.solved[d.toDateString()]){s++;d.setDate(d.getDate()-1)}$('sk').textContent=`🔥 ${s}-day solving streak`;
+ const y=new Date();y.setDate(y.getDate()-1);const yp=pick(y);$('y').innerHTML=yp?`📅 <b>Yesterday's teaser:</b> ${Kit.esc(yp[1])} <b>Answer:</b> ${Kit.esc(yp[yp.length-1])}`:'';
+ $('a').onclick=()=>{$('a').classList.add('open');Kit.tada()};window.__t={ans,hints:hs.length}}
+$('hn').onclick=()=>{const h=$('cd').querySelector(`[data-h="${hints}"]`);if(!h){$('a').click();return}const [,,...rest]=cur;h.textContent='💡 '+rest[hints];h.classList.add('open');hints++;Kit.tone(700,.12,'triangle',.2)};
+$('ok').onclick=()=>{st.solved[new Date().toDateString()]=true;Kit.set('bt2-state',st);$('a').classList.add('open');Kit.tada();Kit.confetti(120);draw();$('a').classList.add('open')};
+$('an').onclick=()=>{st.offset++;Kit.set('bt2-state',st);draw()};
+$('ed').onclick=()=>{$('edc').hidden=!$('edc').hidden;$('ta').value=st.text};$('sv').onclick=()=>{st.text=$('ta').value;Kit.set('bt2-state',st);$('edc').hidden=true;draw()};
+draw();
+</script>
+</body></html>

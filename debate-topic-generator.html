@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Debate Topic Generator</title>
+<style>
+main{max-width:1400px}
+.dt-top{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:14px}
+.dt-topic{background:#fff;border:7px solid var(--ink);border-radius:30px;box-shadow:9px 9px 0 var(--ink);padding:clamp(16px,3vw,30px);text-align:center;margin-bottom:16px}
+.dt-topic small{font-weight:800;letter-spacing:.12em;color:#6B7695}
+.dt-topic b{display:block;font-size:clamp(1.8rem,4.8vw,3.2rem);line-height:1.15;margin-top:4px}
+.dt-topic.flip{animation:dtf .5s}@keyframes dtf{from{transform:rotateX(80deg)}}
+.dt-sides{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:760px){.dt-sides{grid-template-columns:1fr}}
+.dt-s{border:6px solid var(--ink);border-radius:26px;box-shadow:7px 7px 0 var(--ink);overflow:hidden;background:#fff}
+.dt-s h3{margin:0;padding:10px 14px;color:#fff;background:var(--sc);text-shadow:2px 2px 0 rgba(0,0,0,.3);font-size:1.5rem;display:flex;justify-content:space-between;align-items:center}
+.dt-s h3 span{background:rgba(255,255,255,.25);border-radius:99px;padding:0 12px;font-size:1rem}
+.dt-s ul{margin:0;padding:14px 14px 14px 36px;font-weight:700;font-size:clamp(1.05rem,2.2vw,1.3rem);line-height:1.4}
+.dt-s .tip{padding:0 14px 14px;color:#55607E;font-weight:600}
+.dt-coin{display:inline-grid;place-items:center;width:64px;height:64px;border-radius:50%;background:var(--sun);border:5px solid var(--ink);font-size:1.8rem;font-weight:800}
+.dt-coin.spin{animation:dtc .9s}@keyframes dtc{to{transform:rotateY(1440deg)}}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("💬", "Debate Topic Generator");
+const $=id=>document.getElementById(id);
+const DEF=`1 | Kids should have a later bedtime on weekends. | They have no school the next day. | Families can spend more time together. | Kids still need sleep to grow and stay healthy. | Changing sleep times can make Monday harder.
+1 | Every class should have a pet. | Pets teach responsibility. | Animals can make people feel calm. | Some students have allergies. | Who takes care of it on weekends?
+1 | Recess should be longer. | Kids focus better after moving. | Playing outside builds friendships. | There would be less time for learning. | Bad weather makes long recess hard.
+2 | Students should wear school uniforms. | Everyone looks equal, so less teasing. | Getting ready in the morning is faster. | Kids can't show who they are with clothes. | Uniforms can cost families money.
+2 | Homework should be banned in elementary school. | Kids need time to play and rest. | Family time is important too. | Practice helps you remember what you learned. | Homework teaches responsibility.
+2 | Video games are good for kids. | Some games teach problem solving. | Games can help you make friends. | Too much screen time is unhealthy. | Games can take time away from reading and playing outside.
+2 | Kids should get paid for doing chores. | It teaches how to save and spend money. | It rewards hard work. | Helping your family is just part of being a family. | Kids might only help when they get paid.
+3 | Zoos do more good than harm. | Zoos help save endangered animals. | People learn to care about animals. | Animals belong in the wild. | Some zoo animals don't have enough space.
+3 | Students should be able to use phones in class. | Phones can help with research and learning. | Families can reach kids in an emergency. | Phones can be very distracting. | It's easier to cheat with a phone.
+3 | Everyone should learn a second language in elementary school. | Young kids learn languages fast. | It helps you understand other cultures. | It takes time away from other subjects. | There may not be enough teachers.`;
+const st=Kit.get('dt-set',{text:DEF,lv:0,teams:['Team Red','Team Blue']});
+document.querySelector('main').innerHTML=`<div class="dt-top"><select id="lv" style="width:auto"><option value="0">All levels</option><option value="1">⭐ Easy</option><option value="2">⭐⭐ Medium</option><option value="3">⭐⭐⭐ Challenging</option></select><button class="btn big green" id="nx">🎲 New topic</button><span class="dt-coin" id="coin">?</span><button class="btn" id="fl">🪙 Flip for sides</button><button class="btn white small" id="ed">✏️ Topics</button></div>
+<div class="dt-topic" id="tp"></div><div class="dt-sides"><div class="dt-s" style="--sc:#2EAF5A"><h3>👍 For it <span id="tf"></span></h3><ul id="pro"></ul><div class="tip">Add your own reasons and examples!</div></div><div class="dt-s" style="--sc:#E5533F"><h3>👎 Against it <span id="ta2"></span></h3><ul id="con"></ul><div class="tip">Think about what the other side will say.</div></div></div>
+<div class="card stack" id="edc" hidden style="margin-top:14px"><b>✏️ Debate topics</b><span class="muted">One per line: level 1–3 | statement | reason for | reason for | reason against | reason against</span><textarea id="ta" style="min-height:220px"></textarea><div class="row"><label>Team names <input type="text" id="tn" style="width:240px" placeholder="Team Red, Team Blue"></label><button class="btn green" id="sv">✓ Save</button></div></div>`;
+const rows=()=>Kit.lines(st.text).map(l=>l.split('|').map(s=>s.trim())).filter(r=>r.length>=2).map(r=>/^\d$/.test(r[0])?r:['2',...r]);
+let bag=[],cur;
+function show(){const [lv,t,...pts]=cur;const pro=pts.slice(0,Math.ceil(pts.length/2)),con=pts.slice(Math.ceil(pts.length/2));const tp=$('tp');tp.classList.remove('flip');void tp.offsetWidth;tp.classList.add('flip');
+ tp.innerHTML=`<small>⚖️ DEBATE TOPIC ${'⭐'.repeat(+lv||1)}</small><b>${Kit.esc(t)}</b>`;$('pro').innerHTML=pro.map(p=>`<li>${Kit.esc(p)}</li>`).join('')||'<li>What reasons can you think of?</li>';$('con').innerHTML=con.map(p=>`<li>${Kit.esc(p)}</li>`).join('')||'<li>What reasons can you think of?</li>';$('tf').textContent='';$('ta2').textContent='';$('coin').textContent='?';window.__t={t}}
+$('nx').onclick=()=>{if(!bag.length)bag=Kit.shuffle(rows().filter(r=>!st.lv||+r[0]===st.lv));cur=bag.pop();if(cur)show()};
+$('fl').onclick=async()=>{const c=$('coin');c.classList.remove('spin');void c.offsetWidth;c.classList.add('spin');Kit.tone(1200,.05,'square',.08);await Kit.sleep(900);const a=Math.random()<.5;c.textContent=a?'1':'2';
+ $('tf').textContent=a?st.teams[0]:st.teams[1];$('ta2').textContent=a?st.teams[1]:st.teams[0];Kit.tada();window.__t.sides=[$('tf').textContent,$('ta2').textContent]};
+$('lv').value=st.lv;$('lv').onchange=()=>{st.lv=+$('lv').value;Kit.set('dt-set',st);bag=[];$('nx').click()};
+$('ed').onclick=()=>{$('edc').hidden=!$('edc').hidden;$('ta').value=st.text;$('tn').value=st.teams.join(', ')};$('sv').onclick=()=>{st.text=$('ta').value;const t=$('tn').value.split(',').map(s=>s.trim()).filter(Boolean);if(t.length===2)st.teams=t;Kit.set('dt-set',st);bag=[];$('edc').hidden=true;$('nx').click()};
+$('nx').click();
+</script>
+</body></html>

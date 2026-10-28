@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Live Poll Dashboard</title>
+<style>
+main{max-width:1600px}
+.lp2-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:16px}@media (max-width:520px){.lp2-p{grid-template-columns:1fr;justify-items:center}.lp2-p>div:last-child{width:100%}}
+.lp2-p{background:#fff;border:6px solid var(--ink);border-radius:24px;box-shadow:6px 6px 0 var(--ink);padding:14px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:center;min-width:0}
+.lp2-p h3{grid-column:1/-1;margin:0;font-size:1.25rem;display:flex;gap:8px;justify-content:space-between;align-items:center}
+.lp2-p h3 span{flex:1;min-width:0}
+.lp2-pie{width:120px;aspect-ratio:1;border-radius:50%;border:4px solid var(--ink);background:conic-gradient(var(--g));position:relative}
+.lp2-pie b{position:absolute;inset:30%;background:#fff;border-radius:50%;border:3px solid var(--ink);display:grid;place-items:center;font-size:1.1rem}
+.lp2-o{display:grid;grid-template-columns:14px minmax(0,1fr) auto auto auto;gap:6px;align-items:center;font-weight:700;margin:3px 0}
+.lp2-o i{width:14px;height:14px;border-radius:4px;background:var(--cc);border:2px solid var(--ink)}
+.lp2-o .n{min-width:2.6em;text-align:right;font-variant-numeric:tabular-nums}
+.lp2-o button{font:inherit;font-weight:800;width:32px;height:30px;border:3px solid var(--ink);border-radius:8px;cursor:pointer;background:#fff}
+.lp2-o.lead{color:#1E8E3E}
+.lp2-big{position:fixed;inset:0;z-index:50;background:var(--sky);display:none;padding:4vh 5vw;overflow:auto}
+.lp2-big.on{display:block}
+.lp2-big .lp2-p{grid-template-columns:auto 1fr;max-width:1200px;margin:0 auto;font-size:1.5rem}.lp2-big .lp2-pie{width:min(34vw,360px)}.lp2-big .lp2-o{grid-template-columns:22px 1fr auto auto auto;font-size:1.8rem}.lp2-big .lp2-o button{width:52px;height:48px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("📊", "Live Poll Dashboard");
+const $=id=>document.getElementById(id);const CC=['#FF6B5B','#22C3E6','#FFC93C','#5DC66E','#9B6BF2','#FF8FC7'];
+const st=Kit.get('lp2-state',{polls:[{q:'How do you feel about fractions?',o:['😀 Great','🙂 Okay','😕 Confused'],v:[0,0,0]},{q:'Did you finish your reading log?',o:['✅ Yes','⏳ Almost','❌ Not yet'],v:[0,0,0]},{q:'Best field trip idea?',o:['🦁 Zoo','🔬 Science museum','🌳 Nature park','🎭 Theater'],v:[0,0,0,0]}]});
+const save=()=>Kit.set('lp2-state',st);let big=-1;
+document.querySelector('main').innerHTML=`<div class="row" style="justify-content:center;margin-bottom:12px"><button class="btn green" id="add">＋ New question</button><button class="btn white" id="csv">⬇️ Save results (CSV)</button><button class="btn white" id="z">🧽 Zero all counts</button></div>
+<p class="muted" style="text-align:center;margin-top:0">Ask the class to raise hands, then tap ＋ for each hand. Tap ⛶ on a question to show it big.</p><div class="lp2-grid" id="g"></div><div class="lp2-big" id="big"></div>`;
+function card(p,i,isBig){const tot=p.v.reduce((a,b)=>a+b,0),mx=Math.max(...p.v);let acc=0;const g=tot?p.v.map((n,k)=>{const a=acc;acc+=n/tot*100;return `${CC[k%6]} ${a}% ${acc}%`}).join(','):'#EEF2F8 0 100%';
+ return `<div class="lp2-p" data-p="${i}"><h3><span>${Kit.esc(p.q)}</span>${isBig?'<button class="btn white small" data-close>✕ Close</button>':`<button class="btn white small" data-big="${i}">⛶</button><button class="btn white small" data-del="${i}">🗑</button>`}</h3><div class="lp2-pie" style="--g:${g}"><b>${tot}</b></div>
+ <div>${p.o.map((o,k)=>`<div class="lp2-o ${tot&&p.v[k]===mx?'lead':''}" style="--cc:${CC[k%6]}"><i></i><span>${Kit.esc(o)}</span><span class="n">${p.v[k]}${tot?` · ${Math.round(p.v[k]/tot*100)}%`:''}</span><button data-d="-1" data-k="${k}">−</button><button data-d="1" data-k="${k}">＋</button></div>`).join('')}</div></div>`}
+function draw(){$('g').innerHTML=st.polls.map((p,i)=>card(p,i)).join('')||'<p class="muted">Add a question to get started.</p>';$('big').classList.toggle('on',big>=0);$('big').innerHTML=big>=0&&st.polls[big]?card(st.polls[big],big,true):'';window.__t={polls:st.polls.map(p=>p.v.join(','))}}
+document.addEventListener('click',e=>{const d=e.target.closest('[data-d]');if(d){const p=st.polls[+d.closest('[data-p]').dataset.p];const k=+d.dataset.k;p.v[k]=Math.max(0,p.v[k]+ +d.dataset.d);save();if(+d.dataset.d>0)Kit.tone(500+k*90,.07,'triangle',.18);draw();return}
+ const b=e.target.closest('[data-big]');if(b){big=+b.dataset.big;draw();return}if(e.target.closest('[data-close]')){big=-1;draw();return}
+ const x=e.target.closest('[data-del]');if(x&&confirm('Delete this question?')){st.polls.splice(+x.dataset.del,1);save();draw()}});
+$('add').onclick=()=>{const q=prompt('Question:');if(!q)return;const o=prompt('Choices, separated by commas:','Yes, No, Not sure');if(!o)return;const opts=o.split(',').map(s=>s.trim()).filter(Boolean).slice(0,6);st.polls.push({q,o:opts,v:opts.map(()=>0)});save();draw()};
+$('z').onclick=()=>{if(confirm('Set every count back to zero?')){st.polls.forEach(p=>p.v=p.v.map(()=>0));save();draw()}};
+$('csv').onclick=()=>{const rows=[['Question','Choice','Count']];st.polls.forEach(p=>p.o.forEach((o,k)=>rows.push([p.q,o,p.v[k]])));const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n')],{type:'text/csv'}));a.download='poll-results.csv';a.click()};
+addEventListener('keydown',e=>{if(e.key==='Escape'&&big>=0){big=-1;draw()}});
+draw();
+</script>
+</body></html>

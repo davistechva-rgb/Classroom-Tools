@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Participation Tracker</title>
+<style>
+main{max-width:1500px}
+.pt-top{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:14px}
+.pt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.pt-k{font:inherit;position:relative;border:5px solid var(--ink);border-radius:20px;background:var(--hc);cursor:pointer;padding:12px 8px;box-shadow:0 5px 0 var(--ink);font-weight:800;font-size:1.2rem;color:var(--ink);display:flex;flex-direction:column;align-items:center;gap:4px;transition:background .3s}
+.pt-k:active{transform:translateY(5px);box-shadow:none}
+.pt-k .n{font-size:1.8rem;font-weight:800}
+.pt-k .dots{display:flex;gap:3px;flex-wrap:wrap;justify-content:center;min-height:12px}.pt-k .dots i{width:10px;height:10px;border-radius:50%;background:var(--ink)}
+.pt-k.zero{outline:5px dashed var(--grape);outline-offset:2px}
+.pt-k.pick{animation:ptp 1s 3}@keyframes ptp{50%{transform:scale(1.1);box-shadow:0 5px 0 var(--ink),0 0 0 10px var(--sun)}}
+.pt-k .m{position:absolute;top:4px;right:6px;font-size:.8rem;border:2px solid var(--ink);border-radius:8px;background:#fff;padding:0 5px;cursor:pointer}
+.pt-sum{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:14px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🙋", "Participation Tracker");
+const $=id=>document.getElementById(id);
+const st=Kit.get('pt-state',{days:{}});const today=new Date().toDateString();
+const D=()=>st.days[today]||(st.days[today]={});const save=()=>Kit.set('pt-state',st);let last=[];
+document.querySelector('main').innerHTML=`<div class="pt-top"><button class="btn big green" id="sg">🎯 Who should go next?</button><button class="btn white" id="un">↶ Undo</button><label class="ln-pill"><input type="checkbox" id="hi" checked> Highlight who hasn't shared</label><label class="ln-pill"><input type="checkbox" id="hn"> 🙈 Hide the numbers</label><button class="btn white small" id="rs">🧽 New day</button><button class="btn white small" id="csv">⬇️ CSV</button></div>
+<div class="pt-grid" id="g"></div><div class="pt-sum" id="sum"></div><div id="ros" style="margin-top:14px" class="card"></div>`;
+Learn.rosterEditor($('ros'));$('ros').addEventListener('roster',()=>draw());
+const heat=n=>['#FFFFFF','#E3F2FF','#C9F1D2','#FFF1B8','#FFE3C4'][Math.min(n,4)];
+function draw(pick){const R=Learn.roster(),d=D(),hide=$('hn').checked;$('g').innerHTML=R.map(n=>{const c=d[n]||0;return `<button class="pt-k ${$('hi').checked&&!c?'zero':''} ${pick===n?'pick':''}" data-n="${Kit.esc(n)}" style="--hc:${hide?'#fff':heat(c)}"><span class="m" data-minus="${Kit.esc(n)}">−</span>${Kit.esc(n)}<span class="n">${hide?'':c}</span><span class="dots">${hide?'':'<i></i>'.repeat(Math.min(c,10))}</span></button>`}).join('');
+ const tot=R.reduce((a,n)=>a+(d[n]||0),0),none=R.filter(n=>!d[n]).length;$('sum').innerHTML=`<span class="ln-pill">💬 ${tot} times shared today</span><span class="ln-pill">🙋 ${R.length-none} of ${R.length} students have shared</span><span class="ln-pill">🤫 ${none} haven't yet</span>`;window.__t={tot,none}}
+$('g').onclick=e=>{const m=e.target.closest('[data-minus]');if(m){e.stopPropagation();const n=m.dataset.minus;D()[n]=Math.max(0,(D()[n]||0)-1);save();draw();return}
+ const b=e.target.closest('.pt-k');if(!b)return;const n=b.dataset.n;D()[n]=(D()[n]||0)+1;last.push(n);save();Kit.tone(520+Math.min(D()[n],6)*60,.1,'triangle',.2);draw();if(!Learn.roster().some(x=>!D()[x])&&D()[n]===1){Kit.tada();Kit.confetti(80)}};
+$('un').onclick=()=>{const n=last.pop();if(n){D()[n]=Math.max(0,(D()[n]||0)-1);save();draw()}};
+$('sg').onclick=()=>{const R=Learn.roster();if(!R.length)return;const min=Math.min(...R.map(n=>D()[n]||0));const n=Kit.pick(R.filter(x=>(D()[x]||0)===min));Kit.ding();draw(n);window.__t.pick=n};
+['hi','hn'].forEach(id=>$(id).onchange=()=>draw());
+$('rs').onclick=()=>{if(confirm('Start fresh for today?')){st.days[today]={};save();draw()}};
+$('csv').onclick=()=>{const days=Object.keys(st.days).sort((a,b)=>new Date(a)-new Date(b)),R=Learn.roster();const rows=[['Student',...days.map(d=>new Date(d).toLocaleDateString()),'Total']].concat(R.map(n=>{const v=days.map(d=>st.days[d][n]||0);return [n,...v,v.reduce((a,b)=>a+b,0)]}));
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([rows.map(r=>r.join(',')).join('\n')],{type:'text/csv'}));a.download='participation.csv';a.click()};
+draw();
+</script>
+</body></html>

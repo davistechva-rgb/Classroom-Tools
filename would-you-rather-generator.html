@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Would You Rather Generator</title>
+<style>
+main{max-width:1500px}
+.wr-h{text-align:center;font-weight:800;font-size:clamp(1.8rem,4.6vw,3.2rem);color:#fff;text-shadow:4px 4px 0 var(--ink);margin-bottom:12px}
+.wr-split{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:0;border:7px solid var(--ink);border-radius:30px;overflow:hidden;box-shadow:9px 9px 0 var(--ink);min-height:48vh}
+.wr-side{font:inherit;border:0;cursor:pointer;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:clamp(16px,3vw,34px);text-align:center;text-shadow:3px 3px 0 rgba(0,0,0,.3);position:relative;overflow:hidden}
+.wr-side.a{background:#FF6B5B}.wr-side.b{background:#22C3E6}
+.wr-side .e{font-size:clamp(3.4rem,9vw,6rem);line-height:1}
+.wr-side .t{font-size:clamp(1.5rem,3.8vw,2.8rem);font-weight:800;line-height:1.1}
+.wr-side .n{font-size:clamp(2rem,5vw,3.4rem);font-weight:800;background:rgba(0,0,0,.18);border-radius:18px;padding:0 18px;min-width:2.5em}
+.wr-side .fill{position:absolute;left:0;right:0;bottom:0;background:rgba(255,255,255,.18);transition:height .5s;pointer-events:none}
+.wr-side:active{filter:brightness(1.1)}
+.wr-or{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:clamp(70px,10vw,110px);aspect-ratio:1;border-radius:50%;background:var(--sun);border:6px solid var(--ink);display:grid;place-items:center;font-weight:800;font-size:clamp(1.3rem,3vw,2rem);z-index:2;pointer-events:none}
+.wr-why{text-align:center;margin-top:14px;font-weight:800;font-size:1.3rem;color:#fff;text-shadow:2px 2px 0 var(--ink)}
+@media (max-width:640px){.wr-split{grid-template-columns:1fr}.wr-or{top:50%}}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🗣️", "Would You Rather Generator");
+const $=id=>document.getElementById(id);
+const DEF=`🦅 Be able to fly | 🐬 Be able to breathe underwater
+🍕 Eat pizza every day | 🍦 Eat ice cream every day
+🦖 Have a pet dinosaur | 🐉 Have a pet dragon
+🏖️ Live at the beach | ⛰️ Live in the mountains
+⏩ Fast-forward time | ⏪ Rewind time
+🦸 Have super strength | ⚡ Have super speed
+📚 Read minds | 👻 Be invisible
+🐱 Talk to cats | 🐶 Talk to dogs
+☀️ Always be a little too hot | ❄️ Always be a little too cold
+🚀 Visit the Moon | 🌊 Explore the bottom of the ocean
+🎨 Be a famous artist | 🎤 Be a famous singer
+🧙 Go to wizard school | 🤖 Go to robot school
+🍫 Have a chocolate river | 🍭 Have a candy forest
+🏰 Live in a castle | 🌳 Live in a treehouse
+🐘 Be as big as an elephant | 🐜 Be as small as an ant
+📱 Never use a screen again | 🌳 Never go outside again
+🎒 Have no homework | 🎮 Have an extra recess`;
+const st=Kit.get('wr-set',{text:DEF});
+document.querySelector('main').innerHTML=`<div class="wr-h">🤔 Would you rather…</div><div class="wr-split" id="sp"><button class="wr-side a" data-s="0"><i class="fill"></i><span class="e"></span><span class="t"></span><span class="n">0</span></button><button class="wr-side b" data-s="1"><i class="fill"></i><span class="e"></span><span class="t"></span><span class="n">0</span></button><span class="wr-or">OR</span></div>
+<div class="wr-why" id="why">Tap your side once for each person who picks it.</div>
+<div class="row" style="justify-content:center;margin-top:12px"><button class="btn white" id="un">↶ Undo vote</button><button class="btn big green" id="nx">🎲 Next question</button><button class="btn white" id="rv">📊 Show results</button><button class="btn white small" id="ed">✏️ Questions</button></div>
+<div class="card stack" id="edc" hidden style="margin-top:14px"><b>✏️ Would you rather…</b><span class="muted">One per line: emoji choice one | emoji choice two</span><textarea id="ta" style="min-height:200px"></textarea><button class="btn green" id="sv">✓ Save</button></div>`;
+const rows=()=>Kit.lines(st.text).map(l=>l.split('|').map(s=>s.trim())).filter(r=>r[1]);
+const split=t=>{const m=t.match(/^(\p{Extended_Pictographic}[\u{FE0F}\u{200D}\p{Extended_Pictographic}]*)\s*(.*)$/u);return m?[m[1],m[2]]:['🤔',t]};
+let bag=[],cur,v=[0,0],hist=[],shown=false;
+function show(){const sides=$('sp').querySelectorAll('.wr-side');cur.forEach((t,i)=>{const [e,x]=split(t);sides[i].querySelector('.e').textContent=e;sides[i].querySelector('.t').textContent=x});draw();window.__t={cur,v}}
+function draw(){const tot=v[0]+v[1];$('sp').querySelectorAll('.wr-side').forEach((s,i)=>{s.querySelector('.n').textContent=v[i];s.querySelector('.fill').style.height=shown&&tot?v[i]/tot*100+'%':'0'});
+ $('why').textContent=shown&&tot?(v[0]===v[1]?`It's a tie! Find someone on the other side and tell them why.`:`${v[0]>v[1]?'More':'Fewer'} people picked “${split(cur[0])[1]}” (${Math.round(v[0]/tot*100)}% vs ${Math.round(v[1]/tot*100)}%). Who can explain their choice?`):'Tap your side once for each person who picks it.'}
+$('sp').onclick=e=>{const s=e.target.closest('.wr-side');if(!s)return;const i=+s.dataset.s;v[i]++;hist.push(i);Kit.tone(i?660:520,.08,'triangle',.2);Learn.burst('+1',s,'#fff');draw();window.__t={cur,v}};
+$('un').onclick=()=>{const i=hist.pop();if(i!=null){v[i]--;draw()}};
+$('rv').onclick=()=>{shown=true;Kit.tada();draw()};
+$('nx').onclick=()=>{if(!bag.length)bag=Kit.shuffle(rows());cur=bag.pop();if(!cur)return;v=[0,0];hist=[];shown=false;show();Kit.tone(600,.1,'triangle',.2)};
+$('ed').onclick=()=>{$('edc').hidden=!$('edc').hidden;$('ta').value=st.text};$('sv').onclick=()=>{st.text=$('ta').value;Kit.set('wr-set',st);bag=[];$('edc').hidden=true;$('nx').click()};
+$('nx').click();
+</script>
+</body></html>

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Sentence Starter Generator</title>
+<style>
+main{max-width:1500px}
+.ss2-tabs{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:14px}
+.ss2-tabs button{font:inherit;font-weight:800;border:4px solid var(--ink);border-radius:99px;padding:5px 14px;cursor:pointer;background:#fff;color:var(--ink)}
+.ss2-tabs button.on{background:var(--cc);color:#fff;text-shadow:1px 1px 0 rgba(0,0,0,.3)}
+.ss2-big{background:var(--cc);border:7px solid var(--ink);border-radius:30px;box-shadow:9px 9px 0 var(--ink);color:#fff;text-align:center;padding:clamp(16px,3vw,32px);text-shadow:3px 3px 0 rgba(0,0,0,.25);margin-bottom:16px}
+.ss2-big small{font-weight:800;letter-spacing:.12em}
+.ss2-big b{display:block;font-size:clamp(2.2rem,6vw,4.4rem);line-height:1.1;margin-top:6px}
+.ss2-big.pop{animation:pop .5s}
+.ss2-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.ss2-c{font:inherit;text-align:left;background:#fff;border:5px solid var(--ink);border-radius:20px;box-shadow:0 5px 0 var(--ink);padding:12px 14px;font-weight:800;font-size:clamp(1.1rem,2.2vw,1.4rem);cursor:pointer;color:var(--ink);border-left:14px solid var(--cc)}
+.ss2-c:active{transform:translateY(5px);box-shadow:none}
+@media print{.top,footer,.ss2-tabs,.row,.ss2-big{display:none!important}body{background:#fff}.ss2-c{box-shadow:none;break-inside:avoid}}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🗯️", "Sentence Starter Generator");
+const $=id=>document.getElementById(id);
+const CATS={agree:['👍 Agree','#2EAF5A',['I agree with ___ because…','I like what ___ said about…','That makes sense because…','I was thinking the same thing…','___\'s idea reminds me of…']],
+ disagree:['🤔 Disagree kindly','#E5533F',['I see it differently because…','I respectfully disagree because…','That\'s a good point, but…','Have you thought about…?','I understand, but what about…?']],
+ add:['➕ Add on','#22C3E6',['I want to add to what ___ said…','Another example is…','This connects to…','Also…','Building on that idea…']],
+ ask:['❓ Ask','#9B6BF2',['Can you explain what you mean by…?','Why do you think…?','What would happen if…?','How do you know…?','Can you give an example?']],
+ clarify:['🔍 Clarify','#FF9F43',['So what you\'re saying is…','Do you mean…?','I\'m confused about…','Can you say that another way?','Let me make sure I understand…']],
+ evidence:['📖 Evidence','#1D2B53',['In the text, it says…','On page ___, it shows…','One reason is…','For example…','This proves that…']],
+ sum:['🧾 Sum it up','#FF8FC7',['The main idea is…','In my own words…','Most of us think…','To sum it up…','The big takeaway is…']],
+ predict:['🔮 Predict','#2BC4B0',['I predict that… because…','I think ___ will happen next…','Based on…, I think…','If ___, then…','My guess is…']]};
+const st=Kit.get('ss2-set',{cat:'agree',mine:''});
+document.querySelector('main').innerHTML=`<div class="ss2-tabs" id="tabs"></div><div class="ss2-big" id="big"></div><div class="ss2-grid" id="g"></div>
+<div class="row" style="justify-content:center;margin-top:14px"><button class="btn big green" id="rd">🎲 Starter of the day</button><button class="btn white" id="al">📋 Show every kind</button><button class="btn white" onclick="print()">🖨️ Print a poster</button><button class="btn white small" id="ed">✏️ My own</button></div>
+<div class="card stack" id="edc" hidden style="margin-top:14px"><b>✏️ My own sentence starters</b><span class="muted">One per line. They show up under "My starters."</span><textarea id="ta" style="min-height:140px"></textarea><button class="btn green" id="sv">✓ Save</button></div>`;
+const cats=()=>({...CATS,...(Kit.lines(st.mine).length?{mine:['✏️ My starters','#6B5FD3',Kit.lines(st.mine)]}:{})});
+let all=false;
+function draw(){const C=cats();if(!C[st.cat])st.cat='agree';$('tabs').innerHTML=Object.entries(C).map(([k,v])=>`<button data-c="${k}" class="${!all&&k===st.cat?'on':''}" style="--cc:${v[1]}">${v[0]}</button>`).join('');
+ const list=all?Object.values(C).flatMap(v=>v[2].map(s=>[s,v[1]])):C[st.cat][2].map(s=>[s,C[st.cat][1]]);
+ $('g').innerHTML=list.map(([s,c])=>`<button class="ss2-c" style="--cc:${c}">${Kit.esc(s)}</button>`).join('');window.__t={n:list.length}}
+function big(s,c,label){const b=$('big');b.style.setProperty('--cc',c);b.innerHTML=`<small>🗯️ ${label.toUpperCase()}</small><b>${Kit.esc(s)}</b>`;b.classList.remove('pop');void b.offsetWidth;b.classList.add('pop');Kit.tone(600,.1,'triangle',.2)}
+$('tabs').onclick=e=>{const b=e.target.closest('[data-c]');if(!b)return;all=false;st.cat=b.dataset.c;Kit.set('ss2-set',st);draw();const v=cats()[st.cat];big(v[2][0],v[1],v[0])};
+$('g').onclick=e=>{const b=e.target.closest('.ss2-c');if(!b)return;const c=b.style.getPropertyValue('--cc');const k=Object.values(cats()).find(v=>v[1]===c);big(b.textContent,c,k?k[0]:'Try this')};
+$('rd').onclick=()=>{const C=cats(),k=Kit.pick(Object.keys(C));const s=Kit.pick(C[k][2]);big(s,C[k][1],'Starter of the day · '+C[k][0])};
+$('al').onclick=()=>{all=!all;$('al').textContent=all?'📂 One kind at a time':'📋 Show every kind';draw()};
+$('ed').onclick=()=>{$('edc').hidden=!$('edc').hidden;$('ta').value=st.mine};$('sv').onclick=()=>{st.mine=$('ta').value;st.cat='mine';Kit.set('ss2-set',st);$('edc').hidden=true;draw()};
+draw();$('rd').click();
+</script>
+</body></html>
