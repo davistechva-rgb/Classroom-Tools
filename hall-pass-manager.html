@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Hall Pass Manager</title>
+<style>
+main{max-width:1500px}
+.hp-wrap{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:900px){.hp-wrap{grid-template-columns:1fr}}
+.hp-box{background:#fff;border:6px solid var(--ink);border-radius:24px;box-shadow:6px 6px 0 var(--ink);padding:14px}
+.hp-box h3{margin:0 0 10px}
+.hp-names{display:flex;flex-wrap:wrap;gap:6px;max-height:220px;overflow:auto}
+.hp-nm{font:inherit;font-weight:700;border:3px solid var(--ink);border-radius:99px;padding:4px 12px;background:#F4FAFF;cursor:pointer;color:var(--ink)}
+.hp-nm.on{background:var(--sun)}.hp-nm.out{opacity:.35;cursor:not-allowed}
+.hp-dest{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}
+.hp-d{font:inherit;border:4px solid var(--ink);border-radius:16px;background:#fff;padding:8px;cursor:pointer;font-weight:800;display:flex;flex-direction:column;align-items:center;box-shadow:0 4px 0 var(--ink);color:var(--ink)}
+.hp-d span{font-size:2rem}
+.hp-d:disabled{opacity:.4;cursor:not-allowed}
+.hp-pass{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;background:#C9F1D2;border:5px solid var(--ink);border-radius:20px;padding:10px 14px;margin-bottom:10px;box-shadow:0 5px 0 var(--ink)}
+.hp-pass.late{background:#FFD9D4;animation:hplate 1.2s infinite}@keyframes hplate{50%{box-shadow:0 5px 0 var(--ink),0 0 0 8px rgba(255,90,78,.35)}}
+.hp-pass .e{font-size:2.6rem}.hp-pass b{font-size:1.5rem}.hp-pass .t{font-size:1.8rem;font-weight:800;font-variant-numeric:tabular-nums}
+.hp-slots{font-weight:800;font-size:1.2rem;margin-bottom:10px}
+.hp-log{max-height:260px;overflow:auto;font-weight:600}
+.hp-log div{display:grid;grid-template-columns:5.5em 1fr auto;gap:8px;border-bottom:2px solid #E3E9F4;padding:4px 0}
+.hp-log span{color:#6B7695}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🚻", "Hall Pass Manager");
+const $=id=>document.getElementById(id);
+const DEST=[['🚻','Restroom'],['💧','Water'],['🏥','Nurse'],['📚','Library'],['🏢','Office'],['🔒','Locker']];
+const st=Kit.get('hp-state',{roster:'Ava\nLeo\nMia\nSam\nZoe\nEli\nNoah\nLiv\nMax\nIvy\nBen\nAna',max:1,late:8,out:[],log:[]});
+const save=()=>Kit.set('hp-state',st);
+document.querySelector('main').innerHTML=`<div class="hp-wrap"><div class="hp-box"><h3>🎟️ Sign out</h3><div class="hp-names" id="nm"></div><div class="row" style="margin-top:8px"><input type="text" id="other" placeholder="…or type a name" style="max-width:240px"></div><div class="hp-dest" id="ds"></div></div>
+<div><div class="hp-box"><div class="hp-slots" id="slots"></div><div id="passes"></div></div><div class="hp-box" style="margin-top:16px"><h3>📜 Today's log</h3><div class="hp-log" id="log"></div><div class="row" style="margin-top:10px"><button class="btn white small" id="csv">⬇️ Save log (CSV)</button><button class="btn white small" id="clr">🧽 Clear log</button><button class="btn white small" id="ed">⚙️ Settings</button></div></div></div></div>
+<div class="card stack" id="edc" hidden style="margin-top:14px"><b>⚙️ Settings</b><div class="grid2"><label>Class list <span class="muted">(one name per line)</span><textarea id="ta" style="min-height:160px"></textarea></label><div class="stack"><label>Students out at once <input type="number" id="mx" min="1" max="6"></label><label>Late after (minutes) <input type="number" id="lt" min="1" max="60"></label></div></div><button class="btn green" id="sv">✓ Save</button></div>`;
+let pick=null;
+const mmss=ms=>{const s=Math.floor(ms/1000);return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`};
+function draw(){const outN=st.out.map(o=>o.n);$('nm').innerHTML=Kit.lines(st.roster).map(n=>`<button class="hp-nm ${pick===n?'on':''} ${outN.includes(n)?'out':''}" data-n="${Kit.esc(n)}">${Kit.esc(n)}</button>`).join('');
+ const full=st.out.length>=st.max;$('ds').innerHTML=DEST.map(d=>`<button class="hp-d" data-d="${d[1]}" ${full?'disabled':''}><span>${d[0]}</span>${d[1]}</button>`).join('');
+ $('slots').textContent=full?`⛔ ${st.out.length} of ${st.max} passes in use: please wait`:`✅ ${st.max-st.out.length} of ${st.max} passes free`;
+ $('passes').innerHTML=st.out.map((o,i)=>`<div class="hp-pass" data-i="${i}"><span class="e">${(DEST.find(d=>d[1]===o.d)||['🚪'])[0]}</span><div><b>${Kit.esc(o.n)}</b><div style="font-weight:700">${Kit.esc(o.d)} · left ${new Date(o.t).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})}</div></div><div style="text-align:right"><div class="t" data-t="${o.t}">${mmss(Date.now()-o.t)}</div><button class="btn small green" data-back="${i}">↩ Back</button></div></div>`).join('')||'<p class="muted">Nobody is out of the room.</p>';
+ $('log').innerHTML=st.log.slice().reverse().map(l=>`<div><span>${new Date(l.t).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})}</span>${Kit.esc(l.n)} · ${Kit.esc(l.d)}<b>${mmss(l.ms)}</b></div>`).join('')||'<p class="muted">No passes yet.</p>';tick();window.__t={out:st.out.length,log:st.log.length}}
+function tick(){document.querySelectorAll('.hp-pass').forEach(p=>{const t=+p.querySelector('[data-t]').dataset.t;p.querySelector('.t').textContent=mmss(Date.now()-t);p.classList.toggle('late',Date.now()-t>st.late*60000)})}
+$('nm').onclick=e=>{const b=e.target.closest('.hp-nm');if(!b||b.classList.contains('out'))return;pick=pick===b.dataset.n?null:b.dataset.n;$('other').value='';draw()};
+$('ds').onclick=e=>{const b=e.target.closest('.hp-d');if(!b)return;const n=$('other').value.trim()||pick;if(!n){alert('Tap your name first.');return}if(st.out.some(o=>o.n===n))return;st.out.push({n,d:b.dataset.d,t:Date.now()});pick=null;$('other').value='';save();Kit.tone(660,.15,'triangle',.2);draw()};
+$('passes').onclick=e=>{const b=e.target.closest('[data-back]');if(!b)return;const o=st.out.splice(+b.dataset.back,1)[0];st.log.push({n:o.n,d:o.d,t:o.t,ms:Date.now()-o.t});save();Kit.ding();draw()};
+$('csv').onclick=()=>{const rows=[['Name','Where','Left at','Minutes']].concat(st.log.map(l=>[l.n,l.d,new Date(l.t).toLocaleString(),(l.ms/60000).toFixed(1)]));const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=`hall-passes-${new Date().toISOString().slice(0,10)}.csv`;a.click()};
+$('clr').onclick=()=>{if(confirm('Clear the whole log?')){st.log=[];save();draw()}};
+$('ed').onclick=()=>{$('edc').hidden=!$('edc').hidden;$('ta').value=st.roster;$('mx').value=st.max;$('lt').value=st.late};$('sv').onclick=()=>{st.roster=$('ta').value;st.max=Math.max(1,+$('mx').value||1);st.late=Math.max(1,+$('lt').value||8);save();$('edc').hidden=true;draw()};
+setInterval(tick,1000);draw();
+</script>
+</body></html>

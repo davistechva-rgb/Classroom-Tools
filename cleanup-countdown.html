@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Cleanup Countdown</title>
+<style>
+main{max-width:1400px}
+.cc-scr{position:relative;border:7px solid var(--ink);border-radius:30px;box-shadow:9px 9px 0 var(--ink);background:linear-gradient(135deg,#FF8FC7,#9B6BF2);color:#fff;text-align:center;padding:clamp(16px,3vw,34px);overflow:hidden}
+.cc-scr.hurry{background:linear-gradient(135deg,#FF9F43,#FF5A4E)}
+.cc-scr.done{background:linear-gradient(135deg,#5DC66E,#1E9E6A)}
+.cc-e{font-size:clamp(3.4rem,9vw,6rem);line-height:1;display:inline-block}
+.cc-e.bop{animation:ccbop .3s}@keyframes ccbop{50%{transform:scale(1.25) rotate(-8deg)}}
+.cc-t{font-size:clamp(5rem,17vw,12rem);font-weight:800;line-height:.95;font-variant-numeric:tabular-nums;text-shadow:6px 6px 0 rgba(29,43,83,.45)}
+.cc-job{font-size:clamp(1.5rem,4vw,2.8rem);font-weight:800;min-height:1.3em;text-shadow:3px 3px 0 rgba(29,43,83,.4)}
+.cc-bars{display:flex;gap:6px;justify-content:center;height:60px;align-items:flex-end;margin-top:10px}
+.cc-bars i{width:14px;border-radius:7px;background:rgba(255,255,255,.85);height:10px;transition:height .12s}
+.cc-stars{display:flex;gap:10px;justify-content:center;margin-top:14px}
+.cc-stars button{font:inherit;font-size:clamp(2.6rem,7vw,4rem);background:none;border:0;cursor:pointer;filter:grayscale(1) opacity(.5);transition:transform .2s}
+.cc-stars button.on{filter:none;transform:scale(1.15)}
+.cc-ctl{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px;align-items:center}
+.cc-jobs{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:12px}
+.cc-jobs span{background:rgba(255,255,255,.22);border:3px solid rgba(255,255,255,.7);border-radius:99px;padding:2px 12px;font-weight:700}
+.cc-jobs span.on{background:#fff;color:var(--ink)}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🧹", "Cleanup Countdown");
+const $=id=>document.getElementById(id);
+const st=Kit.get('cc-set',{secs:120,jobs:'🧻 Pick up everything on the floor\n📚 Books back on the shelf\n✏️ Pencils and crayons in their boxes\n🪑 Push in your chair\n🧽 Wipe off your desk\n🗑️ Throw away your trash',music:true,best:0});
+document.querySelector('main').innerHTML=`<div class="cc-scr" id="scr"><span class="cc-e" id="em">🧹</span><div class="cc-job" id="job">Ready to clean up?</div><div class="cc-t" id="tm"></div><div class="cc-bars" id="bars">${'<i></i>'.repeat(16)}</div><div class="cc-jobs" id="jobs"></div><div id="rate" hidden><div class="cc-job">🔍 Inspection time! How did we do?</div><div class="cc-stars" id="stars">${[1,2,3,4,5].map(n=>`<button data-s="${n}" aria-label="${n} stars">⭐</button>`).join('')}</div></div></div>
+<div class="cc-ctl"><select id="secs" style="width:auto">${[30,60,90,120,180,300].map(s=>`<option value="${s}">${s<60?s+' seconds':s/60+' min'}</option>`).join('')}</select><button class="btn big green" id="go">🏁 Go!</button><label class="ln-pill"><input type="checkbox" id="mu"> 🎵 Music</label><span class="ln-pill" id="best"></span><button class="btn white small" id="ed">✏️ Jobs</button><button class="btn white small" id="fs">⛶</button></div>
+<div class="card stack" id="edc" hidden style="margin-top:14px"><b>✏️ Cleanup jobs</b><span class="muted">One per line. They flash on the screen while the clock runs.</span><textarea id="ta" style="min-height:160px"></textarea><button class="btn green" id="sv">✓ Save</button></div>`;
+const jobs=()=>Kit.lines(st.jobs);const save=()=>Kit.set('cc-set',st);
+let left=0,running=false,tv,beatT,beat=0,AC;
+function draw(){const s=running?left:st.secs;$('tm').textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;$('secs').value=st.secs;$('mu').checked=st.music;$('best').textContent=`🏆 Best: ${st.best?'⭐'.repeat(st.best):'—'}`;
+ const J=jobs(),ji=running?Math.floor((st.secs-left)/Math.max(5,st.secs/J.length))%J.length:-1;$('jobs').innerHTML=J.map((j,i)=>`<span class="${i===ji?'on':''}">${Kit.esc(j)}</span>`).join('');if(running)$('job').textContent=J[ji]||'Clean up!'}
+function note(f,d,type='square',v=.06){try{AC=AC||new AudioContext();const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g).connect(AC.destination);o.start(t);o.stop(t+d+.02)}catch{}}
+const MEL=[523,659,784,659,587,698,880,698,523,659,784,1046,988,784,659,587];
+function beatLoop(){if(!running)return;const urg=1-left/st.secs;const bpm=110+urg*70;beat++;
+ if(st.music){note(beat%2?110:82,.12,'sine',.35);if(beat%2===0)note(4000,.03,'square',.03);note(MEL[beat%16],.14,'triangle',.07)}
+ $('em').classList.remove('bop');void $('em').offsetWidth;$('em').classList.add('bop');[...$('bars').children].forEach(b=>b.style.height=(10+Math.random()*50*(.5+urg))+'px');
+ beatT=setTimeout(beatLoop,60000/bpm/2)}
+$('go').onclick=()=>{if(running){stop(false);return}running=true;left=st.secs;$('rate').hidden=true;$('scr').className='cc-scr';$('go').textContent='⏹ Stop';draw();beatLoop();
+ tv=setInterval(()=>{left--;if(left<=10)Kit.tick();$('scr').classList.toggle('hurry',left<=15);draw();if(left<=0)stop(true)},1000)};
+function stop(done){running=false;clearInterval(tv);clearTimeout(beatT);$('go').textContent='🏁 Go!';[...$('bars').children].forEach(b=>b.style.height='10px');
+ if(done){$('scr').className='cc-scr done';$('job').textContent='⏰ FREEZE!';$('em').textContent='🧊';Kit.alarm();$('rate').hidden=false;[...$('stars').children].forEach(b=>b.classList.remove('on'))}else{$('job').textContent='Ready to clean up?';$('em').textContent='🧹'}draw();$('tm').textContent='0:00'}
+$('stars').onclick=e=>{const b=e.target.closest('[data-s]');if(!b)return;const n=+b.dataset.s;[...$('stars').children].forEach((x,i)=>x.classList.toggle('on',i<n));
+ if(n>st.best){st.best=n;save();Kit.confetti(120)}Kit.tada();$('job').textContent=n>=5?'🌟 SPARKLING! Perfect cleanup!':n>=3?'👍 Nice job, team!':'🙂 We can do better next time!';$('em').textContent='🧹';draw()};
+$('secs').onchange=()=>{st.secs=+$('secs').value;save();draw()};$('mu').onchange=()=>{st.music=$('mu').checked;save()};
+$('ed').onclick=()=>{$('edc').hidden=!$('edc').hidden;$('ta').value=st.jobs};$('sv').onclick=()=>{st.jobs=$('ta').value;save();$('edc').hidden=true;draw()};$('fs').onclick=()=>Kit.fullscreen();
+draw();
+</script>
+</body></html>

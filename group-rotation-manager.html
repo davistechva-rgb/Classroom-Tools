@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Group Rotation Manager</title>
+<style>
+main{max-width:1500px}
+.gr-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.gr-g{background:#fff;border:6px solid var(--ink);border-radius:24px;box-shadow:6px 6px 0 var(--ink);overflow:hidden}
+.gr-g h3{margin:0;padding:10px 14px;background:var(--gc);color:#fff;text-shadow:2px 2px 0 rgba(0,0,0,.3);font-size:1.35rem}
+.gr-r{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center;padding:8px 12px;border-bottom:3px solid #EEF2F8}
+.gr-r:last-child{border-bottom:0}
+.gr-r .ic{width:46px;height:46px;border-radius:14px;border:3px solid var(--ink);display:grid;place-items:center;font-size:1.6rem;background:var(--rc)}
+.gr-r .nm{font-weight:800;font-size:clamp(1.1rem,2.2vw,1.4rem);line-height:1.1}
+.gr-r .rl{font-weight:700;font-size:.92rem;color:#55607E}
+.gr-r.spin .nm{animation:grs .6s}@keyframes grs{0%{transform:translateY(-14px);opacity:0}}
+.gr-top{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center;margin-bottom:14px}
+.gr-key{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:14px}
+.gr-key div{background:#fff;border:3px solid var(--ink);border-radius:14px;padding:6px 10px;font-weight:600;max-width:280px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("👥", "Group Rotation Manager");
+const $=id=>document.getElementById(id);const GC=['#FF6B5B','#22C3E6','#5DC66E','#9B6BF2','#FF9F43','#FF8FC7'];const RC=['#FFF1B8','#E3F2FF','#C9F1D2','#FDE7F3','#EAE0FF','#FFE3C4'];
+const st=Kit.get('gr-state',{roles:'👑 Leader | Keeps everyone on track\n✏️ Recorder | Writes down the group\'s ideas\n⏱️ Timekeeper | Watches the clock\n📣 Reporter | Shares with the class\n🧺 Materials | Gets and puts away supplies',groups:'Group 1: Ava, Leo, Mia, Sam, Zoe\nGroup 2: Eli, Noah, Liv, Max\nGroup 3: Ivy, Ben, Ana, Kai, Ruby\nGroup 4: Owen, Jade, Theo, Nora',shift:0,history:[]});
+const save=()=>Kit.set('gr-state',st);
+document.querySelector('main').innerHTML=`<div class="gr-top"><b id="sh" style="font-size:1.3rem;color:#fff;text-shadow:2px 2px 0 var(--ink)"></b><button class="btn big green" id="rot">🔄 Rotate the jobs</button><button class="btn white" id="bk">↶ Undo</button><button class="btn white" id="mix">🔀 Mix the order</button><button class="btn white" id="ed">✏️ Groups & jobs</button></div>
+<div class="gr-grid" id="g"></div><div class="gr-key" id="key"></div>
+<div class="card stack" id="edc" hidden style="margin-top:16px"><b>✏️ Set up</b><div class="grid2"><label>Group jobs <span class="muted">(emoji name | what they do)</span><textarea id="tr" style="min-height:170px"></textarea></label><label>Groups <span class="muted">(Group name: student, student, ...)</span><textarea id="tg" style="min-height:170px"></textarea></label></div><button class="btn green" id="sv">✓ Save</button></div>`;
+const roles=()=>Kit.lines(st.roles).map(l=>{const p=l.split('|');const m=p[0].trim().match(/^(\p{Extended_Pictographic}[\u{FE0F}\u{200D}\p{Extended_Pictographic}]*)\s*(.*)$/u);return {e:m?m[1]:'⭐',n:m?m[2]:p[0].trim(),d:(p[1]||'').trim()}});
+const groups=()=>Kit.lines(st.groups).map(l=>{const i=l.indexOf(':');return {n:(i>0?l.slice(0,i):'Group').trim(),kids:(i>0?l.slice(i+1):l).split(',').map(s=>s.trim()).filter(Boolean)}});
+function draw(spin){const R=roles();$('g').innerHTML=groups().map((g,gi)=>{const k=g.kids.length;return `<div class="gr-g" style="--gc:${GC[gi%6]}"><h3>${Kit.esc(g.n)}</h3>${g.kids.map((kid,ki)=>{const ri=((ki+st.shift)%k+k)%k;const r=R[ri];return `<div class="gr-r ${spin?'spin':''}" style="--rc:${RC[ri%6]}"><span class="ic">${r?r.e:'🙂'}</span><div><div class="nm">${Kit.esc(kid)}</div><div class="rl">${r?Kit.esc(r.n):'Helper'}</div></div></div>`}).join('')}</div>`}).join('');
+ $('key').innerHTML=R.map(r=>`<div>${r.e} <b>${Kit.esc(r.n)}</b>${r.d?`: ${Kit.esc(r.d)}`:''}</div>`).join('');const last=st.history[st.history.length-1];$('sh').textContent=last?`Jobs last changed ${new Date(last).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})}`:'';
+ window.__t={first:groups()[0]&&groups()[0].kids[0],role:document.querySelector('.gr-r .rl')?.textContent}}
+$('rot').onclick=()=>{st.shift--;st.history.push(Date.now());st.history=st.history.slice(-30);save();Kit.tone(523,.12,'triangle',.2);Kit.tone(784,.18,'triangle',.2,.1);draw(true)};
+$('bk').onclick=()=>{st.shift++;st.history.pop();save();draw(true)};
+$('mix').onclick=()=>{if(!confirm('Shuffle the students inside each group?'))return;st.groups=groups().map(g=>`${g.n}: ${Kit.shuffle(g.kids).join(', ')}`).join('\n');save();draw(true)};
+$('ed').onclick=()=>{$('edc').hidden=!$('edc').hidden;$('tr').value=st.roles;$('tg').value=st.groups};$('sv').onclick=()=>{st.roles=$('tr').value;st.groups=$('tg').value;save();$('edc').hidden=true;draw()};
+draw();
+</script>
+</body></html>

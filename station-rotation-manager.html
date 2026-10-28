@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Station Rotation Manager</title>
+<style>
+main{max-width:1500px}
+.sr-top{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:center;margin-bottom:14px}
+.sr-time{font-size:clamp(2.6rem,7vw,4.6rem);font-weight:800;font-variant-numeric:tabular-nums;background:#fff;border:6px solid var(--ink);border-radius:24px;padding:0 26px;box-shadow:0 7px 0 var(--ink)}
+.sr-time.warn{background:var(--sun)}.sr-time.mv{background:var(--grape);color:#fff}
+.sr-round{font-weight:800;font-size:1.4rem;color:#fff;text-shadow:2px 2px 0 var(--ink)}
+.sr-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+.sr-st{background:#fff;border:6px solid var(--ink);border-radius:24px;box-shadow:6px 6px 0 var(--ink);overflow:hidden;display:flex;flex-direction:column}
+.sr-st h3{margin:0;padding:10px 14px;background:var(--sc);color:#fff;font-size:clamp(1.1rem,2.2vw,1.5rem);text-shadow:2px 2px 0 rgba(0,0,0,.3);display:flex;gap:8px;align-items:center}
+.sr-st h3 span{font-size:1.6em}
+.sr-g{padding:14px;text-align:center;flex:1;display:flex;flex-direction:column;justify-content:center;gap:4px}
+.sr-g b{font-size:clamp(1.6rem,3.6vw,2.4rem);line-height:1.1}
+.sr-g small{font-weight:600;color:#55607E}
+.sr-g.mv{animation:srmv .8s}@keyframes srmv{from{transform:translateX(-40px);opacity:0}}
+.sr-next{font-size:.9rem;font-weight:700;color:#6B7695;padding:0 14px 10px}
+.sr-ban{pointer-events:none;position:fixed;inset:0;display:none;place-items:center;background:rgba(155,107,242,.92);z-index:40;color:#fff;font-weight:800;font-size:clamp(3rem,10vw,8rem);text-shadow:5px 5px 0 var(--ink);text-align:center}
+.sr-ban.on{display:grid;animation:srban 2.6s forwards}@keyframes srban{0%{opacity:0;transform:scale(1.3)}12%,80%{opacity:1;transform:scale(1)}100%{opacity:0}}
+.sr-ban small{display:block;font-size:.3em}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🔄", "Station Rotation Manager");
+const $=id=>document.getElementById(id);const SC=['#FF6B5B','#22C3E6','#5DC66E','#9B6BF2','#FF9F43','#FF8FC7','#1D2B53','#2BC4B0'];
+const st=Kit.get('sr-state',{stations:'📚 Reading nook | Read with a buddy\n💻 Computers | Math game on the laptops\n🧩 Hands-on | Build with the blocks\n🧑‍🏫 Teacher table | Small group lesson\n✍️ Writing | Finish your story',groups:'🦁 Lions: Ava, Leo, Mia, Sam\n🐯 Tigers: Zoe, Eli, Noah, Liv\n🐻 Bears: Max, Ivy, Ben, Ana\n🦊 Foxes: Kai, Ruby, Owen, Jade\n🐼 Pandas: Mason, Ella, Theo, Nora',mins:12,move:60});
+document.querySelector('main').innerHTML=`<div class="sr-top"><span class="sr-round" id="rd"></span><span class="sr-time" id="tm"></span><button class="btn big green" id="go">▶ Start</button><button class="btn white" id="nx">⏭ Rotate now</button><button class="btn white" id="rs">↺ Reset</button><button class="btn white" id="ed">✏️ Set up</button></div>
+<div class="sr-grid" id="g"></div><div class="sr-ban" id="ban">🔄 ROTATE!<small id="bant"></small></div>
+<div class="card stack" id="edc" hidden style="margin-top:16px"><b>✏️ Stations and groups</b><div class="grid2"><label>Stations <span class="muted">(one per line: name | what to do)</span><textarea id="ts" style="min-height:170px"></textarea></label><label>Groups <span class="muted">(one per line, names after a colon are optional)</span><textarea id="tg" style="min-height:170px"></textarea></label></div>
+<div class="row"><label>Minutes at each station <input type="number" id="mn" min="1" max="60"></label><label>Seconds to move <input type="number" id="mv" min="0" max="300"></label><button class="btn green" id="sv">✓ Save</button></div></div>`;
+const stations=()=>Kit.lines(st.stations).map(l=>{const p=l.split('|');return {n:p[0].trim(),d:(p[1]||'').trim()}});
+const groups=()=>Kit.lines(st.groups).map(l=>{const i=l.indexOf(':');return i>0?{n:l.slice(0,i).trim(),m:l.slice(i+1).trim()}:{n:l.trim(),m:''}});
+let round=0,left=0,phase='idle',tv=null;
+function draw(anim){const S=stations(),G=groups(),R=Math.max(S.length,G.length);
+ $('g').innerHTML=S.map((s,i)=>{const gi=((i-round)%R+R)%R,g=G[gi],ng=G[((i-round-1)%R+R)%R];const m=s.n.match(/^(\p{Extended_Pictographic}[\u{FE0F}\u{200D}\p{Extended_Pictographic}]*)\s*(.*)$/u);
+  return `<div class="sr-st" style="--sc:${SC[i%SC.length]}"><h3>${m?`<span>${m[1]}</span>${Kit.esc(m[2])}`:Kit.esc(s.n)}</h3><div class="sr-g ${anim?'mv':''}">${g?`<b>${Kit.esc(g.n)}</b><small>${Kit.esc(g.m)}</small>`:'<b style="color:#B7C0D6">Empty</b>'}</div>${s.d?`<div class="sr-next">📋 ${Kit.esc(s.d)}</div>`:''}<div class="sr-next">⏭ Next: ${ng?Kit.esc(ng.n):'—'}</div></div>`}).join('');
+ $('rd').textContent=`Rotation ${Math.min(round+1,R)} of ${R}`;tdraw();window.__t={round}}
+function tdraw(){const s=phase==='idle'?st.mins*60:left;$('tm').textContent=(phase==='move'?'🚶 ':'⏱ ')+`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;$('tm').className='sr-time'+(phase==='move'?' mv':phase==='work'&&left<=60?' warn':'')}
+function startWork(){phase='work';left=st.mins*60;tdraw()}
+function rotate(){const R=Math.max(stations().length,groups().length);round++;if(round>=R){phase='idle';clearInterval(tv);tv=null;$('go').textContent='▶ Start';round=R-1;draw();Kit.tada();Kit.confetti(140);Learn.finish('🔄','Every group visited every station!','Great work today.');return}
+ $('bant').textContent=st.move?`You have ${st.move} seconds to move`:'Move to your next station';$('ban').classList.remove('on');void $('ban').offsetWidth;$('ban').classList.add('on');setTimeout(()=>$('ban').classList.remove('on'),2700);Kit.alarm();draw(true);
+ if(st.move){phase='move';left=st.move}else startWork();tdraw()}
+$('go').onclick=()=>{if(tv){clearInterval(tv);tv=null;$('go').textContent='▶ Keep going';return}if(phase==='idle')startWork();$('go').textContent='⏸ Pause';
+ tv=setInterval(()=>{left--;if(phase==='work'&&left===60)Kit.tone(880,.2,'triangle',.15);if(left<=0){if(phase==='work')rotate();else{startWork();Kit.ding()}}tdraw()},1000)};
+$('nx').onclick=()=>{if(phase==='idle'){phase='work'}rotate()};
+$('rs').onclick=()=>{clearInterval(tv);tv=null;round=0;phase='idle';$('go').textContent='▶ Start';draw()};
+$('ed').onclick=()=>{$('edc').hidden=!$('edc').hidden;$('ts').value=st.stations;$('tg').value=st.groups;$('mn').value=st.mins;$('mv').value=st.move};
+$('sv').onclick=()=>{st.stations=$('ts').value;st.groups=$('tg').value;st.mins=Math.max(1,+$('mn').value||10);st.move=Math.max(0,+$('mv').value||0);Kit.set('sr-state',st);$('edc').hidden=true;$('rs').click()};
+draw();
+</script>
+</body></html>
