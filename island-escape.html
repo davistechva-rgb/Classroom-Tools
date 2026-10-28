@@ -41,14 +41,14 @@ how:'Shipwrecked! Build a raft before the rescue window closes. Every trip to a 
 start({room}){
  const $=id=>document.getElementById(id);
  const NEED={wood:4,rope:2,sail:1,food:2,water:2};const have={wood:0,rope:0,sail:0,food:0,water:0,shelter:0};
- const DAYS=16;let day=0;const ICON={wood:'🪵',rope:'🪢',sail:'🏳️',food:'🥥',water:'💧',shelter:'⛺'};
- const PLACES=[{id:'forest',e:'🌲',nm:'Forest',at:[27,32],gives:()=>({wood:Kit.rand(1,2)}),note:'wood'},
+ const DAYS=18;let day=0;const ICON={wood:'🪵',rope:'🪢',sail:'🏳️',food:'🥥',water:'💧',shelter:'⛺'};
+ const PLACES=[{id:'forest',e:'🌲',nm:'Forest',at:[27,32],gives:()=>({wood:2}),note:'wood'},
   {id:'jungle',e:'🌿',nm:'Jungle vines',at:[73,30],gives:()=>({rope:1}),note:'rope'},
-  {id:'beach',e:'🏖️',nm:'Shipwreck beach',at:[25,70],gives:()=>Math.random()<.5&&!have.sail?{sail:1}:{wood:1,food:Math.random()<.4?1:0},note:'sail, wood'},
+  {id:'beach',e:'🏖️',nm:'Shipwreck beach',at:[25,70],gives:()=>!have.sail?{sail:1}:{wood:1,food:1},note:'sail, wood'},
   {id:'grove',e:'🥥',nm:'Coconut grove',at:[51,78],gives:()=>({food:Kit.rand(1,2)}),note:'food'},
-  {id:'spring',e:'💧',nm:'Waterfall',at:[76,66],gives:()=>({water:1}),note:'water'},
+  {id:'spring',e:'💧',nm:'Waterfall',at:[76,66],gives:()=>({water:Kit.rand(1,2)}),note:'water'},
   {id:'camp',e:'⛺',nm:'Build shelter',at:[50,51],gives:()=>({shelter:1}),note:'protects wood'}];
- let weather=[];for(let d=0;d<DAYS;d++)weather.push(d>2&&Math.random()<.22?'⛈️':Math.random()<.4?'⛅':'☀️');
+ let weather=[],storms=0;for(let d=0;d<DAYS;d++){const st=d>2&&storms<3&&Math.random()<.2;if(st)storms++;weather.push(st?'⛈️':Math.random()<.4?'⛅':'☀️')}
  window.__sol={need:NEED};
  room.innerHTML=`<div class="is-wrap"><div class="is-map" id="map">${PLACES.map(p=>`<button class="is-spot" data-p="${p.id}" style="left:${p.at[0]}%;top:${p.at[1]}%"><span class="e">${p.e}</span>${p.nm}<small>${p.note}</small></button>`).join('')}
   <div class="is-weather" id="wx"></div><div class="is-raft" id="raft">🛶</div></div>
@@ -69,7 +69,7 @@ start({room}){
   else log(`Came back from the ${P.nm.toLowerCase()} with nothing.`);
   // storm at the end of the day
   if(weather[day-1]==='⛈️'){b.classList.add('storm');setTimeout(()=>b.classList.remove('storm'),700);
-   if(!have.shelter&&have.wood>0){const lost=Math.min(have.wood,2);have.wood-=lost;log(`⛈️ A storm washed away ${lost} 🪵!`);Kit.tone(110,.8,'sawtooth',.2);await Esc.reward('⛈️',`Storm!<br>The waves took <b>${lost} 🪵</b>`)}
+   if(!have.shelter&&have.wood>0){const lost=1;have.wood-=lost;log(`⛈️ A storm washed away ${lost} 🪵!`);Kit.tone(110,.8,'sawtooth',.2);await Esc.reward('⛈️',`Storm!<br>The waves took <b>${lost} 🪵</b><br><small>Build a shelter to keep your wood safe.</small>`)}
    else log('⛈️ A storm passed, but your supplies were safe.')}
   draw();
   if(day>=DAYS){const can=Object.keys(NEED).every(k=>have[k]>=NEED[k]);if(!can){Esc.lose('The rescue window closed before the raft was ready!');}else Esc.msg('Last chance! Build the raft now!')}};
