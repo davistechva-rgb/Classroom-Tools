@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Think-Pair-Share Board</title>
+<style>
+main{max-width:1500px}
+.tp-q{font-weight:800;font-size:clamp(1.6rem,4vw,2.8rem);text-align:center;background:#fff;border:6px solid var(--ink);border-radius:24px;box-shadow:6px 6px 0 var(--ink);padding:14px 18px;outline:none;margin-bottom:16px}
+.tp-ph{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.tp-p{font:inherit;border:6px solid var(--ink);border-radius:24px;background:#fff;padding:12px;cursor:pointer;box-shadow:0 6px 0 var(--ink);color:var(--ink);text-align:center}
+.tp-p .e{font-size:2.6rem}.tp-p b{display:block;font-size:1.4rem}.tp-p small{font-weight:700;font-variant-numeric:tabular-nums}
+.tp-p.on{background:var(--pc);color:#fff;text-shadow:2px 2px 0 rgba(0,0,0,.3);transform:translateY(-6px)}.tp-p.done{background:#C9F1D2}
+.tp-main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:16px;align-items:start}
+@media (max-width:900px){.tp-main{grid-template-columns:1fr}.tp-ph{grid-template-columns:1fr}}
+.tp-do{background:var(--pc);border:6px solid var(--ink);border-radius:24px;box-shadow:6px 6px 0 var(--ink);color:#fff;padding:16px;text-shadow:2px 2px 0 rgba(0,0,0,.25)}
+.tp-do .t{font-size:clamp(3rem,8vw,5rem);font-weight:800;font-variant-numeric:tabular-nums;text-align:center}
+.tp-do .i{font-size:1.4rem;font-weight:800;text-align:center}
+.tp-do .fr{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:8px}.tp-do .fr span{background:rgba(255,255,255,.25);border-radius:12px;padding:3px 10px;font-weight:700;text-shadow:none}
+.tp-pairs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.tp-pair{background:#fff;border:4px solid var(--ink);border-radius:16px;padding:8px;font-weight:700;text-align:center}
+.tp-pair.pick{background:var(--sun);animation:pop .5s}.tp-pair.shared{background:#C9F1D2}
+.tp-log{display:grid;gap:6px;margin-top:10px}.tp-log div{background:#fff;border:3px solid var(--ink);border-radius:12px;padding:6px 10px;font-weight:600}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🧠", "Think-Pair-Share Board");
+const $=id=>document.getElementById(id);
+const PH=[['think','🤔','Think','#9B6BF2','Think quietly on your own. No talking yet!',['I think…','I wonder…','I noticed…']],['pair','👥','Pair','#22C3E6','Turn to your partner. Take turns sharing your ideas.',['You go first…','I agree because…','I see it differently…']],['share','🗣️','Share','#FF9F43','Partners share their best idea with the class.',['We decided…','My partner said…','We both think…']]];
+const st=Kit.get('tp-set',{q:'Why do you think leaves change color in the fall?',secs:[60,120,180]});
+let ph=-1,left=0,tv=null,pairs=[],shared=[],log=[];
+document.querySelector('main').innerHTML=`<div class="tp-q" id="q" contenteditable="true" spellcheck="false"></div><div class="tp-ph" id="ph"></div>
+<div class="tp-main"><div class="tp-do" id="do"></div><div class="card"><div class="row" style="justify-content:space-between"><b>👥 Partners</b><span><button class="btn small" id="mk">🔀 Make partners</button> <button class="btn small green" id="pk">🎯 Pick a pair to share</button></span></div><div class="tp-pairs" id="pp" style="margin-top:10px"></div>
+<div class="row" style="margin-top:10px"><input type="text" id="lg" placeholder="Write down a shared idea and press Enter" style="flex:1"></div><div class="tp-log" id="log"></div><div id="ros" style="margin-top:10px"></div></div></div>`;
+Learn.rosterEditor($('ros'));
+function draw(){$('ph').innerHTML=PH.map((p,i)=>`<button class="tp-p ${i===ph?'on':i<ph?'done':''}" data-i="${i}" style="--pc:${p[3]}"><span class="e">${p[1]}</span><b>${p[2]}</b><small>${i===ph?fmt(left):fmt(st.secs[i])}</small></button>`).join('');
+ const p=PH[ph];$('do').style.setProperty('--pc',p?p[3]:'#1D2B53');$('do').innerHTML=p?`<div class="i">${p[1]} ${p[4]}</div><div class="t">${fmt(left)}</div><div class="fr">${p[5].map(f=>`<span>${f}</span>`).join('')}</div>`:'<div class="i">Tap Think to start.</div><div class="t">🧠</div>';
+ $('pp').innerHTML=pairs.map((g,i)=>`<div class="tp-pair ${shared.includes(i)?'shared':''} ${i===shared[shared.length-1]?'pick':''}">${g.map(Kit.esc).join(' & ')}</div>`).join('')||'<p class="muted">Press Make partners.</p>';
+ $('log').innerHTML=log.map(l=>`<div>💡 ${Kit.esc(l)}</div>`).join('');window.__t={ph,pairs:pairs.length,shared:shared.length}}
+const fmt=s=>`${Math.floor(s/60)}:${String(Math.max(0,s)%60).padStart(2,'0')}`;
+function go(i){ph=i;left=st.secs[i];clearInterval(tv);Kit.ding();tv=setInterval(()=>{left--;if(left<=0){clearInterval(tv);Kit.alarm();if(ph<2){go(ph+1);return}}draw()},1000);draw()}
+$('ph').onclick=e=>{const b=e.target.closest('[data-i]');if(b)go(+b.dataset.i)};
+$('mk').onclick=()=>{const k=Kit.shuffle(Learn.roster());pairs=[];for(let i=0;i<k.length;i+=2)pairs.push(k.slice(i,i+2));if(pairs.length>1&&pairs[pairs.length-1].length===1)pairs[pairs.length-2].push(pairs.pop()[0]);shared=[];draw()};
+$('pk').onclick=()=>{const left2=pairs.map((_,i)=>i).filter(i=>!shared.includes(i));if(!left2.length){Kit.tada();return}shared.push(Kit.pick(left2));Kit.tone(660,.15,'triangle',.2);draw()};
+$('lg').onkeydown=e=>{if(e.key==='Enter'&&$('lg').value.trim()){log.push($('lg').value.trim());$('lg').value='';draw()}};
+$('q').textContent=st.q;$('q').oninput=()=>{st.q=$('q').textContent;Kit.set('tp-set',st)};
+$('mk').click();draw();
+</script>
+</body></html>

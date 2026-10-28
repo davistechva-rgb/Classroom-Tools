@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Discussion Queue</title>
+<style>
+main{max-width:1500px}
+.dq-wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:900px){.dq-wrap{grid-template-columns:1fr}}
+.dq-now{border:7px solid var(--ink);border-radius:30px;box-shadow:9px 9px 0 var(--ink);background:linear-gradient(135deg,#9B6BF2,#5B3DC9);color:#fff;text-align:center;padding:22px;text-shadow:3px 3px 0 rgba(0,0,0,.25);min-height:220px;display:flex;flex-direction:column;justify-content:center}
+.dq-now small{font-weight:800;letter-spacing:.12em}
+.dq-now b{font-size:clamp(2.4rem,6.4vw,4.4rem);line-height:1.05}
+.dq-now .t{font-size:1.8rem;font-weight:800;font-variant-numeric:tabular-nums}
+.dq-q{background:#fff;border:6px solid var(--ink);border-radius:24px;box-shadow:6px 6px 0 var(--ink);padding:12px;display:grid;gap:8px;margin-top:16px}
+.dq-it{display:grid;grid-template-columns:2em 1fr auto;gap:8px;align-items:center;border:3px solid var(--ink);border-radius:14px;padding:8px 10px;font-weight:700;background:#F4FAFF}
+.dq-it.new{background:#FFF6C9}.dq-it.resp{background:#E3F2FF}
+.dq-it .tg{font-size:.8rem;border-radius:99px;padding:1px 8px;background:var(--ink);color:#fff;margin-left:6px}
+.dq-names{display:flex;flex-wrap:wrap;gap:6px}
+.dq-names button{font:inherit;font-weight:700;border:3px solid var(--ink);border-radius:99px;padding:3px 12px;background:#fff;cursor:pointer;color:var(--ink)}
+.dq-names button.in{background:var(--sun)}.dq-names button .c{font-size:.75rem;color:#6B7695;margin-left:4px}
+.dq-mode{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.dq-mode button{font:inherit;font-weight:800;border:4px solid var(--ink);border-radius:14px;padding:4px 12px;cursor:pointer;background:#fff;color:var(--ink)}
+.dq-mode button.on{background:var(--grape);color:#fff}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🗣️", "Discussion Queue");
+const $=id=>document.getElementById(id);
+const st=Kit.get('dq-set',{fair:true});let q=[],spoke={},cur=null,t0=0,mode='new',log=[];
+document.querySelector('main').innerHTML=`<div class="dq-wrap"><div><div class="dq-now" id="now"></div><div class="row" style="justify-content:center;margin-top:12px"><button class="btn big green" id="nx">⏭ Next speaker</button><button class="btn white" id="un">↶ Undo</button><label class="ln-pill"><input type="checkbox" id="fr"> First-time speakers go first</label></div><div class="dq-q" id="q"></div></div>
+<div class="card stack"><b>🙋 Hands up! Tap a name to join the line.</b><div class="dq-mode" id="md"><button data-m="new" class="on">🙋 New idea</button><button data-m="resp">↩️ Responding to the speaker</button><button data-m="ques">❓ Question</button></div><div class="dq-names" id="nm"></div><div id="ros"></div></div></div>`;
+Learn.rosterEditor($('ros'));$('ros').addEventListener('roster',()=>draw());
+const TAG={new:'',resp:'↩️ responding',ques:'❓ question'};
+function order(){if(!st.fair)return q;return [...q].sort((a,b)=>{const ra=a.m==='resp'?0:1,rb=b.m==='resp'?0:1;if(ra!==rb)return ra-rb;const sa=spoke[a.n]?1:0,sb=spoke[b.n]?1:0;return sa-sb||a.t-b.t})}
+function draw(){const O=order();$('q').innerHTML=O.length?O.map((x,i)=>`<div class="dq-it ${!spoke[x.n]?'new':''} ${x.m==='resp'?'resp':''}"><b>${i+1}</b><span>${Kit.esc(x.n)}${TAG[x.m]?`<span class="tg">${TAG[x.m]}</span>`:''}${!spoke[x.n]?'<span class="tg" style="background:#B78A00">first time</span>':''}</span><button class="btn small white" data-out="${Kit.esc(x.n)}">✕</button></div>`).join(''):'<p class="muted">Nobody in line yet.</p>';
+ $('nm').innerHTML=Learn.roster().map(n=>`<button data-n="${Kit.esc(n)}" class="${q.some(x=>x.n===n)?'in':''}">${Kit.esc(n)}${spoke[n]?`<span class="c">🗣️${spoke[n]}</span>`:''}</button>`).join('');
+ $('now').innerHTML=cur?`<small>🎙️ NOW SPEAKING</small><b>${Kit.esc(cur.n)}</b><div style="font-weight:700">${TAG[cur.m]||'💡 new idea'}</div><div class="t" id="tm"></div>`:`<small>🎙️ NOW SPEAKING</small><b>…</b><div style="font-weight:700">Press Next speaker when someone is in line.</div>`;$('fr').checked=st.fair;tick();window.__t={line:O.map(x=>x.n),cur:cur&&cur.n}}
+function tick(){const e=$('tm');if(!e||!cur)return;const s=Math.floor((Date.now()-t0)/1000);e.textContent=`⏱ ${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`}
+$('nm').onclick=e=>{const b=e.target.closest('[data-n]');if(!b)return;const n=b.dataset.n;if(q.some(x=>x.n===n)){q=q.filter(x=>x.n!==n)}else{q.push({n,m:mode,t:Date.now()});Kit.tone(660,.08,'triangle',.18)}draw()};
+$('md').onclick=e=>{const b=e.target.closest('[data-m]');if(!b)return;mode=b.dataset.m;[...$('md').children].forEach(x=>x.classList.toggle('on',x===b))};
+$('q').onclick=e=>{const b=e.target.closest('[data-out]');if(b){q=q.filter(x=>x.n!==b.dataset.out);draw()}};
+$('nx').onclick=()=>{const O=order();if(!O.length){cur=null;draw();return}log.push({cur,q:[...q],spoke:{...spoke}});cur=O[0];q=q.filter(x=>x!==cur);spoke[cur.n]=(spoke[cur.n]||0)+1;t0=Date.now();Kit.ding();draw()};
+$('un').onclick=()=>{const l=log.pop();if(!l)return;cur=l.cur;q=l.q;spoke=l.spoke;draw()};
+$('fr').onchange=()=>{st.fair=$('fr').checked;Kit.set('dq-set',st);draw()};
+setInterval(tick,1000);draw();
+</script>
+</body></html>

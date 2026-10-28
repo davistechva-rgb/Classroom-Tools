@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Random Speaker Selector</title>
+<style>
+main{max-width:1400px}
+.rs-wrap{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:860px){.rs-wrap{grid-template-columns:1fr}}
+.rs-stage{position:relative;background:radial-gradient(circle at 50% 30%,#3B2E7E,#1D2B53);border:7px solid var(--ink);border-radius:30px;box-shadow:9px 9px 0 var(--ink);color:#fff;text-align:center;padding:24px;min-height:360px;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden}
+.rs-stage::before{content:"";position:absolute;top:-20%;left:50%;width:60%;height:140%;transform:translateX(-50%);background:radial-gradient(ellipse at top,rgba(255,240,170,.35),transparent 70%);pointer-events:none}
+.rs-mic{font-size:clamp(3.4rem,8vw,5rem);line-height:1}
+.rs-mic.spin{animation:rsspin .5s linear infinite}@keyframes rsspin{to{transform:rotate(360deg)}}
+.rs-name{font-size:clamp(2.6rem,7.6vw,5.2rem);font-weight:800;line-height:1.05;text-shadow:0 0 24px rgba(255,240,170,.6);margin:8px 0}
+.rs-sub{font-weight:700;opacity:.85}
+.rs-tm{margin-top:10px;font-size:2.4rem;font-weight:800;font-variant-numeric:tabular-nums}
+.rs-tm.up{color:var(--sun)}
+.rs-list{background:#fff;border:6px solid var(--ink);border-radius:24px;box-shadow:6px 6px 0 var(--ink);padding:12px;display:grid;gap:6px;max-height:60vh;overflow:auto}
+.rs-it{display:grid;grid-template-columns:2em 1fr auto;gap:8px;align-items:center;border:3px solid #D5DEEE;border-radius:12px;padding:6px 10px;font-weight:700}
+.rs-it.now{border-color:var(--ink);background:#FFF6C9}.rs-it.done{opacity:.45;text-decoration:line-through}
+.rs-it b{color:#6B7695}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🎙️", "Random Speaker Selector");
+const $=id=>document.getElementById(id);
+const st=Kit.get('rs-set',{secs:60,auto:false});
+document.querySelector('main').innerHTML=`<div class="rs-wrap"><div><div class="rs-stage"><div class="rs-mic" id="mic">🎙️</div><div class="rs-name" id="nm">Ready?</div><div class="rs-sub" id="sb">Shuffle the speaking order to begin.</div><div class="rs-tm" id="tm"></div></div>
+<div class="row" style="justify-content:center;margin-top:14px"><button class="btn big green" id="sh">🔀 Shuffle the order</button><button class="btn" id="nx">⏭ Next speaker</button><button class="btn white" id="ps">🙅 Pass (go later)</button></div>
+<div class="row" style="justify-content:center;margin-top:10px"><label class="ln-pill">Talk time <select id="secs" style="width:auto;border-width:2px;padding:2px 8px"><option value="0">No timer</option><option value="30">30 s</option><option value="60">1 min</option><option value="90">90 s</option><option value="120">2 min</option></select></label><label class="ln-pill"><input type="checkbox" id="au"> Next speaker when time's up</label></div></div>
+<div><div class="rs-list" id="ls"></div><div id="ros" class="card" style="margin-top:12px"></div></div></div>`;
+Learn.rosterEditor($('ros'));
+let order=[],k=-1,left=0,tv=null;
+function list(){$('ls').innerHTML=order.length?order.map((n,i)=>`<div class="rs-it ${i===k?'now':i<k?'done':''}"><b>${i+1}</b>${Kit.esc(n)}<span>${i===k?'🎙️':i<k?'✓':''}</span></div>`).join(''):'<p class="muted">Press Shuffle to make a speaking order.</p>';window.__t={k,n:order.length,cur:order[k]}}
+function timer(){clearInterval(tv);if(!st.secs){$('tm').textContent='';return}left=st.secs;const d=()=>{$('tm').textContent=left>0?`${Math.floor(left/60)}:${String(left%60).padStart(2,'0')}`:'⏰ Time!';$('tm').classList.toggle('up',left<=10)};d();
+ tv=setInterval(()=>{left--;d();if(left===10)Kit.tone(880,.1,'triangle',.15);if(left<=0){clearInterval(tv);Kit.ding();if(st.auto)setTimeout(()=>$('nx').click(),1200)}},1000)}
+async function go(i){k=i;list();if(k>=order.length){$('nm').textContent='🎉 Everyone shared!';$('sb').textContent='Great listening, everybody.';$('tm').textContent='';clearInterval(tv);Kit.tada();Kit.confetti(100);return}
+ $('mic').classList.add('spin');for(let j=0;j<8;j++){$('nm').textContent=Kit.pick(order);Kit.tick();await Kit.sleep(60)}$('mic').classList.remove('spin');$('nm').textContent=order[k];$('sb').textContent=order[k+1]?`Up next: ${order[k+1]}`:'Last speaker!';Kit.tone(660,.15,'triangle',.22);timer()}
+$('sh').onclick=()=>{order=Kit.shuffle(Learn.roster());go(0)};
+$('nx').onclick=()=>{if(!order.length){$('sh').click();return}if(k<order.length)go(k+1)};
+$('ps').onclick=()=>{if(k<0||k>=order.length)return;const n=order.splice(k,1)[0];order.push(n);go(k)};
+$('secs').value=st.secs;$('au').checked=st.auto;$('secs').onchange=()=>{st.secs=+$('secs').value;Kit.set('rs-set',st)};$('au').onchange=()=>{st.auto=$('au').checked;Kit.set('rs-set',st)};
+list();
+</script>
+</body></html>

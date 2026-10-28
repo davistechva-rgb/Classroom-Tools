@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Hot Seat Question Generator</title>
+<style>
+main{max-width:1400px}
+.hs-wrap{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.4fr);gap:18px;align-items:start}
+@media (max-width:900px){.hs-wrap{grid-template-columns:1fr}}
+.hs-seat{background:linear-gradient(135deg,#FF6B5B,#FF9F43);border:7px solid var(--ink);border-radius:30px;box-shadow:9px 9px 0 var(--ink);padding:18px;text-align:center;color:#fff;text-shadow:3px 3px 0 rgba(0,0,0,.25)}
+.hs-chair{font-size:clamp(4rem,10vw,6rem);line-height:1;animation:hsfl 1.2s ease-in-out infinite}@keyframes hsfl{50%{transform:translateY(-6px) rotate(-3deg)}}
+.hs-who{font-size:clamp(1.8rem,4.4vw,2.8rem);font-weight:800}
+.hs-as{font-weight:700;font-size:1.2rem}
+.hs-as b{display:block;font-size:clamp(1.5rem,3.6vw,2.2rem)}
+.hs-tm{font-size:2.6rem;font-weight:800;font-variant-numeric:tabular-nums;margin-top:6px}
+.hs-qs{display:grid;gap:10px}
+.hs-q{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;background:#fff;border:4px solid var(--ink);border-radius:18px;padding:10px 14px;font-weight:700;font-size:clamp(1.05rem,2.2vw,1.35rem);box-shadow:0 4px 0 var(--ink)}
+.hs-q .t{font-size:.8rem;background:var(--tc);color:#fff;border-radius:99px;padding:2px 10px;white-space:nowrap}
+.hs-q button{border:3px solid var(--ink);border-radius:10px;background:#fff;cursor:pointer;font-size:1.1rem;width:38px;height:34px}
+.hs-q.asked{opacity:.45}.hs-q.asked button{background:#C9F1D2}
+.hs-set{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🎤", "Hot Seat Question Generator");
+const $=id=>document.getElementById(id);
+const T={who:['#9B6BF2','Who are you?',['Tell us about yourself. Who are you?','Where do you live, and what is it like there?','What is a normal day like for you?','Who is the most important person in your life?']],
+ feel:['#FF6B5B','Feelings',['How did you feel when {x} happened?','What is your biggest worry?','What makes you the happiest?','What are you most proud of?']],
+ choice:['#22C3E6','Choices',['Why did you decide to do that?','Do you wish you had made a different choice? Why?','What was the hardest decision you had to make?','Who helped you decide what to do?']],
+ whatif:['#5DC66E','What if?',['What would you do if you could go back in time?','What would happen if you had given up?','What advice would you give to someone like you?','What do you think will happen to you next?']],
+ learn:['#FF9F43','Lessons',['What is the most important thing you learned?','What do you want people to remember about you?','If you could change one thing, what would it be?','What would you tell kids today?']]};
+const st=Kit.get('hs-set',{role:'Goldilocks',type:'character',event:'you went into the three bears\' house',secs:120});
+document.querySelector('main').innerHTML=`<div class="hs-set card"><label>In the hot seat, pretend to be <input type="text" id="rl" style="width:200px"></label><label>Big moment <input type="text" id="ev" style="width:260px" placeholder="what happened to them"></label><select id="secs" style="width:auto"><option value="60">1 min</option><option value="120">2 min</option><option value="180">3 min</option><option value="300">5 min</option></select></div>
+<div class="hs-wrap"><div class="hs-seat"><div class="hs-chair">🪑</div><div class="hs-who" id="who">Who's in the hot seat?</div><div class="hs-as">is pretending to be<b id="as"></b></div><div class="hs-tm" id="tm"></div>
+<div class="row" style="justify-content:center;margin-top:8px"><button class="btn" id="pk">🎲 Pick a student</button><button class="btn green" id="go">▶ Start</button></div><div id="ros" style="text-align:left;margin-top:10px;text-shadow:none;color:var(--ink);background:#fff;border-radius:14px;padding:6px 10px"></div></div>
+<div><div class="row" style="margin-bottom:10px"><button class="btn green" id="nw">🔀 New questions</button><span class="muted" style="color:#fff">Tap ✓ when a question has been asked.</span></div><div class="hs-qs" id="qs"></div></div></div>`;
+Learn.rosterEditor($('ros'));
+let qs=[],tv=null,left=0,used=[];
+const fill=q=>q.replace('{x}',st.event||'that');
+function gen(){qs=Object.entries(T).flatMap(([k,v])=>Kit.shuffle(v[2]).slice(0,2).map(q=>({k,q:fill(q),done:false})));qs=Kit.shuffle(qs).slice(0,8);draw()}
+function draw(){$('as').textContent=st.role||'someone';$('qs').innerHTML=qs.map((q,i)=>`<div class="hs-q ${q.done?'asked':''}" style="--tc:${T[q.k][0]}"><span class="t">${T[q.k][1]}</span><span>${Kit.esc(q.q)}</span><button data-i="${i}" aria-label="Asked">✓</button></div>`).join('');
+ $('tm').textContent=`${Math.floor((tv?left:st.secs)/60)}:${String((tv?left:st.secs)%60).padStart(2,'0')}`;window.__t={n:qs.length,done:qs.filter(q=>q.done).length}}
+$('qs').onclick=e=>{const b=e.target.closest('[data-i]');if(!b)return;const q=qs[+b.dataset.i];q.done=!q.done;Kit.tick();draw()};
+$('nw').onclick=gen;
+$('pk').onclick=()=>{let R=Learn.roster().filter(n=>!used.includes(n));if(!R.length){used=[];R=Learn.roster()}const n=Kit.pick(R);used.push(n);let k=0;const iv=setInterval(()=>{$('who').textContent=Kit.pick(Learn.roster());Kit.tick();if(++k>12){clearInterval(iv);$('who').textContent=n+' 🔥';Kit.tada()}},70)};
+$('go').onclick=()=>{if(tv){clearInterval(tv);tv=null;$('go').textContent='▶ Start';draw();return}left=st.secs;$('go').textContent='⏹ Stop';tv=setInterval(()=>{left--;draw();if(left<=0){clearInterval(tv);tv=null;$('go').textContent='▶ Start';Kit.alarm();$('tm').textContent='⏰ Time!'}},1000);draw()};
+$('rl').value=st.role;$('ev').value=st.event;$('secs').value=st.secs;['rl','ev','secs'].forEach(id=>$(id).onchange=()=>{st.role=$('rl').value;st.event=$('ev').value;st.secs=+$('secs').value;Kit.set('hs-set',st);qs.forEach(q=>q.q=q.q);gen()});
+gen();
+</script>
+</body></html>

@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Partner Generator</title>
+<style>
+main{max-width:1500px}
+.pg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.pg-p{background:#fff;border:6px solid var(--ink);border-radius:22px;box-shadow:6px 6px 0 var(--ink);overflow:hidden;animation:pgin .45s cubic-bezier(.3,1.5,.5,1) backwards}
+@keyframes pgin{from{transform:scale(.6) rotate(-6deg);opacity:0}}
+.pg-p h3{margin:0;padding:6px 12px;background:var(--pc);color:#fff;text-shadow:1px 1px 0 rgba(0,0,0,.3);display:flex;justify-content:space-between}
+.pg-p .nm{padding:10px 12px;font-weight:800;font-size:clamp(1.2rem,2.4vw,1.6rem);line-height:1.3}
+.pg-p .nm span{display:block}
+.pg-p .rep{font-size:.85rem;color:#C9412E;font-weight:700;padding:0 12px 8px}
+.pg-abs{display:flex;flex-wrap:wrap;gap:6px}
+.pg-abs button{font:inherit;font-weight:700;border:3px solid var(--ink);border-radius:99px;padding:2px 12px;background:#fff;cursor:pointer;color:var(--ink)}
+.pg-abs button.off{background:#FFD9D4;text-decoration:line-through}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🧑‍🤝‍🧑", "Partner Generator");
+const $=id=>document.getElementById(id);const PC=['#FF6B5B','#22C3E6','#5DC66E','#9B6BF2','#FF9F43','#FF8FC7','#2BC4B0','#FFB020'];
+const st=Kit.get('pg-state',{hist:{},absent:[],size:2,last:[]});
+const save=()=>Kit.set('pg-state',st);const pk=(a,b)=>[a,b].sort().join('|');
+document.querySelector('main').innerHTML=`<div class="row" style="justify-content:center;margin-bottom:14px"><label class="ln-pill">Group size <select id="sz" style="width:auto;border-width:2px;padding:2px 8px"><option value="2">Partners (2)</option><option value="3">Groups of 3</option><option value="4">Groups of 4</option></select></label><button class="btn big green" id="go">🎲 Make partners</button><button class="btn white" id="ok">✓ Use these (remember them)</button><button class="btn white small" id="fh">🧽 Forget past partners</button></div>
+<div class="pg-grid" id="g"></div><div class="card stack" style="margin-top:16px"><div><b>🤒 Who's here today?</b> <span class="muted">Tap anyone who is absent.</span></div><div class="pg-abs" id="ab"></div><div id="ros"></div></div>`;
+Learn.rosterEditor($('ros'));$('ros').addEventListener('roster',()=>abs());
+function abs(){$('ab').innerHTML=Learn.roster().map(n=>`<button class="${st.absent.includes(n)?'off':''}" data-n="${Kit.esc(n)}">${Kit.esc(n)}</button>`).join('')}
+function score(groups){let s=0;groups.forEach(g=>{for(let i=0;i<g.length;i++)for(let j=i+1;j<g.length;j++)s+=(st.hist[pk(g[i],g[j])]||0)**2});return s}
+function make(){const kids=Learn.roster().filter(n=>!st.absent.includes(n)),sz=st.size;let best=null,bs=Infinity;
+ for(let t=0;t<400;t++){const k=Kit.shuffle(kids),g=[];for(let i=0;i<k.length;i+=sz)g.push(k.slice(i,i+sz));if(g.length>1&&g[g.length-1].length===1)g[g.length-2].push(g.pop()[0]);const s=score(g);if(s<bs){bs=s;best=g;if(!s)break}}return best||[]}
+let cur=[];
+function draw(){$('g').innerHTML=cur.map((g,i)=>{const rep=[];for(let a=0;a<g.length;a++)for(let b=a+1;b<g.length;b++){const n=st.hist[pk(g[a],g[b])];if(n)rep.push(`${g[a]} & ${g[b]}: ${n}×`)}return `<div class="pg-p" style="--pc:${PC[i%8]};animation-delay:${i*.05}s"><h3><span>${st.size===2&&g.length===2?'Partners':'Group'} ${i+1}</span><span>${g.length===3&&st.size===2?'👥 trio':''}</span></h3><div class="nm">${g.map(n=>`<span>${Kit.esc(n)}</span>`).join('')}</div>${rep.length?`<div class="rep">🔁 Worked together before: ${Kit.esc(rep.join(', '))}</div>`:''}</div>`}).join('');window.__t={groups:cur,score:score(cur)}}
+$('go').onclick=()=>{cur=make();Kit.tone(523,.1,'triangle',.2);Kit.tone(784,.15,'triangle',.2,.1);draw()};
+$('ok').onclick=()=>{if(!cur.length)return;cur.forEach(g=>{for(let a=0;a<g.length;a++)for(let b=a+1;b<g.length;b++){const k=pk(g[a],g[b]);st.hist[k]=(st.hist[k]||0)+1}});save();Kit.ding();draw()};
+$('fh').onclick=()=>{if(confirm('Forget who has worked together?')){st.hist={};save();draw()}};
+$('ab').onclick=e=>{const b=e.target.closest('[data-n]');if(!b)return;const n=b.dataset.n;st.absent=st.absent.includes(n)?st.absent.filter(x=>x!==n):[...st.absent,n];save();abs()};
+$('sz').value=st.size;$('sz').onchange=()=>{st.size=+$('sz').value;save()};
+abs();
+</script>
+</body></html>

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Follow-Up Question Generator</title>
+<style>
+main{max-width:1400px}
+.fu-in{display:flex;gap:8px;flex-wrap:wrap}
+.fu-in textarea{flex:1;min-height:90px;font-size:1.3rem!important;min-width:260px}
+.fu-lv{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-top:16px}
+.fu-l{background:#fff;border:5px solid var(--ink);border-radius:22px;box-shadow:5px 5px 0 var(--ink);overflow:hidden}
+.fu-l h3{margin:0;padding:6px 12px;background:var(--lc);color:#fff;text-shadow:1px 1px 0 rgba(0,0,0,.3);display:flex;justify-content:space-between}
+.fu-l h3 small{font-weight:700;opacity:.9}
+.fu-q{font:inherit;display:block;width:100%;text-align:left;border:0;border-top:3px solid #EEF2F8;background:#fff;padding:10px 12px;font-weight:700;font-size:1.12rem;cursor:pointer;color:var(--ink)}
+.fu-q:hover{background:#FFF6C9}
+.fu-big{position:fixed;inset:0;z-index:50;display:none;place-items:center;background:var(--lc);color:#fff;text-align:center;padding:5vw;cursor:pointer}
+.fu-big.on{display:grid}.fu-big b{font-size:clamp(2.4rem,6.4vw,5rem);line-height:1.15;text-shadow:4px 4px 0 rgba(0,0,0,.25)}
+.fu-big small{display:block;font-weight:800;letter-spacing:.12em;margin-bottom:12px;font-size:1.1rem}
+.fu-key{margin-top:8px;font-weight:700;color:#fff;text-shadow:2px 2px 0 var(--ink)}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("❓", "Follow-Up Question Generator");
+const $=id=>document.getElementById(id);
+const LV=[['Remember','🧠','#22C3E6',['What do you mean by "{k}"?','Can you remind us what {k} is?','Where did you learn about {k}?']],
+ ['Understand','💡','#5DC66E',['Can you say that in a different way?','Why do you think {k} matters?','Can you give an example of {k}?']],
+ ['Apply','🛠️','#FFB020',['How could we use {k} in real life?','Where else have you seen {k}?','What would you do with {k}?']],
+ ['Analyze','🔍','#FF9F43',['What evidence makes you think that?','How is {k} similar to or different from something else?','What caused {k}?']],
+ ['Evaluate','⚖️','#E5533F',['Do you agree with {k}? Why or why not?','What is the strongest reason for your idea?','Could someone see {k} a different way?']],
+ ['Create','🚀','#9B6BF2',['What would happen if {k} changed?','How could we make {k} even better?','What new idea does {k} give you?']]];
+const STOP=new Set('i me my we our you your he she it they them the a an and or but so because if then that this these those is are was were be been being am do does did to of in on at for with about from by as think thought really very just like maybe kind sort lot lots things thing stuff because also too not no yes can could would should will'.split(' '));
+function key(t){const after=t.match(/because (.+)/i);let src=(after?after[1]:t).toLowerCase().replace(/[^a-z' -]/g,' ');const w=src.split(/\s+/).filter(x=>x&&!STOP.has(x)&&x.length>2);
+ if(!w.length)return 'that idea';const words=t.replace(/[^A-Za-z' -]/g,' ').split(/\s+/);let best='',bi=-1;
+ const startAt=after?t.toLowerCase().split(/\s+/).indexOf('because')+1:0;
+ for(let i=Math.max(0,startAt-0);i<words.length;i++){const a=words[i].toLowerCase();if(STOP.has(a)||a.length<3)continue;const b=(words[i+1]||'').toLowerCase();const ph=b&&!STOP.has(b)&&b.length>2?`${words[i]} ${words[i+1]}`:words[i];if(ph.length>best.length){best=ph;bi=i}}return (best||w[0]).toLowerCase()}
+document.querySelector('main').innerHTML=`<div class="card"><b>🗣️ What did the student say?</b><div class="fu-in" style="margin-top:8px"><textarea id="tx" placeholder="Type it here, like: I think plants need sunlight because they make food from it."></textarea><div class="stack" style="display:flex;flex-direction:column;gap:8px"><button class="btn green" id="go">✨ Get follow-up questions</button><button class="btn white" id="mic" hidden>🎤 Listen</button><button class="btn white" id="rnd">🎲 Pick one for me</button></div></div></div>
+<div class="fu-key" id="ky"></div><div class="fu-lv" id="lv"></div><div class="fu-big" id="big"></div>`;
+let cur=[];
+function gen(){const t=$('tx').value.trim();const k=t?key(t):'your idea';$('ky').textContent=t?`🔑 Key idea: "${k}"  ·  Tap any question to show it big.`:'Type what a student said to get questions that dig deeper.';
+ cur=LV.map(([n,e,c,qs])=>({n,e,c,qs:qs.map(q=>q.replace(/"\{k\}"/g,'{k}').replace(/\{k\}/g,`“${k}”`))}));
+ $('lv').innerHTML=cur.map((l,i)=>`<div class="fu-l" style="--lc:${l.c}"><h3>${l.e} ${l.n}<small>${['Easier','','','','','Harder'][i]}</small></h3>${l.qs.map(q=>`<button class="fu-q" data-l="${i}">${Kit.esc(q)}</button>`).join('')}</div>`).join('');window.__t={key:k}}
+function big(q,l){const b=$('big');b.style.setProperty('--lc',l.c);b.innerHTML=`<div><small>${l.e} ${l.n.toUpperCase()} QUESTION</small><b>${Kit.esc(q)}</b><p style="font-weight:700;opacity:.85">Tap anywhere to close</p></div>`;b.classList.add('on');Kit.tone(660,.15,'triangle',.2)}
+$('go').onclick=gen;$('tx').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();gen()}};
+$('lv').onclick=e=>{const b=e.target.closest('.fu-q');if(b)big(b.textContent,cur[+b.dataset.l])};$('big').onclick=()=>$('big').classList.remove('on');
+$('rnd').onclick=()=>{if(!cur.length)gen();const l=Kit.pick(cur);big(Kit.pick(l.qs),l)};
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(SR){$('mic').hidden=false;$('mic').onclick=()=>{const r=new SR();r.lang='en-US';r.interimResults=false;$('mic').textContent='👂 Listening…';r.onresult=e=>{$('tx').value=e.results[0][0].transcript;gen()};r.onend=()=>$('mic').textContent='🎤 Listen';r.start()}}
+addEventListener('keydown',e=>{if(e.key==='Escape')$('big').classList.remove('on')});
+gen();
+</script>
+</body></html>
