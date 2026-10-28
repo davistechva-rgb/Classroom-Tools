@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Island Escape</title>
+<style>
+.is-wrap{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:860px){.is-wrap{grid-template-columns:1fr}}
+.is-map{position:relative;aspect-ratio:4/3;background:radial-gradient(ellipse 46% 40% at 50% 52%,#F1D79A 0 82%,#E3C47E 86%,transparent 88%),radial-gradient(ellipse 54% 48% at 50% 52%,#7FD8E8 0 90%,transparent 92%),#2E8BC0;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);overflow:hidden}
+.is-spot{position:absolute;transform:translate(-50%,-50%);background:#fff;border:4px solid var(--ink);border-radius:18px;padding:6px 10px;text-align:center;cursor:pointer;font:inherit;font-weight:700;color:var(--ink);box-shadow:0 4px 0 var(--ink);min-width:110px}
+.is-spot .e{font-size:2rem;display:block;line-height:1.1}
+.is-spot small{display:block;font-size:.78rem;opacity:.75}
+.is-spot:active{transform:translate(-50%,-46%);box-shadow:none}
+.is-spot.storm{animation:esshake .6s}
+.is-weather{position:absolute;right:10px;top:10px;background:#fff;border:3px solid var(--ink);border-radius:12px;padding:4px 10px;font-weight:800}
+.is-raft{position:absolute;left:10%;bottom:8%;font-size:3rem;transition:transform 3s ease-in}
+.is-raft.go{transform:translate(120vw,-10vh)}
+.is-side{display:grid;gap:12px}
+.is-box{background:#fff;border:5px solid var(--ink);border-radius:18px;box-shadow:5px 5px 0 var(--ink);padding:12px}
+.is-res{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.is-res div{border:3px solid var(--ink);border-radius:12px;padding:6px 8px;font-weight:700;background:#F4FAFF}
+.is-res div.ok{background:#C9F1D2}
+.is-days{display:flex;flex-wrap:wrap;gap:4px}
+.is-days span{width:28px;height:28px;border:3px solid var(--ink);border-radius:8px;display:grid;place-items:center;font-size:.9rem;background:#FFF6C9}
+.is-days span.used{background:#1D2B53;color:#fff}
+.is-log{max-height:150px;overflow:auto;font-size:.95rem}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="escape.js"></script>
+<script>
+Kit.mount("🏝️", "Island Escape");
+
+Esc.setup({intro:'🏝️🛶', minutes:0,
+how:'Shipwrecked! Build a raft before the rescue window closes. Every trip to a part of the island takes one day and asks a question. Answer right and you bring back supplies. Answer wrong and you come back empty-handed. Watch the sky: storms can wash away wood that isn\'t protected by a shelter. Gather everything on the raft list, then press Build and Sail!',
+start({room}){
+ const $=id=>document.getElementById(id);
+ const NEED={wood:4,rope:2,sail:1,food:2,water:2};const have={wood:0,rope:0,sail:0,food:0,water:0,shelter:0};
+ const DAYS=18;let day=0;const ICON={wood:'🪵',rope:'🪢',sail:'🏳️',food:'🥥',water:'💧',shelter:'⛺'};
+ const PLACES=[{id:'forest',e:'🌲',nm:'Forest',at:[27,32],gives:()=>({wood:2}),note:'wood'},
+  {id:'jungle',e:'🌿',nm:'Jungle vines',at:[73,30],gives:()=>({rope:1}),note:'rope'},
+  {id:'beach',e:'🏖️',nm:'Shipwreck beach',at:[25,70],gives:()=>!have.sail?{sail:1}:{wood:1,food:1},note:'sail, wood'},
+  {id:'grove',e:'🥥',nm:'Coconut grove',at:[51,78],gives:()=>({food:Kit.rand(1,2)}),note:'food'},
+  {id:'spring',e:'💧',nm:'Waterfall',at:[76,66],gives:()=>({water:Kit.rand(1,2)}),note:'water'},
+  {id:'camp',e:'⛺',nm:'Build shelter',at:[50,51],gives:()=>({shelter:1}),note:'protects wood'}];
+ let weather=[],storms=0;for(let d=0;d<DAYS;d++){const st=d>2&&storms<3&&Math.random()<.2;if(st)storms++;weather.push(st?'⛈️':Math.random()<.4?'⛅':'☀️')}
+ window.__sol={need:NEED};
+ room.innerHTML=`<div class="is-wrap"><div class="is-map" id="map">${PLACES.map(p=>`<button class="is-spot" data-p="${p.id}" style="left:${p.at[0]}%;top:${p.at[1]}%"><span class="e">${p.e}</span>${p.nm}<small>${p.note}</small></button>`).join('')}
+  <div class="is-weather" id="wx"></div><div class="is-raft" id="raft">🛶</div></div>
+  <div class="is-side"><div class="is-box"><b>📅 Days until the rescue window closes</b><div class="is-days" id="days"></div></div>
+  <div class="is-box"><b>🛶 Raft list</b><div class="is-res" id="res"></div><div style="margin-top:6px;font-weight:700" id="sh"></div>
+  <button class="btn green" id="build" style="margin-top:10px;width:100%">🔨 Build and Sail!</button></div><div class="is-box is-log" id="log"><b>📓 Journal</b></div></div></div>`;
+ const draw=()=>{$('res').innerHTML=Object.keys(NEED).map(k=>`<div class="${have[k]>=NEED[k]?'ok':''}">${ICON[k]} ${k}: ${have[k]}/${NEED[k]}</div>`).join('');
+  $('sh').textContent=have.shelter?`⛺ Shelter built: wood is safe from storms`:`⛺ No shelter yet`;
+  $('days').innerHTML=Array.from({length:DAYS},(_,d)=>`<span class="${d<day?'used':''}" title="Day ${d+1}">${d<day?'✓':d===day?weather[d]:d+1}</span>`).join('');
+  $('wx').textContent=day<DAYS?`Day ${day+1} · ${weather[day]}`:'No days left';Esc.stat(`📅 Day ${Math.min(day+1,DAYS)} of ${DAYS}`)};draw();
+ const log=t=>{$('log').insertAdjacentHTML('beforeend',`<div>Day ${day}: ${t}</div>`);$('log').scrollTop=1e6};
+ let busy=false;
+ $('map').onclick=async e=>{const b=e.target.closest('.is-spot');if(!b||busy)return;if(day>=DAYS)return;const P=PLACES.find(p=>p.id===b.dataset.p);
+  if(P.id==='camp'&&have.shelter){Esc.msg('You already built a shelter.');return}
+  busy=true;const ok=await Esc.ask({icon:P.e,title:`Explore: ${P.nm}`,cancel:false,once:true});busy=false;day++;
+  if(ok){const g=P.gives();const got=Object.entries(g).filter(([,v])=>v>0);got.forEach(([k,v])=>have[k]+=v);
+   if(P.id==='camp'){have.wood=Math.max(0,have.wood);log('Built a shelter ⛺')}else log(`Found ${got.map(([k,v])=>`${v} ${ICON[k]}`).join(' ')}`)}
+  else log(`Came back from the ${P.nm.toLowerCase()} with nothing.`);
+  // storm at the end of the day
+  if(weather[day-1]==='⛈️'){b.classList.add('storm');setTimeout(()=>b.classList.remove('storm'),700);
+   if(!have.shelter&&have.wood>0){const lost=1;have.wood-=lost;log(`⛈️ A storm washed away ${lost} 🪵!`);Kit.tone(110,.8,'sawtooth',.2);await Esc.reward('⛈️',`Storm!<br>The waves took <b>${lost} 🪵</b><br><small>Build a shelter to keep your wood safe.</small>`)}
+   else log('⛈️ A storm passed, but your supplies were safe.')}
+  draw();
+  if(day>=DAYS){const can=Object.keys(NEED).every(k=>have[k]>=NEED[k]);if(!can){Esc.lose('The rescue window closed before the raft was ready!');}else Esc.msg('Last chance! Build the raft now!')}};
+ $('build').onclick=async()=>{const miss=Object.keys(NEED).filter(k=>have[k]<NEED[k]);
+  if(miss.length){Esc.msg(`You still need: ${miss.map(k=>`${NEED[k]-have[k]} ${ICON[k]}`).join(', ')}`);Kit.tone(200,.2,'sine',.15);return}
+  $('raft').classList.add('go');Kit.ding();await Kit.sleep(2200);Esc.win('🛶','You escaped the island!',`You sailed away on day ${day} of ${DAYS}.`)};
+ Esc.msg('Pick a place to explore. Each trip takes one day.');
+}});
+</script>
+</body></html>

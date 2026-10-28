@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Multi-Lock Challenge</title>
+<style>
+.ml-chest{max-width:900px;margin:0 auto;background:linear-gradient(#A0652E,#7B4A1F);border:6px solid var(--ink);border-radius:28px;box-shadow:8px 8px 0 var(--ink);padding:18px;position:relative}
+.ml-chest::before{content:"";position:absolute;left:0;right:0;top:46px;height:10px;background:#4A2C12}
+.ml-title{color:#fff;text-align:center;font-weight:800;font-size:1.4rem;margin-bottom:22px;text-shadow:2px 2px 0 var(--ink)}
+.ml-locks{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.ml-lock{background:#E8EDF4;border:5px solid var(--ink);border-radius:22px;padding:12px;text-align:center;position:relative}
+.ml-lock h3{margin:0 0 6px;font-size:1.1rem}
+.ml-lock .clue{background:#FFF6C9;border:3px dashed var(--ink);border-radius:12px;padding:6px;font-weight:700;margin:6px 0;min-height:44px;display:grid;place-items:center}
+.ml-lock.open{background:#C9F1D2}
+.ml-lock.open::after{content:"🔓";position:absolute;top:-18px;right:-10px;font-size:2.4rem}
+.ml-lock.bad{animation:esshake .45s}
+.ml-row{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:6px 0}
+.ml-wh{display:flex;flex-direction:column;gap:3px;align-items:center}
+.ml-wh button{font:inherit;width:44px;border:3px solid var(--ink);border-radius:8px;background:#fff;cursor:pointer;color:var(--ink);font-size:.9rem}
+.ml-wh b{width:44px;height:50px;display:grid;place-items:center;border:3px solid var(--ink);border-radius:8px;background:#fff;font:800 1.7rem ui-monospace,Consolas,monospace}
+.ml-col{width:40px;height:40px;border-radius:50%;border:4px solid var(--ink);cursor:pointer}
+.ml-slots{display:flex;gap:6px;justify-content:center;min-height:44px;margin:6px 0}
+.ml-slots i{width:36px;height:36px;border-radius:50%;border:3px dashed var(--ink);display:grid;place-items:center;font-style:normal;font-size:1.3rem;background:#fff}
+.ml-arrow{font:inherit;font-size:1.4rem;width:48px;border:3px solid var(--ink);border-radius:10px;background:#fff;cursor:pointer;color:var(--ink)}
+.ml-path{display:block;margin:0 auto;background:#fff;border:3px solid var(--ink);border-radius:10px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="escape.js"></script>
+<script>
+Kit.mount("🗝️", "Multi-Lock Challenge");
+
+Esc.setup({intro:'🗝️🧰', minutes:15,
+how:'A treasure chest with FOUR different locks! A number lock, a word lock, a color lock, and a direction lock. Answer a question on each lock to see its clue, then work out the combination and enter it. Each lock has its own kind of puzzle. Open all four to open the chest.',
+start({room}){
+ const $=id=>document.getElementById(id);
+ // number lock: 3 digits, clue = three small sums
+ const num=[Kit.rand(1,9),Kit.rand(0,9),Kit.rand(0,9)];
+ const numClue=num.map(d=>{const a=Kit.rand(0,d);return `${a}+${d-a}`}).join(' &nbsp;|&nbsp; ');
+ // word lock: 4 letters, clue = the word with letters shuffled and an emoji picture
+ const WORDS=[['FROG','🐸'],['STAR','⭐'],['BOOK','📖'],['FISH','🐟'],['CAKE','🎂'],['TREE','🌳'],['MOON','🌙'],['BEAR','🐻'],['SHIP','🚢'],['KITE','🪁'],['DRUM','🥁'],['LION','🦁']];
+ const [word,pic]=Kit.pick(WORDS);let scr;do{scr=Kit.shuffle([...word]).join('')}while(scr===word);
+ // color lock: sequence of 4 colors, clue = mixing recipe
+ const CM=[['🔴','#FF5148','red'],['🟡','#FFD43B','yellow'],['🔵','#3B8CFF','blue'],['🟢','#40C057','green'],['🟣','#9B59F6','purple'],['🟠','#FF9F1C','orange']];
+ const MIX={green:['blue','yellow'],purple:['red','blue'],orange:['red','yellow']};
+ const colSeq=Array.from({length:4},()=>Kit.pick(CM));
+ const colClue=colSeq.map(c=>MIX[c[2]]&&Math.random()<.7?`(${MIX[c[2]].join(' + ')})`:c[2]).join(' → ');
+ // direction lock: path drawn on a small grid
+ let dirs=[];const DV={'⬆️':[0,-1],'⬇️':[0,1],'⬅️':[-1,0],'➡️':[1,0]};
+ for(let t=0;t<200&&dirs.length<5;t++){dirs=[];let px=2,py=2;const vis=new Set(['2,2']);
+  for(let k=0;k<5;k++){const opts=Kit.shuffle(Object.keys(DV)).filter(d=>{const nx=px+DV[d][0],ny=py+DV[d][1];return nx>=0&&ny>=0&&nx<=4&&ny<=4&&!vis.has(nx+','+ny)});if(!opts.length)break;const d=opts[0];px+=DV[d][0];py+=DV[d][1];vis.add(px+','+py);dirs.push(d)}}
+ let x=2,y=2;const pts=[[x,y]];dirs.forEach(d=>{x+=DV[d][0];y+=DV[d][1];pts.push([x,y])});
+ const pathSvg=`<svg class="ml-path" width="150" height="150" viewBox="-5 -5 110 110">${[0,1,2,3,4].map(i=>[0,1,2,3,4].map(j=>`<circle cx="${i*25}" cy="${j*25}" r="2.5" fill="#aab"/>`).join('')).join('')}
+  <polyline points="${pts.map(p=>p.map(v=>v*25).join(',')).join(' ')}" fill="none" stroke="#FF6B5B" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${pts[0][0]*25}" cy="${pts[0][1]*25}" r="8" fill="#5DC66E" stroke="#1D2B53" stroke-width="2"/>
+  <circle cx="${x*25}" cy="${y*25}" r="7" fill="#1D2B53"/></svg><div class="muted" style="font-size:.85rem">🟢 start · ● end</div>`;
+ window.__sol={num:num.join(''),word,colors:colSeq.map(c=>c[2]),dirs};
+ const L=[{id:'n',name:'🔢 Number lock',clue:`Each digit is a sum:<br>${numClue}`},{id:'w',name:'🔤 Word lock',clue:`${pic} &nbsp;Unscramble: <b style="letter-spacing:.2em">${scr}</b>`},
+  {id:'c',name:'🎨 Color lock',clue:`Mix colors in this order:<br>${colClue}`},{id:'d',name:'🧭 Direction lock',clue:pathSvg}];
+ room.innerHTML=`<div class="ml-chest"><div class="ml-title">🏴‍☠️ The Four-Lock Chest</div><div class="ml-locks">${L.map(l=>`<div class="ml-lock" id="L${l.id}"><h3>${l.name}</h3><div class="clue" id="C${l.id}"><button class="btn small grape" data-q="${l.id}">See the clue</button></div><div id="I${l.id}"></div><button class="btn small green" data-try="${l.id}">Try it</button></div>`).join('')}</div></div>`;
+ // inputs
+ const nv=[0,0,0];$('In').innerHTML=`<div class="ml-row">${[0,1,2].map(i=>`<div class="ml-wh"><button data-nu="${i}">▲</button><b id="nv${i}">0</b><button data-nd="${i}">▼</button></div>`).join('')}</div>`;
+ const AL='ABCDEFGHIJKLMNOPQRSTUVWXYZ',wv=[0,0,0,0];$('Iw').innerHTML=`<div class="ml-row">${[0,1,2,3].map(i=>`<div class="ml-wh"><button data-wu="${i}">▲</button><b id="wv${i}">A</b><button data-wd="${i}">▼</button></div>`).join('')}</div>`;
+ const cv=[];$('Ic').innerHTML=`<div class="ml-slots" id="cs"></div><div class="ml-row">${CM.map((c,i)=>`<button class="ml-col" data-col="${i}" style="background:${c[1]}" aria-label="${c[2]}"></button>`).join('')}</div><button class="btn small white" data-cclr>Clear</button>`;
+ const dv=[];$('Id').innerHTML=`<div class="ml-slots" id="ds"></div><div class="ml-row">${Object.keys(DV).map(d=>`<button class="ml-arrow" data-dir="${d}">${d}</button>`).join('')}</div><button class="btn small white" data-dclr>Clear</button>`;
+ const slots=()=>{$('cs').innerHTML=[0,1,2,3].map(i=>`<i style="${cv[i]!=null?`background:${CM[cv[i]][1]};border-style:solid`:''}"></i>`).join('');$('ds').innerHTML=[0,1,2,3,4].map(i=>`<i>${dv[i]||''}</i>`).join('')};slots();
+ const opened=new Set(),seen=new Set();let busy=false;
+ room.onclick=async e=>{const b=e.target.closest('button');if(!b)return;const d=b.dataset;
+  if(d.q&&!busy){busy=true;const ok=await Esc.ask({icon:'🗝️',title:L.find(l=>l.id===d.q).name});busy=false;if(ok){seen.add(d.q);$('C'+d.q).innerHTML=L.find(l=>l.id===d.q).clue}return}
+  if(d.nu!=null){nv[d.nu]=(nv[d.nu]+1)%10;$('nv'+d.nu).textContent=nv[d.nu];Kit.tick()}
+  if(d.nd!=null){nv[d.nd]=(nv[d.nd]+9)%10;$('nv'+d.nd).textContent=nv[d.nd];Kit.tick()}
+  if(d.wu!=null){wv[d.wu]=(wv[d.wu]+1)%26;$('wv'+d.wu).textContent=AL[wv[d.wu]];Kit.tick()}
+  if(d.wd!=null){wv[d.wd]=(wv[d.wd]+25)%26;$('wv'+d.wd).textContent=AL[wv[d.wd]];Kit.tick()}
+  if(d.col!=null&&cv.length<4){cv.push(+d.col);slots();Kit.tick()}
+  if(d.cclr!=null){cv.length=0;slots()}
+  if(d.dir&&dv.length<5){dv.push(d.dir);slots();Kit.tick()}
+  if(d.dclr!=null){dv.length=0;slots()}
+  if(d.try){const k=d.try;if(opened.has(k))return;
+   const ok=k==='n'?nv.join('')===num.join(''):k==='w'?wv.map(i=>AL[i]).join('')===word:k==='c'?cv.map(i=>CM[i][2]).join()===colSeq.map(c=>c[2]).join():dv.join()===dirs.join();
+   const el=$('L'+k);if(ok){opened.add(k);el.classList.add('open');Kit.ding();el.querySelectorAll('button').forEach(x=>x.disabled=true);Esc.stat(`🔓 ${opened.size} of 4 locks`);
+    if(opened.size===4){await Kit.sleep(700);Esc.win('💎','The chest is open!','Four locks, four different puzzles. Amazing teamwork!')}}
+   else{el.classList.remove('bad');void el.offsetWidth;el.classList.add('bad');Esc.penalize();Kit.tone(150,.4,'sawtooth',.2)}}};
+ Esc.stat('🔓 0 of 4 locks');Esc.msg('Each lock works differently. Start with any one!');
+}});
+</script>
+</body></html>
