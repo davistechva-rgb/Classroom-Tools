@@ -46,6 +46,7 @@ nav button[aria-pressed="true"]{background:var(--c);transform:translate(3px,3px)
 .fav.pop{animation:favpop .45s}@keyframes favpop{40%{transform:scale(1.5) rotate(20deg)}}
 nav button.favbtn{--c:#FFC93C}
 .empty small{display:block;font-size:1rem;font-weight:600;opacity:.75;margin-top:8px}
+.bk-row{display:grid;gap:10px;margin:14px 0}.bk-row .btn{width:100%}.bk-note{font-size:.95rem;color:#55607E;text-align:left}
 .empty{display:grid;place-items:center;font-size:1.3rem;font-weight:600;flex:1}
 @media (max-width:760px),(max-height:520px){
   body{height:auto;overflow:auto}
@@ -62,6 +63,7 @@ nav button.favbtn{--c:#FFC93C}
 <header class="head">
  <h1><span>Classroom</span> Tools</h1>
  <div class="search"><input type="text" id="q" placeholder="🔍 Find a tool" aria-label="Find a tool"></div>
+ <button class="btn white small" id="bkBtn" title="Back up or restore your saved lists, favorites, and settings">💾 Backup</button>
 </header>
 <div class="app">
  <nav id="nav" aria-label="Tool groups"></nav>
@@ -141,6 +143,16 @@ $('tiles').addEventListener('click',e=>{const b=e.target.closest('[data-fav]');i
  if(cur===-1&&!$('q').value.trim()){show();return}
  b.classList.toggle('on',k<0);b.textContent=k<0?'★':'☆';b.classList.remove('pop');void b.offsetWidth;b.classList.add('pop');nav()});
 addEventListener('pageshow',show);
+// 💾 Backup and restore: everything the tools save lives in this browser under keys that start with "ct:".
+function ctData(){const d={};try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('ct:'))d[k]=localStorage.getItem(k)}}catch{}return d}
+$('bkBtn').onclick=()=>{const n=Object.keys(ctData()).length;
+ Kit.modal(`<div style="font-size:3rem">💾</div><h2 style="margin:4px 0">Backup &amp; restore</h2><p style="margin:0">Your favorites, lists, class names, settings, and boards are saved in this browser. Save a backup file to keep them safe or move them to another computer.</p>
+ <div class="bk-row"><button class="btn green" id="bkSave">⬇️ Save a backup file</button><label class="btn white" style="text-align:center">⬆️ Restore from a backup file<input type="file" id="bkLoad" accept=".json,application/json" hidden></label></div>
+ <p class="bk-note">This browser has <b>${n}</b> saved ${n===1?'item':'items'}. Restoring adds the backup's items and replaces any with the same name. Everything else stays.</p>`);
+ $('bkSave').onclick=()=>{const blob=new Blob([JSON.stringify({app:'Classroom Tools',made:new Date().toISOString(),data:ctData()},null,1)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`classroom-tools-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();Kit.ding()};
+ $('bkLoad').onchange=async()=>{const f=$('bkLoad').files[0];if(!f)return;try{const j=JSON.parse(await f.text());const d=j&&j.data;if(!d||typeof d!=='object')throw 0;const keys=Object.keys(d).filter(k=>k.startsWith('ct:'));if(!keys.length)throw 0;
+  if(!confirm(`Restore ${keys.length} saved items from this backup${j.made?` (made ${new Date(j.made).toLocaleDateString()})`:''}?`))return;keys.forEach(k=>{try{localStorage.setItem(k,String(d[k]))}catch{}});
+  Kit.tada();alert('All set! Your saved items are back.');location.reload()}catch{alert('That file isn\'t a Classroom Tools backup.')}}};
 $('q').oninput=show;addEventListener('resize',()=>{const n=$('tiles').querySelectorAll('.tile').length;if(n)layout(n)});
 $('foot').outerHTML=Kit.LOGO('');document.querySelector('footer.brand').insertAdjacentHTML('beforeend','<span class="ver">Version 24</span>');show();
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).catch(()=>{});
