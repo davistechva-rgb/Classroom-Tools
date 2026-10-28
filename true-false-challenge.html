@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>True/False Challenge</title>
+<style>
+.tf-arena{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2.2fr) minmax(0,1fr);gap:14px;align-items:stretch}
+.tf-arena.solo{grid-template-columns:minmax(0,1fr)}
+@media (max-width:760px){.tf-arena{grid-template-columns:1fr 1fr}.tf-mid{grid-column:1/-1;order:-1}}
+.tf-side{display:flex;flex-direction:column;gap:12px;background:var(--pc);border:6px solid var(--ink);border-radius:24px;padding:12px;box-shadow:6px 6px 0 var(--ink)}
+.tf-side .nm{color:#fff;font-weight:800;font-size:1.3rem;text-align:center;text-shadow:2px 2px 0 rgba(0,0,0,.3)}
+.tf-side .pts{font-size:clamp(2.4rem,6vw,4rem);font-weight:800;text-align:center;color:#fff;text-shadow:3px 3px 0 var(--ink);line-height:1}
+.tf-side button{font:inherit;flex:1;min-height:80px;font-weight:800;font-size:clamp(1.3rem,3vw,2rem);border:5px solid var(--ink);border-radius:20px;cursor:pointer;box-shadow:0 6px 0 var(--ink);color:#fff;text-shadow:2px 2px 0 rgba(0,0,0,.3)}
+.tf-side button small{display:block;font-size:.5em;opacity:.85}
+.tf-side .t{background:#22A36B}.tf-side .f{background:#E5533F}
+.tf-side button:active{transform:translateY(6px);box-shadow:none}
+.tf-side.locked{filter:grayscale(.85);opacity:.6}
+.tf-side.won{animation:tfwon .6s}@keyframes tfwon{30%{transform:scale(1.06)}}
+.tf-mid{display:flex;flex-direction:column;gap:12px;justify-content:center}
+.tf-card{background:#fff;border:6px solid var(--ink);border-radius:26px;box-shadow:8px 8px 0 var(--ink);min-height:200px;display:grid;place-items:center;text-align:center;padding:20px;font-weight:800;font-size:clamp(1.4rem,3.4vw,2.4rem);line-height:1.2}
+.tf-card.in{animation:tfin .35s cubic-bezier(.3,1.5,.5,1)}@keyframes tfin{from{transform:scale(.6) rotate(-6deg);opacity:0}}
+.tf-card.yes{background:#C9F1D2}.tf-card.no{background:#FFD9D4}
+.tf-time{height:20px;border:4px solid var(--ink);border-radius:99px;background:#fff;overflow:hidden}.tf-time b{display:block;height:100%;background:linear-gradient(90deg,var(--tomato),var(--sun),var(--grass));transition:width .2s linear}
+.tf-msg{text-align:center;font-weight:800;font-size:1.3rem;color:#fff;text-shadow:2px 2px 0 var(--ink);min-height:1.4em}
+.tf-solo{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:6px}
+.tf-solo button{font:inherit;font-weight:800;font-size:clamp(1.6rem,4vw,2.6rem);border:6px solid var(--ink);border-radius:24px;padding:18px;cursor:pointer;box-shadow:0 8px 0 var(--ink);color:#fff;text-shadow:2px 2px 0 rgba(0,0,0,.3)}
+.tf-solo .t{background:#22A36B}.tf-solo .f{background:#E5533F}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🎯", "True/False Challenge");
+const DEF=`5 + 5 = 10 | true
+The Sun is a star. | true
+Spiders are insects. | false | Spiders have 8 legs. Insects have 6.
+9 × 3 = 27 | true
+The Moon makes its own light. | false | It reflects light from the Sun.
+Whales are fish. | false | Whales are mammals.
+There are 60 seconds in a minute. | true
+12 − 5 = 8 | false | 12 − 5 = 7
+Plants make food from sunlight. | true
+Ice is water in solid form. | true
+A hexagon has 5 sides. | false | A hexagon has 6 sides.
+Penguins can fly. | false
+Richmond is the capital of Virginia. | true
+100 ÷ 4 = 25 | true
+Bats are mammals. | true
+The Atlantic is the biggest ocean. | false | The Pacific is the biggest.
+Sound travels faster than light. | false | Light is much faster.
+"Run" is a verb. | true
+Earth has two moons. | false | Earth has one moon.
+A square is a rectangle. | true | It has four right angles, so it counts!
+7 × 8 = 54 | false | 7 × 8 = 56
+Frogs are amphibians. | true
+The heart pumps blood. | true
+Mars is called the blue planet. | false | Mars is the red planet.
+Half of 30 is 15. | true`;
+const $=id=>document.getElementById(id);
+document.querySelector('main').innerHTML=`<div class="card ln-set" id="set"><div class="row"><label>Mode <select id="md" style="width:auto"><option value="duel">Two-player race (left vs right)</option><option value="solo">Time attack (60 seconds)</option></select></label>
+ <label id="rL">Rounds <select id="nR" style="width:auto"><option>10</option><option selected>15</option><option>20</option></select></label><button class="btn big green" id="go">Start</button></div>
+ <p class="muted" style="margin:8px 0 0"><b>Race:</b> two players (or teams) share the board. First right answer wins the point. Wrong answer? You're frozen for that question. Left player: keys <b>Q</b> (true) and <b>W</b> (false). Right player: <b>O</b> (true) and <b>P</b> (false).<br><b>Time attack:</b> answer as many as you can in 60 seconds. Keys: ← true, → false.</p></div>
+<div id="game" hidden><div class="tf-msg" id="msg"></div><div class="tf-arena" id="ar"></div></div>`;
+const L=Learn.list($('set'),{key:'tf',label:'My true/false statements',help:'One per line: statement | true or false | why (optional).',def:DEF});
+$('md').onchange=()=>$('rL').hidden=$('md').value!=='duel';
+let mode,deck,qi,cur,score,locked,busy,timer,left,streak,names;
+$('go').onclick=()=>{mode=$('md').value;deck=Kit.shuffle(L.rows().filter(r=>/^(true|false|t|f|yes|no)$/i.test(r[1]||'')));if(deck.length<3)return alert('Add at least 3 true/false statements.');
+ names=Kit.get('ln-team-names',['Red','Blue']);$('set').hidden=true;$('game').hidden=false;qi=0;score=[0,0];streak=0;build();
+ if(mode==='solo'){left=60;clearInterval(timer);timer=setInterval(()=>{left--;$('tb').style.width=left/60*100+'%';if(left<=10&&left>0)Kit.tick();if(left<=0){clearInterval(timer);end()}},1000)}next()};
+function build(){if(mode==='duel'){$('ar').className='tf-arena';$('ar').innerHTML=[0,1].map(p=>`<div class="tf-side" id="s${p}" style="--pc:${p?'#22C3E6':'#FF6B5B'}"><div class="nm">${Kit.esc(names[p])}</div><div class="pts" id="p${p}">0</div><button class="t" data-p="${p}" data-a="1">TRUE<small>${p?'O':'Q'}</small></button><button class="f" data-p="${p}" data-a="0">FALSE<small>${p?'P':'W'}</small></button></div>`).join('').replace('</div><div class="tf-side" id="s1"','</div><div class="tf-mid"><div class="tf-card" id="cd"></div><div class="row" style="justify-content:center"><span class="ln-pill" id="rd"></span></div></div><div class="tf-side" id="s1"')}
+ else{$('ar').className='tf-arena solo';$('ar').innerHTML=`<div class="tf-mid"><div class="tf-time"><b id="tb" style="width:100%"></b></div><div class="row" style="justify-content:center"><span class="ln-pill">⭐ <b id="p0">0</b></span><span class="ln-pill">🔥 <b id="stk">0</b></span></div><div class="tf-card" id="cd"></div><div class="tf-solo"><button class="t" data-p="0" data-a="1">✅ TRUE<br><small style="font-size:.5em">←</small></button><button class="f" data-p="0" data-a="0">❌ FALSE<br><small style="font-size:.5em">→</small></button></div></div>`}}
+const truth=r=>/^(true|t|yes)$/i.test(r[1]);
+function next(){if(mode==='duel'&&qi>=+$('nR').value)return end();if(qi>=deck.length){deck=Kit.shuffle(deck)}cur=deck[qi%deck.length];qi++;locked=[false,false];busy=false;
+ const c=$('cd');c.className='tf-card';void c.offsetWidth;c.classList.add('in');c.textContent=cur[0];document.querySelectorAll('.tf-side').forEach(s=>s.classList.remove('locked','won'));
+ if($('rd'))$('rd').textContent=`Question ${qi} of ${$('nR').value}`;$('msg').textContent='';window.__t={truth:truth(cur)}}
+function answer(p,a){if(busy||locked[p])return;const ok=(a===1)===truth(cur);
+ if(mode==='solo'){busy=true;if(ok){score[0]++;streak++;Kit.tone(700+Math.min(streak,10)*40,.1,'triangle',.22);$('cd').classList.add('yes')}else{streak=0;Kit.tone(170,.25,'sawtooth',.15);$('cd').classList.add('no');$('msg').textContent=cur[2]?`✗ ${cur[2]}`:`✗ That was ${truth(cur)?'TRUE':'FALSE'}`}
+  $('p0').textContent=score[0];$('stk').textContent=streak;setTimeout(next,ok?350:1100);return}
+ if(ok){busy=true;score[p]++;$('p'+p).textContent=score[p];$('s'+p).classList.add('won');$('cd').classList.add('yes');Kit.ding();$('msg').textContent=`${names[p]} got it! It's ${truth(cur)?'TRUE':'FALSE'}.${cur[2]?' '+cur[2]:''}`;setTimeout(next,1600)}
+ else{locked[p]=true;$('s'+p).classList.add('locked');Kit.tone(170,.25,'sawtooth',.15);if(locked[0]&&locked[1]){busy=true;$('cd').classList.add('no');$('msg').textContent=`Nobody! It's ${truth(cur)?'TRUE':'FALSE'}.${cur[2]?' '+cur[2]:''}`;setTimeout(next,1800)}}}
+$('ar').onclick=e=>{const b=e.target.closest('[data-a]');if(b)answer(+b.dataset.p,+b.dataset.a)};
+addEventListener('keydown',e=>{if($('game').hidden)return;const k=e.key.toLowerCase();
+ if(mode==='duel'){if(k==='q')answer(0,1);if(k==='w')answer(0,0);if(k==='o')answer(1,1);if(k==='p')answer(1,0)}else{if(e.key==='ArrowLeft'){e.preventDefault();answer(0,1)}if(e.key==='ArrowRight'){e.preventDefault();answer(0,0)}}});
+function end(){clearInterval(timer);busy=true;const again=()=>{$('game').hidden=true;$('set').hidden=false};
+ if(mode==='solo'){const k='tf-best',b=Kit.get(k,0),nb=score[0]>b;Kit.set(k,Math.max(b,score[0]));Learn.finish(nb?'🏆':'⏱️',`${score[0]} right in 60 seconds!`,nb?'That\'s a new best!':`Best so far: ${b}`,again)}
+ else Learn.finish('🏆',score[0]===score[1]?`It's a tie, ${score[0]} to ${score[1]}!`:`${names[score[0]>score[1]?0:1]} wins ${Math.max(...score)} to ${Math.min(...score)}!`,'Great race!',again)}
+</script>
+</body></html>

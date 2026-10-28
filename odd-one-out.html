@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Odd-One-Out</title>
+<style>
+.oo-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;max-width:860px;margin:0 auto}
+.oo-card{font:inherit;position:relative;min-height:clamp(110px,19vh,170px);border:6px solid var(--ink);border-radius:24px;background:#fff;box-shadow:0 7px 0 var(--ink);cursor:pointer;font-weight:800;font-size:clamp(1.3rem,3.4vw,2.2rem);color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px;transition:transform .2s,opacity .4s}
+.oo-card .em{font-size:1.7em;line-height:1.1}
+.oo-card:active{transform:translateY(7px);box-shadow:none}
+.oo-card.odd{background:var(--sun);transform:rotate(-3deg) scale(1.04)}
+.oo-card.fade{opacity:.35;transform:scale(.95)}
+.oo-card.miss{background:#FFD9D4;opacity:.6}
+.oo-card .x{position:absolute;top:8px;right:12px;font-size:1.6rem}
+.oo-why{max-width:860px;margin:18px auto 0;text-align:center}
+.oo-why .q{font-weight:800;font-size:1.3rem;margin-bottom:10px}
+.oo-why .opts{display:grid;gap:10px}
+.oo-why button{font:inherit;font-weight:700;font-size:1.15rem;border:4px solid var(--ink);border-radius:16px;background:#F4FAFF;padding:10px 14px;cursor:pointer;box-shadow:0 4px 0 var(--ink);color:var(--ink)}
+.oo-why button.yes{background:var(--grass)}.oo-why button.no{background:#FFD9D4;opacity:.6}
+.oo-hud{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:14px}
+.oo-ask{text-align:center;font-weight:800;font-size:clamp(1.3rem,3vw,2rem);color:#fff;text-shadow:2px 2px 0 var(--ink);margin-bottom:12px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🧠", "Odd-One-Out");
+const DEF=`🐧 Penguin | 🦅 Eagle | 🦜 Parrot | 🦉 Owl | A penguin can't fly.
+🥕 Carrot | 🍎 Apple | 🍌 Banana | 🍇 Grapes | A carrot is a vegetable, not a fruit.
+9 | 4 | 8 | 12 | 9 is odd. The others are even.
+🐳 Whale | 🦈 Shark | 🐟 Goldfish | 🐠 Clownfish | A whale is a mammal, not a fish.
+Blue | Run | Jump | Swim | Blue is a color. The others are action words (verbs).
+Circle | Triangle | Square | Rectangle | A circle has no straight sides or corners.
+🧊 Ice | 💧 Water | 🥛 Milk | 🧃 Juice | Ice is a solid. The others are liquids.
+Moon | Mars | Earth | Jupiter | The Moon isn't a planet.
+🕷️ Spider | 🐜 Ant | 🐝 Bee | 🦋 Butterfly | A spider has 8 legs. Insects have 6.
+Mountain | Ocean | Lake | River | A mountain isn't a body of water.
+Richmond | Virginia | Texas | Ohio | Richmond is a city. The others are states.
+🍽️ Plate | 🍕 Pizza | 🍔 Burger | 🌮 Taco | You can't eat a plate.
+Angry | Happy | Glad | Cheerful | Angry means the opposite of the others.
+Cube | Square | Rectangle | Triangle | A cube is 3D. The others are flat shapes.
+🚲 Bike | 🚗 Car | 🚌 Bus | 🚚 Truck | A bike has no engine.
+July | March | Monday | October | Monday is a day. The others are months.`;
+const $=id=>document.getElementById(id);
+document.querySelector('main').innerHTML=`<div class="card ln-set" id="set"><div class="row">${Learn.teamPicker('nT',0)}<label><input type="checkbox" id="why" checked> Ask "why?" for a bonus point</label><button class="btn big green" id="go">Start</button></div>
+ <p class="muted" style="margin:8px 0 0">Four things, and one doesn't belong. Tap the odd one out. Then explain why for a bonus point!</p></div>
+<div id="game" hidden><div id="tm"></div><div class="oo-hud"><span class="ln-pill" id="pr"></span><span class="ln-pill">⭐ <b id="sc">0</b></span><span class="ln-pill">🔥 <b id="st">0</b></span></div>
+<div class="oo-ask" id="ask">Which one doesn't belong?</div><div class="oo-grid" id="gr"></div><div class="oo-why" id="wy"></div>
+<div class="row" style="justify-content:center;margin-top:14px"><button class="btn big grape" id="nx" hidden>Next ➜</button></div></div>`;
+const L=Learn.list($('set'),{key:'sets',label:'My odd-one-out sets',help:'One per line: THE ODD ONE | belongs | belongs | belongs | why it\'s odd. Put the odd one first. The game mixes them up.',def:DEF});
+let T,deck,idx,score,streak,locked;
+$('go').onclick=()=>{deck=Kit.shuffle(L.rows().filter(r=>r.length>=4));if(!deck.length)return alert('Add a set first.');$('set').hidden=true;$('game').hidden=false;T=Learn.teams($('tm'),+$('nT').value);idx=0;score=0;streak=0;round()};
+const split=t=>{const m=t.match(/^(\p{Extended_Pictographic}[\u{FE0F}\u{200D}\p{Extended_Pictographic}]*)\s*(.*)$/u);return m?[m[1],m[2]]:['',t]};
+function round(){const r=deck[idx];locked=false;const why=r.length>4?r[r.length-1]:'';const items=r.slice(0,why?r.length-1:r.length);
+ $('gr').innerHTML=Kit.shuffle(items.map((t,i)=>({t,i}))).map(x=>{const [e,w]=split(x.t);return `<button class="oo-card" data-i="${x.i}">${e?`<span class="em">${e}</span>`:''}${Kit.esc(w)}</button>`}).join('');
+ $('wy').innerHTML='';$('nx').hidden=true;$('ask').textContent='Which one doesn\'t belong?';hud();window.__t={why}}
+function hud(){$('pr').textContent=`${idx+1} of ${deck.length}`;$('sc').textContent=score;$('st').textContent=streak}
+$('gr').onclick=e=>{const c=e.target.closest('.oo-card');if(!c||locked||c.classList.contains('miss'))return;
+ if(c.dataset.i==='0'){locked=true;c.classList.add('odd');document.querySelectorAll('.oo-card').forEach(x=>{if(x!==c)x.classList.add('fade')});score++;streak++;T.add(1,T.cur,c);Kit.ding();hud();askWhy()}
+ else{c.classList.add('miss');c.insertAdjacentHTML('beforeend','<span class="x">✗</span>');streak=0;Learn.flash(c,false);T.next();hud()}};
+function askWhy(){const r=deck[idx];const why=r.length>4?r[r.length-1]:'';
+ if(!why||!$('why').checked){reveal(why);return}
+ const others=Kit.shuffle(deck.filter((x,i)=>i!==idx&&x.length>4).map(x=>x[x.length-1])).slice(0,2);const opts=Kit.shuffle([why,...others]);
+ $('ask').textContent='Good eye! Now, why is it the odd one?';$('wy').innerHTML=`<div class="opts">${opts.map(o=>`<button data-w="${Kit.esc(o)}">${Kit.esc(o)}</button>`).join('')}</div>`;
+ $('wy').onclick=e=>{const b=e.target.closest('button');if(!b||b.classList.contains('no')||$('wy').dataset.done)return;
+  if(b.dataset.w===why){b.classList.add('yes');score++;T.add(1,T.cur,b);Kit.tada();$('wy').dataset.done=1;hud();setTimeout(()=>reveal(why,true),500)}else{b.classList.add('no');Learn.flash(b,false)}}}
+function reveal(why,bonus){delete $('wy').dataset.done;$('wy').onclick=null;$('wy').innerHTML=why?`<div class="card"><b>💡 ${Kit.esc(why)}</b>${bonus?' <span class="ln-pill" style="background:var(--grass)">+1 bonus</span>':''}</div>`:'';
+ T.next();$('nx').hidden=false;$('nx').textContent=idx>=deck.length-1?'🏁 Finish':'Next ➜';if(streak&&streak%5===0)Kit.confetti(50)}
+$('nx').onclick=()=>{if(idx>=deck.length-1){Learn.finish('🧠',T.n>1?T.winner():`${score} points!`,`You solved ${deck.length} puzzles.`,()=>{$('game').hidden=true;$('set').hidden=false});return}idx++;round()};
+</script>
+</body></html>

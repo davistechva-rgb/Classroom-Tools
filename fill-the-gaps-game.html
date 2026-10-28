@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Fill-the-Gaps Game</title>
+<style>
+.fg-text{font-size:clamp(1.25rem,2.6vw,1.9rem);line-height:2.3;background:#fff;border:5px solid var(--ink);border-radius:22px;padding:clamp(16px,3vw,30px);box-shadow:7px 7px 0 var(--ink);background-image:linear-gradient(transparent calc(100% - 2px),#D8E6F7 2px);background-size:100% 2.3em;background-position:0 -.35em}
+.fg-gap{display:inline-flex;align-items:center;justify-content:center;min-width:5.5em;height:1.7em;vertical-align:middle;border:4px dashed #9DB0D0;border-radius:12px;margin:0 .15em;background:#F4FAFF;transition:background .2s}
+.fg-gap.full{border-style:solid;border-color:var(--ink);background:#FFF6C9}
+.fg-gap.right{background:#C9F1D2;border-color:#2E8B3E}.fg-gap.wrong{background:#FFD9D4;border-color:#D9432F}
+.fg-bank{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:18px 0;min-height:64px;padding:12px;border:4px dashed rgba(29,43,83,.35);border-radius:20px;background:rgba(255,255,255,.35)}
+.fg-word{font:inherit;font-weight:700;font-size:clamp(1.1rem,2.2vw,1.5rem);background:var(--sun);border:4px solid var(--ink);border-radius:14px;padding:2px 14px;box-shadow:0 4px 0 var(--ink);color:var(--ink)}
+.fg-gap .fg-word{box-shadow:none;border:0;background:none;padding:0 6px;font-size:1em}
+.fg-top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;margin-bottom:14px}
+.fg-title{font-weight:800;font-size:1.4rem}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("📝", "Fill-the-Gaps Game");
+const DEF=`The Water Cycle | The sun heats water in oceans and lakes. The warm water turns into a gas called [vapor]. This is called [evaporation]. High in the sky, the vapor cools and forms tiny drops that make [clouds]. This is called [condensation]. When the drops get heavy, they fall as rain or snow. This is called [precipitation]. The water flows back to the [ocean], and the cycle starts again.
+How Plants Grow | A plant starts as a [seed]. Its [roots] grow down into the soil to drink water. Its [stem] holds the plant up. The [leaves] use sunlight to make food. This is called [photosynthesis]. Bees visit the [flowers] and help make new seeds.
+Our Solar System | The [Sun] is a star at the center of our solar system. [Mercury] is the planet closest to it. Earth is the third planet, and it has one [moon]. [Jupiter] is the biggest planet. [Saturn] is famous for its beautiful rings. All the planets travel around the Sun in paths called [orbits].
+Parts of Speech | A [noun] is a person, place, or thing. A [verb] is an action word, like run or jump. An [adjective] describes a noun, like big or blue. An [adverb] often tells how something happens, like quickly. A [pronoun] takes the place of a noun, like he or she.`;
+const $=id=>document.getElementById(id);
+document.querySelector('main').innerHTML=`<div class="card ln-set" id="set"><div class="row"><label>Passage <select id="pick" style="width:auto"></select></label>
+ <label>Extra wrong words <select id="extra" style="width:auto"><option value="0">None</option><option value="2" selected>2</option><option value="4">4</option></select></label>
+ <label><input type="checkbox" id="live"> Check each word as I drop it</label><button class="btn big green" id="go">Start</button></div>
+ <p class="muted" style="margin:8px 0 0">Drag each word from the word bank into the right gap, or tap a word and then tap a gap. Press Check when every gap is full.</p></div>
+<div id="game" hidden><div class="fg-top"><span class="fg-title" id="ti"></span><span class="ln-pill" id="sc"></span><button class="btn green" id="chk">✓ Check</button><button class="btn white" id="clr">↺ Start over</button><button class="btn grape" id="nx">Next passage ➜</button><button class="btn white" id="back">✏️ Pick another</button></div>
+<div class="fg-text" id="tx"></div><div class="fg-bank dz-zone" id="bank" data-bank></div></div>`;
+const L=Learn.list($('set'),{key:'texts',label:'My passages',help:'One passage per line: title | text. Put [square brackets] around each word to hide. Use [right/also right] to allow more than one answer.',def:DEF});
+const refresh=()=>{const r=L.rows();$('pick').innerHTML=r.map((x,i)=>`<option value="${i}">${Kit.esc(x[0])}</option>`).join('')};refresh();L.el.addEventListener('toggle',refresh);L.el.querySelector('textarea').addEventListener('change',refresh);
+let rows,cur,gaps,tries;
+const EXTRA=['because','tiny','river','sound','winter','heavy','green','under','music','planet','water','moon','fast','gentle'];
+$('go').onclick=()=>{rows=L.rows();cur=+$('pick').value||0;if(!rows[cur])return alert('Add a passage first.');$('set').hidden=true;$('game').hidden=false;load()};
+function load(){const [title,...rest]=rows[cur];const text=rest.join(' | ');$('ti').textContent=title;gaps=[];tries=0;
+ const html=Kit.esc(text).replace(/\[([^\]]+)\]/g,(m,w)=>{gaps.push(w);return `<span class="fg-gap dz-zone" data-g="${gaps.length-1}"></span>`});$('tx').innerHTML=html;
+ const ans=gaps.map(g=>g.split('/')[0].trim());const lower=new Set(ans.map(a=>a.toLowerCase()));
+ const extra=Kit.shuffle(EXTRA.filter(w=>!lower.has(w))).slice(0,+$('extra').value);
+ $('bank').innerHTML=Kit.shuffle([...ans,...extra]).map((w,i)=>`<span class="fg-word dz-item" data-w="${Kit.esc(w)}">${Kit.esc(w)}</span>`).join('');
+ $('nx').hidden=rows.length<2;score();window.__t={gaps:ans}}
+function score(t){const full=$('tx').querySelectorAll('.fg-gap.full').length;$('sc').textContent=t||`${full} of ${gaps.length} gaps filled`}
+const ok=(g,w)=>gaps[g].split('/').some(x=>x.trim().toLowerCase()===w.toLowerCase());
+Learn.drag(document.querySelector('main'),{item:'.fg-word',zone:'.dz-zone',drop(it,z){
+ if(z.dataset.bank!=null){z.appendChild(it)}else{const old=z.querySelector('.fg-word');if(old&&old!==it)$('bank').appendChild(old);z.appendChild(it);z.classList.add('full')}
+ document.querySelectorAll('.fg-gap').forEach(g=>{g.classList.toggle('full',!!g.querySelector('.fg-word'));g.classList.remove('right','wrong')});
+ if($('live').checked&&z.dataset.g!=null){const r=ok(+z.dataset.g,it.dataset.w);z.classList.add(r?'right':'wrong');r?Kit.ding():Kit.tone(180,.25,'sawtooth',.15)}else Kit.tick();score()}});
+$('chk').onclick=()=>{let right=0;tries++;document.querySelectorAll('.fg-gap').forEach(g=>{const w=g.querySelector('.fg-word');g.classList.remove('right','wrong');if(!w)return;const r=ok(+g.dataset.g,w.dataset.w);g.classList.add(r?'right':'wrong');right+=r});
+ score(`${right} of ${gaps.length} right`);
+ if(right===gaps.length){Learn.finish('🌟','You filled every gap!',tries===1?'Perfect on the first try!':`You got it in ${tries} tries.`)}else Kit.tone(200,.3,'triangle',.2)};
+$('clr').onclick=load;
+$('nx').onclick=()=>{cur=(cur+1)%rows.length;load()};
+$('back').onclick=()=>{$('game').hidden=true;$('set').hidden=false;refresh()};
+</script>
+</body></html>

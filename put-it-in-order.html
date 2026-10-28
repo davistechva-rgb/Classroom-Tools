@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Put It in Order</title>
+<style>
+.po-row{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;padding:16px;border:5px dashed rgba(29,43,83,.35);border-radius:22px;background:rgba(255,255,255,.3);min-height:140px;align-items:stretch}
+.po-card{position:relative;width:clamp(120px,15vw,170px);min-height:120px;border:5px solid var(--ink);border-radius:18px;background:#fff;box-shadow:0 6px 0 var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:10px;font-weight:700;font-size:clamp(1rem,1.8vw,1.25rem);transition:transform .25s,background .3s}
+.po-card .num{position:absolute;top:-14px;left:-10px;width:34px;height:34px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-size:1rem}
+.po-card .em{font-size:2.2rem;line-height:1.1}
+.po-card.ok{background:#C9F1D2}.po-card.off{background:#FFE3DF}
+.po-card.dz-zone.hover{transform:scale(1.05)}
+.po-top{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center;margin-bottom:14px}
+.po-title{font-weight:800;font-size:clamp(1.3rem,3vw,2rem);color:#fff;text-shadow:2px 2px 0 var(--ink);text-align:center;width:100%}
+.po-ends{display:flex;justify-content:space-between;font-weight:800;margin:6px 6px 0;color:var(--ink)}
+.po-log{display:flex;flex-direction:column-reverse;gap:6px;max-width:700px;margin:16px auto 0}
+.po-log div{background:#fff;border:3px solid var(--ink);border-radius:12px;padding:6px 12px;font-weight:600;display:flex;gap:10px;align-items:center}
+.po-log i{display:inline-flex;gap:3px}.po-log i b{width:16px;height:16px;border-radius:50%;border:2px solid var(--ink);background:#fff}.po-log i b.y{background:var(--grass)}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🧩", "Put It in Order");
+const DEF=`Butterfly life cycle | 🥚 Egg | 🐛 Caterpillar | 🛌 Chrysalis | 🦋 Butterfly
+Planets from the Sun | Mercury | Venus | Earth | Mars | Jupiter | Saturn | Uranus | Neptune
+Months of the year (first half) | January | February | March | April | May | June
+Brushing your teeth | 🪥 Wet the brush | 🧴 Add toothpaste | 😁 Brush every tooth | 💦 Spit and rinse | 🧽 Rinse the brush
+Biggest to smallest | 🐋 Blue whale | 🐘 Elephant | 🐎 Horse | 🐕 Dog | 🐁 Mouse | 🐜 Ant
+The first five presidents | George Washington | John Adams | Thomas Jefferson | James Madison | James Monroe
+How a plant grows | 🌰 Seed | 🌱 Sprout | 🌿 Young plant | 🌼 Flower | 🍎 Fruit
+Making a sandwich | 🍞 Take out two slices of bread | 🥜 Spread peanut butter | 🍓 Spread jelly | 🥪 Put the slices together | 😋 Eat it!`;
+const $=id=>document.getElementById(id);
+document.querySelector('main').innerHTML=`<div class="card ln-set" id="set"><div class="row"><label>List <select id="pick" style="width:auto"></select></label>
+ <label>Feedback <select id="fb" style="width:auto"><option value="show">Show which ones are right</option><option value="count">Only say how many are right (harder!)</option></select></label>
+ <label><input type="checkbox" id="rnd"> Random list each time</label><button class="btn big green" id="go">Start</button></div>
+ <p class="muted" style="margin:8px 0 0">Drag the cards into the right order, or tap a card and then tap the spot where it goes. Press Check to see how you did. In the harder mode you only learn how many cards are in the right spot, so you have to think like a detective.</p></div>
+<div id="game" hidden><div class="po-top"><div class="po-title" id="ti"></div><span class="ln-pill" id="info"></span><button class="btn green" id="chk">✓ Check</button><button class="btn white" id="mix">🔀 Mix again</button><button class="btn grape" id="nx">Next list ➜</button><button class="btn white" id="back">⚙️</button></div>
+<div class="po-ends"><span id="e1">First</span><span id="e2">Last</span></div><div class="po-row" id="row"></div><div class="po-log" id="log"></div></div>`;
+const L=Learn.list($('set'),{key:'lists',label:'My lists',help:'One list per line: title | first | second | third | ... Put the items in the RIGHT order, and the game mixes them up. For lists like "smallest to biggest," say so in the title.',def:DEF});
+const refresh=()=>{$('pick').innerHTML=L.rows().map((r,i)=>`<option value="${i}">${Kit.esc(r[0])}</option>`).join('')};refresh();L.el.querySelector('textarea').addEventListener('change',refresh);
+let rows,cur,items,checks;
+$('go').onclick=()=>{rows=L.rows().filter(r=>r.length>=4);if(!rows.length)return alert('Add a list with at least 3 items.');cur=$('rnd').checked?Kit.rand(0,rows.length-1):Math.min(+$('pick').value||0,rows.length-1);$('set').hidden=true;$('game').hidden=false;load()};
+function card(t,i){const m=t.match(/^(\p{Extended_Pictographic}[\u{FE0F}\u{200D}\p{Extended_Pictographic}]*)\s*(.*)$/u);return `<div class="po-card dz-item dz-zone" data-i="${i}"><span class="num"></span>${m?`<span class="em">${m[1]}</span>${Kit.esc(m[2])}`:Kit.esc(t)}</div>`}
+function load(){const [title,...it]=rows[cur];items=it;checks=0;$('ti').textContent=title;let order;do{order=Kit.shuffle(it.map((_,i)=>i))}while(order.every((v,i)=>v===i)&&it.length>1);
+ $('row').innerHTML=order.map(i=>card(it[i],i)).join('');$('log').innerHTML='';$('nx').hidden=rows.length<2;nums();info();window.__t={n:it.length}}
+function nums(){[...$('row').children].forEach((c,k)=>{c.querySelector('.num').textContent=k+1;c.classList.remove('ok','off')})}
+function info(t){$('info').textContent=t||`${items.length} cards · ${checks} ${checks===1?'check':'checks'}`}
+Learn.drag($('row'),{item:'.po-card',zone:'.po-card',drop(it,z,x){if(it===z)return;const r=z.getBoundingClientRect();const after=x>r.left+r.width/2;
+ const kids=[...$('row').children];const iz=kids.indexOf(z),ii=kids.indexOf(it);
+ if(Math.abs(iz-ii)===1&&!(after&&iz>ii)&&!(!after&&iz<ii)){ // tap-swap neighbours feel natural
+  if(iz>ii)z.after(it);else z.before(it)}else{after?z.after(it):z.before(it)}
+ Kit.tick();nums();info()}});
+$('chk').onclick=()=>{checks++;const kids=[...$('row').children];const right=kids.map((c,k)=>+c.dataset.i===k);const n=right.filter(Boolean).length;
+ if($('fb').value==='show')kids.forEach((c,k)=>c.classList.add(right[k]?'ok':'off'));
+ $('log').insertAdjacentHTML('beforeend',`<div>Check ${checks}: <i>${right.map(r=>`<b class="${$('fb').value==='show'&&r?'y':''}"></b>`).join('')}</i> <b>${n} of ${kids.length}</b> in the right spot</div>`);
+ if($('fb').value!=='show'){const last=$('log').lastElementChild.querySelectorAll('i b');for(let k=0;k<n;k++)last[k].classList.add('y')}
+ info();if(n===kids.length){Learn.finish('🧩','Perfect order!',checks===1?'You got it on the very first check!':`You did it in ${checks} checks.`)}else Kit.tone(240,.25,'triangle',.18)};
+$('mix').onclick=load;$('nx').onclick=()=>{cur=(cur+1)%rows.length;load()};$('back').onclick=()=>{$('game').hidden=true;$('set').hidden=false;refresh()};
+</script>
+</body></html>

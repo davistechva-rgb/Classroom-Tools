@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Mystery Object</title>
+<style>
+.mo-wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:22px;align-items:center}
+@media (max-width:820px){.mo-wrap{grid-template-columns:1fr}}
+.mo-bag{position:relative;width:min(100%,360px);aspect-ratio:1;margin:0 auto}
+.mo-sack{position:absolute;inset:12% 6% 0;background:radial-gradient(ellipse at 40% 30%,#B57BEA,#7A3FC7 70%);border:7px solid var(--ink);border-radius:42% 42% 30% 30%/30% 30% 46% 46%;box-shadow:inset -18px -20px 0 rgba(0,0,0,.15),8px 10px 0 var(--ink);display:grid;place-items:center;overflow:hidden}
+.mo-tie{position:absolute;top:6%;left:50%;transform:translateX(-50%);width:44%;height:18%;background:#7A3FC7;border:7px solid var(--ink);border-radius:30% 30% 12px 12px}
+.mo-tie::after{content:"";position:absolute;left:-14%;right:-14%;bottom:-12px;height:16px;background:var(--sun);border:5px solid var(--ink);border-radius:99px}
+.mo-q{font-size:clamp(4rem,12vw,7rem);font-weight:800;color:#fff;text-shadow:4px 4px 0 var(--ink)}
+.mo-obj{position:absolute;font-size:clamp(5rem,16vw,9rem);transition:filter .8s,transform .8s}
+.mo-obj.shape{filter:brightness(0);}
+.mo-obj.full{filter:none;transform:translateY(-34%) scale(1.15)}
+.mo-bag.wiggle{animation:mowig .6s}@keyframes mowig{25%{transform:rotate(-6deg)}75%{transform:rotate(6deg)}}
+.mo-senses{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.mo-sense{font:inherit;border:5px solid var(--ink);border-radius:20px;background:#fff;padding:12px;cursor:pointer;box-shadow:0 5px 0 var(--ink);text-align:left;color:var(--ink);min-height:110px;display:flex;flex-direction:column;gap:6px}
+.mo-sense .h{display:flex;align-items:center;gap:8px;font-weight:800;font-size:1.2rem}.mo-sense .h span{font-size:1.8rem}
+.mo-sense .t{font-size:clamp(1rem,2.1vw,1.25rem);font-weight:600}
+.mo-sense.closed .t{color:#8A93AE;font-style:italic}
+.mo-sense.open{background:#FFF6C9;cursor:default;box-shadow:0 2px 0 var(--ink);transform:translateY(3px)}
+.mo-sense.closed:active{transform:translateY(5px);box-shadow:none}
+.mo-info{text-align:center;font-weight:700;font-size:1.15rem;margin-bottom:12px}
+.mo-name{font-size:clamp(1.6rem,4.4vw,2.6rem);font-weight:800;text-align:center;color:var(--grape);min-height:1.2em}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🧪", "Mystery Object");
+const DEF=`🍎 | Apple | Smooth and round, a little waxy, with a stem on top | Crunch! when you bite it | Sweet and fresh | A healthy snack that grows on trees
+✏️ | Pencil | Long and thin with six flat sides and a pointy tip | Scritch-scratch on paper | Like wood shavings | You write and draw with it
+🔑 | Key | Small, cold metal with bumpy teeth on one edge | Jingle-jangle on a ring | Like metal | It opens a lock
+⚽ | Soccer ball | Round and bouncy with stitched patches | Thump! when you kick it | Like rubber and grass | You kick it into a goal
+🍌 | Banana | Long, curved, with a smooth peel | Squish! when you peel it | Sweet and fruity | A yellow fruit that monkeys love
+🥄 | Spoon | Cool, smooth metal with a little bowl at one end | Clink! against a bowl | It doesn't smell like anything | You eat soup or cereal with it
+📕 | Book | Flat, with lots of thin pages and a hard cover | Flip-flip-flip | Like paper | You read stories in it
+🧸 | Teddy bear | Soft, fuzzy, and squishy with button eyes | Almost silent | Like soft fabric | A cuddly toy
+✂️ | Scissors | Two metal blades and two finger holes | Snip-snip! | Like metal | You cut paper with them
+🪥 | Toothbrush | A long plastic handle with bristles at one end | Swish-swish | Minty | It keeps your teeth clean
+🧦 | Sock | Soft and stretchy, shaped like a foot | Silent | Hopefully not too stinky! | You wear it on your foot
+🪙 | Coin | Small, flat, round metal with ridges on the edge | Clink! in a piggy bank | Like metal | You use it to buy things
+🍋 | Lemon | A bumpy oval with waxy skin | Squirt! when you squeeze it | Sour and fresh | A sour yellow fruit for lemonade
+🕯️ | Candle | A smooth stick of wax with a string on top | A tiny crackle when it's lit | Waxy, sometimes like vanilla | It gives light when you light it
+🧽 | Sponge | Squishy and light, full of tiny holes | Squelch! when you squeeze it | Soapy | It soaks up water for cleaning`;
+const SENSES=[['feel','👆','Feel it'],['sound','👂','Hear it'],['smell','👃','Smell it'],['shape','👀','Peek at its shadow'],['use','💡','What is it for?']];
+const $=id=>document.getElementById(id);
+document.querySelector('main').innerHTML=`<div class="card ln-set" id="set"><div class="row">${Learn.teamPicker('nT',2)}
+ <label>Objects <select id="nO" style="width:auto"><option>5</option><option selected>8</option><option value="99">All</option></select></label><button class="btn big green" id="go">Start</button></div>
+ <p class="muted" style="margin:8px 0 0">Something is hiding in the mystery bag. On your turn, pick one sense card to open, then guess or pass. Every card that's open makes the guess worth one point less, so choose the clue you think helps most!</p></div>
+<div id="game" hidden><div id="tm"></div><div class="mo-info" id="info"></div><div class="mo-wrap"><div><div class="mo-bag" id="bag"><div class="mo-sack"><span class="mo-q" id="qm">?</span><span class="mo-obj" id="obj" hidden></span></div><div class="mo-tie"></div></div><div class="mo-name" id="nm"></div></div>
+<div><div class="mo-senses" id="sn"></div><div class="row" style="justify-content:center;margin-top:14px"><button class="btn green" id="ok">✓ Right guess</button><button class="btn red" id="no">✗ Wrong / Pass</button><button class="btn grape" id="nx" hidden>Next object ➜</button></div></div></div></div>`;
+const L=Learn.list($('set'),{key:'objs',label:'Mystery objects',help:'One per line: emoji | name | how it feels | how it sounds | how it smells | what it is for.',def:DEF});
+let T,deck,idx,open,over,picked;
+$('go').onclick=()=>{deck=Kit.shuffle(L.rows().filter(r=>r.length>=3)).slice(0,+$('nO').value);if(!deck.length)return alert('Add an object first.');
+ $('set').hidden=true;$('game').hidden=false;T=Learn.teams($('tm'),+$('nT').value);idx=0;round()};
+function round(){open=new Set();over=false;picked=false;const o=deck[idx];$('obj').textContent=o[0];$('obj').className='mo-obj';$('obj').hidden=true;$('qm').hidden=false;$('nm').textContent='';
+ $('ok').hidden=$('no').hidden=false;$('nx').hidden=true;window.__t={answer:o[1]};draw()}
+const clue=k=>{const o=deck[idx];const m={feel:o[2],sound:o[3],smell:o[4],use:o[5]};return k==='shape'?'Look at the bag!':m[k]};
+const avail=()=>SENSES.filter(([k])=>k==='shape'||clue(k));
+const worth=()=>Math.max(1,avail().length+1-open.size);
+function draw(){$('sn').innerHTML=avail().map(([k,e,t])=>`<button class="mo-sense ${open.has(k)?'open':'closed'}" data-k="${k}"><span class="h"><span>${e}</span>${t}</span><span class="t">${open.has(k)?Kit.esc(clue(k)):'Tap to open this clue'}</span></button>`).join('');
+ $('info').innerHTML=over?`Object ${idx+1} of ${deck.length}`:`Object ${idx+1} of ${deck.length} · ${T.n>1?`<span class="ln-pill" style="background:${T.colors[T.cur]};color:#fff">${Kit.esc(T.names[T.cur])} team</span> `:''}${picked?'Now guess or pass!':'Open one clue card'} · worth <b>${Learn.pts(worth())}</b>`}
+$('sn').onclick=e=>{const b=e.target.closest('.mo-sense.closed');if(!b||over)return;if(picked&&T.n>1){Learn.flash($('info'),false);return}
+ open.add(b.dataset.k);picked=true;$('bag').classList.remove('wiggle');void $('bag').offsetWidth;$('bag').classList.add('wiggle');Kit.tone(500,.12,'triangle',.2);
+ if(b.dataset.k==='shape'){$('qm').hidden=true;$('obj').hidden=false;$('obj').classList.add('shape')}draw()};
+$('ok').onclick=()=>{if(over)return;T.add(worth());end(true)};
+$('no').onclick=()=>{if(over)return;Learn.flash($('bag'),false);T.next();picked=false;if(open.size>=avail().length){end(false);return}draw()};
+function end(w){over=true;avail().forEach(([k])=>open.add(k));$('qm').hidden=true;$('obj').hidden=false;$('obj').className='mo-obj full';$('nm').textContent=deck[idx][1];
+ w?(Kit.tada(),Kit.confetti(60)):Kit.ding();if(w)T.next();$('ok').hidden=$('no').hidden=true;$('nx').hidden=false;$('nx').textContent=idx>=deck.length-1?'🏁 Finish':'Next object ➜';draw()}
+$('nx').onclick=()=>{if(idx>=deck.length-1){Learn.finish('🎒',T.n>1?T.winner():'All done!','You figured out every mystery object.',()=>{$('game').hidden=true;$('set').hidden=false});return}idx++;round()};
+</script>
+</body></html>

@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Mystery Animal</title>
+<style>
+.ma-wrap{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:900px){.ma-wrap{grid-template-columns:1fr}}
+.ma-board{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;background:#E84A3B;border:6px solid var(--ink);border-radius:22px;padding:12px;box-shadow:7px 7px 0 var(--ink)}
+@media (max-width:600px){.ma-board{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.ma-card{perspective:700px;aspect-ratio:3/4;border:0;padding:0;background:none;cursor:pointer;font:inherit}
+.ma-card .in{position:relative;width:100%;height:100%;transition:transform .55s;transform-style:preserve-3d;transform-origin:bottom}
+.ma-card.down .in{transform:rotateX(-100deg)}
+.ma-card .f{position:absolute;inset:0;background:#fff;border:3px solid var(--ink);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;backface-visibility:hidden}
+.ma-card .f span{font-size:clamp(1.8rem,4.5vw,3rem);line-height:1.1}
+.ma-card .f small{font-weight:700;font-size:clamp(.65rem,1.3vw,.9rem)}
+.ma-card.guess .f{outline:5px solid var(--sun)}
+.ma-qs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ma-qs button{font:inherit;font-weight:700;font-size:.98rem;border:3px solid var(--ink);border-radius:14px;background:#F4FAFF;padding:8px;cursor:pointer;box-shadow:0 3px 0 var(--ink);color:var(--ink);text-align:left}
+.ma-qs button:active{transform:translateY(3px);box-shadow:none}
+.ma-qs button.y{background:#C9F1D2}.ma-qs button.n{background:#FFD9D4}
+.ma-qs button:disabled{cursor:default}
+.ma-ans{font-size:1.6rem;font-weight:800;text-align:center;min-height:1.4em}
+.ma-turn{text-align:center;font-weight:700}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🐾", "Mystery Animal");
+/* Each animal: name, emoji, then yes/no for every question in QS (in order). */
+const QS=[['fur','Does it have fur?'],['feathers','Does it have feathers?'],['scales','Does it have scales?'],['fly','Can it fly?'],['water','Does it spend lots of time in water?'],['legs4','Does it walk on 4 legs?'],['eggs','Does it hatch from an egg?'],['hunter','Does it catch other animals to eat?'],['plants','Does it eat only plants?'],['farm','Is it a farm animal?'],['pet','Do people keep it as a pet?'],['big','Is it bigger than a grown-up?'],['africa','Does it live wild in Africa?'],['stripes','Does it have stripes?'],['spots','Does it have spots?'],['climb','Can it climb trees?'],['night','Is it awake mostly at night?'],['shell','Does it have a shell?']];
+const A={
+ Dog:['🐕',{fur:1,legs4:1,pet:1}],Cat:['🐈',{fur:1,legs4:1,pet:1,hunter:1,climb:1}],Cow:['🐄',{fur:1,legs4:1,plants:1,farm:1,big:1,spots:1}],Pig:['🐖',{legs4:1,farm:1}],
+ Chicken:['🐔',{feathers:1,eggs:1,farm:1}],Horse:['🐎',{fur:1,legs4:1,plants:1,farm:1,big:1}],Lion:['🦁',{fur:1,legs4:1,hunter:1,big:1,africa:1}],Tiger:['🐅',{fur:1,legs4:1,hunter:1,big:1,stripes:1}],
+ Zebra:['🦓',{fur:1,legs4:1,plants:1,big:1,africa:1,stripes:1}],Giraffe:['🦒',{fur:1,legs4:1,plants:1,big:1,africa:1,spots:1}],Elephant:['🐘',{legs4:1,plants:1,big:1,africa:1}],Monkey:['🐒',{fur:1,africa:1,climb:1}],
+ Eagle:['🦅',{feathers:1,fly:1,eggs:1,hunter:1}],Penguin:['🐧',{feathers:1,water:1,eggs:1,hunter:1}],Owl:['🦉',{feathers:1,fly:1,eggs:1,hunter:1,night:1}],Duck:['🦆',{feathers:1,fly:1,water:1,eggs:1,farm:1}],
+ Goldfish:['🐟',{scales:1,water:1,eggs:1,pet:1}],Octopus:['🐙',{water:1,eggs:1,hunter:1}],Frog:['🐸',{water:1,legs4:1,eggs:1,hunter:1}],Snake:['🐍',{scales:1,eggs:1,hunter:1}],
+ Turtle:['🐢',{scales:1,water:1,legs4:1,eggs:1,pet:1,shell:1}],Crocodile:['🐊',{scales:1,water:1,legs4:1,eggs:1,hunter:1,big:1,africa:1}],Bee:['🐝',{fly:1,eggs:1,stripes:1}],Ladybug:['🐞',{fly:1,eggs:1,spots:1,shell:1}],
+ Rabbit:['🐇',{fur:1,legs4:1,plants:1,pet:1}],Bear:['🐻',{fur:1,legs4:1,hunter:1,big:1,climb:1}],Parrot:['🦜',{feathers:1,fly:1,eggs:1,pet:1,climb:1}],Butterfly:['🦋',{fly:1,eggs:1}],
+ Snail:['🐌',{eggs:1,plants:1,shell:1}],Shark:['🦈',{water:1,hunter:1,big:1}]};
+const $=id=>document.getElementById(id);
+document.querySelector('main').innerHTML=`<div class="card ln-set" id="set"><div class="row">${Learn.teamPicker('nT',2)}
+ <label>Animals on the board <select id="nA" style="width:auto"><option value="12">12</option><option value="18">18</option><option value="24" selected>24</option></select></label>
+ <label><input type="checkbox" id="auto"> Flip the cards for us</label><button class="btn big green" id="go">Start</button></div>
+ <p class="muted" style="margin:8px 0 0">The computer is thinking of one animal on the board. Ask yes-or-no questions, then tap the animals that can't be it to flip them down. When you think you know, tap "Make a guess." Fewer questions means more points! Teams take turns asking.</p></div>
+<div id="game" hidden><div id="tm"></div><div class="ma-wrap"><div class="ma-board" id="bd"></div>
+<div class="card stack"><div class="ma-turn" id="turn"></div><div class="ma-ans" id="ans">Ask a question!</div><div class="ma-qs" id="qs"></div>
+<div class="row" style="justify-content:center"><button class="btn grape" id="guessBtn">🎯 Make a guess</button><button class="btn white small" id="reset">↺ Flip all back up</button></div></div></div></div>`;
+let T,secret,board,asked,guessing,over;
+$('go').onclick=()=>{$('set').hidden=true;$('game').hidden=false;T=Learn.teams($('tm'),+$('nT').value);round()};
+function round(){board=Kit.shuffle(Object.keys(A)).slice(0,+$('nA').value);secret=Kit.pick(board);asked=0;guessing=false;over=false;window.__t={answer:secret,A,board};
+ $('bd').innerHTML=board.map(n=>`<button class="ma-card" data-n="${n}"><div class="in"><div class="f"><span>${A[n][0]}</span><small>${n}</small></div></div></button>`).join('');
+ $('qs').innerHTML=QS.map(([k,q])=>`<button data-q="${k}">${q}</button>`).join('');$('ans').textContent='Ask a question!';$('guessBtn').textContent='🎯 Make a guess';draw()}
+const worth=()=>Math.max(1,12-asked);
+function draw(){$('turn').innerHTML=over?'':`${T.n>1?`<span class="ln-pill" style="background:${T.colors[T.cur]};color:#fff">${Kit.esc(T.names[T.cur])} team's turn</span><br>`:''}Questions asked: <b>${asked}</b> · A right guess is worth <b>${Learn.pts(worth())}</b>`}
+const has=(n,k)=>!!A[n][1][k];
+$('qs').onclick=e=>{const b=e.target.closest('[data-q]');if(!b||over||guessing||b.disabled)return;const k=b.dataset.q,y=has(secret,k);asked++;b.classList.add(y?'y':'n');b.disabled=true;
+ $('ans').innerHTML=y?'✅ Yes!':'❌ No!';y?Kit.tone(880,.2,'sine',.25):Kit.tone(220,.25,'triangle',.25);
+ if($('auto').checked)document.querySelectorAll('.ma-card:not(.down)').forEach(c=>{if(has(c.dataset.n,k)!==y)setTimeout(()=>c.classList.add('down'),250)});
+ T.next();draw()};
+$('bd').onclick=e=>{const c=e.target.closest('.ma-card');if(!c||over)return;
+ if(guessing){if(c.classList.contains('down'))return;guessing=false;$('guessBtn').textContent='🎯 Make a guess';document.querySelectorAll('.ma-card').forEach(x=>x.classList.remove('guess'));
+  if(c.dataset.n===secret){T.add(worth(),T.cur,c);over=true;$('ans').innerHTML=`🎉 Yes! It was the ${secret.toLowerCase()} ${A[secret][0]}`;Kit.tada();Kit.confetti(90);
+   document.querySelectorAll('.ma-card').forEach(x=>{if(x.dataset.n!==secret)x.classList.add('down')});$('guessBtn').textContent='▶ New animal';draw()}
+  else{c.classList.add('down');Learn.flash(c,false);$('ans').innerHTML=`Not the ${c.dataset.n.toLowerCase()}!`;asked++;T.next();draw()}return}
+ c.classList.toggle('down');Kit.tick()};
+$('guessBtn').onclick=()=>{if(over){round();return}guessing=!guessing;$('guessBtn').textContent=guessing?'✕ Cancel guess':'🎯 Make a guess';$('ans').textContent=guessing?'Tap the animal you think it is!':'Ask a question!';document.querySelectorAll('.ma-card:not(.down)').forEach(x=>x.classList.toggle('guess',guessing))};
+$('reset').onclick=()=>{if(over)return;document.querySelectorAll('.ma-card').forEach(c=>c.classList.remove('down'))};
+</script>
+</body></html>

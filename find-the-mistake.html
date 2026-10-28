@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Find the Mistake</title>
+<style>
+.fm-paper{max-width:980px;margin:0 auto;background:#fff;border:5px solid var(--ink);border-radius:22px;box-shadow:7px 7px 0 var(--ink);padding:clamp(18px,3.6vw,40px) clamp(18px,3.6vw,40px) clamp(18px,3.6vw,40px) clamp(54px,7vw,84px);position:relative;background-image:linear-gradient(90deg,transparent clamp(36px,5vw,62px),#FF9CA8 clamp(36px,5vw,62px),#FF9CA8 calc(clamp(36px,5vw,62px) + 3px),transparent calc(clamp(36px,5vw,62px) + 3px)),repeating-linear-gradient(#fff 0 calc(1.9em - 2px),#CFE0F5 calc(1.9em - 2px) 1.9em)}
+.fm-line{font-size:clamp(1.4rem,3.6vw,2.4rem);line-height:1.9;font-weight:600}
+.fm-w{display:inline-block;padding:0 .12em;border-radius:10px;cursor:pointer;position:relative;transition:background .2s}
+.fm-w:hover{background:#FFF1B8}
+.fm-w.bad{background:#FFD9D4;text-decoration:line-through wavy #D9432F}
+.fm-w.found{background:var(--sun);text-decoration:line-through 4px #D9432F}
+.fm-w.fixed{background:#C9F1D2;text-decoration:none}
+.fm-w .fix{position:absolute;left:50%;top:-1.15em;transform:translateX(-50%) rotate(-4deg);font-family:"Comic Sans MS","Chalkboard SE","Segoe Print",cursive;color:#D9432F;font-size:.8em;white-space:nowrap;font-weight:700}
+.fm-pen{position:absolute;right:16px;top:-26px;font-size:3rem;transform:rotate(20deg)}
+.fm-ask{text-align:center;font-weight:800;font-size:clamp(1.2rem,3vw,1.8rem);color:#fff;text-shadow:2px 2px 0 var(--ink);margin:0 0 14px}
+.fm-opts{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:18px}
+.fm-opts button{font:inherit;font-weight:800;font-size:clamp(1.2rem,2.6vw,1.7rem);border:5px solid var(--ink);border-radius:16px;background:#fff;padding:8px 22px;cursor:pointer;box-shadow:0 5px 0 var(--ink);color:var(--ink)}
+.fm-opts button.no{background:#FFD9D4;opacity:.55}
+.fm-hud{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🔍", "Find the Mistake");
+const DEF=`The sun rises in the {west>east} every morning.
+A spider has {six>eight} legs.
+My dog {run>runs} to the door when I get home.
+Water freezes at {100>32} degrees Fahrenheit.
+7 × 8 = {54>56}
+There are {twelve>seven} days in a week.
+She {readed>read} three books last summer.
+The capital of Virginia is {Norfolk>Richmond}.
+We put our coats on because it was {hot>cold} outside.
+The Pacific is the {smallest>largest} ocean on Earth.
+They went to {there>their} grandma's house.
+Plants need sunlight, water, and {candy>air} to grow.
+A triangle has {four>three} sides.
+I {seen>saw} a rainbow after the storm.
+George Washington was the {third>first} President of the United States.
+50 + 25 = {65>75}`;
+const $=id=>document.getElementById(id);
+document.querySelector('main').innerHTML=`<div class="card ln-set" id="set"><div class="row">${Learn.teamPicker('nT',0)}<label>Fixing <select id="fx" style="width:auto"><option value="pick">Pick the fix from choices</option><option value="say">Say the fix out loud (teacher checks)</option></select></label><button class="btn big green" id="go">Start</button></div>
+ <p class="muted" style="margin:8px 0 0">Every sentence has exactly one mistake. Tap the word that's wrong, then fix it. Grammar, facts, spelling, and math all count!</p></div>
+<div id="game" hidden><div id="tm"></div><div class="fm-hud"><span class="ln-pill" id="pr"></span><span class="ln-pill">⭐ <b id="sc">0</b></span></div><div class="fm-ask" id="ask"></div>
+<div class="fm-paper"><span class="fm-pen">🖍️</span><div class="fm-line" id="ln"></div></div><div class="fm-opts" id="op"></div>
+<div class="row" style="justify-content:center;margin-top:14px"><button class="btn big grape" id="nx" hidden>Next ➜</button></div></div>`;
+const L=Learn.list($('set'),{key:'sent',label:'My sentences',help:'One per line. Put the mistake in curly brackets with the fix after an arrow: The cat {are>is} sleeping.',def:DEF});
+let T,deck,idx,score,phase,tries,cur;
+$('go').onclick=()=>{deck=Kit.shuffle(L.get().filter(l=>/\{[^>{}]+>[^}]+\}/.test(l)));if(!deck.length)return alert('Add a sentence with a {wrong>right} mistake.');$('set').hidden=true;$('game').hidden=false;T=Learn.teams($('tm'),+$('nT').value);idx=0;score=0;round()};
+function round(){const s=deck[idx];phase='find';tries=0;const m=s.match(/\{([^>{}]+)>([^}]+)\}/);cur={wrong:m[1].trim(),right:m[2].trim()};
+ const before=s.slice(0,m.index),after=s.slice(m.index+m[0].length);const tok=t=>t.split(/(\s+)/).filter(Boolean).map(w=>/^\s+$/.test(w)?w:`<span class="fm-w">${Kit.esc(w)}</span>`).join('');
+ $('ln').innerHTML=tok(before)+`<span class="fm-w" data-m="1">${Kit.esc(cur.wrong)}</span>`+tok(after);
+ $('op').innerHTML='';$('nx').hidden=true;$('ask').textContent='🔍 Tap the word that\'s wrong!';hud();window.__t=cur}
+function hud(){$('pr').textContent=`Sentence ${idx+1} of ${deck.length}`;$('sc').textContent=score}
+$('ln').onclick=e=>{const w=e.target.closest('.fm-w');if(!w||phase!=='find'||w.classList.contains('bad'))return;
+ if(w.dataset.m){phase='fix';w.classList.add('found');Kit.ding();const pts=tries===0?2:1;score+=pts;T.add(pts,T.cur,w);hud();askFix(w)}
+ else{w.classList.add('bad');tries++;Learn.flash(w,false);T.next()}};
+function askFix(w){$('ask').textContent='✏️ Now fix it! What should it say?';
+ if($('fx').value==='say'){$('op').innerHTML=`<button data-y>✓ They fixed it</button><button data-show>👀 Show the fix</button>`;$('op').onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.y!=null){score++;T.add(1,T.cur,b);hud()}done(w)};return}
+ const pool=deck.map(l=>(l.match(/\{([^>{}]+)>([^}]+)\}/)||[])[2]).filter(x=>x&&x.trim()!==cur.right).map(x=>x.trim());
+ const sameKind=pool.filter(x=>/^\d+$/.test(x)===/^\d+$/.test(cur.right));const near=/^\d+$/.test(cur.right)?[+cur.right+Kit.pick([1,2,10]),+cur.right-Kit.pick([1,2,10])].map(String):[];
+ const opts=Kit.shuffle([cur.right,cur.wrong,...Kit.shuffle([...new Set([...near,...sameKind])]).filter(x=>x!==cur.right&&x!==cur.wrong).slice(0,2)]);
+ $('op').innerHTML=opts.map(o=>`<button data-o="${Kit.esc(o)}">${Kit.esc(o)}</button>`).join('');
+ $('op').onclick=e=>{const b=e.target.closest('[data-o]');if(!b||b.classList.contains('no')||phase!=='fix')return;if(b.dataset.o===cur.right){score++;T.add(1,T.cur,b);hud();done(w)}else{b.classList.add('no');Learn.flash(b,false)}}}
+function done(w){phase='done';$('op').onclick=null;w.classList.remove('found');w.classList.add('fixed');w.innerHTML=`${Kit.esc(cur.right)}<span class="fix">${Kit.esc(cur.right)}</span>`;w.querySelector('.fix').remove();
+ w.insertAdjacentHTML('beforeend',`<span class="fix">✓</span>`);Kit.tada();$('op').innerHTML='';$('ask').textContent='✅ Fixed!';T.next();$('nx').hidden=false;$('nx').textContent=idx>=deck.length-1?'🏁 Finish':'Next ➜'}
+$('nx').onclick=()=>{if(idx>=deck.length-1){Learn.finish('🖍️',T.n>1?T.winner():`${score} points!`,'You found every mistake.',()=>{$('game').hidden=true;$('set').hidden=false});return}idx++;round()};
+</script>
+</body></html>

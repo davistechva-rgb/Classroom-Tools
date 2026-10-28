@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Sequence Builder</title>
+<style>
+.sb-wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:18px;align-items:start}
+@media (max-width:860px){.sb-wrap{grid-template-columns:1fr}}
+.sb-tray{display:flex;flex-direction:column;gap:10px;min-height:120px;padding:12px;border:4px dashed rgba(29,43,83,.4);border-radius:20px;background:rgba(255,255,255,.4)}
+.sb-tray h3{margin:0;font-size:1.05rem}
+.sb-step{border:4px solid var(--ink);border-radius:14px;background:#fff;padding:8px 12px;font-weight:700;box-shadow:0 4px 0 var(--ink);font-size:clamp(.95rem,1.8vw,1.15rem)}
+.sb-track{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:30px 34px;position:relative;padding-right:34px}
+@media (max-width:600px){.sb-track{grid-template-columns:minmax(0,1fr);padding-right:0;gap:38px}.sb-slot::after{content:"⬇";right:auto;left:50%;top:auto;bottom:-36px;transform:translateX(-50%)}.sb-slot:last-child::after{content:"🏁";right:auto}}
+.sb-slot{position:relative;min-height:118px;border:4px dashed #9DB0D0;border-radius:18px;background:#F4FAFF;padding:30px 10px 10px;display:flex;flex-direction:column;gap:6px}
+.sb-slot.full{border-style:solid;border-color:var(--ink);background:#fff}
+.sb-slot.ok{background:#C9F1D2}.sb-slot.off{background:#FFE3DF}
+.sb-slot::after{content:"➜";position:absolute;right:-30px;top:44%;font-size:1.6rem;font-weight:800;color:var(--ink)}
+.sb-slot:last-child::after{content:"🏁";right:-34px}
+.sb-slot .n{position:absolute;top:-16px;left:12px;background:var(--grape);color:#fff;border:3px solid var(--ink);border-radius:999px;padding:0 12px;font-weight:800}
+.sb-slot select{position:absolute;top:4px;right:6px;width:auto;font-size:.85rem;padding:2px 6px;border-width:2px;border-radius:8px}
+.sb-slot .sb-step{box-shadow:none}
+.sb-slot.now{outline:6px solid var(--sun);outline-offset:3px}
+.sb-bot{position:fixed;z-index:60;font-size:3rem;pointer-events:none;transition:left .7s cubic-bezier(.4,1.4,.5,1),top .7s cubic-bezier(.4,1.4,.5,1)}
+.sb-say{font-size:clamp(1.3rem,3vw,2rem);font-weight:800;text-align:center;min-height:1.5em;margin:14px 0}
+.sb-add{display:flex;gap:8px}.sb-add input{flex:1}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("📚", "Sequence Builder");
+const DEF=`How a bill becomes a law | Someone has an idea for a law | A member of Congress writes the bill | A committee studies the bill | The House and Senate vote on it | The President signs it into law
+Planting a seed | Fill a pot with soil | Poke a small hole with your finger | Drop the seed in the hole | Cover it with soil | Water it and put it in the sun
+The water cycle | The sun warms the water | Water evaporates into vapor | Vapor cools and forms clouds | Rain or snow falls | Water flows back to the ocean
+Writing a story | Brainstorm ideas | Plan the beginning, middle, and end | Write a first draft | Revise and edit | Publish and share it
+Making a paper airplane | Fold the paper in half the long way | Fold the top corners to the middle | Fold the new edges to the middle again | Fold the plane in half | Fold down the wings`;
+const WORDS=['','First,','Next,','Then,','After that,','Later,','Finally,','Last,'];
+const $=id=>document.getElementById(id);
+document.querySelector('main').innerHTML=`<div class="card ln-set" id="set"><div class="row"><label>Sequence <select id="pick" style="width:auto"></select></label>
+ <label><input type="checkbox" id="free"> Build our own from scratch</label><button class="btn big green" id="go">Start</button></div>
+ <p class="muted" style="margin:8px 0 0">Move each step onto the path in order, and pick a linking word for each one, like <i>First</i>, <i>Next</i>, and <i>Finally</i>. Then press Play and the robot walks the path and reads your sequence out loud.</p></div>
+<div id="game" hidden><div class="row" style="justify-content:center;margin-bottom:12px"><b id="ti" style="font-size:1.4rem;color:#fff;text-shadow:2px 2px 0 var(--ink)"></b><button class="btn green" id="play">▶ Play my sequence</button><button class="btn white" id="chk">✓ Check the order</button><button class="btn white" id="clr">↺ Start over</button><button class="btn white" id="back">⚙️</button></div>
+<div class="sb-say" id="say"></div><div class="sb-wrap"><div class="sb-tray dz-zone" id="tray" data-tray><h3>📦 Steps to place</h3><div class="sb-add" id="add" hidden><input type="text" id="newStep" placeholder="Type a step and press Add"><button class="btn small" id="addBtn">Add</button></div></div>
+<div class="sb-track" id="track"></div></div></div>`;
+const L=Learn.list($('set'),{key:'seqs',label:'My sequences',help:'One per line: title | first step | second step | ... in the right order.',def:DEF});
+const refresh=()=>{$('pick').innerHTML=L.rows().map((r,i)=>`<option value="${i}">${Kit.esc(r[0])}</option>`).join('')};refresh();L.el.querySelector('textarea').addEventListener('change',refresh);
+let steps=[],free=false,bot,playing=false;
+$('go').onclick=()=>{free=$('free').checked;const r=L.rows()[+$('pick').value||0];if(!free&&!r)return alert('Add a sequence first.');steps=free?[]:r.slice(1);$('ti').textContent=free?'Our sequence':r[0];$('set').hidden=true;$('game').hidden=false;load()};
+function stepEl(t,i){return `<div class="sb-step dz-item" data-i="${i}">${Kit.esc(t)}</div>`}
+function load(){const n=free?6:steps.length;$('add').hidden=!free;$('chk').hidden=free;
+ $('tray').querySelectorAll('.sb-step').forEach(e=>e.remove());$('tray').insertAdjacentHTML('beforeend',Kit.shuffle(steps.map((t,i)=>stepEl(t,i))).join(''));
+ $('track').innerHTML=Array.from({length:n},(_,k)=>`<div class="sb-slot dz-zone" data-k="${k}"><span class="n">${k+1}</span><select aria-label="Linking word">${WORDS.map(w=>`<option ${w===(k===0?'First,':k===n-1?'Finally,':'Next,')?'selected':''}>${w}</option>`).join('')}</select></div>`).join('');$('say').textContent='';window.__t={n:steps.length}}
+$('addBtn').onclick=()=>{const v=$('newStep').value.trim();if(!v)return;steps.push(v);$('tray').insertAdjacentHTML('beforeend',stepEl(v,steps.length-1));$('newStep').value='';
+ if(steps.length>$('track').children.length){const k=$('track').children.length;$('track').insertAdjacentHTML('beforeend',`<div class="sb-slot dz-zone" data-k="${k}"><span class="n">${k+1}</span><select>${WORDS.map(w=>`<option ${w==='Next,'?'selected':''}>${w}</option>`).join('')}</select></div>`)}};
+$('newStep').onkeydown=e=>{if(e.key==='Enter')$('addBtn').click()};
+Learn.drag($('game'),{item:'.sb-step',zone:'.dz-zone',drop(it,z){
+ if(z.dataset.tray!=null){z.appendChild(it)}else{const old=z.querySelector('.sb-step');if(old&&old!==it){const from=it.closest('.sb-slot');if(from)from.appendChild(old);else $('tray').appendChild(old)}z.appendChild(it)}
+ document.querySelectorAll('.sb-slot').forEach(s=>{s.classList.toggle('full',!!s.querySelector('.sb-step'));s.classList.remove('ok','off')});Kit.tick()}});
+$('chk').onclick=()=>{const sl=[...document.querySelectorAll('.sb-slot')];let r=0;sl.forEach((s,k)=>{const st=s.querySelector('.sb-step');const ok=st&&+st.dataset.i===k;s.classList.toggle('ok',ok);s.classList.toggle('off',!!st&&!ok);r+=ok});
+ $('say').textContent=`${r} of ${sl.length} steps are in the right spot.`;if(r===sl.length)Learn.finish('📚','Perfect sequence!','Every step is in order. Press Play to hear it.');else Kit.tone(240,.25,'triangle',.18)};
+$('clr').onclick=()=>{if(free){steps=[]}load()};$('back').onclick=()=>{$('game').hidden=true;$('set').hidden=false};
+const speak=t=>new Promise(res=>{try{const u=new SpeechSynthesisUtterance(t);u.rate=.95;u.onend=res;u.onerror=res;speechSynthesis.cancel();speechSynthesis.speak(u);setTimeout(res,Math.max(2200,t.length*85))}catch{setTimeout(res,1800)}});
+$('play').onclick=async()=>{if(playing)return;const sl=[...document.querySelectorAll('.sb-slot')].filter(s=>s.querySelector('.sb-step'));if(!sl.length){$('say').textContent='Put some steps on the path first!';return}
+ playing=true;bot=document.createElement('div');bot.className='sb-bot';bot.textContent='🤖';document.body.appendChild(bot);
+ for(const s of sl){const r=s.getBoundingClientRect();bot.style.left=r.left-20+'px';bot.style.top=r.top-40+'px';document.querySelectorAll('.sb-slot').forEach(x=>x.classList.remove('now'));s.classList.add('now');
+  const w=s.querySelector('select').value;const t=`${w} ${s.querySelector('.sb-step').textContent.replace(/^./,c=>w?c.toLowerCase():c)}`.trim();$('say').textContent=t;Kit.tone(660,.1,'triangle',.2);await speak(t)}
+ document.querySelectorAll('.sb-slot').forEach(x=>x.classList.remove('now'));bot.textContent='🎉';Kit.tada();await Kit.sleep(900);bot.remove();playing=false;$('say').textContent='The end!'};
+</script>
+</body></html>

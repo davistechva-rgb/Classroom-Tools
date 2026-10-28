@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Cause & Effect Game</title>
+<style>
+.ce-lane{position:relative;display:flex;gap:clamp(10px,2vw,22px);align-items:flex-end;justify-content:flex-start;overflow-x:auto;padding:30px 20px 26px;min-height:260px;background:linear-gradient(transparent 85%,#C99A5C 85%);border:5px solid var(--ink);border-radius:22px;box-shadow:6px 6px 0 var(--ink);background-color:#FFF6C9;scroll-behavior:smooth}
+.ce-dom{flex:none;width:clamp(120px,15vw,168px);height:clamp(190px,26vh,230px);background:#fff;border:5px solid var(--ink);border-radius:14px;box-shadow:5px 0 0 var(--ink);display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:10px;font-weight:700;font-size:clamp(.9rem,1.6vw,1.1rem);transform-origin:bottom right;position:relative;animation:cein .5s cubic-bezier(.3,1.6,.5,1)}
+.ce-dom::before{content:"";position:absolute;left:12%;right:12%;top:50%;border-top:4px dashed rgba(29,43,83,.25)}
+.ce-dom .tag{position:absolute;top:-14px;left:50%;transform:translateX(-50%);font-size:.78rem;background:var(--tc);color:#fff;border:3px solid var(--ink);border-radius:99px;padding:0 10px;white-space:nowrap}
+.ce-dom .e{font-size:2rem}
+.ce-dom.fall{animation:cefall .45s ease-in forwards}
+@keyframes cein{from{transform:translateY(-60px) rotate(-8deg);opacity:0}}
+@keyframes cefall{to{transform:rotate(68deg)}}
+.ce-dom.next{border-style:dashed;background:rgba(255,255,255,.5);color:#9AA6C3;box-shadow:none;animation:none;font-size:2.6rem}
+.ce-ch{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:18px}
+@media (max-width:700px){.ce-ch{grid-template-columns:1fr}}
+.ce-ch button{font:inherit;font-weight:700;font-size:clamp(1rem,2vw,1.25rem);border:5px solid var(--ink);border-radius:18px;background:#fff;padding:14px;cursor:pointer;box-shadow:0 5px 0 var(--ink);color:var(--ink);text-align:center}
+.ce-ch button:active{transform:translateY(5px);box-shadow:none}
+.ce-ch button.no{background:#FFD9D4;opacity:.55}
+.ce-q{text-align:center;font-weight:800;font-size:clamp(1.2rem,2.8vw,1.7rem);margin-top:16px}
+.ce-hud{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🧠", "Cause & Effect Game");
+const DEF=`🌧️ It rained hard all night | 🌊 The river rose over its banks | 🌉 The bridge was closed | 🚌 The bus had to take the long way | ⏰ Kids got to school late
+⏰ My alarm didn't go off | 😴 I overslept | 🏃 I rushed out the door | 🥪 I forgot my lunch | 😋 My friend shared her sandwich
+☀️ The sun was very hot | 🧊 The ice cream started to melt | 🍦 It dripped down my hand | 🐜 Ants came to the sticky spot | 🧽 We cleaned up the sidewalk
+🌱 We planted seeds in the spring | 💧 We watered them every day | 🌻 Tall sunflowers grew | 🐦 Birds came to eat the seeds | 🎶 The yard was full of birdsong
+🎈 I let go of my balloon | 🌬️ The wind carried it up | 🌳 It got stuck in a tree | 🧗 Dad climbed a ladder | 🙌 He brought it back down
+📚 Maria read every night | 📖 Her reading got faster | 🏆 She won the reading challenge | 🎁 She picked a new book as a prize | 📚 She read every night again!
+🍂 The days got colder | 🐻 The bear ate lots of food | 💤 It found a cave to sleep in | ❄️ It slept all winter | 🌸 It woke up in the spring
+🦷 Sam ate lots of candy | 🪥 He forgot to brush | 😣 His tooth started to hurt | 👩‍⚕️ He went to the dentist | 🪥 Now he brushes twice a day`;
+const $=id=>document.getElementById(id);const TC=['#FF6B5B','#FF9F43','#FFC93C','#5DC66E','#22C3E6','#9B6BF2','#FF8FC7','#1D2B53'];
+document.querySelector('main').innerHTML=`<div class="card ln-set" id="set"><div class="row">${Learn.teamPicker('nT',0)}<label>Chains <select id="nC" style="width:auto"><option>3</option><option selected>5</option><option value="99">All</option></select></label><button class="btn big green" id="go">Start</button></div>
+ <p class="muted" style="margin:8px 0 0">Each event causes the next one, like a row of dominoes. Pick what happens next to add a domino. Build the whole chain and watch it fall! A wrong pick knocks one point off the chain.</p></div>
+<div id="game" hidden><div id="tm"></div><div class="ce-hud"><span class="ln-pill" id="info"></span><span class="ln-pill">⭐ Chain points <b id="cp">0</b></span></div><div class="ce-lane" id="lane"></div>
+<div class="ce-q" id="q"></div><div class="ce-ch" id="ch"></div><div class="row" style="justify-content:center;margin-top:14px"><button class="btn big grape" id="nx" hidden>Next chain ➜</button></div></div>`;
+const L=Learn.list($('set'),{key:'chains',label:'My cause-and-effect chains',help:'One chain per line: first cause | what happens because of it | what happens next | ... (at least 3 events). An emoji at the start of each event is optional.',def:DEF});
+let T,chains,ci,step,pts,miss;
+$('go').onclick=()=>{chains=Kit.shuffle(L.rows().filter(r=>r.length>=3)).slice(0,+$('nC').value);if(!chains.length)return alert('Add a chain with at least 3 events.');$('set').hidden=true;$('game').hidden=false;T=Learn.teams($('tm'),+$('nT').value);ci=0;load()};
+const split=t=>{const m=t.match(/^(\p{Extended_Pictographic}[\u{FE0F}\u{200D}\p{Extended_Pictographic}]*)\s*(.*)$/u);return m?[m[1],m[2]]:['',t]};
+function dom(t,k){const [e,x]=split(t);return `<div class="ce-dom" style="--tc:${TC[k%TC.length]}"><span class="tag">${k===0?'Cause':'Effect '+k}</span>${e?`<span class="e">${e}</span>`:''}${Kit.esc(x)}</div>`}
+function load(){step=1;pts=0;miss=0;$('nx').hidden=true;const c=chains[ci];$('lane').innerHTML=dom(c[0],0)+'<div class="ce-dom next">?</div>';ask();window.__t={chain:c}}
+function ask(){const c=chains[ci];$('info').textContent=`Chain ${ci+1} of ${chains.length} · domino ${step+1} of ${c.length}`;$('cp').textContent=pts;
+ if(step>=c.length){$('q').textContent='The chain is complete! Knock it over…';$('ch').innerHTML='';topple();return}
+ const right=c[step];const others=Kit.shuffle(chains.concat(L.rows()).flat().filter(x=>x&&!c.includes(x))).filter((x,i,a)=>a.indexOf(x)===i).slice(0,2);
+ const near=c.slice(step+1).length?[Kit.pick(c.slice(step+1))]:[];const pool=Kit.shuffle([right,...near.concat(others).slice(0,2)]);
+ const [e,x]=split(c[step-1]);$('q').innerHTML=`${e} <i>${Kit.esc(x)}.</i> So what happened next?${T.n>1?` <span class="ln-pill" style="background:${T.colors[T.cur]};color:#fff">${Kit.esc(T.names[T.cur])}</span>`:''}`;
+ $('ch').innerHTML=pool.map(p=>{const [pe,px]=split(p);return `<button data-v="${Kit.esc(p)}">${pe?`<span style="font-size:1.8rem">${pe}</span><br>`:''}${Kit.esc(px)}</button>`}).join('')}
+$('ch').onclick=e=>{const b=e.target.closest('button');if(!b||b.classList.contains('no'))return;const c=chains[ci];
+ if(b.dataset.v===c[step]){pts+=2;T.add(2,T.cur,b);$('lane').querySelector('.next').outerHTML=dom(c[step],step)+(step<c.length-1?'<div class="ce-dom next">?</div>':'');step++;Kit.tone(520+step*60,.15,'triangle',.25);$('lane').scrollLeft=1e5;T.next();ask()}
+ else{b.classList.add('no');miss++;pts=Math.max(0,pts-1);Learn.flash(b,false);$('cp').textContent=pts;T.next();ask()}};
+async function topple(){await Kit.sleep(500);const ds=[...$('lane').querySelectorAll('.ce-dom')];$('lane').scrollLeft=0;
+ for(const d of ds){d.classList.add('fall');Kit.tone(180,.08,'square',.25);Kit.tone(120,.1,'sine',.3,.03);await Kit.sleep(240);d.scrollIntoView({block:'nearest',inline:'center'})}
+ Kit.tada();Kit.confetti(80);$('q').textContent=miss?`Chain complete with ${miss} wrong ${miss===1?'pick':'picks'}!`:'Perfect chain! Every domino in the right place!';$('nx').hidden=false;$('nx').textContent=ci>=chains.length-1?'🏁 Finish':'Next chain ➜'}
+$('nx').onclick=()=>{if(ci>=chains.length-1){Learn.finish('🧠',T.n>1?T.winner():'Cause & effect expert!','You built every chain.',()=>{$('game').hidden=true;$('set').hidden=false});return}ci++;load()};
+</script>
+</body></html>

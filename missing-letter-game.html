@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Missing Letter Game</title>
+<style>
+.ml-card{max-width:900px;margin:0 auto;text-align:center}
+.ml-pic{font-size:clamp(4rem,12vw,7rem);line-height:1.1}
+.ml-word{display:flex;justify-content:center;flex-wrap:wrap;gap:8px;margin:16px 0}
+.ml-word span{width:clamp(48px,8vw,78px);height:clamp(60px,10vw,96px);border:5px solid var(--ink);border-radius:14px;background:#fff;display:grid;place-items:center;font-weight:800;font-size:clamp(2rem,6vw,3.6rem);box-shadow:0 5px 0 var(--ink);text-transform:lowercase}
+.ml-word span.gap{background:#FFF6C9;border-style:dashed;color:var(--grape)}
+.ml-word span.gap.now{animation:mlnow 1s infinite}@keyframes mlnow{50%{transform:translateY(-6px)}}
+.ml-word span.good{background:#C9F1D2;border-style:solid}
+.ml-keys{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;max-width:760px;margin:0 auto}
+.ml-keys button{font:inherit;font-weight:800;font-size:clamp(1.8rem,4.5vw,2.8rem);width:clamp(66px,11vw,96px);aspect-ratio:1;border:5px solid var(--ink);border-radius:20px;background:var(--kc);color:#fff;text-shadow:2px 2px 0 rgba(0,0,0,.25);cursor:pointer;box-shadow:0 6px 0 var(--ink);text-transform:lowercase}
+.ml-keys button:active{transform:translateY(6px);box-shadow:none}
+.ml-keys button.no{filter:grayscale(1);opacity:.4}
+.ml-hud{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
+.ml-time{height:16px;border:4px solid var(--ink);border-radius:99px;background:#fff;overflow:hidden;max-width:600px;margin:0 auto 12px}
+.ml-time b{display:block;height:100%;background:var(--grass);transition:width 1s linear}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🔤", "Missing Letter Game");
+const DEF=`🐱 | cat
+🐶 | dog
+☀️ | sun
+🍎 | apple
+🐟 | fish
+🚗 | car
+🏠 | house
+🌳 | tree
+🐸 | frog
+🦆 | duck
+⭐ | star
+🍰 | cake
+🐻 | bear
+🌙 | moon
+🚂 | train
+🧀 | cheese
+🐍 | snake
+🦓 | zebra
+🍌 | banana
+🎈 | balloon
+🐧 | penguin
+🌈 | rainbow
+🦋 | butterfly
+✏️ | pencil`;
+const $=id=>document.getElementById(id);
+document.querySelector('main').innerHTML=`<div class="card ln-set" id="set"><div class="row">
+ <label>Missing letters <select id="lv" style="width:auto"><option value="1">1 letter</option><option value="2">2 letters</option><option value="v">All the vowels</option><option value="h">Half the word</option></select></label>
+ <label>Mode <select id="md" style="width:auto"><option value="list">Go through my list</option><option value="clock">Beat the clock (60 s)</option></select></label>
+ <label><input type="checkbox" id="pic" checked> Show the picture</label><button class="btn big green" id="go">Start</button></div>
+ <p class="muted" style="margin:8px 0 0">Look at the picture and the word. Tap the letter that fills the blinking gap. Great for spelling lists!</p></div>
+<div id="game" hidden><div class="ml-hud"><span class="ln-pill" id="pr"></span><span class="ln-pill">🔥 Streak <b id="st">0</b></span><span class="ln-pill">⭐ <b id="sc">0</b></span><button class="btn white small" id="say">🔈 Say it</button><button class="btn white small" id="skip">Skip ➜</button></div>
+<div class="ml-time" id="tbar" hidden><b id="tb"></b></div>
+<div class="card ml-card"><div class="ml-pic" id="pc"></div><div class="ml-word" id="wd"></div><div class="ml-keys" id="ky"></div></div></div>`;
+const L=Learn.list($('set'),{key:'words',label:'My spelling words',help:'One per line: emoji | word (or just the word with no picture).',def:DEF});
+let deck,idx,cur,gaps,gi,score,streak,timer,left,mode,errs;
+const VOW='aeiou',ALPHA='abcdefghijklmnopqrstuvwxyz';
+$('go').onclick=()=>{deck=Kit.shuffle(L.rows().map(r=>r.length>1?{e:r[0],w:r[1].toLowerCase()}:{e:'',w:r[0].toLowerCase()}).filter(x=>/[a-z]/.test(x.w)));if(!deck.length)return alert('Add some words first.');
+ mode=$('md').value;$('set').hidden=true;$('game').hidden=false;idx=0;score=0;streak=0;errs=0;$('tbar').hidden=mode!=='clock';
+ clearInterval(timer);if(mode==='clock'){left=60;$('tb').style.width='100%';timer=setInterval(()=>{left--;$('tb').style.width=left/60*100+'%';if(left<=10)Kit.tick();if(left<=0){clearInterval(timer);done()}},1000)}next()};
+function next(){if(mode==='list'&&idx>=deck.length)return done();cur=deck[idx%deck.length];idx++;const w=cur.w,lv=$('lv').value;
+ const letterIdx=[...w].map((c,i)=>/[a-z]/.test(c)?i:-1).filter(i=>i>=0);
+ let pick;if(lv==='v'){pick=letterIdx.filter(i=>VOW.includes(w[i]));if(!pick.length)pick=[Kit.pick(letterIdx)]}
+ else{const n=lv==='h'?Math.max(1,Math.floor(letterIdx.length/2)):Math.min(+lv,letterIdx.length);pick=Kit.shuffle(letterIdx).slice(0,n)}
+ gaps=pick.sort((a,b)=>a-b);gi=0;$('pc').textContent=$('pic').checked?cur.e:'';draw();window.__t={word:w,gaps}}
+function draw(){const w=cur.w;$('wd').innerHTML=[...w].map((c,i)=>{const g=gaps.indexOf(i);if(c===' ')return '<i style="width:24px"></i>';
+  if(g<0)return `<span>${Kit.esc(c)}</span>`;if(g<gi)return `<span class="good">${c}</span>`;return `<span class="gap ${g===gi?'now':''}">${g===gi?'?':'_'}</span>`}).join('');
+ const need=w[gaps[gi]];const isV=VOW.includes(need);
+ const same=Kit.shuffle([...ALPHA].filter(c=>c!==need&&VOW.includes(c)===isV)).slice(0,2);
+ const diff=Kit.shuffle([...ALPHA].filter(c=>c!==need&&VOW.includes(c)!==isV)).slice(0,1);
+ const ch=[need,...same,...diff];
+ $('ky').innerHTML=Kit.shuffle(ch).map((c,i)=>`<button data-c="${c}" style="--kc:${Kit.COLORS[i%6]}">${c}</button>`).join('');
+ $('pr').textContent=mode==='list'?`Word ${Math.min(idx,deck.length)} of ${deck.length}`:`⏱ ${left}s`;$('sc').textContent=score;$('st').textContent=streak}
+$('ky').onclick=e=>{const b=e.target.closest('button');if(!b||b.classList.contains('no'))return;
+ if(b.dataset.c===cur.w[gaps[gi]]){gi++;Kit.tone(660+gi*80,.15,'triangle',.25);
+  if(gi>=gaps.length){streak++;score+=1+Math.min(streak-1,4);draw();Learn.flash($('wd'),true);if(streak%5===0)Kit.confetti(50);setTimeout(next,700)}else draw()}
+ else{b.classList.add('no');streak=0;errs++;Learn.flash(b,false);$('st').textContent=0}};
+$('skip').onclick=()=>{streak=0;next()};
+$('say').onclick=()=>{try{const u=new SpeechSynthesisUtterance(cur.w);u.rate=.8;speechSynthesis.cancel();speechSynthesis.speak(u)}catch{}};
+function done(){clearInterval(timer);Learn.finish('🔤',mode==='clock'?`${score} points in 60 seconds!`:'Spelling star!',`Score: ${score}${errs?` · ${errs} tries that missed`:' · no misses!'}`,()=>{$('game').hidden=true;$('set').hidden=false})}
+</script>
+</body></html>

@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>What Comes Next?</title>
+<style>
+.wn-row{display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-end;gap:0;margin:28px auto 10px;max-width:1100px}
+.wn-it{display:flex;flex-direction:column;align-items:center}
+.wn-n{min-width:clamp(64px,10vw,110px);height:clamp(64px,10vw,110px);border:5px solid var(--ink);border-radius:20px;background:#fff;display:grid;place-items:center;font-weight:800;font-size:clamp(1.6rem,4.6vw,3rem);box-shadow:0 6px 0 var(--ink);padding:0 10px}
+.wn-n.q{background:#FFF6C9;border-style:dashed;color:var(--grape);animation:wnq 1.2s infinite}@keyframes wnq{50%{transform:scale(1.07)}}
+.wn-n.got{background:#C9F1D2;animation:none;border-style:solid;color:var(--ink)}
+.wn-hop{width:clamp(28px,5vw,60px);display:flex;flex-direction:column;align-items:center;margin-bottom:clamp(22px,4vw,44px);color:var(--grape);font-weight:800;font-size:clamp(.8rem,1.6vw,1.1rem);visibility:hidden}
+.wn-hop.show{visibility:visible;animation:pop .4s}
+.wn-hop::after{content:"➜";font-size:1.4em;color:var(--ink)}
+.wn-in{display:flex;gap:10px;justify-content:center;margin-top:18px}
+.wn-in input{font-size:2rem!important;max-width:240px;text-align:center;font-weight:800}
+.wn-rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;max-width:900px;margin:18px auto 0}
+.wn-rules button{font:inherit;font-weight:700;font-size:1.15rem;border:4px solid var(--ink);border-radius:16px;background:#F4FAFF;padding:10px;cursor:pointer;box-shadow:0 4px 0 var(--ink);color:var(--ink)}
+.wn-rules button.yes{background:var(--grass)}.wn-rules button.no{background:#FFD9D4;opacity:.55}
+.wn-hud{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.wn-msg{text-align:center;font-weight:800;font-size:clamp(1.2rem,3vw,1.8rem);color:#fff;text-shadow:2px 2px 0 var(--ink);min-height:1.4em;margin-top:12px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🔀", "What Comes Next?");
+const $=id=>document.getElementById(id);
+const A='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const GEN={
+ add:lv=>{const k=Kit.pick(lv<2?[1,2,5,10]:[3,4,6,7,9,11,25]);const s=Kit.rand(0,lv<2?20:60);return {seq:i=>s+i*k,rule:`Add ${k} each time`,hop:`+${k}`}},
+ sub:lv=>{const k=Kit.pick(lv<2?[1,2,5,10]:[3,4,6,7,9]);const s=k*Kit.rand(7,lv<2?12:20);return {seq:i=>s-i*k,rule:`Take away ${k} each time`,hop:`−${k}`}},
+ dbl:lv=>{const s=Kit.pick([1,2,3,5]);return {seq:i=>s*2**i,rule:'Double it each time',hop:'×2'}},
+ tri:lv=>{const s=Kit.pick([1,2]);return {seq:i=>s*3**i,rule:'Multiply by 3 each time',hop:'×3'}},
+ half:lv=>{const s=Kit.pick([64,128,96,160]);return {seq:i=>s/2**i,rule:'Cut it in half each time',hop:'÷2'}},
+ grow:lv=>{const s=Kit.rand(1,10);return {seq:i=>s+i*(i+1)/2,rule:'Add 1, then 2, then 3, and keep growing',hop:i=>`+${i+1}`}},
+ sq:lv=>({seq:i=>(i+1)**2,rule:'Square numbers (1×1, 2×2, 3×3...)',hop:i=>`+${2*i+3}`}),
+ fib:lv=>({seq:i=>{let a=1,b=1;for(let k=0;k<i;k++)[a,b]=[b,a+b];return a},rule:'Add the two numbers before it',hop:'⤴'}),
+ letters:lv=>{const k=Kit.pick(lv<2?[1,2]:[2,3,4]);const s=Kit.rand(0,4);return {seq:i=>A[s+i*k]||'?',rule:k===1?'Go to the next letter each time':`Skip ahead ${k} letters`,hop:`+${k}`,txt:1}},
+ alt:lv=>{const a=Kit.pick([2,3,5]),b=Kit.pick([1,2]);return {rule:`Add ${a}, then take away ${b}, over and over`,hop:i=>i%2?`−${b}`:`+${a}`,alt:[a,b]}},
+};
+const LEVELS={1:['add','sub','letters'],2:['add','sub','dbl','half','letters','alt'],3:['grow','sq','fib','tri','alt','dbl','letters']};
+document.querySelector('main').innerHTML=`<div class="card ln-set" id="set"><div class="row">
+ <label>Level <select id="lv" style="width:auto"><option value="1">1 · Counting on and back</option><option value="2" selected>2 · Doubles, halves, and more</option><option value="3">3 · Growing patterns</option><option value="mine">My own sequences</option></select></label>
+ <label><input type="checkbox" id="why" checked> Then pick the rule</label><button class="btn big green" id="go">Start</button></div>
+ <p class="muted" style="margin:8px 0 0">Figure out the rule, type the next number (or letter), then pick which rule it follows.</p></div>
+<div id="game" hidden><div class="wn-hud"><span class="ln-pill" id="pr"></span><span class="ln-pill">⭐ <b id="sc">0</b></span><span class="ln-pill">🔥 <b id="st">0</b></span><button class="btn white small" id="hint">💡 Show the jumps</button><button class="btn white small" id="skip">Skip ➜</button><button class="btn white small" id="back">⚙️</button></div>
+<div class="wn-row" id="row"></div><form class="wn-in" id="f"><input type="text" id="ans" autocomplete="off" inputmode="text" aria-label="Next in the sequence"><button class="btn green big" type="submit">✓</button></form><div class="wn-msg" id="msg"></div><div class="wn-rules" id="rules"></div></div>`;
+const L=Learn.list($('set'),{key:'seqs',label:'My own sequences',help:'One per line: the sequence | what comes next | the rule. Example: 3, 6, 9, 12 | 15 | Add 3 each time',def:`3, 6, 9, 12 | 15 | Add 3 each time
+100, 90, 80, 70 | 60 | Take away 10 each time
+A, C, E, G | I | Skip one letter
+Monday, Tuesday, Wednesday | Thursday | Days of the week
+1, 4, 9, 16 | 25 | Square numbers`});
+let cur,score=0,streak=0,n=0,phase,miss;
+$('go').onclick=()=>{$('set').hidden=true;$('game').hidden=false;score=0;streak=0;n=0;next()};
+$('back').onclick=()=>{$('game').hidden=true;$('set').hidden=false};$('skip').onclick=()=>{streak=0;next()};
+function make(){const lv=$('lv').value;
+ if(lv==='mine'){const r=Kit.pick(L.rows().filter(x=>x.length>=2));if(!r)return null;const items=r[0].split(',').map(s=>s.trim());return {items,ans:r[1],rule:r[2]||'',hops:[]}}
+ const key=Kit.pick(LEVELS[lv]);const g=GEN[key](+lv);const len=key==='fib'?6:5;
+ let items;if(key==='alt'){const [a,b]=g.alt;let v=Kit.rand(4,12);items=[v];for(let i=1;i<=len;i++){v+=i%2?a:-b;items.push(v)}}else items=Array.from({length:len+1},(_,i)=>g.seq(i));
+ const hops=items.slice(1).map((_,i)=>typeof g.hop==='function'?g.hop(i):g.hop);const ans=String(items.pop());hops.length=items.length;return {items:items.map(String),ans,rule:g.rule,hops,key}}
+function next(){cur=make();if(!cur){alert('Add your own sequences first.');$('back').click();return}n++;phase='ans';miss=0;
+ $('row').innerHTML=cur.items.map((x,i)=>`<div class="wn-it"><div class="wn-n">${Kit.esc(x)}</div></div>${`<div class="wn-hop" data-h="${i}">${Kit.esc(cur.hops[i]||'')}</div>`}`).join('')+`<div class="wn-it"><div class="wn-n q" id="q">?</div></div>`;
+ $('ans').value='';$('ans').disabled=false;$('ans').focus();$('rules').innerHTML='';$('msg').textContent='';$('hint').hidden=!cur.hops.length;hud();window.__t={ans:cur.ans,rule:cur.rule}}
+function hud(){$('pr').textContent=`Puzzle ${n}`;$('sc').textContent=score;$('st').textContent=streak}
+$('hint').onclick=()=>{document.querySelectorAll('.wn-hop').forEach(h=>h.classList.add('show'));miss++};
+$('f').onsubmit=e=>{e.preventDefault();if(phase!=='ans')return;const v=$('ans').value.trim();if(!v)return;
+ if(v.toLowerCase()===cur.ans.toLowerCase()||(!isNaN(+v)&&+v===+cur.ans)){phase='rule';$('q').textContent=cur.ans;$('q').classList.remove('q');$('q').classList.add('got');$('ans').disabled=true;
+  document.querySelectorAll('.wn-hop').forEach(h=>h.classList.add('show'));score+=miss?1:2;streak++;Kit.ding();hud();
+  if($('why').checked&&cur.rule)askRule();else finishOne()}
+ else{miss++;streak=0;Learn.flash($('f'),false);$('msg').textContent='Not quite. Look at how it changes each time.';$('ans').select();hud()}};
+function askRule(){const pool=$('lv').value==='mine'?L.rows().map(r=>r[2]).filter(Boolean):['Add 2 each time','Add 5 each time','Take away 3 each time','Double it each time','Cut it in half each time','Add the two numbers before it','Skip ahead 2 letters','Square numbers (1×1, 2×2, 3×3...)','Add 1, then 2, then 3, and keep growing','Multiply by 3 each time','Add 10 each time'];
+ const opts=Kit.shuffle([cur.rule,...Kit.shuffle([...new Set(pool)].filter(x=>x!==cur.rule)).slice(0,3)]);$('msg').textContent='Which rule is it?';
+ $('rules').innerHTML=opts.map(o=>`<button data-r="${Kit.esc(o)}">${Kit.esc(o)}</button>`).join('');
+ $('rules').onclick=e=>{const b=e.target.closest('button');if(!b||phase!=='rule'||b.classList.contains('no'))return;if(b.dataset.r===cur.rule){b.classList.add('yes');score++;hud();finishOne()}else{b.classList.add('no');Learn.flash(b,false)}}}
+function finishOne(){phase='done';$('msg').textContent=`✅ ${cur.rule||'Nice!'}`;Kit.tada();if(streak%5===0)Kit.confetti(60);setTimeout(next,1800)}
+</script>
+</body></html>
