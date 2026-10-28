@@ -39,6 +39,13 @@ nav button[aria-pressed="true"]{background:var(--c);transform:translate(3px,3px)
 .tile:active{transform:translate(4px,4px);box-shadow:1px 1px 0 var(--ink)}
 .tile .e{font-size:clamp(1.8rem,4.5vh,3.4rem);width:1.7em;height:1.7em;display:grid;place-items:center;border-radius:50%;border:4px solid var(--ink);background:#fff;flex:none}
 .ver{margin-left:12px;font-size:.8rem;font-weight:700;color:var(--ink);background:#fff;border:2px solid var(--ink);border-radius:999px;padding:1px 10px}
+.tile{position:relative}
+.fav{position:absolute;top:6px;right:6px;width:38px;height:38px;border-radius:50%;border:3px solid var(--ink);background:#fff;font-size:1.25rem;line-height:1;display:grid;place-items:center;cursor:pointer;padding:0;color:#B7C0D6;z-index:2;transition:transform .15s}
+.fav:hover{transform:scale(1.15)}
+.fav.on{background:var(--sun);color:var(--ink)}
+.fav.pop{animation:favpop .45s}@keyframes favpop{40%{transform:scale(1.5) rotate(20deg)}}
+nav button.favbtn{--c:#FFC93C}
+.empty small{display:block;font-size:1rem;font-weight:600;opacity:.75;margin-top:8px}
 .empty{display:grid;place-items:center;font-size:1.3rem;font-weight:600;flex:1}
 @media (max-width:760px),(max-height:520px){
   body{height:auto;overflow:auto}
@@ -109,7 +116,11 @@ const CATS=[
 {name:"Big systems",emoji:"🏫",color:'#7BD3F7',tools:[["🧩", "Classroom Escape Room Platform", "classroom-escape-room-platform", 0], ["🎮", "Classroom Game Builder", "classroom-game-builder", 0], ["🏆", "Classroom RPG", "classroom-rpg", 0], ["🗺️", "Learning Adventure Platform", "learning-adventure-platform", 0], ["📚", "Interactive Lesson Builder", "interactive-lesson-builder", 0], ["🧪", "Virtual Laboratory Platform", "virtual-laboratory-platform", 0], ["🎤", "Classroom Game Show Platform", "classroom-game-show-platform", 0], ["📊", "Student Progress Dashboard", "student-progress-dashboard", 0], ["🏅", "Classroom Achievement Platform", "classroom-achievement-platform", 0], ["🪙", "Virtual Classroom Economy", "virtual-classroom-economy", 0], ["🗺️", "Interactive Learning Map", "interactive-learning-map", 0], ["📖", "Interactive Textbook Builder", "interactive-textbook-builder", 0], ["🧠", "Interactive Study Platform", "interactive-study-platform", 0], ["🎯", "Question Bank + Game Engine", "question-bank-game-engine", 0], ["🖥️", "All-in-One Classroom Dashboard", "all-in-one-classroom-dashboard", 0]]}
 ];
 const $=id=>document.getElementById(id);const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-let cur=0;try{cur=+localStorage.getItem('ct:home-cat')||0}catch{}if(!CATS[cur])cur=0;
+let cur=0;try{cur=+(localStorage.getItem('ct:home-cat')??0)}catch{}if(cur!==-1&&!CATS[cur])cur=0;
+// Favorites: a list of tool file names saved on this device. Tool pages share the same list (see kit.js).
+const favs=()=>{try{return JSON.parse(localStorage.getItem('ct:favs'))||[]}catch{return []}};
+const setFavs=f=>{try{localStorage.setItem('ct:favs',JSON.stringify(f))}catch{}};
+const ALLT=()=>{const m={};CATS.forEach(c=>c.tools.forEach(t=>{if(!m[t[2]])m[t[2]]=[t[0],t[1],t[2],t[3],c.color]}));return m};
 function layout(n){const T=$('tiles');T.classList.remove('scroll');T.style.gridTemplateColumns='';T.style.gridTemplateRows='';
  const w=T.clientWidth,h=T.clientHeight;let best=[1,n],bs=0;
  for(let c=1;c<=n;c++){const r=Math.ceil(n/c),tw=(w-(c-1)*14)/c,th=(h-(r-1)*14)/r,s=Math.min(tw,th*1.25);if(s>bs){bs=s;best=[c,r]}}
@@ -117,15 +128,21 @@ function layout(n){const T=$('tiles');T.classList.remove('scroll');T.style.gridT
  T.style.gridTemplateColumns=`repeat(${best[0]},minmax(0,1fr))`;T.style.gridTemplateRows=`repeat(${best[1]},minmax(0,1fr))`}
 function tiles(list){$('tiles').scrollTop=0;$('tiles').innerHTML=list.length?list.map(([e,n,s,soon,col],i)=>soon===0
   ?`<div class="tile soon" style="--tbg:${col}14;animation-delay:${Math.min(i,20)*.02}s"><span class="e" style="background:${col}">${e}</span>${esc(n)}<small>Coming soon</small></div>`
-  :`<a class="tile" href="${s}.html" style="--tbg:${col}22;animation-delay:${Math.min(i,20)*.02}s"><span class="e" style="background:${col}">${e}</span>${esc(n)}</a>`).join(''):'<div class="empty">No tools match that search.</div>';
+  :`<a class="tile" href="${s}.html" style="--tbg:${col}22;animation-delay:${Math.min(i,20)*.02}s"><button class="fav ${favs().includes(s)?'on':''}" data-fav="${s}" aria-label="${favs().includes(s)?'Remove from':'Add to'} my favorites" title="${favs().includes(s)?'Remove from':'Add to'} my favorites">${favs().includes(s)?'★':'☆'}</button><span class="e" style="background:${col}">${e}</span>${esc(n)}</a>`).join(''):cur===-1&&!$('q').value.trim()?'<div class="empty"><div style="text-align:center">⭐ No favorites yet!<small>Tap the ☆ star on any tool to keep it here.</small></div></div>':'<div class="empty">No tools match that search.</div>';
  if(list.length)layout(list.length)}
-function nav(){const q=$('q').value;$('nav').innerHTML=CATS.map((c,i)=>(i===0?'<div class="navh">Classroom tools</div>':i===8?'<div class="navh">Games and activities</div>':'')+`<button aria-pressed="${i===cur&&!q}" data-i="${i}" style="--c:${c.color}"><span class="ic" style="background:${c.color}">${c.emoji}</span><span class="t">${c.name}</span><span class="n">${c.tools.filter(t=>t[3]!==0).length}</span></button>`).join('')}
+function nav(){const q=$('q').value;$('nav').innerHTML=`<button class="favbtn" aria-pressed="${cur===-1&&!q}" data-i="-1"><span class="ic" style="background:#fff">⭐</span><span class="t">My favorites</span><span class="n">${favs().filter(s=>ALLT()[s]).length}</span></button>`+CATS.map((c,i)=>(i===0?'<div class="navh">Classroom tools</div>':i===8?'<div class="navh">Games and activities</div>':'')+`<button aria-pressed="${i===cur&&!q}" data-i="${i}" style="--c:${c.color}"><span class="ic" style="background:${c.color}">${c.emoji}</span><span class="t">${c.name}</span><span class="n">${c.tools.filter(t=>t[3]!==0).length}</span></button>`).join('')}
 function show(){const q=$('q').value.toLowerCase().trim();nav();
  if(q){const hits=CATS.flatMap(c=>c.tools.filter(t=>t[1].toLowerCase().includes(q)).map(t=>[t[0],t[1],t[2],t[3],c.color]));$('ptitle').textContent='🔍 Search results';$('panel').style.setProperty('--cat','#FFC93C');tiles(hits.sort((a,b)=>(a[3]===0)-(b[3]===0)).slice(0,30))}
+ else if(cur===-1){const m=ALLT();$('ptitle').innerHTML='<span>⭐</span>My favorites';$('panel').style.setProperty('--cat','#FFC93C');tiles(favs().map(s=>m[s]).filter(Boolean))}
  else{const c=CATS[cur];$('ptitle').innerHTML=`<span>${c.emoji}</span>${c.name}`;$('panel').style.setProperty('--cat',c.color);tiles(c.tools.map(t=>[...t.slice(0,4),c.color]))}}
 $('nav').onclick=e=>{const b=e.target.closest('[data-i]');if(!b)return;cur=+b.dataset.i;$('q').value='';try{localStorage.setItem('ct:home-cat',cur)}catch{};show()};
+$('tiles').addEventListener('click',e=>{const b=e.target.closest('[data-fav]');if(!b)return;e.preventDefault();e.stopPropagation();
+ const s=b.dataset.fav,f=favs(),k=f.indexOf(s);k<0?f.push(s):f.splice(k,1);setFavs(f);Kit.tone(k<0?880:440,.12,'triangle',.18);
+ if(cur===-1&&!$('q').value.trim()){show();return}
+ b.classList.toggle('on',k<0);b.textContent=k<0?'★':'☆';b.classList.remove('pop');void b.offsetWidth;b.classList.add('pop');nav()});
+addEventListener('pageshow',show);
 $('q').oninput=show;addEventListener('resize',()=>{const n=$('tiles').querySelectorAll('.tile').length;if(n)layout(n)});
-$('foot').outerHTML=Kit.LOGO('');document.querySelector('footer.brand').insertAdjacentHTML('beforeend','<span class="ver">Version 20</span>');show();
+$('foot').outerHTML=Kit.LOGO('');document.querySelector('footer.brand').insertAdjacentHTML('beforeend','<span class="ver">Version 21</span>');show();
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).catch(()=>{});
 </script>
 </body></html>
