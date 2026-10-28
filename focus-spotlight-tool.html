@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Focus / Spotlight Tool</title>
+<style>
+main{max-width:1600px}
+.fs-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;margin-bottom:12px}
+.fs-bar label{background:#fff;border:3px solid var(--ink);border-radius:14px;padding:4px 10px}
+.fs-bar input[type=range]{vertical-align:middle;width:120px}
+.fs-stage{position:relative;border:6px solid var(--ink);border-radius:20px;overflow:hidden;box-shadow:7px 7px 0 var(--ink);background:#111;touch-action:none}
+.fs-stage canvas{display:block;width:100%;height:auto;cursor:none}
+.fs-empty{color:#fff;text-align:center;padding:12vh 20px;font-weight:700;font-size:1.3rem}
+.fs-empty b{display:block;font-size:3rem}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🔦", "Focus / Spotlight Tool");
+const $=id=>document.getElementById(id);
+document.querySelector('main').innerHTML=`<div class="fs-bar"><button class="btn green" id="share">🖥️ Share a window or screen</button><label>🖼️ Or a picture <input type="file" id="pic" accept="image/*" style="max-width:200px"></label>
+<label>Shape <select id="shape" style="width:auto"><option value="circle">Circle</option><option value="rect">Wide box</option><option value="row">Line strip</option></select></label>
+<label>Size <input type="range" id="size" min="60" max="500" value="200"></label><label>Darkness <input type="range" id="dim" min="40" max="98" value="85"></label>
+<label><input type="checkbox" id="mag"> 🔍 Magnify</label><label><input type="checkbox" id="lock"> 📌 Hold still</label></div>
+<div class="fs-stage" id="stg"><div class="fs-empty" id="empty"><b>🔦</b>Share a window (like a slideshow or a website) or pick a picture.<br>Then move the spotlight to help everyone focus on one spot.</div><canvas id="cv" hidden></canvas></div>
+<p class="muted" style="text-align:center">Move the mouse or drag a finger to move the spotlight. Tap to hold it still. Press + and − to change its size. When you share a window, put it on your other screen and show this page on the projector.</p>`;
+const cv=$('cv'),cx=cv.getContext('2d');let src=null,vid=null,img=null,px=.5,py=.5,raf;
+function setSrc(el,w,h){src=el;cv.width=w;cv.height=h;cv.hidden=false;$('empty').hidden=true;cancelAnimationFrame(raf);loop()}
+$('share').onclick=async()=>{try{const s=await navigator.mediaDevices.getDisplayMedia({video:true,audio:false});vid=document.createElement('video');vid.srcObject=s;vid.muted=true;await vid.play();setSrc(vid,vid.videoWidth||1280,vid.videoHeight||720);s.getVideoTracks()[0].onended=()=>{src=null;cv.hidden=true;$('empty').hidden=false}}catch(e){if(e.name!=='NotAllowedError')alert('This browser can\'t share a screen here. Try a picture instead.')}};
+$('pic').onchange=()=>{const f=$('pic').files[0];if(!f)return;img=new Image();img.onload=()=>setSrc(img,img.naturalWidth,img.naturalHeight);img.src=URL.createObjectURL(f)};
+function loop(){raf=requestAnimationFrame(loop);if(!src)return;const W=cv.width,H=cv.height;if(src===vid&&(vid.videoWidth&&vid.videoWidth!==W)){cv.width=vid.videoWidth;cv.height=vid.videoHeight;return}
+ cx.drawImage(src,0,0,W,H);const k=W/cv.clientWidth,R=+$('size').value*k,x=px*W,y=py*H,shape=$('shape').value;
+ const path=()=>{cx.beginPath();if(shape==='circle')cx.arc(x,y,R,0,Math.PI*2);else if(shape==='rect')cx.roundRect(x-R*1.6,y-R*.8,R*3.2,R*1.6,24*k);else cx.rect(0,y-R*.35,W,R*.7)};
+ if($('mag').checked){cx.save();path();cx.clip();const z=2;const sw=src.naturalWidth||src.videoWidth||W,sh=src.naturalHeight||src.videoHeight||H,fx=sw/W,fy=sh/H;cx.drawImage(src,(x-W/(2*z))*fx,(y-H/(2*z))*fy,W/z*fx,H/z*fy,x-W/2,y-H/2,W,H);cx.restore()}
+ cx.save();cx.fillStyle=`rgba(0,0,0,${$('dim').value/100})`;cx.beginPath();cx.rect(0,0,W,H);
+ if(shape==='circle'){cx.moveTo(x+R,y);cx.arc(x,y,R,0,Math.PI*2,true)}else if(shape==='rect'){cx.roundRect(x-R*1.6,y-R*.8,R*3.2,R*1.6,24*k);}else cx.rect(0,y-R*.35,W,R*.7);
+ cx.fill('evenodd');cx.restore();cx.save();path();cx.lineWidth=5*k;cx.strokeStyle='rgba(255,230,120,.9)';cx.stroke();cx.restore()}
+const move=e=>{if($('lock').checked)return;const r=cv.getBoundingClientRect();px=(e.clientX-r.left)/r.width;py=(e.clientY-r.top)/r.height};
+cv.addEventListener('pointermove',move);cv.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'){$('lock').checked=!$('lock').checked;if(!$('lock').checked)move(e)}else{$('lock').checked=false;move(e)}});
+addEventListener('keydown',e=>{if(e.key==='+'||e.key==='=')$('size').value=+$('size').value+20;if(e.key==='-')$('size').value=+$('size').value-20});
+window.__t={drawn:()=>!!src};
+</script>
+</body></html>

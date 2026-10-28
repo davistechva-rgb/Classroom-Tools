@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Classroom Dashboard</title>
+<style>
+main{max-width:1500px}
+.cd-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px}
+.cd-p{background:#fff;border:5px solid var(--ink);border-radius:22px;box-shadow:6px 6px 0 var(--ink);padding:14px 16px;position:relative;min-height:150px}
+.cd-p h3{margin:0 0 6px;font-size:1rem;letter-spacing:.08em;text-transform:uppercase;color:#6B7695;display:flex;align-items:center;gap:6px}
+.cd-clock{grid-column:span 5;text-align:center;background:var(--ink);color:#fff}
+.cd-clock h3{color:#9FB2DA}
+.cd-time{font-size:clamp(3rem,8vw,6.5rem);font-weight:800;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.cd-time small{font-size:.35em;margin-left:.2em;opacity:.75}
+.cd-date{font-size:clamp(1.1rem,2.4vw,1.7rem);font-weight:700;margin-top:6px}
+.cd-now{grid-column:span 7}
+.cd-nowbig{font-size:clamp(1.6rem,3.6vw,2.6rem);font-weight:800;line-height:1.1}
+.cd-nowsub{font-size:1.15rem;font-weight:600;color:#55607E;margin-top:4px}
+.cd-bar{height:16px;border:4px solid var(--ink);border-radius:99px;margin-top:12px;overflow:hidden;background:#EEF3FB}.cd-bar b{display:block;height:100%;background:var(--grass)}
+.cd-next{margin-top:10px;font-weight:700}
+.cd-msg{grid-column:span 7;background:#FFF6C9}
+.cd-msgt{font-size:clamp(1.4rem,3.2vw,2.3rem);font-weight:800;line-height:1.2;outline:none;min-height:1.4em}
+.cd-jobs{grid-column:span 5}
+.cd-joblist{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.cd-job{display:flex;gap:6px;align-items:center;border:3px solid var(--ink);border-radius:12px;padding:4px 8px;font-weight:700;background:#F4FAFF;font-size:1.02rem}
+.cd-job span{opacity:.7;font-weight:600}
+.cd-timer{grid-column:span 4;text-align:center}
+.cd-tt{font-size:clamp(2.4rem,6vw,4rem);font-weight:800;font-variant-numeric:tabular-nums}
+.cd-tt.done{color:var(--tomato);animation:cdbl .5s 6}@keyframes cdbl{50%{opacity:.2}}
+.cd-cnt{grid-column:span 4;text-align:center}
+.cd-cntn{font-size:clamp(2.4rem,6vw,4rem);font-weight:800;color:var(--grape);line-height:1}
+.cd-noise{grid-column:span 4;text-align:center}
+.cd-lvl{display:flex;gap:6px;justify-content:center;margin-top:8px}
+.cd-lvl button{font:inherit;font-weight:800;border:4px solid var(--ink);border-radius:14px;padding:6px 10px;cursor:pointer;background:#fff;color:var(--ink);font-size:.95rem}
+.cd-lvl button.on{background:var(--lc);color:#fff;transform:scale(1.08)}
+.cd-edit{position:absolute;top:8px;right:8px}
+@media (max-width:900px){.cd-grid>*{grid-column:1/-1!important}}
+.cd-hide{display:none}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("📺", "Classroom Dashboard");
+const $=id=>document.getElementById(id);
+const D=Kit.get('cd-data',{msg:'Good morning, superstars! 🌟 Remember: library books are due Friday.',sched:'8:00 Morning meeting\n8:30 Reading\n9:45 Snack & recess\n10:15 Math\n11:30 Lunch\n12:15 Science\n1:15 Specials\n2:00 Writing\n2:45 Pack up\n3:00 Dismissal',jobs:'🧹 Sweeper: Ava\n📚 Librarian: Leo\n🌱 Plant helper: Mia\n🚪 Door holder: Sam\n💡 Lights: Zoe\n📬 Messenger: Eli',countName:'Days of school',count:42,countDate:'',noise:1,h24:false});
+const save=()=>Kit.set('cd-data',D);
+const NOISE=[['🤫 Silent','#5A6C8A'],['🗣️ Whisper','#22C3E6'],['💬 Partner','#5DC66E'],['🎉 Group','#FF9F43']];
+document.querySelector('main').innerHTML=`<div class="row" style="justify-content:flex-end;margin-bottom:10px"><button class="btn white small" id="edit">✏️ Edit the dashboard</button></div>
+<div class="cd-grid">
+ <div class="cd-p cd-clock"><h3>🕐 Right now</h3><div class="cd-time" id="tm"></div><div class="cd-date" id="dt"></div></div>
+ <div class="cd-p cd-now"><h3>📍 What we're doing</h3><div class="cd-nowbig" id="nw"></div><div class="cd-nowsub" id="ns"></div><div class="cd-bar"><b id="nb"></b></div><div class="cd-next" id="nx"></div></div>
+ <div class="cd-p cd-msg"><h3>📣 Today's message <span class="muted" style="text-transform:none;letter-spacing:0">(tap to type)</span></h3><div class="cd-msgt" id="msg" contenteditable="true" spellcheck="false"></div></div>
+ <div class="cd-p cd-jobs"><h3>⭐ Class jobs</h3><div class="cd-joblist" id="jb"></div></div>
+ <div class="cd-p cd-timer"><h3>⏱️ Timer</h3><div class="cd-tt" id="tt">5:00</div><div class="row" style="justify-content:center;gap:6px;margin-top:6px"><button class="btn small white" data-m="-1">−1</button><button class="btn small green" id="ts">▶ Start</button><button class="btn small white" data-m="1">+1</button><button class="btn small white" id="tr">↺</button></div></div>
+ <div class="cd-p cd-cnt"><h3>📅 <span id="cnn"></span></h3><div class="cd-cntn" id="cn"></div><div class="row" style="justify-content:center;gap:6px;margin-top:8px"><button class="btn small white" id="cm">−</button><button class="btn small" id="cp">+1</button></div></div>
+ <div class="cd-p cd-noise"><h3>🔊 Voice level</h3><div class="cd-time" style="font-size:clamp(1.6rem,3vw,2.4rem)" id="nz"></div><div class="cd-lvl" id="lv"></div></div>
+</div>
+<div class="card stack" id="ed" hidden style="margin-top:16px"><h2 style="margin:0">✏️ Edit the dashboard</h2>
+ <label>Today's schedule <span class="muted">(one per line: start time then what, like 10:15 Math. Use 24-hour time or add pm.)</span><textarea id="es" style="min-height:200px"></textarea></label>
+ <label>Class jobs <span class="muted">(one per line)</span><textarea id="ej" style="min-height:120px"></textarea></label>
+ <div class="row"><label>Counter name <input type="text" id="ecn" style="width:220px"></label><label>Count <input type="number" id="ec"></label><label><input type="checkbox" id="eauto"> Add 1 every school day automatically</label><label><input type="checkbox" id="e24"> 24-hour clock</label></div>
+ <button class="btn green" id="esv">✓ Save</button></div>`;
+const clockStr=d=>{let h=d.getHours(),m=String(d.getMinutes()).padStart(2,'0');if(D.h24)return `${h}:${m}`;const ap=h>=12?'PM':'AM';h=h%12||12;return `${h}:${m}<small>${ap}</small>`};
+function parseSched(){return Kit.lines(D.sched).map(l=>{const m=l.match(/^(\d{1,2}):(\d{2})\s*(am|pm)?\s*(.*)$/i);if(!m)return null;let h=+m[1];const ap=(m[3]||'').toLowerCase();if(ap==='pm'&&h<12)h+=12;if(ap==='am'&&h===12)h=0;if(!ap&&h>=1&&h<7)h+=12;return {min:h*60+ +m[2],what:m[4]||'…',label:`${m[1]}:${m[2]}${m[3]?' '+m[3]:''}`}}).filter(Boolean).sort((a,b)=>a.min-b.min)}
+const fmtMin=n=>{n=Math.max(0,Math.round(n));return n>=60?`${Math.floor(n/60)} hr ${n%60} min`:`${n} min`};
+function tick(){const d=new Date();$('tm').innerHTML=clockStr(d);$('dt').textContent=d.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});
+ const s=parseSched(),now=d.getHours()*60+d.getMinutes()+d.getSeconds()/60;let i=-1;s.forEach((x,k)=>{if(x.min<=now)i=k});
+ if(!s.length){$('nw').textContent='Add a schedule';$('ns').textContent='';$('nb').style.width='0';$('nx').textContent='';return}
+ if(i<0){$('nw').textContent='Before school';$('ns').textContent=`${s[0].what} starts at ${s[0].label}`;$('nb').style.width='0';$('nx').textContent=`⏭️ In ${fmtMin(s[0].min-now)}`;return}
+ const c=s[i],n=s[i+1];$('nw').textContent=c.what;
+ if(n){const p=(now-c.min)/(n.min-c.min);$('nb').style.width=Math.min(100,p*100)+'%';$('ns').textContent=`${fmtMin(n.min-now)} left`;$('nx').textContent=`⏭️ Next: ${n.what} at ${n.label}`}
+ else{$('nb').style.width='100%';$('ns').textContent='';$('nx').textContent='That\'s the last thing today!'}}
+function drawStatic(){$('msg').textContent=D.msg;$('jb').innerHTML=Kit.lines(D.jobs).map(j=>{const [a,b]=j.split(':');return `<div class="cd-job">${Kit.esc(a.trim())}${b?`: <span>${Kit.esc(b.trim())}</span>`:''}</div>`}).join('');
+ autoCount();$('cnn').textContent=D.countName;$('cn').textContent=D.count;
+ $('lv').innerHTML=NOISE.map((n,i)=>`<button data-n="${i}" class="${i===D.noise?'on':''}" style="--lc:${n[1]}">${i}</button>`).join('');$('nz').textContent=NOISE[D.noise][0];$('nz').style.color=NOISE[D.noise][1]}
+function autoCount(){if(!D.countAuto)return;const t=new Date();const key=t.toDateString();if(D.countDate===key)return;if(D.countDate){const last=new Date(D.countDate);let d=new Date(last);d.setDate(d.getDate()+1);while(d<=t){if(d.getDay()%6)D.count++;d.setDate(d.getDate()+1)}}D.countDate=key;save()}
+$('msg').oninput=()=>{D.msg=$('msg').textContent;save()};
+$('lv').onclick=e=>{const b=e.target.closest('button');if(!b)return;D.noise=+b.dataset.n;save();drawStatic();Kit.tone(500+D.noise*120,.15,'triangle',.2)};
+$('cp').onclick=()=>{D.count++;save();drawStatic();Kit.tick()};$('cm').onclick=()=>{D.count--;save();drawStatic()};
+// timer
+let tLeft=300,tSet=300,tRun=null;const tDraw=()=>{$('tt').textContent=`${Math.floor(tLeft/60)}:${String(tLeft%60).padStart(2,'0')}`};
+document.querySelector('.cd-timer').onclick=e=>{const b=e.target.closest('[data-m]');if(!b)return;tSet=Math.max(60,tSet+60*+b.dataset.m);if(!tRun)tLeft=tSet;else tLeft=Math.max(1,tLeft+60*+b.dataset.m);tDraw()};
+$('ts').onclick=()=>{if(tRun){clearInterval(tRun);tRun=null;$('ts').textContent='▶ Start';return}$('tt').classList.remove('done');if(tLeft<=0)tLeft=tSet;$('ts').textContent='⏸ Pause';tRun=setInterval(()=>{tLeft--;tDraw();if(tLeft<=0){clearInterval(tRun);tRun=null;$('ts').textContent='▶ Start';$('tt').classList.add('done');Kit.alarm()}},1000)};
+$('tr').onclick=()=>{clearInterval(tRun);tRun=null;tLeft=tSet;$('ts').textContent='▶ Start';$('tt').classList.remove('done');tDraw()};
+$('edit').onclick=()=>{const e=$('ed');e.hidden=!e.hidden;if(!e.hidden){$('es').value=D.sched;$('ej').value=D.jobs;$('ecn').value=D.countName;$('ec').value=D.count;$('eauto').checked=!!D.countAuto;$('e24').checked=!!D.h24;e.scrollIntoView({behavior:'smooth'})}};
+$('esv').onclick=()=>{D.sched=$('es').value;D.jobs=$('ej').value;D.countName=$('ecn').value||'Counter';D.count=+$('ec').value||0;D.countAuto=$('eauto').checked;D.countDate=new Date().toDateString();D.h24=$('e24').checked;save();drawStatic();tick();$('ed').hidden=true;Kit.ding()};
+drawStatic();tick();tDraw();setInterval(tick,1000);
+</script>
+</body></html>

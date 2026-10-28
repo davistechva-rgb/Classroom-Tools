@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Fullscreen Presentation Board</title>
+<style>
+main{max-width:1500px}
+.pb-wrap{display:grid;grid-template-columns:200px minmax(0,1fr) minmax(0,.9fr);gap:16px;align-items:start}
+@media (max-width:980px){.pb-wrap{grid-template-columns:1fr}}
+.pb-list{display:flex;flex-direction:column;gap:8px;max-height:70vh;overflow:auto;padding:4px}
+.pb-th{position:relative;aspect-ratio:16/9;border:4px solid var(--ink);border-radius:12px;overflow:hidden;cursor:pointer;background:#fff;flex:none}
+.pb-th.on{outline:5px solid var(--sun);outline-offset:2px}
+.pb-th .n{position:absolute;left:4px;top:4px;background:var(--ink);color:#fff;border-radius:99px;font-size:.75rem;padding:0 8px;z-index:2;font-weight:800}
+
+.pb-prev{position:relative;aspect-ratio:16/9;border:6px solid var(--ink);border-radius:18px;overflow:hidden;box-shadow:7px 7px 0 var(--ink)}
+
+.pb-th,.pb-prev,#sh{container-type:size}#sh{position:absolute;inset:0}
+.sv{font-size:min(1.1cqw,1.95cqh);position:absolute;inset:0;background:var(--bg);color:var(--fg);display:flex;flex-direction:column;justify-content:center;padding:6% 7%;font-family:Fredoka,system-ui,sans-serif}
+.sv .em{font-size:6em;line-height:1}
+.sv h2{margin:0 0 .3em;font-size:4.4em;line-height:1.03}
+.sv .bd{font-size:2.4em;font-weight:600;line-height:1.3;white-space:pre-wrap}
+.sv.center{align-items:center;text-align:center}
+.sv.big h2{font-size:7em}
+.sv.split{display:grid;grid-template-columns:1fr 1.4fr;align-items:center;gap:6%}
+.sv.split .em{font-size:14em;text-align:center}
+.pb-ed{display:grid;gap:10px}
+.pb-ed .row{gap:8px}
+.pb-sw{display:flex;gap:6px;flex-wrap:wrap}.pb-sw button{width:34px;height:34px;border-radius:50%;border:3px solid var(--ink);cursor:pointer}
+#show{position:fixed;inset:0;z-index:50;display:none;background:#000}
+#show.on{display:block}
+
+#show .cnt{position:absolute;right:14px;bottom:10px;color:rgba(255,255,255,.6);font:700 14px system-ui;z-index:2;text-shadow:0 0 3px #000}
+#show .x{position:absolute;right:12px;top:10px;z-index:3;opacity:.4}#show .x:hover{opacity:1}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🖥️", "Fullscreen Presentation Board");
+const $=id=>document.getElementById(id);
+const THEMES=[['#FFFFFF','#1D2B53'],['#1D2B53','#FFFFFF'],['#FFC93C','#1D2B53'],['#22C3E6','#FFFFFF'],['#5DC66E','#FFFFFF'],['#9B6BF2','#FFFFFF'],['#FF6B5B','#FFFFFF'],['#FF8FC7','#1D2B53'],['#2F5D3A','#FFFFFF']];
+const st=Kit.get('pb-deck',{slides:[{emo:'👋',title:'Good morning!',body:'Today we are going to learn about the planets.',lay:'center',th:2},{emo:'🪐',title:'The planets',body:'Mercury, Venus, Earth, Mars,\nJupiter, Saturn, Uranus, Neptune',lay:'split',th:1},{emo:'❓',title:'Turn and talk',body:'Which planet would you visit, and why?',lay:'center',th:3}]});
+const save=()=>Kit.set('pb-deck',st);let cur=0;
+document.querySelector('main').innerHTML=`<div class="row" style="justify-content:center;margin-bottom:12px"><button class="btn big green" id="play">▶ Present</button><button class="btn white" id="add">＋ New slide</button><button class="btn white" id="dup">⧉ Copy slide</button><button class="btn white" id="del">🗑 Delete slide</button><button class="btn white" id="mvu">⬆</button><button class="btn white" id="mvd">⬇</button></div>
+<div class="pb-wrap"><div class="pb-list" id="ls"></div><div><div class="pb-prev" id="pv"></div></div>
+<div class="card pb-ed"><label>Emoji <input type="text" id="emo" maxlength="8" style="width:100px"></label><label>Title <input type="text" id="ti"></label><label>Words <textarea id="bd" style="min-height:120px"></textarea></label>
+<label>Layout <select id="lay" style="width:auto"><option value="left">Title and words</option><option value="center">Centered</option><option value="big">Big title only</option><option value="split">Big emoji + words</option></select></label>
+<div><b>Colors</b><div class="pb-sw" id="sw"></div></div></div></div>
+<div id="show"><button class="btn white small x" id="xx">✕ Exit</button><div id="sh"></div><span class="cnt" id="sc"></span></div>`;
+const H=s=>{const [bg,fg]=THEMES[s.th||0];return `<div class="sv ${s.lay||'left'}" style="--bg:${bg};--fg:${fg}">${s.emo?`<div class="em">${Kit.esc(s.emo)}</div>`:''}<div>${s.title?`<h2>${Kit.esc(s.title)}</h2>`:''}${s.lay!=='big'&&s.body?`<div class="bd">${Kit.esc(s.body)}</div>`:''}</div></div>`};
+function draw(){const S=st.slides;cur=Math.max(0,Math.min(cur,S.length-1));$('ls').innerHTML=S.map((s,i)=>`<div class="pb-th ${i===cur?'on':''}" data-i="${i}"><span class="n">${i+1}</span>${H(s)}</div>`).join('');$('pv').innerHTML=S[cur]?H(S[cur]):'';
+ const s=S[cur];if(!s)return;$('emo').value=s.emo||'';$('ti').value=s.title||'';$('bd').value=s.body||'';$('lay').value=s.lay||'left';$('sw').innerHTML=THEMES.map((t,i)=>`<button data-t="${i}" style="background:linear-gradient(135deg,${t[0]} 60%,${t[1]} 60%);${i===s.th?'outline:4px solid var(--sun)':''}" aria-label="Color ${i+1}"></button>`).join('');window.__t={n:S.length,cur}}
+const upd=()=>{const s=st.slides[cur];if(!s)return;s.emo=$('emo').value;s.title=$('ti').value;s.body=$('bd').value;s.lay=$('lay').value;save();$('pv').innerHTML=H(s);$('ls').children[cur].innerHTML=`<span class="n">${cur+1}</span>${H(s)}`};
+['emo','ti','bd'].forEach(id=>$(id).oninput=upd);$('lay').onchange=upd;
+$('sw').onclick=e=>{const b=e.target.closest('[data-t]');if(!b)return;st.slides[cur].th=+b.dataset.t;save();draw()};
+$('ls').onclick=e=>{const t=e.target.closest('.pb-th');if(t){cur=+t.dataset.i;draw()}};
+$('add').onclick=()=>{st.slides.splice(cur+1,0,{emo:'',title:'New slide',body:'',lay:'left',th:st.slides[cur]?.th||0});cur++;save();draw();$('ti').select()};
+$('dup').onclick=()=>{if(!st.slides[cur])return;st.slides.splice(cur+1,0,{...st.slides[cur]});cur++;save();draw()};
+$('del').onclick=()=>{if(st.slides.length<2)return alert('A deck needs at least one slide.');if(confirm('Delete this slide?')){st.slides.splice(cur,1);save();draw()}};
+const mv=d=>{const j=cur+d;if(j<0||j>=st.slides.length)return;[st.slides[cur],st.slides[j]]=[st.slides[j],st.slides[cur]];cur=j;save();draw()};$('mvu').onclick=()=>mv(-1);$('mvd').onclick=()=>mv(1);
+let si=0;const sdraw=()=>{$('sh').innerHTML=H(st.slides[si]);$('sc').textContent=`${si+1} / ${st.slides.length}`};
+$('play').onclick=()=>{si=cur;$('show').classList.add('on');sdraw();document.documentElement.requestFullscreen?.().catch(()=>{})};
+const exit=()=>{$('show').classList.remove('on');cur=si;draw();if(document.fullscreenElement)document.exitFullscreen()};$('xx').onclick=exit;
+document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&$('show').classList.contains('on'))exit()});
+$('show').onclick=e=>{if(e.target.closest('.x'))return;si=Math.min(st.slides.length-1,si+(e.clientX<innerWidth/3?-1:1));if(si<0)si=0;sdraw()};
+addEventListener('keydown',e=>{if(!$('show').classList.contains('on'))return;if(['ArrowRight',' ','PageDown'].includes(e.key)){e.preventDefault();si=Math.min(st.slides.length-1,si+1);sdraw()}if(['ArrowLeft','PageUp'].includes(e.key)){si=Math.max(0,si-1);sdraw()}if(e.key==='Escape')exit()});
+draw();
+</script>
+</body></html>

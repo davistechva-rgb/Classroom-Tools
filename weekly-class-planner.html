@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Weekly Class Planner</title>
+<style>
+main{max-width:1500px}
+.wp-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;margin-bottom:12px}
+.wp-wk{font-weight:800;font-size:clamp(1.2rem,3vw,1.9rem);color:#fff;text-shadow:2px 2px 0 var(--ink);min-width:12em;text-align:center}
+.wp-scroll{overflow-x:auto;border:5px solid var(--ink);border-radius:20px;box-shadow:6px 6px 0 var(--ink);background:#fff}
+.wp-grid{display:grid;grid-template-columns:120px repeat(5,minmax(150px,1fr));min-width:880px}
+.wp-h,.wp-r,.wp-c{border-right:3px solid #D5DEEE;border-bottom:3px solid #D5DEEE;padding:8px}
+.wp-h{background:var(--ink);color:#fff;font-weight:800;text-align:center;font-size:1.1rem;border-color:#33456F}
+.wp-h small{display:block;font-weight:600;opacity:.75;font-size:.8rem}
+.wp-h.today{background:var(--grape)}
+.wp-r{background:#F4F7FC;font-weight:800;outline:none;font-size:.98rem}
+.wp-c{min-height:74px;outline:none;font-weight:600;font-size:1rem;line-height:1.25;background:var(--cc,#fff);transition:background .2s}
+.wp-c:focus{box-shadow:inset 0 0 0 4px var(--sun)}
+.wp-c.today{box-shadow:inset 4px 0 0 var(--grape),inset -4px 0 0 var(--grape)}
+.wp-c:empty::before{content:"＋";color:#C2CCE0}
+.wp-hw .wp-r{background:#FFF1B8}.wp-hw .wp-c{background:#FFFBEA}
+.wp-legend{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:12px}
+.wp-legend span{border:3px solid var(--ink);border-radius:99px;padding:2px 12px;font-weight:700;background:var(--cc);font-size:.9rem}
+@media print{.wp-bar button,.top,footer,.wp-legend{display:none!important}body{background:#fff}.wp-scroll{box-shadow:none}}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🗓️", "Weekly Class Planner");
+const $=id=>document.getElementById(id);
+const DAYS=['Monday','Tuesday','Wednesday','Thursday','Friday'];
+const SUBJ={math:'#E3F2FF',reading:'#FDE7F3',ela:'#FDE7F3',writing:'#FFF0DE',science:'#E4F8E8',social:'#FFF6C9',history:'#FFF6C9',art:'#F1E7FF',music:'#F1E7FF',pe:'#E0FAF7',gym:'#E0FAF7',library:'#EDEFF5',lunch:'#F4F4F4',recess:'#E0FAF7',spelling:'#FDE7F3',test:'#FFD9D4',quiz:'#FFD9D4'};
+const color=t=>{const w=(t||'').toLowerCase();for(const k in SUBJ)if(w.includes(k))return SUBJ[k];return '#fff'};
+const monday=d=>{d=new Date(d);const k=(d.getDay()+6)%7;d.setDate(d.getDate()-k);d.setHours(0,0,0,0);return d};
+let wk=monday(new Date());const ALL=Kit.get('wp-all',{rows:['Morning','Block 1','Block 2','Lunch','Block 3','Block 4'],weeks:{}});
+const key=()=>wk.toISOString().slice(0,10);
+document.querySelector('main').innerHTML=`<div class="wp-bar"><button class="btn white small" id="pw">◀ Last week</button><span class="wp-wk" id="wkl"></span><button class="btn white small" id="nw">Next week ▶</button>
+ <button class="btn small" id="cp">📋 Copy last week</button><button class="btn white small" id="ar">＋ Row</button><button class="btn white small" id="rr">－ Row</button><button class="btn white small" id="cl">🧽 Clear week</button><button class="btn white small" onclick="print()">🖨️ Print</button></div>
+<div class="wp-scroll"><div class="wp-grid" id="g"></div></div><div class="wp-legend" id="lg"></div>
+<p class="muted" style="text-align:center">Tap any box to type. Row names on the left are yours to change too. Words like math, reading, science, art, or test color the box automatically. Everything saves on this device.</p>`;
+function cells(){return ALL.weeks[key()]||(ALL.weeks[key()]={})}
+function draw(){const c=cells(),t=new Date();t.setHours(0,0,0,0);const end=new Date(wk);end.setDate(end.getDate()+4);
+ $('wkl').textContent=`Week of ${wk.toLocaleDateString(undefined,{month:'long',day:'numeric'})}`;
+ let h=`<div class="wp-h"></div>`+DAYS.map((d,i)=>{const dd=new Date(wk);dd.setDate(dd.getDate()+i);const today=+dd===+t;return `<div class="wp-h ${today?'today':''}">${d}<small>${dd.toLocaleDateString(undefined,{month:'short',day:'numeric'})}${today?' · TODAY':''}</small></div>`}).join('');
+ const rows=[...ALL.rows,'📝 Homework'];
+ rows.forEach((r,ri)=>{const hw=ri===rows.length-1;h+=`<div class="${hw?'wp-hw':''}" style="display:contents"><div class="wp-r" ${hw?'':`contenteditable="true" data-row="${ri}"`}>${Kit.esc(r)}</div>`+DAYS.map((_,di)=>{const k=hw?`hw-${di}`:`${ri}-${di}`;const dd=new Date(wk);dd.setDate(dd.getDate()+di);const v=c[k]||'';return `<div class="wp-c ${+dd===+t?'today':''}" contenteditable="true" data-k="${k}" style="--cc:${hw?'#FFFBEA':color(v)}">${Kit.esc(v)}</div>`}).join('')+`</div>`});
+ $('g').innerHTML=h;legend()}
+function legend(){const c=cells();const used=new Set(Object.values(c).map(v=>Object.keys(SUBJ).find(k=>(v||'').toLowerCase().includes(k))).filter(Boolean));$('lg').innerHTML=[...used].map(k=>`<span style="--cc:${SUBJ[k]}">${k[0].toUpperCase()+k.slice(1)}</span>`).join('')}
+const save=()=>Kit.set('wp-all',ALL);
+$('g').addEventListener('input',e=>{const c=e.target.closest('[data-k]');if(c){cells()[c.dataset.k]=c.innerText.trim();if(!c.dataset.k.startsWith('hw'))c.style.setProperty('--cc',color(c.innerText));save();return}
+ const r=e.target.closest('[data-row]');if(r){ALL.rows[+r.dataset.row]=r.innerText.trim();save()}});
+$('g').addEventListener('blur',legend,true);
+$('pw').onclick=()=>{wk.setDate(wk.getDate()-7);draw()};$('nw').onclick=()=>{wk.setDate(wk.getDate()+7);draw()};
+$('cp').onclick=()=>{const p=new Date(wk);p.setDate(p.getDate()-7);const prev=ALL.weeks[p.toISOString().slice(0,10)];if(!prev||!Object.keys(prev).length){alert('Last week is empty.');return}
+ if(Object.values(cells()).some(Boolean)&&!confirm('Replace this week with a copy of last week?'))return;ALL.weeks[key()]={...prev};Object.keys(ALL.weeks[key()]).forEach(k=>{if(k.startsWith('hw'))delete ALL.weeks[key()][k]});save();draw();Kit.ding()};
+$('ar').onclick=()=>{ALL.rows.push('New row');save();draw()};$('rr').onclick=()=>{if(ALL.rows.length>1&&confirm(`Remove the row "${ALL.rows[ALL.rows.length-1]}" from every week?`)){ALL.rows.pop();save();draw()}};
+$('cl').onclick=()=>{if(confirm('Clear everything in this week?')){ALL.weeks[key()]={};save();draw()}};
+draw();
+</script>
+</body></html>

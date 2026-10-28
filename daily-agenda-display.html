@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Daily Agenda Display</title>
+<style>
+main{max-width:1300px}
+.ag-head{display:flex;flex-wrap:wrap;gap:12px;align-items:baseline;justify-content:space-between;margin-bottom:14px}
+.ag-day{font-size:clamp(1.6rem,4vw,2.8rem);font-weight:800;color:#fff;text-shadow:3px 3px 0 var(--ink)}
+.ag-list{display:grid;gap:10px;counter-reset:ag}
+.ag-it{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;gap:14px;align-items:center;background:#fff;border:5px solid var(--ink);border-radius:20px;padding:10px 16px;box-shadow:0 5px 0 var(--ink);transition:transform .3s,opacity .3s,background .3s}
+.ag-it .chk{width:46px;height:46px;border:4px solid var(--ink);border-radius:14px;background:#fff;cursor:pointer;font-size:1.8rem;display:grid;place-items:center;padding:0}
+.ag-it .tm{font-weight:800;font-variant-numeric:tabular-nums;color:#6B7695;min-width:4.6em;font-size:1.15rem}
+.ag-it .tx{font-weight:800;font-size:clamp(1.25rem,2.8vw,2rem);line-height:1.15}
+.ag-it .tx small{display:block;font-weight:600;font-size:.55em;color:#55607E}
+.ag-it .tag{font-weight:800;border:3px solid var(--ink);border-radius:99px;padding:2px 12px;font-size:.95rem;white-space:nowrap}
+.ag-it.done{opacity:.55;background:#EEF3FB}.ag-it.done .tx{text-decoration:line-through 4px}
+.ag-it.now{background:#FFF6C9;transform:scale(1.025);box-shadow:0 5px 0 var(--ink),0 0 0 6px var(--sun)}
+.ag-it.now .tag{background:var(--sun)}
+.ag-it.next .tag{background:#E3F2FF}
+.ag-ed textarea{min-height:240px}
+.ag-tools{display:flex;gap:8px;flex-wrap:wrap}
+@media (max-width:640px){.ag-it{grid-template-columns:auto minmax(0,1fr)}.ag-it .tm,.ag-it .tag{display:none}}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("📋", "Daily Agenda Display");
+const $=id=>document.getElementById(id);
+const DEF=`8:00 | 🌞 Morning meeting | Greeting, calendar, and share
+8:30 | 📚 Reading groups | Group 1: guided reading · Group 2: centers
+9:45 | 🍎 Snack & recess
+10:15 | ➗ Math: fractions | Warm-up, lesson, and partner practice
+11:30 | 🍕 Lunch
+12:15 | 🔬 Science: the water cycle | Lab today, so wear old clothes!
+1:15 | 🎨 Art
+2:00 | ✍️ Writing workshop | Finish your story's ending
+2:45 | 🎒 Pack up & jobs`;
+const st=Kit.get('ag-state',{text:DEF,done:[],day:'',auto:true});
+const today=new Date().toDateString();if(st.day!==today){st.done=[];st.day=today;Kit.set('ag-state',st)}
+document.querySelector('main').innerHTML=`<div class="ag-head"><div class="ag-day" id="day"></div><div class="ag-tools"><button class="btn white small" id="prev">◀ Back one</button><button class="btn green small" id="nx">✓ Done, next!</button><button class="btn white small" id="ed">✏️ Edit</button></div></div>
+<div class="ag-list" id="list"></div>
+<div class="card ag-ed stack" id="edc" hidden style="margin-top:16px"><b>✏️ Today's agenda</b><span class="muted">One item per line: time | what | details (time and details are optional). Each new day starts with nothing checked off.</span><textarea id="ta"></textarea>
+<label><input type="checkbox" id="auto"> Highlight "Now" by the clock (turn off to move along by hand)</label><button class="btn green" id="sv">✓ Save</button></div>`;
+const items=()=>Kit.lines(st.text).map(l=>{const p=l.split('|').map(s=>s.trim());if(p.length===1)return {t:'',what:p[0],det:''};if(/^\d{1,2}:\d{2}/.test(p[0]))return {t:p[0],what:p[1]||'',det:p[2]||''};return {t:'',what:p[0],det:p[1]||''}});
+const toMin=t=>{const m=t.match(/^(\d{1,2}):(\d{2})\s*(am|pm)?/i);if(!m)return null;let h=+m[1];const ap=(m[3]||'').toLowerCase();if(ap==='pm'&&h<12)h+=12;if(!ap&&h>=1&&h<7)h+=12;return h*60+ +m[2]};
+function nowIndex(it){if(st.auto&&it.some(x=>x.t)){const d=new Date(),n=d.getHours()*60+d.getMinutes();let k=-1;it.forEach((x,i)=>{const m=toMin(x.t);if(m!=null&&m<=n)k=i});if(k>=0&&!st.done.includes(k))return k}return it.findIndex((_,i)=>!st.done.includes(i))}
+function draw(){const it=items();const n=nowIndex(it);$('day').textContent='📋 '+new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});
+ let nextShown=false;$('list').innerHTML=it.map((x,i)=>{const d=st.done.includes(i);let tag='';if(i===n){tag='⭐ Now'}else if(!d&&i>n&&!nextShown){tag='Next';nextShown=true}
+  return `<div class="ag-it ${d?'done':''} ${i===n?'now':''} ${tag==='Next'?'next':''}" data-i="${i}"><button class="chk" aria-label="Check off">${d?'✔️':''}</button><span class="tm">${Kit.esc(x.t)}</span><span class="tx">${Kit.esc(x.what)}${x.det?`<small>${Kit.esc(x.det)}</small>`:''}</span>${tag?`<span class="tag">${tag}</span>`:'<span></span>'}</div>`}).join('');window.__t={n}}
+$('list').onclick=e=>{const b=e.target.closest('.chk');if(!b)return;const i=+b.closest('.ag-it').dataset.i;st.done=st.done.includes(i)?st.done.filter(x=>x!==i):[...st.done,i];Kit.set('ag-state',st);st.done.includes(i)?Kit.ding():Kit.tick();draw();if(st.done.length===items().length){Kit.tada();Kit.confetti(80)}};
+$('nx').onclick=()=>{const it=items();const n=nowIndex(it);if(n<0)return;if(!st.done.includes(n))st.done.push(n);Kit.set('ag-state',st);Kit.ding();draw();if(st.done.length===it.length){Kit.tada();Kit.confetti(80)}};
+$('prev').onclick=()=>{if(!st.done.length)return;st.done.pop();Kit.set('ag-state',st);draw()};
+$('ed').onclick=()=>{$('edc').hidden=!$('edc').hidden;$('ta').value=st.text;$('auto').checked=st.auto};
+$('sv').onclick=()=>{st.text=$('ta').value;st.auto=$('auto').checked;st.done=[];Kit.set('ag-state',st);$('edc').hidden=true;draw()};
+addEventListener('keydown',e=>{if(e.target.closest('textarea,input'))return;if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();$('nx').click()}if(e.key==='ArrowLeft')$('prev').click()});
+draw();setInterval(draw,30000);
+</script>
+</body></html>

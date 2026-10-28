@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Lesson Scene Switcher</title>
+<style>
+main{max-width:1600px}
+.ss-scr{position:relative;height:min(62vh,600px);border:7px solid var(--ink);border-radius:28px;overflow:hidden;box-shadow:9px 9px 0 var(--ink);background:var(--bg);transition:background .9s;color:#fff;text-shadow:4px 4px 0 rgba(0,0,0,.25)}
+body.fs .ss-scr{height:calc(100vh - 220px)}
+.ss-in{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:4%}
+.ss-in.go{animation:ssin .8s cubic-bezier(.3,1.3,.5,1)}@keyframes ssin{from{transform:scale(.7);opacity:0;filter:blur(8px)}}
+.ss-e{font-size:clamp(4rem,12vw,9rem);line-height:1}
+.ss-t{font-size:clamp(2.4rem,7vw,5.6rem);font-weight:800;line-height:1.02;margin-top:.1em}
+.ss-s{font-size:clamp(1.2rem,3vw,2.3rem);font-weight:700;margin-top:.3em;max-width:30ch}
+.ss-chips{position:absolute;left:0;right:0;bottom:16px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;text-shadow:none}
+.ss-chips span{background:rgba(255,255,255,.92);color:var(--ink);border:4px solid var(--ink);border-radius:999px;padding:4px 18px;font-weight:800;font-size:clamp(1rem,2.2vw,1.5rem)}
+.ss-chips .tm{font-variant-numeric:tabular-nums}.ss-chips .tm.up{background:var(--tomato);color:#fff}
+.ss-btns{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:16px}
+.ss-btns button{font:inherit;font-weight:800;font-size:1.1rem;border:5px solid var(--ink);border-radius:20px;padding:10px;cursor:pointer;box-shadow:0 5px 0 var(--ink);background:var(--bg);color:#fff;text-shadow:2px 2px 0 rgba(0,0,0,.3);display:flex;flex-direction:column;align-items:center;gap:2px}
+.ss-btns button span{font-size:1.9rem}.ss-btns button small{font-size:.75rem;opacity:.9}
+.ss-btns button.on{transform:translateY(5px);box-shadow:none;outline:5px solid var(--sun);outline-offset:2px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🎬", "Lesson Scene Switcher");
+const $=id=>document.getElementById(id);
+const BG={blue:'linear-gradient(135deg,#22C3E6,#2E7DD7)',green:'linear-gradient(135deg,#5DC66E,#1E9E6A)',purple:'linear-gradient(135deg,#9B6BF2,#5B3DC9)',orange:'linear-gradient(135deg,#FFB13C,#FF7A3D)',pink:'linear-gradient(135deg,#FF8FC7,#E8508F)',red:'linear-gradient(135deg,#FF6B5B,#D63A3A)',night:'linear-gradient(135deg,#2B3350,#141B33)',teal:'linear-gradient(135deg,#2BC4B0,#13877C)'};
+const DEF=`🌅 | Good morning! | Unpack, then start your morning work | orange | 1 | 10 | none
+📖 | Quiet reading | Read your book. Stay in your spot. | blue | 0 | 20 | rain
+👥 | Group work | Work together. Use your partner voices! | green | 2 | 15 | none
+🧑‍🏫 | Eyes on me | Mini lesson. Listen and take notes. | purple | 0 | 0 | none
+📝 | Test time | Do your own best work. | night | 0 | 30 | none
+🧹 | Clean-up time | Put everything back where it belongs | pink | 2 | 3 | none
+🧘 | Brain break | Stand up, stretch, and breathe | teal | 1 | 2 | waves
+🎒 | Pack up | Chairs up, backpacks on, line up quietly | red | 1 | 5 | none`;
+const VOICE=['🤫 Silent','🗣️ Whisper','💬 Partner voice','🎉 Group voice'];
+const st=Kit.get('ss-state',{text:DEF,cur:-1});
+document.querySelector('main').innerHTML=`<div class="ss-scr" id="scr"><div class="ss-in" id="in"></div><div class="ss-chips" id="chips"></div></div><div class="ss-btns" id="btns"></div>
+<div class="row" style="justify-content:center;margin-top:14px"><button class="btn white" id="fs">⛶ Full screen</button><button class="btn white" id="snd">🔇 Sound off</button><button class="btn white" id="ed">✏️ Edit scenes</button></div>
+<div class="card stack" id="edc" hidden style="margin-top:14px"><b>✏️ Scenes</b><span class="muted">One per line: emoji | title | what to do | color | voice level 0–3 | timer minutes (0 for none) | background sound (none, rain, or waves). Colors: ${Object.keys(BG).join(', ')}. Number keys 1–9 switch scenes.</span><textarea id="ta" style="min-height:240px"></textarea><button class="btn green" id="sv">✓ Save</button></div>`;
+const scenes=()=>Kit.lines(st.text).map(l=>{const p=l.split('|').map(s=>s.trim());return {e:p[0],t:p[1]||'',s:p[2]||'',c:BG[(p[3]||'').toLowerCase()]?p[3].toLowerCase():'blue',v:p[4]===''||p[4]==null?null:Math.max(0,Math.min(3,+p[4])),m:+p[5]||0,a:(p[6]||'none').toLowerCase()}});
+let left=0,tv=null,soundOn=Kit.get('ss-sound',true),amb=null,AC;
+function ambient(kind){if(amb){amb.g.gain.setTargetAtTime(0,AC.currentTime,.4);const a=amb;setTimeout(()=>a.src.stop(),1500);amb=null}if(!soundOn||!kind||kind==='none')return;
+ try{AC=AC||new AudioContext();const b=AC.createBuffer(1,AC.sampleRate*3,AC.sampleRate),d=b.getChannelData(0);let last=0;for(let i=0;i<d.length;i++){const w=Math.random()*2-1;last=(last+.02*w)/1.02;d[i]=kind==='rain'?w*.5:last*3.5}
+  const src=AC.createBufferSource();src.buffer=b;src.loop=true;const f=AC.createBiquadFilter();f.type=kind==='rain'?'highpass':'lowpass';f.frequency.value=kind==='rain'?1500:500;const g=AC.createGain();g.gain.value=0;
+  src.connect(f).connect(g).connect(AC.destination);src.start();g.gain.setTargetAtTime(kind==='rain'?.08:.25,AC.currentTime,.8);
+  if(kind==='waves'){const l=AC.createOscillator(),lg=AC.createGain();l.frequency.value=.12;lg.gain.value=.15;l.connect(lg).connect(g.gain);l.start()}amb={src,g}}catch{}}
+function show(i,anim=true){const S=scenes();st.cur=i;Kit.set('ss-state',st);const s=S[i];$('btns').innerHTML=S.map((x,k)=>`<button data-i="${k}" class="${k===i?'on':''}" style="--bg:${BG[x.c]}"><span>${Kit.esc(x.e)}</span>${Kit.esc(x.t)}<small>${k<9?'key '+(k+1):''}</small></button>`).join('');
+ clearInterval(tv);if(!s){$('scr').style.setProperty('--bg',BG.night);$('in').innerHTML='<div class="ss-e">🎬</div><div class="ss-t">Pick a scene</div><div class="ss-s">Tap a button below to set up the room.</div>';$('chips').innerHTML='';ambient();return}
+ $('scr').style.setProperty('--bg',BG[s.c]);$('in').className='ss-in'+(anim?' go':'');$('in').innerHTML=`<div class="ss-e">${Kit.esc(s.e)}</div><div class="ss-t">${Kit.esc(s.t)}</div><div class="ss-s">${Kit.esc(s.s)}</div>`;
+ left=s.m*60;const chip=()=>$('chips').innerHTML=(s.v!=null?`<span>${VOICE[s.v]}</span>`:'')+(s.m?`<span class="tm ${left<=0?'up':''}">⏱ ${left>0?`${Math.floor(left/60)}:${String(left%60).padStart(2,'0')}`:'Time!'}</span>`:'');chip();
+ if(s.m)tv=setInterval(()=>{left--;chip();if(left===0){Kit.alarm()}if(left<=0)clearInterval(tv)},1000);
+ if(anim){Kit.tone(523,.15,'triangle',.18);Kit.tone(784,.25,'triangle',.18,.12)}ambient(s.a);window.__t={cur:i,title:s.t}}
+$('btns').onclick=e=>{const b=e.target.closest('button');if(b)show(+b.dataset.i)};
+$('fs').onclick=()=>Kit.fullscreen();
+const sndLabel=()=>$('snd').textContent=soundOn?'🔊 Sound on':'🔇 Sound off';sndLabel();
+$('snd').onclick=()=>{soundOn=!soundOn;Kit.set('ss-sound',soundOn);sndLabel();const s=scenes()[st.cur];ambient(s&&s.a)};
+$('ed').onclick=()=>{$('edc').hidden=!$('edc').hidden;$('ta').value=st.text};$('sv').onclick=()=>{st.text=$('ta').value;$('edc').hidden=true;show(Math.min(st.cur,scenes().length-1),false)};
+addEventListener('keydown',e=>{if(e.target.closest('textarea,input'))return;const n=+e.key;if(n>=1&&n<=9&&scenes()[n-1])show(n-1)});
+show(st.cur,false);
+</script>
+</body></html>

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Interactive Lesson Board</title>
+<style>
+main{max-width:none}
+.lb2-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;margin-bottom:10px}
+.lb2-board{position:relative;height:calc(100vh - 230px);min-height:480px;border:6px solid var(--ink);border-radius:22px;box-shadow:7px 7px 0 var(--ink);overflow:hidden;background:#F7FAFF;background-image:radial-gradient(#C9D6EC 1.5px,transparent 2px);background-size:26px 26px}
+body.fs .lb2-board{height:calc(100vh - 140px)}
+.lb2-w{position:absolute;background:#fff;border:4px solid var(--ink);border-radius:16px;box-shadow:5px 5px 0 rgba(29,43,83,.35);display:flex;flex-direction:column;overflow:hidden;min-width:140px;min-height:90px}
+.lb2-w.front{z-index:5}
+.lb2-hd{display:flex;align-items:center;gap:6px;background:var(--wc);color:#fff;padding:4px 8px;font-weight:800;cursor:grab;touch-action:none;text-shadow:1px 1px 0 rgba(0,0,0,.3);font-size:.95rem}
+.lb2-hd span{flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;outline:none}
+.lb2-hd button{border:0;background:rgba(255,255,255,.3);border-radius:8px;cursor:pointer;color:#fff;font-weight:800;width:26px;height:24px}
+.lb2-bd{flex:1;min-height:0;overflow:auto;position:relative}
+.lb2-txt{padding:10px 12px;outline:none;font-size:var(--fs,1.4rem);font-weight:600;line-height:1.3;min-height:100%;white-space:pre-wrap}
+.lb2-img{width:100%;height:100%;object-fit:contain;display:block;background:#fff}
+.lb2-frame{width:100%;height:100%;border:0;display:block}
+.lb2-tm{display:grid;place-items:center;height:100%;gap:6px;text-align:center}
+.lb2-tm b{font-size:clamp(2rem,5vw,3.4rem);font-variant-numeric:tabular-nums}
+.lb2-tm b.up{color:var(--tomato);animation:cdbl .5s 6}@keyframes cdbl{50%{opacity:.2}}
+.lb2-ck{padding:8px 10px;display:grid;gap:6px}
+.lb2-ck label{display:flex;gap:8px;align-items:center;font-weight:700;font-size:1.15rem}
+.lb2-ck input[type=checkbox]{width:24px;height:24px}
+.lb2-rz{position:absolute;right:0;bottom:0;width:22px;height:22px;cursor:nwse-resize;touch-action:none;background:linear-gradient(135deg,transparent 50%,var(--ink) 50%);border-radius:0 0 10px 0}
+.lb2-empty{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:#8A93AE;font-weight:700;font-size:1.3rem;pointer-events:none}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("📑", "Interactive Lesson Board");
+const $=id=>document.getElementById(id);const WC=['#9B6BF2','#22C3E6','#FF6B5B','#5DC66E','#FF9F43','#FF8FC7','#1D2B53'];
+const TOOLS=[['classroom-timer','⏱️ Timer (full)'],['name-picker','🎯 Name picker'],['random-wheel','🎡 Random wheel'],['traffic-light','🚦 Traffic light'],['scoreboard','🏆 Scoreboard'],['dice-roller','🎲 Dice'],['word-scrambler','🔤 Word scrambler'],['flashcards','📝 Flashcards'],['coin-flip','🪙 Coin flip'],['team-generator','👥 Teams']];
+const ALL=Kit.get('lb2-all',{boards:{'My lesson board':[]},cur:'My lesson board'});
+const save=()=>{try{Kit.set('lb2-all',ALL)}catch{alert('This board is too big to save. Try smaller pictures.')}};
+const W=()=>ALL.boards[ALL.cur]||(ALL.boards[ALL.cur]=[]);
+document.querySelector('main').innerHTML=`<div class="lb2-bar"><select id="bs" style="width:auto"></select><button class="btn white small" id="nb">＋ New board</button><button class="btn white small" id="rb">✏️ Rename</button><button class="btn white small" id="db">🗑</button>
+<span style="width:12px"></span><button class="btn small" data-add="text">📝 Note</button><button class="btn small" data-add="check">✅ Checklist</button><button class="btn small" data-add="timer">⏱️ Timer</button><label class="btn small" style="display:inline-flex;align-items:center;gap:4px">🖼️ Picture<input type="file" id="pic" accept="image/*" hidden></label>
+<select id="tl" style="width:auto"><option value="">🧰 Add a classroom tool…</option>${TOOLS.map(t=>`<option value="${t[0]}">${t[1]}</option>`).join('')}</select><button class="btn small white" data-add="web">🌐 Website</button></div>
+<div class="lb2-board" id="bd"><div class="lb2-empty" id="emp">Add notes, checklists, timers, pictures, or classroom tools.<br>Drag them by the colored bar and resize them from the corner.</div></div>`;
+function boards(){$('bs').innerHTML=Object.keys(ALL.boards).map(k=>`<option ${k===ALL.cur?'selected':''}>${Kit.esc(k)}</option>`).join('')}
+function body(w){if(w.type==='text')return `<div class="lb2-txt" contenteditable="true" spellcheck="false" style="--fs:${w.fs||1.4}rem">${Kit.esc(w.text||'')}</div>`;
+ if(w.type==='img')return `<img class="lb2-img" src="${w.src}" alt="">`;if(w.type==='tool'||w.type==='web')return `<iframe class="lb2-frame" src="${Kit.esc(w.src)}" title="${Kit.esc(w.title)}"></iframe>`;
+ if(w.type==='timer')return `<div class="lb2-tm"><b data-t>${fmt(w.left??w.secs)}</b><div class="row" style="gap:4px;justify-content:center"><button class="btn small white" data-tm="-60">−1</button><button class="btn small green" data-tm="go">▶</button><button class="btn small white" data-tm="60">+1</button><button class="btn small white" data-tm="r">↺</button></div></div>`;
+ if(w.type==='check')return `<div class="lb2-ck">${(w.items||[]).map((it,k)=>`<label><input type="checkbox" data-ck="${k}" ${it.d?'checked':''}><span contenteditable="true" data-ckt="${k}">${Kit.esc(it.t)}</span></label>`).join('')}<button class="btn small white" data-ckadd>＋ Add</button></div>`}
+const fmt=s=>`${Math.floor(Math.max(0,s)/60)}:${String(Math.max(0,s)%60).padStart(2,'0')}`;
+function draw(){$('bd').querySelectorAll('.lb2-w').forEach(e=>e.remove());const ws=W();$('emp').hidden=ws.length>0;
+ ws.forEach((w,i)=>{const d=document.createElement('div');d.className='lb2-w';d.dataset.i=i;d.style.cssText=`left:${w.x}%;top:${w.y}%;width:${w.w}%;height:${w.h}%;--wc:${WC[w.c%WC.length]}`;
+  d.innerHTML=`<div class="lb2-hd"><span contenteditable="true" spellcheck="false" data-title>${Kit.esc(w.title)}</span>${w.type==='text'?'<button data-fs="-1" title="Smaller text">A−</button><button data-fs="1" title="Bigger text">A+</button>':''}<button data-col title="Color">🎨</button><button data-x title="Remove">✕</button></div><div class="lb2-bd">${body(w)}</div><div class="lb2-rz"></div>`;$('bd').appendChild(d)});boards();window.__t={n:ws.length}}
+function add(o){const ws=W();const n=ws.length;ws.push({x:4+(n*5)%40,y:4+(n*7)%40,w:28,h:34,c:n,...o});save();draw()}
+document.querySelector('.lb2-bar').onclick=e=>{const b=e.target.closest('[data-add]');if(!b)return;const t=b.dataset.add;
+ if(t==='text')add({type:'text',title:'Note',text:'Type here…'});if(t==='check')add({type:'check',title:'Today we will…',items:[{t:'Read chapter 3'},{t:'Answer the questions'},{t:'Share with a partner'}]});
+ if(t==='timer')add({type:'timer',title:'Timer',secs:300,w:20,h:26});
+ if(t==='web'){const u=prompt('Website address (some sites don\'t allow being shown inside another page):','https://');if(u&&/^https?:\/\/./.test(u))add({type:'web',title:u.replace(/^https?:\/\//,'').split('/')[0],src:u,w:44,h:56})}};
+$('tl').onchange=()=>{const v=$('tl').value;if(!v)return;const t=TOOLS.find(x=>x[0]===v);add({type:'tool',title:t[1],src:v+'.html',w:40,h:56});$('tl').value=''};
+$('pic').onchange=()=>{const f=$('pic').files[0];if(!f)return;const im=new Image();im.onload=()=>{const k=Math.min(1,900/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=im.width*k;c.height=im.height*k;c.getContext('2d').drawImage(im,0,0,c.width,c.height);add({type:'img',title:f.name.replace(/\.[^.]+$/,''),src:c.toDataURL('image/jpeg',.82)});$('pic').value=''};im.src=URL.createObjectURL(f)};
+let act=null;
+$('bd').addEventListener('pointerdown',e=>{const w=e.target.closest('.lb2-w');if(!w)return;document.querySelectorAll('.lb2-w').forEach(x=>x.classList.toggle('front',x===w));
+ const hd=e.target.closest('.lb2-hd'),rz=e.target.closest('.lb2-rz');if(!(hd&&!e.target.closest('button,[contenteditable]'))&&!rz)return;
+ e.preventDefault();const r=$('bd').getBoundingClientRect(),o=W()[+w.dataset.i];act={w,o,mode:rz?'rz':'mv',sx:e.clientX,sy:e.clientY,ox:o.x,oy:o.y,ow:o.w,oh:o.h,R:r};w.setPointerCapture(e.pointerId);
+ w.querySelectorAll('iframe').forEach(f=>f.style.pointerEvents='none')});
+$('bd').addEventListener('pointermove',e=>{if(!act)return;const dx=(e.clientX-act.sx)/act.R.width*100,dy=(e.clientY-act.sy)/act.R.height*100,o=act.o;
+ if(act.mode==='mv'){o.x=Math.max(0,Math.min(100-o.w,act.ox+dx));o.y=Math.max(0,Math.min(100-o.h,act.oy+dy))}else{o.w=Math.max(12,Math.min(100-o.x,act.ow+dx));o.h=Math.max(14,Math.min(100-o.y,act.oh+dy))}
+ Object.assign(act.w.style,{left:o.x+'%',top:o.y+'%',width:o.w+'%',height:o.h+'%'})});
+$('bd').addEventListener('pointerup',()=>{if(!act)return;act.w.querySelectorAll('iframe').forEach(f=>f.style.pointerEvents='');act=null;save()});
+const T={};
+$('bd').addEventListener('click',e=>{const w=e.target.closest('.lb2-w');if(!w)return;const i=+w.dataset.i,o=W()[i];
+ if(e.target.closest('[data-x]')){if(confirm('Remove this from the board?')){clearInterval(T[i]);W().splice(i,1);save();draw()}return}
+ if(e.target.closest('[data-col]')){o.c=(o.c+1)%WC.length;save();w.style.setProperty('--wc',WC[o.c]);return}
+ const fs=e.target.closest('[data-fs]');if(fs){o.fs=Math.max(.8,Math.min(5,(o.fs||1.4)+ +fs.dataset.fs*.3));save();w.querySelector('.lb2-txt').style.setProperty('--fs',o.fs+'rem');return}
+ const tm=e.target.closest('[data-tm]');if(tm){const v=tm.dataset.tm,b=w.querySelector('[data-t]');o.left=o.left??o.secs;
+  if(v==='go'){if(T[i]){clearInterval(T[i]);T[i]=null;tm.textContent='▶';return}b.classList.remove('up');if(o.left<=0)o.left=o.secs;tm.textContent='⏸';T[i]=setInterval(()=>{o.left--;b.textContent=fmt(o.left);if(o.left<=0){clearInterval(T[i]);T[i]=null;tm.textContent='▶';b.classList.add('up');Kit.alarm()}},1000)}
+  else if(v==='r'){clearInterval(T[i]);T[i]=null;o.left=o.secs;b.textContent=fmt(o.left);b.classList.remove('up');w.querySelector('[data-tm="go"]').textContent='▶'}
+  else{o.secs=Math.max(60,o.secs+ +v);if(!T[i])o.left=o.secs;else o.left=Math.max(1,o.left+ +v);b.textContent=fmt(o.left)}save();return}
+ if(e.target.closest('[data-ckadd]')){o.items.push({t:'New step'});save();draw();return}});
+$('bd').addEventListener('change',e=>{const c=e.target.closest('[data-ck]');if(!c)return;const o=W()[+c.closest('.lb2-w').dataset.i];o.items[+c.dataset.ck].d=c.checked;save();if(c.checked)Kit.ding();if(o.items.every(x=>x.d)){Kit.tada();Kit.confetti(60)}});
+$('bd').addEventListener('input',e=>{const w=e.target.closest('.lb2-w');if(!w)return;const o=W()[+w.dataset.i];
+ if(e.target.matches('[data-title]'))o.title=e.target.textContent;else if(e.target.matches('.lb2-txt'))o.text=e.target.innerText;else if(e.target.matches('[data-ckt]'))o.items[+e.target.dataset.ckt].t=e.target.textContent;save()});
+$('bs').onchange=()=>{ALL.cur=$('bs').value;save();draw()};
+$('nb').onclick=()=>{const n=prompt('Name for the new board:','Lesson '+(Object.keys(ALL.boards).length+1));if(!n)return;ALL.boards[n]=ALL.boards[n]||[];ALL.cur=n;save();draw()};
+$('rb').onclick=()=>{const n=prompt('New name:',ALL.cur);if(!n||n===ALL.cur)return;ALL.boards[n]=ALL.boards[ALL.cur];delete ALL.boards[ALL.cur];ALL.cur=n;save();draw()};
+$('db').onclick=()=>{if(Object.keys(ALL.boards).length<2){if(confirm('Clear everything off this board?')){ALL.boards[ALL.cur]=[];save();draw()}return}if(confirm(`Delete the board "${ALL.cur}"?`)){delete ALL.boards[ALL.cur];ALL.cur=Object.keys(ALL.boards)[0];save();draw()}};
+if(!W().length&&!Kit.get('lb2-seeded',false)){Kit.set('lb2-seeded',true);add({type:'text',title:'🎯 Today\'s goal',text:'I can explain how plants make food.',fs:2,x:3,y:4,w:40,h:26});add({type:'check',title:'✅ Our plan',items:[{t:'Watch the video'},{t:'Label the plant parts'},{t:'Share with a partner'}],x:3,y:36,w:30,h:40});add({type:'timer',title:'⏱️ Work time',secs:600,x:46,y:4,w:20,h:28})}
+else draw();
+</script>
+</body></html>

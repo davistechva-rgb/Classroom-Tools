@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Exit Ticket Display</title>
+<style>
+main{max-width:1400px}
+.et-types{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:14px}
+.et-types button{font:inherit;font-weight:800;border:4px solid var(--ink);border-radius:99px;padding:4px 14px;cursor:pointer;background:#fff;color:var(--ink)}
+.et-types button.on{background:var(--sun)}
+.et-ticket{position:relative;background:#FFF9E6;border:7px solid var(--ink);border-radius:20px;box-shadow:9px 9px 0 var(--ink);padding:clamp(16px,3vw,34px);max-width:1100px;margin:0 auto}
+.et-ticket::before,.et-ticket::after{content:"";position:absolute;top:50%;width:44px;height:44px;border-radius:50%;background:var(--sky);border:7px solid var(--ink);transform:translateY(-50%)}
+.et-ticket::before{left:-29px;clip-path:inset(0 0 0 50%)}.et-ticket::after{right:-29px;clip-path:inset(0 50% 0 0)}
+.et-hd{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;border-bottom:4px dashed #D8C78F;padding-bottom:10px;margin-bottom:14px}
+.et-hd b{font-size:clamp(1.2rem,3vw,1.8rem);letter-spacing:.1em}
+.et-time{font-weight:800;font-size:clamp(1.6rem,4vw,2.6rem);background:#fff;border:4px solid var(--ink);border-radius:14px;padding:0 14px;font-variant-numeric:tabular-nums}
+.et-time.up{background:var(--tomato);color:#fff}
+.et-q{font-size:clamp(1.6rem,4.2vw,3rem);font-weight:800;line-height:1.15;outline:none}
+.et-rows{display:grid;gap:12px;margin-top:16px}
+.et-row{display:flex;gap:12px;align-items:center;font-size:clamp(1.15rem,2.6vw,1.8rem);font-weight:700}
+.et-row .n{flex:none;width:52px;height:52px;border-radius:50%;background:var(--nc);border:4px solid var(--ink);display:grid;place-items:center;color:#fff;font-weight:800;text-shadow:1px 1px 0 rgba(0,0,0,.3)}
+.et-row .ln{flex:1;border-bottom:4px solid #CDBB82;height:1.4em}
+.et-faces{display:flex;gap:clamp(8px,2vw,22px);justify-content:center;margin-top:16px;flex-wrap:wrap}
+.et-face{font:inherit;display:flex;flex-direction:column;align-items:center;gap:4px;border:5px solid var(--ink);border-radius:22px;background:#fff;padding:10px 14px;cursor:pointer;box-shadow:0 5px 0 var(--ink);min-width:110px;color:var(--ink);font-weight:700}
+.et-face span{font-size:clamp(2.6rem,6vw,4rem)}
+.et-face i{font-style:normal;font-weight:800;font-size:1.5rem;background:var(--ink);color:#fff;border-radius:10px;min-width:2em}
+.et-wall{display:flex;flex-wrap:wrap;gap:12px;margin-top:16px}
+.et-note{background:var(--nc);border:3px solid var(--ink);padding:12px;min-width:150px;max-width:260px;font-weight:700;font-size:1.15rem;box-shadow:4px 5px 0 rgba(29,43,83,.3);transform:rotate(var(--r));position:relative}
+.et-note button{position:absolute;top:2px;right:4px;border:0;background:none;cursor:pointer;font-size:1rem;opacity:.5}
+.et-add{display:flex;gap:8px;margin-top:14px}.et-add input{flex:1}
+@media (max-width:640px){.et-ticket::before,.et-ticket::after{display:none}.et-face{min-width:80px}}
+.et-ctl{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("📝", "Exit Ticket Display");
+const $=id=>document.getElementById(id);
+const TYPES={
+ '321':{n:'3-2-1',q:'Before you go…',rows:[['3','things you learned today','#22C3E6'],['2','things you found interesting','#5DC66E'],['1','question you still have','#FF8FC7']]},
+ emoji:{n:'Emoji check',q:'How well do you understand today\'s lesson?',faces:[['😕','Still confused'],['🤔','Kind of'],['🙂','I get it'],['🤩','I could teach it']]},
+ fist:{n:'Fist to five',q:'Show me with your fingers: how ready are you to try this on your own?',faces:[['✊','0'],['☝️','1'],['✌️','2'],['🤟','3'],['🖖','4'],['🖐️','5']]},
+ word:{n:'One word',q:'Sum up today\'s lesson in ONE word.',wall:true},
+ muddy:{n:'Muddiest point',q:'What part of today\'s lesson was the most confusing?',wall:true},
+ custom:{n:'My question',q:'Write your own exit question here (tap to type).',rows:[['?','Your answer','#9B6BF2']]}};
+const st=Kit.get('et-state',{type:'321',custom:'',mins:3,tally:{},notes:{}});
+document.querySelector('main').innerHTML=`<div class="et-types" id="tp"></div><div class="et-ticket"><div class="et-hd"><b>🎟️ EXIT TICKET</b><span>${new Date().toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'})}</span><span class="et-time" id="tm"></span></div>
+<div class="et-q" id="q" spellcheck="false"></div><div id="body"></div></div>
+<div class="et-ctl"><label class="ln-pill">⏱ <select id="mins" style="width:auto;border-width:2px;padding:2px 8px">${[1,2,3,5,8,10].map(m=>`<option value="${m}">${m} min</option>`).join('')}</select></label><button class="btn green" id="go">▶ Start the timer</button><button class="btn white" id="clr">🧽 Clear answers</button></div>`;
+let left=0,tv=null;
+function draw(){const T=TYPES[st.type];$('tp').innerHTML=Object.entries(TYPES).map(([k,v])=>`<button data-t="${k}" class="${k===st.type?'on':''}">${v.n}</button>`).join('');
+ const q=$('q');q.contentEditable=st.type==='custom';q.textContent=st.type==='custom'&&st.custom?st.custom:T.q;
+ let h='';if(T.rows)h=`<div class="et-rows">${T.rows.flatMap(r=>Array.from({length:Math.min(3,+r[0]||1)},(_,k)=>`<div class="et-row" style="--nc:${r[2]}">${k===0?`<span class="n">${r[0]}</span>`:'<span class="n" style="visibility:hidden"></span>'}<span>${k===0?Kit.esc(r[1]):''}</span><span class="ln"></span></div>`)).join('')}</div>`;
+ if(T.faces){const t=st.tally[st.type]||[];const tot=t.reduce((a,b)=>a+(b||0),0);h=`<div class="et-faces">${T.faces.map((f,i)=>`<button class="et-face" data-f="${i}"><span>${f[0]}</span>${Kit.esc(f[1])}<i>${t[i]||0}</i></button>`).join('')}</div><p class="muted" style="text-align:center">Tap a face once for each student who picks it.${tot?` ${tot} answers so far.`:''}</p>`}
+ if(T.wall){const n=st.notes[st.type]||[];const C=['#FFF1B8','#C9F1D2','#FDE7F3','#E3F2FF','#FFE3C4'];h=`<div class="et-add"><input type="text" id="ni" placeholder="Type what a student says, then press Enter"><button class="btn" id="na">Add</button></div><div class="et-wall">${n.map((x,i)=>`<div class="et-note" style="--nc:${C[i%5]};--r:${(i%3-1)*2}deg">${Kit.esc(x)}<button data-del="${i}" aria-label="Remove">✕</button></div>`).join('')}</div>`}
+ $('body').innerHTML=h;$('mins').value=st.mins;tdraw();
+ const ni=$('ni');if(ni){ni.onkeydown=e=>{if(e.key==='Enter')$('na').click()};$('na').onclick=()=>{const v=ni.value.trim();if(!v)return;(st.notes[st.type]=st.notes[st.type]||[]).push(v);save();draw();$('ni').focus();Kit.tick()}}}
+const save=()=>Kit.set('et-state',st);
+const tdraw=()=>{const s=Math.max(0,tv?left:st.mins*60);$('tm').textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;$('tm').classList.toggle('up',!!tv&&left<=0)};
+$('tp').onclick=e=>{const b=e.target.closest('button');if(!b)return;st.type=b.dataset.t;save();draw()};
+$('q').onfocus=()=>{if(st.type==='custom'&&!st.custom){const r=document.createRange();r.selectNodeContents($('q'));const s=getSelection();s.removeAllRanges();s.addRange(r)}};
+$('q').oninput=()=>{if(st.type==='custom'){st.custom=$('q').textContent;save()}};
+$('body').onclick=e=>{const f=e.target.closest('.et-face');if(f){const t=st.tally[st.type]||(st.tally[st.type]=[]);t[+f.dataset.f]=(t[+f.dataset.f]||0)+1;save();Kit.tone(420+ +f.dataset.f*90,.1,'triangle',.2);draw();return}
+ const d=e.target.closest('[data-del]');if(d){st.notes[st.type].splice(+d.dataset.del,1);save();draw()}};
+$('mins').onchange=()=>{st.mins=+$('mins').value;save();if(!tv)tdraw()};
+$('go').onclick=()=>{if(tv){clearInterval(tv);tv=null;$('go').textContent='▶ Start the timer';tdraw();return}left=st.mins*60;$('go').textContent='⏹ Stop';
+ tv=setInterval(()=>{left--;tdraw();if(left===0){Kit.alarm();}if(left<-3){clearInterval(tv);tv=null;$('go').textContent='▶ Start the timer';$('tm').textContent='Time!';$('tm').classList.add('up')}},1000);tdraw()};
+$('clr').onclick=()=>{if(!confirm('Clear the answers for this exit ticket?'))return;delete st.tally[st.type];delete st.notes[st.type];save();draw()};
+draw();
+</script>
+</body></html>

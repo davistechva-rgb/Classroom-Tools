@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Presentation Remote</title>
+<style>
+main{max-width:1300px}
+.pr-wrap{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:860px){.pr-wrap{grid-template-columns:1fr}}
+.pr-prev{aspect-ratio:16/9;border:5px solid var(--ink);border-radius:18px;overflow:hidden;background:#fff;box-shadow:6px 6px 0 var(--ink);position:relative}
+.pr-next{aspect-ratio:16/9;border:4px solid var(--ink);border-radius:14px;overflow:hidden;background:#fff;opacity:.85;position:relative;width:60%}
+.pr-lab{font-weight:800;margin:6px 0 4px}
+.pr-pad{position:relative;aspect-ratio:16/9;border:5px dashed var(--ink);border-radius:18px;background:#22284a;color:#9FB2DA;display:grid;place-items:center;font-weight:700;touch-action:none;cursor:crosshair;text-align:center;padding:10px}
+.pr-big{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.pr-big button{font:inherit;font-weight:800;font-size:clamp(1.6rem,4vw,2.6rem);border:6px solid var(--ink);border-radius:24px;padding:22px 8px;cursor:pointer;box-shadow:0 7px 0 var(--ink);background:var(--grass)}
+.pr-big button:first-child{background:#fff}
+.pr-big button:active{transform:translateY(7px);box-shadow:none}
+.pr-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.pr-notes{background:#FFF6C9;border:4px solid var(--ink);border-radius:14px;padding:10px;font-weight:600;min-height:60px;margin-top:10px}
+.pr-cnt{font-weight:800;font-size:1.3rem}
+.pr-time{font-weight:800;font-variant-numeric:tabular-nums}
+/* the slide itself, used on both screens */
+.sl{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:6% 7%;background:var(--sb,#fff);color:var(--ink);overflow:hidden}
+.sl img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
+.sl h2{margin:0 0 .35em;font-size:var(--h,2em);line-height:1.05}
+.sl ul{margin:0;padding-left:1.1em;font-size:var(--b,1.2em);font-weight:600;line-height:1.35}
+.sl .em{font-size:3em;line-height:1}
+.sl.center{align-items:center;text-align:center}
+/* projector screen mode */
+body.screen{background:#000;overflow:hidden}
+body.screen .top,body.screen footer,body.screen main{display:none}
+#stage{position:fixed;inset:0;display:none;font-size:4vw;background:#000}
+body.screen #stage{display:block}
+#stage .sl{font-size:4.2vmin}
+#dot{position:fixed;width:28px;height:28px;margin:-14px;border-radius:50%;background:#ff2a2a;box-shadow:0 0 18px 6px rgba(255,40,40,.7);pointer-events:none;display:none;z-index:9}
+#black{position:fixed;inset:0;background:#000;display:none;z-index:8}
+#hint{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);color:#888;font:600 14px system-ui;z-index:10}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🖥️", "Presentation Remote");
+const $=id=>document.getElementById(id);const ch=new BroadcastChannel('ct-remote');
+const DEF=`🌎 | Our Solar System | Eight planets travel around the Sun | Earth is the third planet
+☀️ | The Sun | It's a star! | It's about 109 times wider than Earth
+🔴 | Mars | The red planet | It has the tallest volcano we know of: Olympus Mons
+🪐 | Saturn | Famous for its rings | The rings are made of ice and rock
+❓ | Quick check | Which planet do we live on? | Which planet is the red planet?`;
+const SCREEN=location.hash==='#screen';
+document.body.insertAdjacentHTML('beforeend','<div id="stage"></div><div id="black"></div><div id="dot"></div>');
+const slideHTML=s=>{if(!s)return '<div class="sl center"><h2>The end</h2></div>';if(s.img)return `<div class="sl"><img src="${s.img}" alt=""></div>`;
+ const n=s.lines.length;return `<div class="sl ${n<=1?'center':''}" style="--h:${n?'2.1em':'3em'}">${s.emo?`<div class="em">${s.emo}</div>`:''}<h2>${Kit.esc(s.title)}</h2>${n?`<ul>${s.lines.map(l=>`<li>${Kit.esc(l)}</li>`).join('')}</ul>`:''}</div>`};
+if(SCREEN){document.body.classList.add('screen');document.body.insertAdjacentHTML('beforeend','<div id="hint">Waiting for the remote… (this is the projector screen)</div>');
+ ch.onmessage=e=>{const m=e.data;$('hint')?.remove();
+  if(m.type==='show'){$('stage').innerHTML=slideHTML(m.slide);$('black').style.display=m.black?'block':'none'}
+  if(m.type==='dot'){const d=$('dot');d.style.display=m.on?'block':'none';d.style.left=m.x*innerWidth+'px';d.style.top=m.y*innerHeight+'px'}
+  if(m.type==='close')window.close()};
+ addEventListener('dblclick',()=>document.documentElement.requestFullscreen?.());ch.postMessage({type:'hello'})}
+else{
+const st=Kit.get('pr-state',{text:DEF,notes:''});
+document.querySelector('main').innerHTML=`<div class="card ln-set" id="set"><div class="stack">
+ <p style="margin:0"><b>How it works:</b> press <b>Open the projector screen</b>. Drag that new window onto your projector or smartboard and double-click it to go full screen. Keep this page on your laptop. It's your remote, with a laser pointer, a blackout button, and your notes.</p>
+ <div class="row"><label>📷 Slides from pictures <input type="file" id="pics" accept="image/*" multiple style="max-width:260px"></label><button class="btn big green" id="open">🖥️ Open the projector screen</button><button class="btn white" id="here">Or present on this screen</button></div></div></div>
+<div class="pr-wrap"><div><div class="pr-lab">Now showing <span class="pr-cnt" id="cnt"></span></div><div class="pr-prev" id="pv"></div><div class="pr-lab">Up next</div><div class="pr-next" id="nv"></div><div class="pr-lab">📝 My notes for this slide</div><div class="pr-notes" id="nt"></div></div>
+<div><div class="pr-big"><button id="bk">◀ Back</button><button id="fw">Next ▶</button></div>
+<div class="pr-row"><button class="btn white" id="bl">⬛ Blackout</button><span class="ln-pill">⏱ <span class="pr-time" id="tm">0:00</span></span><button class="btn white small" id="tr">↺</button></div>
+<div class="pr-lab">🔴 Laser pointer: drag your finger here</div><div class="pr-pad" id="pad">Touch and drag to point at the big screen</div></div></div>
+<div class="card stack" style="margin-top:16px"><details><summary style="cursor:pointer;font-weight:700">✏️ Text slides and notes</summary><p class="muted">One slide per line: emoji | title | point | point. Notes: one line per slide, in the same order (only you see these).</p>
+<textarea id="ta" style="min-height:160px"></textarea><textarea id="tn" style="min-height:100px" placeholder="Notes, one line per slide"></textarea><button class="btn green" id="sv">✓ Save slides</button></details></div>`;
+let slides=[],i=0,black=false,local=false,t0=Date.now(),win=null;
+const textSlides=()=>Kit.lines(st.text).map(l=>{const p=l.split('|').map(s=>s.trim());const emo=/\p{Extended_Pictographic}/u.test(p[0])&&p.length>1;return emo?{emo:p[0],title:p[1]||'',lines:p.slice(2)}:{title:p[0],lines:p.slice(1)}});
+function load(){const f=[...$('pics').files];slides=f.length?f.map(x=>({img:URL.createObjectURL(x)})):textSlides();i=Math.min(i,Math.max(0,slides.length-1))}
+function send(){const s=slides[i];ch.postMessage({type:'show',slide:s,black});if(local){$('stage').innerHTML=slideHTML(s);$('black').style.display=black?'block':'none'}
+ $('pv').innerHTML=slideHTML(s);$('nv').innerHTML=slideHTML(slides[i+1]);$('cnt').textContent=`${i+1} of ${slides.length}`;$('nt').textContent=Kit.lines(st.notes)[i]||'(no notes)';$('bl').textContent=black?'☀️ Show the slide':'⬛ Blackout';window.__t={i,n:slides.length}}
+const go=d=>{i=Math.max(0,Math.min(slides.length-1,i+d));black=false;send();Kit.tick()};
+$('fw').onclick=()=>go(1);$('bk').onclick=()=>go(-1);$('bl').onclick=()=>{black=!black;send()};
+$('pics').onchange=()=>{i=0;load();send()};
+ch.onmessage=e=>{if(e.data.type==='hello')send()};
+$('open').onclick=()=>{win=window.open(location.pathname+'#screen','ct-screen','width=1280,height=720');if(!win){alert('Your browser blocked the new window. Allow pop-ups for this site, or use "present on this screen".');return}setTimeout(send,600)};
+$('here').onclick=()=>{local=true;document.body.classList.add('screen');send();document.documentElement.requestFullscreen?.().catch(()=>{});
+ document.body.insertAdjacentHTML('beforeend','<div id="hint">← → to move · B for blackout · Esc to go back to the remote</div>')};
+const exitLocal=()=>{if(!local)return;local=false;document.body.classList.remove('screen');$('hint')?.remove()};
+document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement)exitLocal()});
+addEventListener('keydown',e=>{if(e.target.closest('textarea,input'))return;if(['ArrowRight','PageDown',' '].includes(e.key)){e.preventDefault();go(1)}if(['ArrowLeft','PageUp'].includes(e.key))go(-1);if(e.key.toLowerCase()==='b'||e.key==='.'){black=!black;send()}if(e.key==='Escape')exitLocal()});
+const pad=$('pad');const pt=(e,on)=>{const r=pad.getBoundingClientRect();const x=Math.min(1,Math.max(0,(e.clientX-r.left)/r.width)),y=Math.min(1,Math.max(0,(e.clientY-r.top)/r.height));ch.postMessage({type:'dot',on,x,y});if(local){const d=$('dot');d.style.display=on?'block':'none'}};
+let down=false;pad.onpointerdown=e=>{down=true;pad.setPointerCapture(e.pointerId);pt(e,true)};pad.onpointermove=e=>{if(down)pt(e,true)};pad.onpointerup=pad.onpointercancel=e=>{down=false;pt(e,false)};
+$('ta').value=st.text;$('tn').value=st.notes;$('sv').onclick=()=>{st.text=$('ta').value;st.notes=$('tn').value;Kit.set('pr-state',st);load();send();Kit.ding()};
+setInterval(()=>{const s=Math.floor((Date.now()-t0)/1000);$('tm').textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`},1000);$('tr').onclick=()=>{t0=Date.now()};
+addEventListener('beforeunload',()=>ch.postMessage({type:'close'}));
+load();send()}
+</script>
+</body></html>
