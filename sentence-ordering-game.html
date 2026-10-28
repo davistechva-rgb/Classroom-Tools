@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Sentence Ordering Game</title>
+<style>
+main{max-width:1200px}
+.so-title{text-align:center;font-weight:800;font-size:clamp(1.4rem,3.4vw,2.2rem);color:#fff;text-shadow:3px 3px 0 var(--ink);margin-bottom:12px}
+.so-list{display:grid;gap:10px;background:#FFFDF6;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);padding:14px}
+.so-s{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;border:4px solid var(--ink);border-radius:16px;background:#fff;padding:10px 14px;font-weight:700;font-size:clamp(1.05rem,2.3vw,1.45rem);line-height:1.3;box-shadow:0 4px 0 var(--ink)}
+.so-s .n{width:36px;height:36px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:800}
+.so-s .g{font-size:1.4rem;color:#9AA6C3}
+.so-s.fixed{background:#E3F2FF;cursor:default}.so-s.fixed .g{visibility:hidden}
+.so-s.ok{background:#C9F1D2}.so-s.off{background:#FFE3DF}
+.so-s mark{background:var(--sun);border-radius:6px;padding:0 4px}
+.so-s.dz-zone.hover{transform:scale(1.02)}
+.so-res{text-align:center;font-weight:800;font-size:1.3rem;color:#fff;text-shadow:2px 2px 0 var(--ink);min-height:1.4em;margin-top:12px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🔀", "Sentence Ordering Game");
+const $=id=>document.getElementById(id);
+const DEF=`# How to Plant a Seed
+First, fill a small pot with soil.
+Next, use your finger to poke a hole in the dirt.
+Then, drop the seed into the hole and cover it up.
+After that, give it a little water.
+Finally, put the pot in a sunny window and wait for it to grow!
+# The Lost Puppy
+On Saturday, Sam found a tiny puppy behind the store.
+The puppy was shivering and had no collar.
+Sam wrapped it in his jacket and carried it home.
+His mom called the number on a "Lost Dog" sign they saw on the way.
+That evening, a happy girl came to take her puppy home.
+# Why We Need Bees
+Bees are some of the most important insects on Earth.
+They fly from flower to flower to collect nectar.
+As they travel, they carry pollen from one plant to another.
+This helps plants make fruits, vegetables, and seeds.
+Without bees, we would have much less food to eat.`;
+const TW=/\b(first|next|then|after that|finally|later|that evening|on saturday|as|this|without|because|however|also|so|last|meanwhile)\b/gi;
+const st=Kit.get('so-set',{text:DEF});let P,pi=0,checks=0;
+document.querySelector('main').innerHTML=`<div class="so-title" id="ti"></div><div class="so-list" id="ls"></div><div class="so-res" id="res"></div>
+<div class="row" style="justify-content:center;margin-top:12px"><label class="ln-pill"><input type="checkbox" id="hl"> 🔦 Highlight clue words</label><button class="btn big green" id="chk">✓ Check</button><button class="btn white" id="say">🔈 Read it</button><button class="btn white" id="nx">Next paragraph ➜</button><button class="btn white small" id="ed">✏️</button></div>
+<div class="card stack" id="edc" hidden style="margin-top:14px"><b>✏️ Paragraphs</b><span class="muted">Start each with # title, then one sentence per line in the RIGHT order. The first sentence stays put as a starting clue.</span><textarea id="ta" style="min-height:220px"></textarea><button class="btn green" id="sv">✓ Save</button></div>`;
+function parse(){P=[];let c=null;Kit.lines(st.text).forEach(l=>{if(l.startsWith('#')){c={t:l.slice(1).trim(),s:[]};P.push(c)}else if(c)c.s.push(l)});P=P.filter(p=>p.s.length>=3)}
+function load(){const p=P[pi%P.length];checks=0;$('ti').textContent='📄 '+p.t;let o;do{o=Kit.shuffle(p.s.slice(1).map((s,i)=>i+1))}while(o.every((v,i)=>v===i+1));
+ $('ls').innerHTML=`<div class="so-s fixed" data-i="0"><span class="n">1</span><span class="tx">${fmt(p.s[0])}</span><span class="g">⠿</span></div>`+o.map(i=>`<div class="so-s dz-item dz-zone" data-i="${i}"><span class="n"></span><span class="tx">${fmt(p.s[i])}</span><span class="g">⠿</span></div>`).join('');nums();$('res').textContent='Put the sentences in order so the paragraph makes sense.';window.__t={n:p.s.length}}
+const fmt=s=>$('hl')&&$('hl').checked?Kit.esc(s).replace(TW,m=>`<mark>${m}</mark>`):Kit.esc(s);
+function nums(){[...$('ls').children].forEach((c,k)=>{c.querySelector('.n').textContent=k+1;c.classList.remove('ok','off')})}
+Learn.drag($('ls'),{item:'.so-s.dz-item',zone:'.so-s',drop(it,z,x,y){if(it===z)return;if(z.classList.contains('fixed')){z.after(it)}else{const r=z.getBoundingClientRect();const kids=[...$('ls').children];const iz=kids.indexOf(z),ii=kids.indexOf(it);const below=y>r.top+r.height/2;
+ if(Math.abs(iz-ii)===1&&((below&&iz<ii)||(!below&&iz>ii))){iz>ii?z.after(it):z.before(it)}else below?z.after(it):z.before(it)}Kit.tick();nums()}});
+$('chk').onclick=()=>{checks++;const kids=[...$('ls').children];let right=0;kids.forEach((c,k)=>{const ok=+c.dataset.i===k;c.classList.toggle('ok',ok);c.classList.toggle('off',!ok);right+=ok});
+ if(right===kids.length){$('res').textContent=checks===1?'🎉 Perfect on the first try!':`🎉 You got it in ${checks} checks!`;Kit.tada();Kit.confetti(80)}else{$('res').textContent=`${right} of ${kids.length} sentences are in the right spot. Look for clue words like "first" and "then."`;Kit.tone(220,.25,'triangle',.18)}};
+$('hl').onchange=()=>{const p=P[pi%P.length];[...$('ls').children].forEach(c=>c.querySelector('.tx').innerHTML=fmt(p.s[+c.dataset.i]))};
+$('say').onclick=()=>{try{const u=new SpeechSynthesisUtterance([...$('ls').children].map(c=>c.querySelector('.tx').textContent).join(' '));speechSynthesis.cancel();speechSynthesis.speak(u)}catch{}};
+$('nx').onclick=()=>{pi++;load()};
+$('ed').onclick=()=>{$('edc').hidden=!$('edc').hidden;$('ta').value=st.text};$('sv').onclick=()=>{st.text=$('ta').value;Kit.set('so-set',st);parse();pi=0;$('edc').hidden=true;load()};
+parse();load();
+</script>
+</body></html>

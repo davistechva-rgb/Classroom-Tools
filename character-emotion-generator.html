@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Character Emotion Generator</title>
+<style>
+main{max-width:1400px}
+.ce2-ems{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:16px}
+.ce2-e{font:inherit;border:5px solid var(--ink);border-radius:20px;background:var(--ec);cursor:pointer;padding:8px;box-shadow:0 5px 0 var(--ink);font-weight:800;display:flex;flex-direction:column;align-items:center;color:var(--ink)}
+.ce2-e span{font-size:2.4rem}.ce2-e.on{transform:translateY(5px);box-shadow:none;outline:5px solid var(--ink);outline-offset:2px}
+.ce2-main{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.4fr);gap:18px;align-items:start}
+@media (max-width:860px){.ce2-main{grid-template-columns:1fr}}
+.ce2-face{background:var(--ec);border:7px solid var(--ink);border-radius:30px;box-shadow:8px 8px 0 var(--ink);text-align:center;padding:16px}
+.ce2-face .f{font-size:clamp(6rem,15vw,9rem);line-height:1;transition:transform .3s}
+.ce2-face b{display:block;font-size:clamp(1.8rem,4.4vw,2.8rem)}
+.ce2-int{display:flex;gap:6px;justify-content:center;margin-top:10px}
+.ce2-int button{font:inherit;font-weight:800;border:4px solid var(--ink);border-radius:14px;background:#fff;padding:4px 10px;cursor:pointer;color:var(--ink)}
+.ce2-int button.on{background:var(--ink);color:#fff}
+.ce2-show{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (max-width:600px){.ce2-show{grid-template-columns:1fr}}
+.ce2-s{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:10px 14px;font-weight:700;font-size:1.1rem}
+.ce2-s b{display:block;color:#6B7695;font-size:.9rem;letter-spacing:.06em}
+.ce2-try{margin-top:14px;background:#FFF6C9;border:5px dashed #D9B84A;border-radius:20px;padding:12px 16px;font-weight:700;font-size:1.15rem}
+.ce2-try s{color:#C9412E}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🎭", "Character Emotion Generator");
+const $=id=>document.getElementById(id);
+const E={happy:['😊','#FFF1B8',['content','happy','overjoyed'],['Their face lights up with a huge grin.','They bounce on their toes.','Their voice goes up and gets fast.','"This is the best day ever!" they think.']],
+ sad:['😢','#E3F2FF',['disappointed','sad','heartbroken'],['Their lip trembles and eyes fill with tears.','Their shoulders slump forward.','They speak very quietly.','"Nothing ever goes right," they think.']],
+ angry:['😠','#FFD9D4',['annoyed','angry','furious'],['Their face turns red and their eyebrows crunch together.','They clench their fists and stomp.','They shout, or speak through their teeth.','"That is SO unfair!" they think.']],
+ scared:['😨','#EAE0FF',['nervous','scared','terrified'],['Their eyes go wide and their face turns pale.','Their knees shake and they freeze.','Their voice cracks or comes out as a whisper.','"What if something bad happens?" they think.']],
+ surprised:['😲','#C9F1D2',['puzzled','surprised','shocked'],['Their mouth drops open.','They jump back a step.','They gasp out loud.','"Wait… what just happened?" they think.']],
+ proud:['😌','#FFE3C4',['pleased','proud','bursting with pride'],['They lift their chin and smile.','They stand up extra tall.','They speak loud and clear.','"I did it all by myself!" they think.']],
+ embarrassed:['😳','#FDE7F3',['awkward','embarrassed','humiliated'],['Their cheeks turn bright pink.','They hide their face in their hands.','They mumble and can\'t look at anyone.','"I wish I could disappear," they think.']],
+ excited:['🤩','#FFF6C9',['eager','excited','thrilled'],['Their eyes sparkle.','They can\'t sit still and keep fidgeting.','They talk a mile a minute.','"I can\'t wait one more second!" they think.']]};
+const WHO=['Max','Ruby','the little dragon','Grandpa','the new girl','Captain Lopez'];
+let cur='happy',lvl=1;
+document.querySelector('main').innerHTML=`<div class="ce2-ems" id="ems"></div><div class="ce2-main"><div class="ce2-face" id="fc"></div><div><div class="ce2-show" id="sh"></div><div class="ce2-try" id="tr"></div></div></div>
+<div class="row" style="justify-content:center;margin-top:14px"><button class="btn big green" id="rd">🎲 Surprise me</button><button class="btn white" id="nt">🔁 New practice sentence</button></div>`;
+function draw(){const [f,c,lv,show]=E[cur];$('ems').innerHTML=Object.entries(E).map(([k,v])=>`<button class="ce2-e ${k===cur?'on':''}" data-k="${k}" style="--ec:${v[1]}"><span>${v[0]}</span>${k}</button>`).join('');
+ $('fc').style.setProperty('--ec',c);$('fc').innerHTML=`<div class="f" style="transform:scale(${.85+lvl*.15})">${f}</div><b>${lv[lvl]}</b><div class="ce2-int">${lv.map((w,i)=>`<button data-l="${i}" class="${i===lvl?'on':''}">${['A little','Medium','A LOT'][i]}</button>`).join('')}</div><p style="font-weight:700;margin:8px 0 0">Words for ${cur}: ${lv.join(' → ')}</p>`;
+ $('sh').innerHTML=[['😶 FACE',show[0]],['🧍 BODY',show[1]],['🗣️ VOICE',show[2]],['💭 THOUGHTS',show[3]]].map(([h,t])=>`<div class="ce2-s"><b>${h}</b>${Kit.esc(t)}</div>`).join('');nt();window.__t={cur,word:lv[lvl]}}
+function nt(){const w=Kit.pick(WHO);$('tr').innerHTML=`✏️ <b>Show, don't tell!</b> Instead of writing <s>"${Kit.esc(w)} was ${Kit.esc(E[cur][2][lvl])}."</s>, show it. Use the face, body, voice, and thoughts ideas above.`}
+$('ems').onclick=e=>{const b=e.target.closest('[data-k]');if(b){cur=b.dataset.k;lvl=1;Kit.tick();draw()}};
+$('fc').onclick=e=>{const b=e.target.closest('[data-l]');if(b){lvl=+b.dataset.l;draw()}};
+$('rd').onclick=()=>{cur=Kit.pick(Object.keys(E));lvl=Kit.rand(0,2);Kit.tone(600,.1,'triangle',.2);draw()};$('nt').onclick=nt;
+draw();
+</script>
+</body></html>

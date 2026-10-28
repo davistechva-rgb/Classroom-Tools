@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Dialogue Generator</title>
+<style>
+main{max-width:1400px}
+.dg-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:900px){.dg-strip{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.dg-p{position:relative;aspect-ratio:3/4;border:6px solid var(--ink);border-radius:18px;background:linear-gradient(var(--bg) 0 70%,#EDE3CF 70%);box-shadow:6px 6px 0 var(--ink);overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;padding:10px}
+.dg-p .ch{position:absolute;bottom:8%;font-size:clamp(2.8rem,6vw,4.4rem);line-height:1}
+.dg-p .ch.l{left:8%}.dg-p .ch.r{right:8%;transform:scaleX(-1)}
+.dg-b{position:absolute;top:8%;left:6%;right:6%;background:#fff;border:4px solid var(--ink);border-radius:18px;padding:8px 10px;font-weight:700;font-size:clamp(.85rem,1.6vw,1.1rem);line-height:1.25;outline:none;min-height:3.2em}
+.dg-b::after{content:"";position:absolute;bottom:-18px;width:0;height:0;border:10px solid transparent;border-top-color:var(--ink)}
+.dg-b.l::after{left:18%}.dg-b.r::after{right:18%}
+.dg-b .who{display:block;font-size:.75em;color:var(--wc);font-weight:800}
+.dg-b.blank{background:#FFF6C9;border-style:dashed}
+.dg-set{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:center;margin-bottom:14px}
+.dg-set input{width:130px}
+.dg-out{margin-top:16px;background:#FFFDF6;border:5px solid var(--ink);border-radius:20px;padding:14px 18px;font-size:clamp(1.05rem,2.2vw,1.35rem);line-height:1.6;font-weight:600}
+.dg-said{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.dg-said span{background:#fff;border:3px solid var(--ink);border-radius:99px;padding:2px 10px;font-weight:700;cursor:pointer}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("💬", "Dialogue Generator");
+const $=id=>document.getElementById(id);
+const SIT={'Lost something':['#BFE6FA',['Have you seen my {thing}? I can\'t find it anywhere!','When did you last have it?','I think I left it at the {place}…',''],['backpack','lucky pencil','lunchbox','library book']],
+ 'Big news':['#FFE3C4',['Guess what? You will never believe this!','What? Tell me, tell me!','We\'re going to the {place} tomorrow!',''],['zoo','beach','science museum','water park']],
+ 'An argument':['#FFD9D4',['Hey! That\'s my {thing}!','No, it isn\'t. I had it first!','Let\'s ask someone who saw what happened.',''],['ball','seat','crayon','book']],
+ 'A mystery':['#EAE0FF',['Did you hear that strange noise in the {place}?','Yes… it sounded like footsteps.','Should we go look?',''],['attic','basement','hallway','closet']],
+ 'Making a plan':['#C9F1D2',['We need to win the {thing} contest this year.','What if we work as a team?','Great idea! You build it, and I\'ll decorate it.',''],['science fair','cookie','art','robot']],
+ 'Saying sorry':['#FDE7F3',['I\'m really sorry I broke your {thing}.','It\'s okay. I know it was an accident.','Can I help you fix it?',''],['sandcastle','model rocket','drawing','tower']]};
+const SAID=['asked','shouted','whispered','yelled','giggled','gasped','cried','answered','replied','grumbled','exclaimed','mumbled','sighed','begged','announced'];
+const PEOPLE=['🧒','👧','🧑','🐻','🐱','🤖','🐶','🦊','🧙','👽'];
+const st=Kit.get('dg-set',{a:'Ava',b:'Leo',ea:'👧',eb:'🧒'});let sit,lines=[];
+document.querySelector('main').innerHTML=`<div class="dg-set"><button class="btn white small" id="pa">${st.ea}</button><input type="text" id="na"><span style="font-weight:800;color:#fff;text-shadow:2px 2px 0 var(--ink)">and</span><button class="btn white small" id="pb">${st.eb}</button><input type="text" id="nb">
+<select id="si" style="width:auto">${Object.keys(SIT).map(k=>`<option>${k}</option>`).join('')}</select><button class="btn big green" id="go">🎲 New dialogue</button></div>
+<div class="dg-strip" id="sp"></div><p class="muted" style="text-align:center;color:#fff;font-weight:700">Tap any speech bubble to change the words. The last bubble is yours to finish!</p>
+<div class="dg-out" id="out"></div><div class="card" style="margin-top:12px"><b>✨ Instead of "said," try:</b> <span class="muted">(tap one to use it)</span><div class="dg-said" id="said">${SAID.map(w=>`<span>${w}</span>`).join('')}</div></div>`;
+let tags=[];
+function gen(){const k=$('si').value;sit=SIT[k];const th=Kit.pick(sit[2]);const pl=Kit.pick(['playground','library','bus stop','cafeteria','park']);const isThing=sit[1].join(' ').includes('{thing}');lines=sit[1].map(l=>l.replace('{thing}',th).replace('{place}',isThing?pl:th));tags=['asked','answered','said','said'].map(()=>Kit.pick(SAID));draw()}
+function draw(){const A=st.a||'Ava',B=st.b||'Leo';$('sp').innerHTML=lines.map((l,i)=>{const left=i%2===0;return `<div class="dg-p" style="--bg:${sit[0]}"><div class="dg-b ${left?'l':'r'} ${l?'':'blank'}" contenteditable="true" data-i="${i}" spellcheck="false" style="--wc:${left?'#E5533F':'#1E7FD0'}">${l?Kit.esc(l):''}</div><span class="ch l" style="${left?'':'opacity:.45'}">${st.ea}</span><span class="ch r" style="${left?'opacity:.45':''}">${st.eb}</span></div>`}).join('');out();window.__t={lines:[...lines]}}
+function out(){const A=st.a||'Ava',B=st.b||'Leo';$('out').innerHTML='<b>📝 Written as a story:</b><br>'+lines.map((l,i)=>{const who=i%2===0?A:B;if(!l)return `"<i style="color:#9AA6C3">…your turn…</i>," ${Kit.esc(who)} ${tags[i]}.`;const end=/[?!]$/.test(l)?l:l.replace(/\.$/,'')+',';return `"${Kit.esc(end)}" ${Kit.esc(who)} ${tags[i]}.`}).join('<br>')}
+$('sp').addEventListener('input',e=>{const b=e.target.closest('[data-i]');if(!b)return;lines[+b.dataset.i]=b.innerText.trim();b.classList.toggle('blank',!lines[+b.dataset.i]);out()});
+$('said').onclick=e=>{const w=e.target.closest('span');if(!w)return;const k=lines.findIndex(l=>!l);tags[k>=0?k:Kit.rand(0,3)]=w.textContent;Kit.tick();out()};
+const cyc=k=>{const e=k==='a'?'ea':'eb';st[e]=PEOPLE[(PEOPLE.indexOf(st[e])+1)%PEOPLE.length];$(k==='a'?'pa':'pb').textContent=st[e];Kit.set('dg-set',st);draw()};
+$('pa').onclick=()=>cyc('a');$('pb').onclick=()=>cyc('b');$('na').value=st.a;$('nb').value=st.b;
+['na','nb'].forEach(id=>$(id).oninput=()=>{st.a=$('na').value;st.b=$('nb').value;Kit.set('dg-set',st);out()});
+$('go').onclick=()=>{gen();Kit.tone(600,.1,'triangle',.2)};$('si').onchange=gen;
+gen();
+</script>
+</body></html>

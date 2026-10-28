@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Sentence Expansion Game</title>
+<style>
+main{max-width:1400px}
+.se-sent{background:#fff;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);padding:18px 22px;font-size:clamp(1.4rem,3.6vw,2.4rem);font-weight:700;line-height:1.45;text-align:center;min-height:120px}
+.se-sent span{border-radius:10px;padding:0 4px;transition:background .3s}
+.se-sent .k{background:#FFF1B8}
+.se-meter{display:flex;align-items:center;gap:10px;margin:14px 0;flex-wrap:wrap;justify-content:center}
+.se-bar{flex:1;min-width:200px;max-width:600px;height:26px;border:4px solid var(--ink);border-radius:99px;background:#fff;overflow:hidden;position:relative}
+.se-bar b{display:block;height:100%;background:linear-gradient(90deg,#5DC66E,#22C3E6,#9B6BF2);transition:width .5s}
+.se-plant{font-size:clamp(2.4rem,6vw,3.6rem);transition:transform .4s}
+.se-qs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:820px){.se-qs{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:480px){.se-qs{grid-template-columns:1fr}}
+.se-q{background:#fff;border:5px solid var(--ink);border-radius:18px;padding:10px;border-top:12px solid var(--qc)}
+.se-q h3{margin:0 0 6px;font-size:1.1rem}
+.se-q div{display:flex;flex-wrap:wrap;gap:6px}
+.se-q button{font:inherit;font-weight:700;border:3px solid var(--ink);border-radius:99px;padding:3px 10px;background:#fff;cursor:pointer;color:var(--ink)}
+.se-q button.on{background:var(--qc);color:#fff}
+.se-q input{margin-top:6px;width:100%;font-size:1rem!important}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🌱", "Sentence Expansion Game");
+const $=id=>document.getElementById(id);
+// each kernel: [who, verb, base] and options per slot
+const K=[{who:'The dog',v:'barked',adj:['fluffy','tiny','grumpy','spotted'],how:['loudly','happily','all night','again and again'],where:['at the mailman','in the backyard','by the gate','under the porch'],when:['this morning','after dinner','at midnight','during the storm'],why:['because it heard a noise','because it wanted to play','because a cat walked by','because it was hungry']},
+ {who:'The girl',v:'ran',adj:['brave','tall','curious','speedy'],how:['quickly','as fast as she could','with a big smile','without stopping'],where:['across the field','to the park','up the hill','down the hallway'],when:['before school','on Saturday','after the bell rang','at sunrise'],why:['because she was late','to catch the bus','to win the race','because it started to rain']},
+ {who:'The bird',v:'sang',adj:['little','bright red','cheerful','sleepy'],how:['sweetly','loudly','softly','all day long'],where:['in the tall tree','on my window','above the pond','in its nest'],when:['every morning','in the spring','before the sun came up','after the rain'],why:['to call its friends','because it was happy','to greet the day','to find its babies']},
+ {who:'The boy',v:'laughed',adj:['silly','shy','friendly','little'],how:['loudly','so hard he cried','quietly','for a long time'],where:['in the classroom','at the lunch table','on the bus','at the circus'],when:['during the movie','at recess','after the joke','on his birthday'],why:['because the clown fell','because his friend made a face','because it tickled','because the story was funny']},
+ {who:'The cat',v:'slept',adj:['lazy','orange','fat','striped'],how:['peacefully','all afternoon','curled in a ball','without moving'],where:['on the warm rug','in a cardboard box','on top of the fridge','in a sunny spot'],when:['after lunch','during the thunderstorm','all day','while we were at school'],why:['because it was tired','because the sun was warm','after chasing a mouse','because it ate too much']},
+ {who:'The robot',v:'danced',adj:['shiny','old','giant','tiny'],how:['wildly','in a circle','very carefully','to the music'],where:['on the stage','in the kitchen','at the science fair','on the moon'],when:['at the party','after it was fixed','every Friday','when the lights went out'],why:['to make everyone smile','because it learned a new move','to win a prize','because its button got stuck']}];
+const Q=[['adj','🎨 What kind?','#FF9F43'],['how','🪄 How?','#9B6BF2'],['where','📍 Where?','#22C3E6'],['when','⏰ When?','#5DC66E'],['why','❓ Why?','#E5533F']];
+let k,sel={},round=0;
+document.querySelector('main').innerHTML=`<div class="se-sent" id="sn"></div><div class="se-meter"><span class="se-plant" id="pl">🌱</span><div class="se-bar"><b id="br"></b></div><span class="ln-pill"><b id="wc">0</b> words</span></div>
+<div class="se-qs" id="qs"></div><div class="row" style="justify-content:center;margin-top:14px"><button class="btn green" id="say">🔊 Read it aloud</button><button class="btn" id="nx">🌱 New sentence</button><button class="btn white small" id="clr">🧽 Back to the start</button></div>`;
+function load(){k=K[round++%K.length];sel={};$('qs').innerHTML=Q.map(([id,t,c])=>`<div class="se-q" style="--qc:${c}"><h3>${t}</h3><div>${k[id].map(o=>`<button data-q="${id}" data-o="${Kit.esc(o)}">${o}</button>`).join('')}</div><input type="text" data-q="${id}" placeholder="…or write your own"></div>`).join('');draw()}
+function sentence(){const a=sel.adj,parts=[];const who=a?k.who.replace(/^The /,'The '+a+' '):k.who;
+ return {kernel:`${k.who} ${k.v}.`,parts:[sel.when&&['when',sel.when[0].toUpperCase()+sel.when.slice(1)+','],[a?'adj':'k',who.replace(/^The/,sel.when?'the':'The')],['k',k.v],sel.how&&['how',sel.how],sel.where&&['where',sel.where],sel.why&&['why',sel.why]].filter(Boolean)}}
+function draw(){const s=sentence();const n=Object.keys(sel).length;const txt=s.parts.map(p=>p[1]).join(' ')+'.';const wc=txt.split(/\s+/).length;
+ $('sn').innerHTML=s.parts.map(([q,t])=>`<span class="${q==='k'?'k':''}" style="${q!=='k'?`background:${Q.find(x=>x[0]===q)[2]}33;border-bottom:4px solid ${Q.find(x=>x[0]===q)[2]}`:''}">${Kit.esc(t)}</span>`).join(' ')+'.';
+ $('wc').textContent=wc;$('br').style.width=(n/5*100)+'%';$('pl').textContent=['🌱','🌿','🪴','🌳','🌳','🌸'][n];$('pl').style.transform=`scale(${1+n*.12})`;
+ document.querySelectorAll('.se-q button').forEach(b=>b.classList.toggle('on',sel[b.dataset.q]===b.dataset.o));
+ if(n===5&&!draw.done){draw.done=1;Kit.tada();Kit.confetti(60)}if(n<5)draw.done=0;window.__t={text:txt,n,wc}}
+$('qs').addEventListener('click',e=>{const b=e.target.closest('button[data-q]');if(!b)return;const q=b.dataset.q;if(sel[q]===b.dataset.o)delete sel[q];else sel[q]=b.dataset.o;$('qs').querySelector(`input[data-q="${q}"]`).value='';Kit.tone(400+Object.keys(sel).length*90,.1,'triangle',.2);draw()});
+$('qs').addEventListener('input',e=>{const i=e.target.closest('input[data-q]');if(!i)return;const v=i.value.trim().replace(/[.!?]+$/,'');if(v)sel[i.dataset.q]=v;else delete sel[i.dataset.q];draw()});
+$('say').onclick=()=>{try{speechSynthesis.cancel();speechSynthesis.speak(new SpeechSynthesisUtterance(window.__t.text))}catch(e){}};
+$('nx').onclick=load;$('clr').onclick=()=>{sel={};document.querySelectorAll('.se-q input').forEach(i=>i.value='');draw()};
+load();
+</script>
+</body></html>

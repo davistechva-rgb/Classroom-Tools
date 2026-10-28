@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Essay Outline Builder</title>
+<style>
+main{max-width:1500px}
+.eo-wrap{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:960px){.eo-wrap{grid-template-columns:1fr}}
+.eo-sec{background:#fff;border:5px solid var(--ink);border-radius:20px;box-shadow:5px 5px 0 var(--ink);padding:12px;margin-bottom:12px;border-left:14px solid var(--sc)}
+.eo-sec h3{margin:0 0 6px;display:flex;justify-content:space-between;align-items:center}
+.eo-sec h3 small{font-weight:600;color:#6B7695;font-size:.85rem}
+.eo-sec label{display:block;font-weight:700;font-size:.9rem;color:#55607E;margin-top:6px}
+.eo-sec textarea{min-height:54px;font-size:1.05rem!important}
+.eo-out{background:#FFFDF6;border:6px solid var(--ink);border-radius:22px;box-shadow:6px 6px 0 var(--ink);padding:16px 18px;font-size:1.05rem;line-height:1.5;position:sticky;top:10px;max-height:85vh;overflow:auto}
+.eo-out ol{margin:4px 0;padding-left:1.6em}.eo-out ol ol{list-style:upper-alpha}
+.eo-out .em{color:#B7C0D6;font-style:italic}
+.eo-prog{height:16px;border:3px solid var(--ink);border-radius:99px;background:#fff;overflow:hidden;margin:8px 0}.eo-prog b{display:block;height:100%;background:var(--grass);transition:width .4s}
+.eo-tabs{display:flex;gap:8px;justify-content:center;margin-bottom:14px}
+.eo-tabs button{font:inherit;font-weight:800;border:4px solid var(--ink);border-radius:99px;padding:5px 16px;cursor:pointer;background:#fff;color:var(--ink)}.eo-tabs button.on{background:var(--sun)}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("📝", "Essay Outline Builder");
+const $=id=>document.getElementById(id);
+const TYPES={opinion:{n:'💬 Opinion essay',thesis:'My opinion is… because…',reason:'Reason',ev:'Example or fact that proves it',counter:true,tr:['First,','Another reason is','Most importantly,']},
+ info:{n:'📘 Informative essay',thesis:'This essay will teach you about…',reason:'Main point',ev:'Facts and details',counter:false,tr:['To begin,','In addition,','Also,']}};
+const st=Kit.get('eo-state',{type:'opinion',topic:'',hook:'',thesis:'',r:[{p:'',e:'',x:''},{p:'',e:'',x:''},{p:'',e:'',x:''}],counter:'',rebut:'',concl:''});
+const save=()=>Kit.set('eo-state',st);
+document.querySelector('main').innerHTML=`<div class="eo-tabs" id="tabs">${Object.entries(TYPES).map(([k,v])=>`<button data-t="${k}">${v.n}</button>`).join('')}</div><div class="eo-wrap"><div id="form"></div><div class="eo-out" id="out"></div></div>`;
+const F=(k,v,ph)=>`<textarea data-k="${k}" placeholder="${ph}">${Kit.esc(v||'')}</textarea>`;
+function form(){const T=TYPES[st.type];[...$('tabs').children].forEach(b=>b.classList.toggle('on',b.dataset.t===st.type));
+ $('form').innerHTML=`<div class="eo-sec" style="--sc:#22C3E6"><h3>📌 Introduction</h3><label>Topic</label>${F('topic',st.topic,'What is the essay about?')}<label>Hook (a question, fact, or surprising idea to grab the reader)</label>${F('hook',st.hook,'Did you know…?')}<label>Main idea / thesis</label>${F('thesis',st.thesis,T.thesis)}</div>
+ ${st.r.map((r,i)=>`<div class="eo-sec" style="--sc:${['#5DC66E','#FF9F43','#9B6BF2'][i]}"><h3>${['1️⃣','2️⃣','3️⃣'][i]} ${T.reason} ${i+1} <small>Start with "${T.tr[i]}"</small></h3>${F(`r${i}p`,r.p,`${T.reason} ${i+1}`)}<label>${T.ev}</label>${F(`r${i}e`,r.e,'For example…')}<label>Explain how it connects</label>${F(`r${i}x`,r.x,'This shows that…')}</div>`).join('')}
+ ${T.counter?`<div class="eo-sec" style="--sc:#E5533F"><h3>🤔 The other side</h3><label>Some people might say…</label>${F('counter',st.counter,'Some people think…')}<label>But…</label>${F('rebut',st.rebut,'However…')}</div>`:''}
+ <div class="eo-sec" style="--sc:#1D2B53"><h3>🏁 Conclusion</h3>${F('concl',st.concl,'In conclusion… (say the main idea again in new words)')}</div>
+ <div class="row"><button class="btn green" id="dl">⬇️ Save my outline</button><button class="btn white small" id="clr">🧽 Start over</button></div>`;
+ $('dl').onclick=dl;$('clr').onclick=()=>{if(confirm('Clear the outline?')){Object.assign(st,{topic:'',hook:'',thesis:'',r:[{p:'',e:'',x:''},{p:'',e:'',x:''},{p:'',e:'',x:''}],counter:'',rebut:'',concl:''});save();form();out()}}}
+const get=k=>{const m=k.match(/^r(\d)([pex])$/);return m?st.r[+m[1]][m[2]]:st[k]};
+function out(){const T=TYPES[st.type],v=s=>s&&s.trim()?Kit.esc(s.trim()):'<span class="em">…</span>';
+ const fields=['topic','hook','thesis',...st.r.flatMap((_,i)=>['p','e','x'].map(c=>`r${i}${c}`)),...(T.counter?['counter','rebut']:[]),'concl'];const done=fields.filter(k=>(get(k)||'').trim()).length;
+ $('out').innerHTML=`<b>🗂️ My outline</b><div class="eo-prog"><b style="width:${done/fields.length*100}%"></b></div><div class="muted">${done} of ${fields.length} parts done</div><h3 style="margin:8px 0">${v(st.topic)}</h3>
+ <ol type="I"><li><b>Introduction</b><ol><li>Hook: ${v(st.hook)}</li><li>Main idea: ${v(st.thesis)}</li></ol></li>${st.r.map((r,i)=>`<li><b>${v(r.p)}</b><ol><li>${v(r.e)}</li><li>${v(r.x)}</li></ol></li>`).join('')}
+ ${T.counter?`<li><b>The other side</b><ol><li>${v(st.counter)}</li><li>${v(st.rebut)}</li></ol></li>`:''}<li><b>Conclusion</b><ol><li>${v(st.concl)}</li></ol></li></ol>${done===fields.length?'<p style="font-weight:800;color:#1E8E3E">🎉 Your outline is complete! Now you\'re ready to write.</p>':''}`;window.__t={done,total:fields.length}}
+function dl(){const T=TYPES[st.type],R=['I','II','III','IV','V','VI'];let n=0;const L=[st.topic||'My Essay','',`${R[n++]}. Introduction`,`   A. Hook: ${st.hook}`,`   B. Main idea: ${st.thesis}`];
+ st.r.forEach(r=>{L.push(`${R[n++]}. ${r.p}`,`   A. ${r.e}`,`   B. ${r.x}`)});if(T.counter)L.push(`${R[n++]}. The other side`,`   A. ${st.counter}`,`   B. ${st.rebut}`);L.push(`${R[n++]}. Conclusion`,`   A. ${st.concl}`);
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([L.join('\n')+'\n'],{type:'text/plain'}));a.download='essay-outline.txt';a.click()}
+$('form').addEventListener('input',e=>{const t=e.target.closest('[data-k]');if(!t)return;const k=t.dataset.k,m=k.match(/^r(\d)([pex])$/);if(m)st.r[+m[1]][m[2]]=t.value;else st[k]=t.value;save();out()});
+$('tabs').onclick=e=>{const b=e.target.closest('[data-t]');if(b){st.type=b.dataset.t;save();form();out()}};
+form();out();
+</script>
+</body></html>

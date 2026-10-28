@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Writing Prompt Wheel</title>
+<style>
+main{max-width:1400px}
+.pw-wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:20px;align-items:center}
+@media (max-width:860px){.pw-wrap{grid-template-columns:1fr}}
+.pw-w{position:relative;width:min(100%,480px);aspect-ratio:1;margin:0 auto}
+.pw-w canvas{width:100%;height:100%;border-radius:50%;box-shadow:8px 8px 0 var(--ink)}
+.pw-ptr{position:absolute;right:-14px;top:50%;transform:translateY(-50%);font-size:3rem;filter:drop-shadow(2px 2px 0 var(--ink))}
+.pw-card{background:#fff;border:7px solid var(--ink);border-radius:28px;box-shadow:8px 8px 0 var(--ink);padding:clamp(14px,3vw,28px);min-height:280px;display:flex;flex-direction:column;justify-content:center;gap:10px}
+.pw-g{display:inline-block;align-self:flex-start;background:var(--gc);color:#fff;border:4px solid var(--ink);border-radius:99px;padding:2px 14px;font-weight:800;text-shadow:1px 1px 0 rgba(0,0,0,.3)}
+.pw-q{font-size:clamp(1.5rem,3.8vw,2.5rem);font-weight:800;line-height:1.2}
+.pw-q.pop{animation:pop .5s}
+.pw-gen{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:12px}
+.pw-gen label{font-weight:800;border:3px solid var(--ink);border-radius:99px;padding:3px 12px;background:var(--gc);color:#fff;cursor:pointer;text-shadow:1px 1px 0 rgba(0,0,0,.3)}
+.pw-tm{font-size:2rem;font-weight:800;font-variant-numeric:tabular-nums}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("✍️", "Writing Prompt Wheel");
+const $=id=>document.getElementById(id);
+const G={Adventure:['#FF6B5B',['You find a door in the back of your closet. Where does it go?','Write about a treasure hunt that goes wrong.','You wake up on a tiny island with only a backpack. What\'s inside, and what do you do?','A hot air balloon lands in your backyard with a note: "Get in."']],
+ Funny:['#FFB020',['Your pet starts talking, but only tells bad jokes.','Write about the day the teacher turned into a frog.','Your shoes decide they want to go somewhere else.','A pizza delivery shows up with 100 pizzas you didn\'t order.']],
+ Mystery:['#9B6BF2',['Every morning, a new drawing appears on the board. Who is leaving them?','The class hamster has gone missing. Find out what happened!','You find an old key with your name on it.','The lights go out at the museum. When they come back on, something is gone.']],
+ 'Real life':['#22C3E6',['Write about a time you were really proud of yourself.','Describe your perfect Saturday from morning to night.','Write a letter to yourself 10 years from now.','Tell about a time you helped someone.']],
+ Opinion:['#5DC66E',['Should kids be allowed to have phones in school? Why?','What is the best season, and why?','Should every school have a garden? Explain.','Is it better to be a cat person or a dog person?']],
+ Imagine:['#FF8FC7',['If you could invent anything, what would it be?','Describe a world where it rains candy.','You get to live in a video game for a day. What happens?','If you could talk to one animal, which would it be and what would you ask?']],
+ Science:['#2BC4B0',['Explain what you would need to live on Mars.','Write a story from the point of view of a raindrop.','Imagine you shrank to the size of an ant. Describe your backyard.','Invent a new animal. Where does it live and what does it eat?']]};
+const st=Kit.get('pw-set',{on:Object.keys(G),mins:10});
+document.querySelector('main').innerHTML=`<div class="pw-gen" id="gen">${Object.entries(G).map(([k,v])=>`<label style="--gc:${v[0]}"><input type="checkbox" data-g="${k}" ${st.on.includes(k)?'checked':''}> ${k}</label>`).join('')}</div>
+<div class="pw-wrap"><div><div class="pw-w"><canvas id="cv" width="800" height="800"></canvas><span class="pw-ptr">◀</span></div><div class="row" style="justify-content:center;margin-top:16px"><button class="btn big green" id="sp">🎡 Spin!</button></div></div>
+<div class="pw-card" id="cd"><span class="pw-g" style="--gc:#1D2B53">✍️ Ready?</span><div class="pw-q">Spin the wheel to get a writing prompt.</div></div></div>
+<div class="row" style="justify-content:center;margin-top:14px"><select id="mins" style="width:auto">${[3,5,10,15,20].map(m=>`<option value="${m}">${m} minute quick-write</option>`).join('')}</select><button class="btn" id="tw">⏱ Start writing</button><span class="pw-tm" id="tm" style="color:#fff;text-shadow:2px 2px 0 var(--ink)"></span></div>`;
+const cv=$('cv'),cx=cv.getContext('2d');let ang=0,spinning=false,segs=[],tv;
+function build(){segs=[];st.on.forEach(g=>G[g][1].forEach(q=>segs.push({g,q,c:G[g][0]})));segs=Kit.shuffle(segs).slice(0,16);segs.sort((a,b)=>a.g<b.g?-1:1);draw()}
+function draw(){const W=800,R=390,n=segs.length;cx.clearRect(0,0,W,W);if(!n){cx.fillStyle='#fff';cx.beginPath();cx.arc(400,400,R,0,7);cx.fill();return}
+ segs.forEach((s,i)=>{const a0=ang+i/n*Math.PI*2,a1=a0+Math.PI*2/n;cx.beginPath();cx.moveTo(400,400);cx.arc(400,400,R,a0,a1);cx.closePath();cx.fillStyle=i%2?s.c:shade(s.c);cx.fill();cx.lineWidth=5;cx.strokeStyle='#1D2B53';cx.stroke();
+  cx.save();cx.translate(400,400);cx.rotate(a0+Math.PI/n);cx.fillStyle='#fff';cx.font='800 30px Fredoka,system-ui';cx.textAlign='right';cx.textBaseline='middle';cx.shadowColor='rgba(0,0,0,.35)';cx.shadowOffsetX=2;cx.shadowOffsetY=2;cx.fillText(s.g,R-24,0);cx.restore()});
+ cx.beginPath();cx.arc(400,400,R,0,7);cx.lineWidth=12;cx.strokeStyle='#1D2B53';cx.stroke();cx.beginPath();cx.arc(400,400,55,0,7);cx.fillStyle='#fff';cx.fill();cx.lineWidth=8;cx.stroke();cx.font='60px system-ui';cx.textAlign='center';cx.textBaseline='middle';cx.fillText('✍️',400,404)}
+const shade=c=>{const n=parseInt(c.slice(1),16);const f=v=>Math.round(v*.85);return `rgb(${f(n>>16)},${f(n>>8&255)},${f(n&255)})`};
+$('sp').onclick=()=>{if(spinning||!segs.length)return;spinning=true;const v0=.35+Math.random()*.2;let v=v0,last=-1;
+ (function step(){ang+=v;v*=.985;const n=segs.length,i=Math.floor((((-ang)%(Math.PI*2))+Math.PI*2)%(Math.PI*2)/(Math.PI*2)*n);if(i!==last){Kit.tick();last=i}draw();
+  if(v>.002)requestAnimationFrame(step);else{spinning=false;const s=segs[i];const cd=$('cd');cd.innerHTML=`<span class="pw-g" style="--gc:${s.c}">✍️ ${s.g}</span><div class="pw-q pop">${Kit.esc(s.q)}</div><div style="font-weight:700;color:#55607E">Write at least 5 sentences. Use details!</div>`;Kit.tada();window.__t={g:s.g,q:s.q}}})()};
+$('gen').onchange=()=>{st.on=[...document.querySelectorAll('[data-g]:checked')].map(c=>c.dataset.g);Kit.set('pw-set',st);build()};
+$('mins').value=st.mins;$('mins').onchange=()=>{st.mins=+$('mins').value;Kit.set('pw-set',st)};
+$('tw').onclick=()=>{clearInterval(tv);let s=st.mins*60;const d=()=>$('tm').textContent=s>0?`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`:'✋ Pencils down!';d();Kit.ding();tv=setInterval(()=>{s--;d();if(s<=0){clearInterval(tv);Kit.alarm()}},1000)};
+build();
+</script>
+</body></html>

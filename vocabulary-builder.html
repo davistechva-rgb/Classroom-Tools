@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Vocabulary Builder</title>
+<style>
+main{max-width:1400px}
+.vb-tabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:14px}
+.vb-tabs button{font:inherit;font-weight:800;border:4px solid var(--ink);border-radius:99px;padding:5px 16px;cursor:pointer;background:#fff;color:var(--ink)}.vb-tabs button.on{background:var(--sun)}
+.vb-fr{position:relative;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto auto;gap:0;border:7px solid var(--ink);border-radius:28px;overflow:hidden;box-shadow:9px 9px 0 var(--ink);background:#fff}
+.vb-q{padding:16px 18px;min-height:150px;border:3px solid var(--ink);outline:none}
+.vb-q b{display:block;font-size:.95rem;letter-spacing:.1em;color:var(--qc);margin-bottom:6px}
+.vb-q div{font-weight:700;font-size:clamp(1.05rem,2.2vw,1.35rem);line-height:1.35;outline:none;min-height:2em;white-space:pre-wrap}
+.vb-word{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:var(--sun);border:6px solid var(--ink);border-radius:50%;width:clamp(150px,22vw,220px);aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;z-index:2;box-shadow:0 6px 0 var(--ink)}
+.vb-word b{font-size:clamp(1.4rem,3.4vw,2.2rem);line-height:1.05}
+.vb-word small{font-weight:700;font-style:italic}
+@media (max-width:640px){.vb-fr{grid-template-columns:1fr}.vb-word{position:static;transform:none;margin:10px auto;width:180px}}
+.vb-wall{display:flex;flex-wrap:wrap;gap:10px}
+.vb-wall button{font:inherit;font-weight:800;font-size:1.2rem;border:4px solid var(--ink);border-radius:16px;padding:6px 14px;background:var(--wc);cursor:pointer;box-shadow:0 4px 0 var(--ink);color:var(--ink)}
+.vb-quiz{background:#fff;border:7px solid var(--ink);border-radius:28px;box-shadow:9px 9px 0 var(--ink);padding:20px;text-align:center}
+.vb-quiz .d{font-size:clamp(1.3rem,3.2vw,2.1rem);font-weight:800;margin-bottom:14px}
+.vb-ch{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.vb-ch button{font:inherit;font-weight:800;font-size:1.4rem;border:5px solid var(--ink);border-radius:18px;padding:12px;background:#F4FAFF;cursor:pointer;box-shadow:0 5px 0 var(--ink);color:var(--ink)}
+.vb-ch button.yes{background:var(--grass)}.vb-ch button.no{background:#FFD9D4;opacity:.6}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("📚", "Vocabulary Builder");
+const $=id=>document.getElementById(id);const WC=['#FFF1B8','#C9F1D2','#FDE7F3','#E3F2FF','#FFE3C4','#EAE0FF'];
+const DEF=`enormous | adjective | very, very big | The enormous whale swam past our boat. | huge, giant, gigantic | tiny, small
+curious | adjective | wanting to learn or know about something | The curious kitten looked inside the box. | interested, nosy | bored
+brave | adjective | not afraid to do something hard or scary | The brave firefighter ran into the building. | bold, fearless | scared, timid
+predict | verb | to say what you think will happen | I predict it will rain tomorrow. | guess, forecast |
+habitat | noun | the natural home of a plant or animal | A pond is a frog's habitat. | home, environment |
+furious | adjective | very, very angry | Dad was furious when the dog ate his sandwich. | angry, mad | calm, happy
+observe | verb | to watch something carefully | Scientists observe animals in the wild. | watch, notice | ignore
+ancient | adjective | very, very old | We saw ancient pyramids in Egypt. | old, prehistoric | new, modern
+exhausted | adjective | very tired | After the race, she was exhausted. | tired, worn out | energetic
+community | noun | a group of people who live or work together | Our community helped clean the park. | neighborhood, town | `;
+const st=Kit.get('vb-state',{text:DEF,frayer:{},learned:[]});
+const W=()=>Kit.lines(st.text).map(l=>{const p=l.split('|').map(s=>s.trim());return {w:p[0],pos:p[1]||'',d:p[2]||'',ex:p[3]||'',syn:p[4]||'',ant:p[5]||''}}).filter(x=>x.w&&x.d);
+const dayIdx=()=>Math.floor(new Date().setHours(12)/864e5);
+let tab='day',cur=null,qz=null;
+document.querySelector('main').innerHTML=`<div class="vb-tabs" id="tabs"><button data-t="day">🌟 Word of the day</button><button data-t="wall">🧱 Word wall</button><button data-t="quiz">❓ Quiz me</button><button data-t="edit">✏️ My words</button></div><div id="body"></div>`;
+function frayer(x){const f=st.frayer[x.w]||{};$('body').innerHTML=`<div class="vb-fr"><div class="vb-q" style="--qc:#1E7FD0"><b>📖 WHAT IT MEANS</b><div>${Kit.esc(x.d)}</div></div><div class="vb-q" style="--qc:#B07A00"><b>💬 USE IT IN A SENTENCE</b><div>${Kit.esc(x.ex)}</div></div>
+ <div class="vb-q" style="--qc:#1E8E3E"><b>✅ WORDS LIKE IT</b><div contenteditable="true" data-f="syn">${Kit.esc(f.syn??x.syn)}</div></div><div class="vb-q" style="--qc:#C9412E"><b>❌ OPPOSITES & NON-EXAMPLES</b><div contenteditable="true" data-f="ant">${Kit.esc(f.ant??x.ant)}</div></div>
+ <div class="vb-word"><b>${Kit.esc(x.w)}</b><small>${Kit.esc(x.pos)}</small></div></div>
+ <div class="row" style="justify-content:center;margin-top:14px"><button class="btn white" id="say">🔈 Say it</button><button class="btn green" id="lr">${st.learned.includes(x.w)?'✓ On our word wall':'🧱 Add to word wall'}</button><button class="btn white" id="nw">🎲 Another word</button></div>`;
+ $('say').onclick=()=>{try{const u=new SpeechSynthesisUtterance(`${x.w}. ${x.w} means ${x.d}. ${x.ex}`);u.rate=.9;speechSynthesis.cancel();speechSynthesis.speak(u)}catch{}};
+ $('lr').onclick=()=>{if(!st.learned.includes(x.w)){st.learned.push(x.w);save();Kit.tada();Kit.confetti(50)}frayer(x)};$('nw').onclick=()=>{cur=Kit.pick(W().filter(y=>y.w!==x.w))||x;frayer(cur)};
+ $('body').querySelectorAll('[data-f]').forEach(d=>d.oninput=()=>{(st.frayer[x.w]=st.frayer[x.w]||{})[d.dataset.f]=d.innerText;save()});window.__t={word:x.w}}
+const save=()=>Kit.set('vb-state',st);
+function draw(){[...$('tabs').children].forEach(b=>b.classList.toggle('on',b.dataset.t===tab));const L=W();if(!L.length&&tab!=='edit'){$('body').innerHTML='<div class="card">Add some words first.</div>';return}
+ if(tab==='day'){cur=cur||L[dayIdx()%L.length];frayer(cur)}
+ if(tab==='wall'){const w=st.learned.length?st.learned:[];$('body').innerHTML=`<div class="card"><b>🧱 Our word wall · ${w.length} words</b><p class="muted">Tap a word to see it again.</p><div class="vb-wall">${w.map((x,i)=>`<button data-w="${Kit.esc(x)}" style="--wc:${WC[i%6]}">${Kit.esc(x)}</button>`).join('')||'<i class="muted">Add words from Word of the day.</i>'}</div></div>`;
+  $('body').querySelector('.vb-wall').onclick=e=>{const b=e.target.closest('[data-w]');if(b){cur=L.find(x=>x.w===b.dataset.w);if(cur){tab='day';draw()}}}}
+ if(tab==='quiz')quiz();
+ if(tab==='edit'){$('body').innerHTML=`<div class="card stack"><b>✏️ Vocabulary words</b><span class="muted">One per line: word | part of speech | meaning | example sentence | similar words | opposites</span><textarea id="ta" style="min-height:240px"></textarea><button class="btn green" id="sv">✓ Save</button></div>`;$('ta').value=st.text;$('sv').onclick=()=>{st.text=$('ta').value;save();cur=null;tab='day';draw()}}}
+function quiz(){const L=W();if(L.length<4){$('body').innerHTML='<div class="card">Add at least 4 words to make a quiz.</div>';return}const x=Kit.pick(L);const ch=Kit.shuffle([x,...Kit.shuffle(L.filter(y=>y!==x)).slice(0,3)]);qz={x,score:qz?qz.score:0,n:qz?qz.n+1:1};
+ $('body').innerHTML=`<div class="vb-quiz"><div class="muted" style="font-weight:800">Question ${qz.n} · ⭐ ${qz.score}</div><div class="d">Which word means "${Kit.esc(x.d)}"?</div><div class="vb-ch">${ch.map(c=>`<button data-w="${Kit.esc(c.w)}">${Kit.esc(c.w)}</button>`).join('')}</div></div>`;
+ let miss=false;$('body').querySelector('.vb-ch').onclick=e=>{const b=e.target.closest('button');if(!b||b.classList.contains('no'))return;if(b.dataset.w===x.w){b.classList.add('yes');if(!miss)qz.score++;Kit.ding();setTimeout(quiz,900)}else{miss=true;b.classList.add('no');Learn.flash(b,false)}};window.__t={answer:x.w}}
+$('tabs').onclick=e=>{const b=e.target.closest('[data-t]');if(b){tab=b.dataset.t;draw()}};
+draw();
+</script>
+</body></html>

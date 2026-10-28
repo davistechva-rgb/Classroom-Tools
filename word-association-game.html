@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Word Association Game</title>
+<style>
+main{max-width:1400px}
+.wa-chain{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:#fff;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);padding:14px;min-height:120px}
+.wa-w{font-weight:800;font-size:clamp(1.1rem,2.6vw,1.6rem);background:var(--wc);color:#fff;border:4px solid var(--ink);border-radius:99px;padding:4px 16px;text-shadow:1px 1px 0 rgba(0,0,0,.3);animation:pop .4s}
+.wa-ar{font-size:1.4rem;color:#9AA6C3;font-weight:800}
+.wa-turn{display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:center;margin:16px 0}
+@media (max-width:700px){.wa-turn{grid-template-columns:1fr}}
+.wa-ring{width:110px;aspect-ratio:1;border-radius:50%;border:6px solid var(--ink);background:conic-gradient(var(--tc) var(--p),#fff 0);display:grid;place-items:center;font-weight:800;font-size:2.4rem;margin:0 auto}
+.wa-last{text-align:center;font-weight:800;color:#fff;text-shadow:3px 3px 0 var(--ink)}
+.wa-last b{display:block;font-size:clamp(2.4rem,7vw,4.4rem);line-height:1}
+.wa-teams{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.wa-t{background:#fff;border:5px solid var(--ink);border-radius:18px;padding:6px 14px;font-weight:800;text-align:center}
+.wa-t.on{background:var(--tc);color:#fff;transform:scale(1.08)}.wa-t.out{opacity:.35;text-decoration:line-through}
+.wa-in{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.wa-in input{max-width:320px;font-size:1.4rem!important;text-align:center}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🔤", "Word Association Game");
+const $=id=>document.getElementById(id);const TC=['#FF6B5B','#22C3E6','#5DC66E','#9B6BF2'];
+const STARTS=['ocean','pizza','winter','school','dog','rocket','music','forest','birthday','rain','superhero','garden'];
+const st=Kit.get('wa-set',{secs:10,teams:2,lives:3});
+let chain=[],T=[],cur=0,left=0,tv=null,running=false;
+document.querySelector('main').innerHTML=`<div class="card ln-set" id="set"><div class="row"><label>Teams <select id="nt" style="width:auto"><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label><label>Seconds per turn <select id="sc" style="width:auto"><option>5</option><option>10</option><option>15</option></select></label><label>Lives <select id="lv" style="width:auto"><option>1</option><option>2</option><option>3</option></select></label><label>Start word <input type="text" id="sw" placeholder="random" style="width:150px"></label><button class="btn big green" id="go">▶ Play</button></div>
+<p class="muted" style="margin:8px 0 0">Say a word that goes with the last word, like <i>ocean → fish → bubbles</i>. You have only a few seconds! Run out of time or say a word that doesn't fit, and your team loses a life.</p></div>
+<div id="game" hidden><div class="wa-teams" id="tm"></div><div class="wa-turn"><div class="wa-ring" id="rg"></div><div class="wa-last" id="last"></div><div class="stack"><button class="btn big green" id="ok">✓ Good link!</button><button class="btn red" id="no">✗ No link / repeat</button></div></div>
+<div class="wa-in"><input type="text" id="tw" placeholder="Type the new word (optional)"><span class="muted" style="color:#fff">Press Enter or ✓</span></div><div class="wa-chain" id="ch" style="margin-top:14px"></div></div>`;
+$('nt').value=st.teams;$('sc').value=st.secs;$('lv').value=st.lives;
+const names=Kit.get('ln-team-names',['Red','Blue','Yellow','Green']);
+function draw(){$('tm').innerHTML=T.map((t,i)=>`<div class="wa-t ${i===cur&&running?'on':''} ${t.l<=0?'out':''}" style="--tc:${TC[i]}">${Kit.esc(names[i])}<br>${'❤️'.repeat(Math.max(0,t.l))}${'🤍'.repeat(st.lives-Math.max(0,t.l))} · ${t.p} links</div>`).join('');
+ $('ch').innerHTML=chain.map((w,i)=>`${i?'<span class="wa-ar">→</span>':''}<span class="wa-w" style="--wc:${i?TC[w.t]:'#1D2B53'}">${Kit.esc(w.w)}</span>`).join('');
+ $('last').innerHTML=`${running?`${Kit.esc(names[cur])} team, what goes with…`:'Game over!'}<b>${Kit.esc(chain[chain.length-1].w)}</b>`;$('rg').style.setProperty('--tc',TC[cur]);$('rg').style.setProperty('--p',left/st.secs*100+'%');$('rg').textContent=running?left:'🏁';window.__t={chain:chain.length,cur,lives:T.map(t=>t.l)}}
+function timer(){clearInterval(tv);left=st.secs;draw();tv=setInterval(()=>{left--;if(left<=3&&left>0)Kit.tick();if(left<=0){lose('⏰ Time\'s up!')}else draw()},1000)}
+function next(){const alive=T.map((t,i)=>i).filter(i=>T[i].l>0);if(alive.length<=1){end();return}do{cur=(cur+1)%T.length}while(T[cur].l<=0);timer()}
+function lose(){T[cur].l--;Kit.tone(170,.4,'sawtooth',.18);next()}
+function end(){running=false;clearInterval(tv);draw();const best=T.map((t,i)=>({i,s:t.l*100+t.p})).sort((a,b)=>b.s-a.s)[0];Learn.finish('🔗',`${names[best.i]} team wins!`,`The chain was ${chain.length} words long.`,()=>{$('game').hidden=true;$('set').hidden=false})}
+$('go').onclick=()=>{st.teams=+$('nt').value;st.secs=+$('sc').value;st.lives=+$('lv').value;Kit.set('wa-set',st);T=Array.from({length:st.teams},()=>({l:st.lives,p:0}));chain=[{w:$('sw').value.trim()||Kit.pick(STARTS),t:-1}];cur=0;running=true;$('set').hidden=true;$('game').hidden=false;timer()};
+$('ok').onclick=()=>{if(!running)return;const w=$('tw').value.trim()||'✓';if(w!=='✓'&&chain.some(c=>c.w.toLowerCase()===w.toLowerCase())){Learn.flash($('tw'),false);return lose()}chain.push({w,t:cur});T[cur].p++;$('tw').value='';Kit.ding();next()};
+$('no').onclick=()=>{if(running)lose()};$('tw').onkeydown=e=>{if(e.key==='Enter')$('ok').click()};
+</script>
+</body></html>

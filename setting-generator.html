@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Setting Generator</title>
+<style>
+main{max-width:1400px}
+.st-wrap{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:900px){.st-wrap{grid-template-columns:1fr}}
+.st-scene{position:relative;aspect-ratio:16/10;border:7px solid var(--ink);border-radius:26px;box-shadow:8px 8px 0 var(--ink);overflow:hidden;background:var(--sky)}
+.st-scene .gr{position:absolute;left:0;right:0;bottom:0;height:34%;background:var(--ground)}
+.st-scene .it{position:absolute;transform:translate(-50%,-50%);line-height:1}
+.st-scene .wx{position:absolute;inset:0;pointer-events:none}
+.st-rain i{position:absolute;width:3px;height:18px;background:rgba(255,255,255,.7);border-radius:2px;animation:strn .7s linear infinite}@keyframes strn{to{transform:translateY(60vh)}}
+.st-snow i{position:absolute;width:9px;height:9px;background:#fff;border-radius:50%;animation:stsn 4s linear infinite}@keyframes stsn{to{transform:translate(30px,60vh)}}
+.st-fog{background:linear-gradient(rgba(255,255,255,.1),rgba(255,255,255,.55))}
+.st-lab{position:absolute;left:12px;top:10px;background:rgba(255,255,255,.92);border:3px solid var(--ink);border-radius:12px;padding:2px 12px;font-weight:800}
+.st-f{display:grid;gap:8px}
+.st-r{display:grid;grid-template-columns:7.5em 1fr auto;gap:8px;align-items:center;background:#fff;border:4px solid var(--ink);border-radius:16px;padding:8px 10px;font-weight:700}
+.st-r b{color:#6B7695;font-size:.85rem}
+.st-r button{border:3px solid var(--ink);border-radius:10px;background:#fff;cursor:pointer;padding:2px 8px}
+.st-sense{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-top:16px}
+.st-s{background:var(--sc);border:4px solid var(--ink);border-radius:18px;padding:10px;font-weight:700}
+.st-s b{display:block;font-size:1.05rem}
+.st-para{margin-top:14px;background:#FFFDF6;border:5px solid var(--ink);border-radius:20px;padding:14px 18px;font-size:clamp(1.1rem,2.4vw,1.5rem);line-height:1.5;font-weight:600}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🗺️", "Setting Generator");
+const $=id=>document.getElementById(id);
+const PL=[{n:'a spooky old library',g:'#6B4E3A',it:['📚','🕯️','🪑','🕸️','🦉'],see:'dusty books stacked to the ceiling',hear:'pages rustling all by themselves',smell:'old paper and candle wax',feel:'a cold draft on my neck',taste:'dust in the air'},
+ {n:'a busy city street',g:'#7A8496',it:['🏢','🚕','🚦','🏪','🚲'],see:'flashing signs and yellow taxis',hear:'honking horns and chattering people',smell:'hot pretzels from a cart',feel:'the crowd bumping past me',taste:'a salty pretzel'},
+ {n:'a quiet forest',g:'#4E9A3F',it:['🌲','🍄','🦌','🌲','🪵'],see:'sunlight peeking through tall pine trees',hear:'birds chirping and twigs snapping',smell:'fresh pine needles',feel:'soft moss under my feet',taste:'sweet wild berries'},
+ {n:'a sandy beach',g:'#F1D79A',it:['🌴','🐚','🦀','⛱️','🏰'],see:'waves sparkling in the sun',hear:'seagulls and crashing waves',smell:'salty sea air and sunscreen',feel:'warm sand between my toes',taste:'salt on my lips'},
+ {n:'a space station',g:'#3A3F5C',it:['🛰️','🪐','👩‍🚀','🔭','🌍'],see:'Earth glowing outside the window',hear:'machines humming and beeping',smell:'clean, metal air',feel:'floating with no gravity',taste:'freeze-dried ice cream'},
+ {n:'a snowy mountain village',g:'#F4F8FF',it:['🏔️','🏠','⛄','🌲','🛷'],see:'smoke curling from chimneys',hear:'sleigh bells and crunching snow',smell:'hot cocoa and wood smoke',feel:'icy wind on my cheeks',taste:'snowflakes on my tongue'},
+ {n:'a farm at harvest time',g:'#9BC25B',it:['🚜','🌽','🐄','🏡','🐓'],see:'golden fields of corn',hear:'roosters crowing and cows mooing',smell:'fresh hay',feel:'scratchy straw',taste:'a crunchy apple'},
+ {n:'an underwater cave',g:'#1E5F7A',it:['🐙','🪸','🐠','💎','🦈'],see:'glowing jellyfish and bright coral',hear:'bubbles popping',smell:'nothing, because I\'m underwater',feel:'cool water all around you',taste:'salty water'}];
+const TIME=[['sunrise','linear-gradient(#FFB27A,#FFE3A8)','🌅'],['noon','linear-gradient(#5BC0F8,#BFE6FA)','☀️'],['sunset','linear-gradient(#7B4FB8,#FF8A5C)','🌇'],['night','linear-gradient(#0E1035,#2B2E6E)','🌙']];
+const WX=[['clear',''],['rainy','rain'],['snowy','snow'],['foggy','fog'],['windy','wind']];
+const MOOD=['peaceful','mysterious','exciting','scary','cheerful','lonely','magical'];
+let s={};const pk=a=>Kit.pick(a);
+function roll(k){if(!k||k==='p')s.p=pk(PL.filter(x=>x!==s.p));if(!k||k==='t')s.t=pk(TIME);if(!k||k==='w')s.w=pk(WX);if(!k||k==='m')s.m=pk(MOOD)}
+document.querySelector('main').innerHTML=`<div class="st-wrap"><div class="st-scene" id="sc"></div><div class="st-f" id="f"></div></div><div class="st-sense" id="se"></div><div class="st-para" id="pa"></div>
+<div class="row" style="justify-content:center;margin-top:14px"><button class="btn big green" id="go">🎲 New setting</button><button class="btn white" id="say">🔈 Read it</button></div>`;
+function draw(){const P=s.p,[tn,sky,tem]=s.t,[wn,wc]=s.w;const sc=$('sc');sc.style.setProperty('--sky',sky);sc.style.setProperty('--ground',P.g);
+ let h=`<div class="gr"></div><span class="it" style="left:84%;top:16%;font-size:3rem">${tem}</span>`;P.it.forEach((e,i)=>{h+=`<span class="it" style="left:${12+i*19}%;top:${i%2?72:62}%;font-size:${i%2?3:4.2}rem">${e}</span>`});
+ if(wc==='rain')h+=`<div class="wx st-rain">${Array.from({length:40},()=>`<i style="left:${Kit.rand(0,100)}%;top:-${Kit.rand(0,60)}%;animation-delay:-${Math.random()}s"></i>`).join('')}</div>`;
+ if(wc==='snow')h+=`<div class="wx st-snow">${Array.from({length:40},()=>`<i style="left:${Kit.rand(0,100)}%;top:-${Kit.rand(0,80)}%;animation-delay:-${Math.random()*4}s"></i>`).join('')}</div>`;
+ if(wc==='fog')h+='<div class="wx st-fog"></div>';if(wc==='wind')h+='<span class="it" style="left:30%;top:25%;font-size:3rem">💨</span><span class="it" style="left:60%;top:35%;font-size:2.4rem">🍃</span>';
+ sc.innerHTML=h+`<span class="st-lab">📍 ${Kit.esc(P.n)}</span>`;
+ const R=[['p','WHERE',P.n],['t','WHEN',`at ${tn}`],['w','WEATHER',wn],['m','MOOD',s.m]];$('f').innerHTML=R.map(([k,l,v])=>`<div class="st-r"><b>${l}</b><span>${Kit.esc(v)}</span><button data-k="${k}">🎲</button></div>`).join('');
+ const SE=[['👀 See',P.see,'#E3F2FF'],['👂 Hear',P.hear,'#FDE7F3'],['👃 Smell',P.smell,'#FFF1B8'],['✋ Feel',P.feel,'#C9F1D2'],['👅 Taste',P.taste,'#FFE3C4']];$('se').innerHTML=SE.map(x=>`<div class="st-s" style="--sc:${x[2]}"><b>${x[0]}</b>${Kit.esc(x[1])}</div>`).join('');
+ $('pa').textContent=`It was a ${wn}, ${s.m} ${tn==='night'?'night':tn==='noon'?'afternoon':tn==='sunrise'?'morning':'evening'} in ${P.n}. I could see ${P.see}. I heard ${P.hear}, and the air smelled like ${P.smell}. I could feel ${P.feel}.`;window.__t={place:P.n}}
+$('f').onclick=e=>{const b=e.target.closest('[data-k]');if(b){roll(b.dataset.k);Kit.tick();draw()}};
+$('go').onclick=()=>{roll();Kit.tone(600,.1,'triangle',.2);draw()};
+$('say').onclick=()=>{try{const u=new SpeechSynthesisUtterance($('pa').textContent);speechSynthesis.cancel();speechSynthesis.speak(u)}catch{}};
+roll();draw();
+</script>
+</body></html>

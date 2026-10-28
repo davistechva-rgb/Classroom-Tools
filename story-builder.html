@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Story Builder</title>
+<style>
+main{max-width:1300px}
+.sb2-title{font:inherit;font-size:clamp(1.6rem,4vw,2.6rem)!important;font-weight:800;text-align:center;width:100%;border-width:5px!important;margin-bottom:14px}
+.sb2-steps{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:14px}
+.sb2-steps button{font:inherit;font-weight:800;border:4px solid var(--ink);border-radius:99px;padding:6px 16px;cursor:pointer;background:#fff;color:var(--ink)}
+.sb2-steps button.on{background:var(--pc);color:#fff;text-shadow:1px 1px 0 rgba(0,0,0,.3)}
+.sb2-steps button.ok::after{content:" ✓"}
+.sb2-part{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:860px){.sb2-part{grid-template-columns:1fr}}
+.sb2-ta{width:100%;min-height:300px;font-size:1.3rem!important;line-height:1.6;border-width:5px!important;background:#FFFDF6!important;background-image:repeating-linear-gradient(transparent 0 calc(1.6em - 2px),#D8E6F7 calc(1.6em - 2px) 1.6em)!important;background-position:0 8px!important}
+.sb2-help{background:#fff;border:5px solid var(--ink);border-radius:22px;padding:12px;box-shadow:5px 5px 0 var(--ink)}
+.sb2-help h3{margin:0 0 8px;color:var(--pc)}
+.sb2-help li{font-weight:700;margin:4px 0}
+.sb2-st{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.sb2-st button{font:inherit;font-weight:700;border:3px solid var(--ink);border-radius:12px;background:#F4FAFF;padding:4px 10px;cursor:pointer;color:var(--ink)}
+.sb2-wc{font-weight:800;margin-top:8px}
+.sb2-read{background:#FFFDF6;border:6px solid var(--ink);border-radius:24px;padding:18px 22px;font-size:clamp(1.15rem,2.4vw,1.5rem);line-height:1.6;white-space:pre-wrap;box-shadow:6px 6px 0 var(--ink)}
+.sb2-read h2{text-align:center;margin-top:0}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("📝", "Story Builder");
+const $=id=>document.getElementById(id);
+const P=[['beginning','🌅 Beginning','#5DC66E',['Who is the main character?','Where and when does the story happen?','What is the problem?'],['Once upon a time,','One sunny morning,','Long ago, in a land far away,','It all started when']],
+ ['middle','⛰️ Middle','#FF9F43',['What does the character try first?','What goes wrong?','How does the character feel?'],['First,','Then, suddenly,','Just when','But then','Meanwhile,']],
+ ['end','🌈 End','#9B6BF2',['How is the problem solved?','How does the character feel now?','What did they learn?'],['Finally,','In the end,','At last,','From that day on,','Now they knew that']]];
+const st=Kit.get('sb2-draft',{title:'',beginning:'',middle:'',end:''});let cur=0,reading=false;
+document.querySelector('main').innerHTML=`<input type="text" class="sb2-title" id="ti" placeholder="✏️ My story title"><div class="sb2-steps" id="sp"></div><div id="body"></div>
+<div class="row" style="justify-content:center;margin-top:14px"><button class="btn white" id="bk">◀ Back</button><button class="btn green" id="nx">Next ▶</button><button class="btn" id="rd">📖 Read my whole story</button><button class="btn white" id="dl">⬇️ Save as a file</button><button class="btn white small" id="clr">🧽 New story</button></div>`;
+const words=t=>(t.trim().match(/\S+/g)||[]).length;const save=()=>Kit.set('sb2-draft',st);
+function draw(){$('sp').innerHTML=P.map((p,i)=>`<button data-i="${i}" class="${!reading&&i===cur?'on':''} ${words(st[p[0]])>=10?'ok':''}" style="--pc:${p[2]}">${p[1]}</button>`).join('')+`<button data-r class="${reading?'on':''}" style="--pc:#1D2B53">📖 Read it</button>`;
+ if(reading){const all=P.map(p=>st[p[0]].trim()).filter(Boolean).join('\n\n');$('body').innerHTML=`<div class="sb2-read"><h2>${Kit.esc(st.title||'My Story')}</h2>${Kit.esc(all)||'<i>Nothing written yet!</i>'}<p style="text-align:right;font-weight:800;margin-bottom:0">${words(all)} words 🌟</p></div><div class="row" style="justify-content:center;margin-top:10px"><button class="btn white" id="say">🔈 Read it to me</button></div>`;
+  $('say').onclick=()=>{try{const u=new SpeechSynthesisUtterance((st.title?st.title+'. ':'')+all);u.rate=.95;speechSynthesis.cancel();speechSynthesis.speak(u)}catch{}};return}
+ const [k,name,c,qs,starts]=P[cur];$('body').innerHTML=`<div class="sb2-part" style="--pc:${c}"><div><textarea class="sb2-ta" id="ta" placeholder="Start writing your ${name.split(' ')[1].toLowerCase()} here…"></textarea><div class="sb2-wc" id="wc"></div></div>
+ <div class="sb2-help"><h3>${name}</h3><b>Think about:</b><ul>${qs.map(q=>`<li>${q}</li>`).join('')}</ul><b>Need a start? Tap one:</b><div class="sb2-st">${starts.map(s=>`<button>${s}</button>`).join('')}</div></div></div>`;
+ $('ta').value=st[k];const wc=()=>{$('wc').textContent=`✏️ ${words(st[k])} words${words(st[k])>=10?' · great job!':''}`};wc();
+ $('ta').oninput=()=>{st[k]=$('ta').value;save();wc()};$('body').querySelector('.sb2-st').onclick=e=>{const b=e.target.closest('button');if(!b)return;const ta=$('ta');ta.value=(ta.value.trim()?ta.value.replace(/\s*$/,' '):'')+b.textContent+' ';st[k]=ta.value;save();wc();ta.focus()};
+ window.__t={cur,words:P.reduce((a,p)=>a+words(st[p[0]]),0)}}
+$('sp').onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.r!=null){reading=true}else{reading=false;cur=+b.dataset.i}draw()};
+$('nx').onclick=()=>{if(reading)return;if(cur<2){cur++;draw()}else{reading=true;Kit.tada();draw()}};$('bk').onclick=()=>{if(reading){reading=false;draw()}else if(cur>0){cur--;draw()}};$('rd').onclick=()=>{reading=true;draw()};
+$('ti').value=st.title;$('ti').oninput=()=>{st.title=$('ti').value;save()};
+$('dl').onclick=()=>{const t=`${st.title||'My Story'}\n\n${P.map(p=>st[p[0]].trim()).filter(Boolean).join('\n\n')}\n`;const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/plain'}));a.download=(st.title||'my-story').replace(/[^\w -]/g,'').trim().replace(/\s+/g,'-').toLowerCase()+'.txt';a.click()};
+$('clr').onclick=()=>{if(confirm('Start a brand-new story? This one will be erased.')){Object.assign(st,{title:'',beginning:'',middle:'',end:''});save();$('ti').value='';cur=0;reading=false;draw()}};
+draw();
+</script>
+</body></html>

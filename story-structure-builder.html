@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Story Structure Builder</title>
+<style>
+main{max-width:1500px}
+.ssb-mtn{position:relative;aspect-ratio:16/7;border:7px solid var(--ink);border-radius:28px;box-shadow:9px 9px 0 var(--ink);overflow:hidden;background:linear-gradient(#BFE6FA,#EAF6FF)}
+.ssb-mtn svg{position:absolute;inset:0;width:100%;height:100%}
+.ssb-st{position:absolute;transform:translate(-50%,-50%);font:inherit;border:5px solid var(--ink);border-radius:18px;background:#fff;padding:6px 10px;font-weight:800;cursor:pointer;box-shadow:0 5px 0 var(--ink);text-align:center;color:var(--ink);max-width:22%;font-size:clamp(.7rem,1.4vw,1rem)}
+.ssb-st .e{display:block;font-size:1.6em}
+.ssb-st.on{background:var(--sun);transform:translate(-50%,-50%) scale(1.08)}
+.ssb-st.full::after{content:"✓";position:absolute;top:-12px;right:-10px;width:26px;height:26px;border-radius:50%;background:var(--grass);border:3px solid var(--ink);display:grid;place-items:center;font-size:.9rem}
+.ssb-hiker{position:absolute;font-size:clamp(1.8rem,4vw,2.8rem);transform:translate(-50%,-100%);transition:left .8s,top .8s;z-index:3}
+.ssb-ed{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;margin-top:16px}
+@media (max-width:860px){.ssb-ed{grid-template-columns:1fr}}
+.ssb-ed textarea{min-height:170px;font-size:1.25rem!important;border-width:5px!important}
+.ssb-help{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px}
+.ssb-help h3{margin:0 0 6px;color:var(--sc)}
+.ssb-read{margin-top:14px;background:#FFFDF6;border:5px solid var(--ink);border-radius:20px;padding:14px 18px;font-size:1.2rem;line-height:1.6;font-weight:600}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("📖", "Story Structure Builder");
+const $=id=>document.getElementById(id);
+const PARTS=[['exp','🏕️','Beginning','#5DC66E',[10,82],'Who are the characters? Where and when does the story happen?'],['rise','🧗','Rising action','#22C3E6',[30,58],'What problem starts? What events make it harder and harder?'],['peak','🏔️','Climax','#FF6B5B',[50,18],'The most exciting part! The big moment when everything changes.'],['fall','🛷','Falling action','#FF9F43',[70,58],'What happens right after the big moment?'],['res','🏡','Ending','#9B6BF2',[90,82],'How is the problem solved? How does the story end?']];
+const EX={exp:'Goldilocks is a curious girl who goes for a walk in the forest and finds a little house.',rise:'Nobody is home, so she goes inside. She tastes three bowls of porridge, sits in three chairs, and breaks the smallest one.',peak:'She falls asleep in Baby Bear\'s bed, and the three bears come home and find her!',fall:'Goldilocks wakes up, sees the bears, and screams.',res:'She jumps out the window, runs home, and never goes into a stranger\'s house again.'};
+const st=Kit.get('ssb-state',{title:'',parts:{},cur:'exp'});
+document.querySelector('main').innerHTML=`<input type="text" id="ti" placeholder="✏️ Story title" style="font-size:1.6rem!important;font-weight:800;text-align:center;margin-bottom:12px;border-width:5px">
+<div class="ssb-mtn" id="mt"><svg viewBox="0 0 100 44" preserveAspectRatio="none"><polygon points="0,44 0,38 10,36 30,26 50,6 70,26 90,36 100,38 100,44" fill="#8BD17A" stroke="#1D2B53" stroke-width=".8"/><polygon points="45,11 50,6 55,11 52,10 50,12 48,10" fill="#fff"/><path d="M10 36 L30 26 L50 6 L70 26 L90 36" fill="none" stroke="#1D2B53" stroke-width=".5" stroke-dasharray="1.2 1"/></svg><span class="ssb-hiker" id="hk">🚶</span></div>
+<div class="ssb-ed"><textarea id="ta"></textarea><div class="ssb-help" id="hp"></div></div><div class="row" style="justify-content:center;margin-top:12px"><button class="btn white" id="bk">◀</button><button class="btn green" id="nx">Next part ▶</button><button class="btn" id="rd">📖 Read the whole story</button><button class="btn white small" id="ex">👀 Example (Goldilocks)</button><button class="btn white small" id="clr">🧽 Clear</button></div><div class="ssb-read" id="out" hidden></div>`;
+const save=()=>Kit.set('ssb-state',st);
+function draw(){$('mt').querySelectorAll('.ssb-st').forEach(e=>e.remove());PARTS.forEach(([k,e,n,c,[x,y]])=>$('mt').insertAdjacentHTML('beforeend',`<button class="ssb-st ${k===st.cur?'on':''} ${(st.parts[k]||'').trim()?'full':''}" data-k="${k}" style="left:${x}%;top:${y}%"><span class="e">${e}</span>${n}</button>`));
+ const p=PARTS.find(x=>x[0]===st.cur);const [x,y]=p[4];$('hk').style.left=x+'%';$('hk').style.top=(y-12)+'%';$('hk').textContent=st.cur==='peak'?'🙌':st.cur==='res'?'😊':'🚶';
+ $('ta').value=st.parts[st.cur]||'';$('ta').placeholder=`Write the ${p[2].toLowerCase()} here…`;$('hp').style.setProperty('--sc',p[3]);$('hp').innerHTML=`<h3>${p[1]} ${p[2]}</h3><b>${p[5]}</b>`;
+ window.__t={cur:st.cur,full:PARTS.filter(q=>(st.parts[q[0]]||'').trim()).length}}
+$('mt').onclick=e=>{const b=e.target.closest('.ssb-st');if(b){st.cur=b.dataset.k;save();Kit.tick();draw()}};
+$('ta').oninput=()=>{st.parts[st.cur]=$('ta').value;save();const b=$('mt').querySelector(`[data-k="${st.cur}"]`);b.classList.toggle('full',!!$('ta').value.trim())};
+const mv=d=>{const i=PARTS.findIndex(x=>x[0]===st.cur);const j=Math.max(0,Math.min(4,i+d));st.cur=PARTS[j][0];save();draw()};
+$('nx').onclick=()=>{if(st.cur==='res'){$('rd').click();return}mv(1);Kit.tone(500+PARTS.findIndex(x=>x[0]===st.cur)*80,.12,'triangle',.2)};$('bk').onclick=()=>mv(-1);
+$('rd').onclick=()=>{const o=$('out');o.hidden=false;const t=PARTS.map(p=>(st.parts[p[0]]||'').trim()).filter(Boolean).join(' ');o.innerHTML=`<h3 style="margin-top:0;text-align:center">${Kit.esc(st.title||'My Story')}</h3>${Kit.esc(t)||'<i>Fill in the mountain first!</i>'}`;if(PARTS.every(p=>(st.parts[p[0]]||'').trim())){Kit.tada();Kit.confetti(80)}o.scrollIntoView({behavior:'smooth'})};
+$('ex').onclick=()=>{if(Object.values(st.parts).some(v=>v.trim())&&!confirm('Replace your story with the Goldilocks example?'))return;st.parts={...EX};st.title='Goldilocks and the Three Bears';$('ti').value=st.title;save();draw()};
+$('clr').onclick=()=>{if(confirm('Clear the whole story?')){st.parts={};st.title='';$('ti').value='';save();draw()}};
+$('ti').value=st.title;$('ti').oninput=()=>{st.title=$('ti').value;save()};
+draw();
+</script>
+</body></html>
