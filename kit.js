@@ -65,9 +65,15 @@ const Kit = (() => {
     const top = document.createElement('header'); top.className = 'top';
     top.innerHTML = `<a class="home" href="index.html">🏠 All tools</a>
       <h1 class="title"><span class="emo">${emoji}</span>${title}</h1>
-      <div class="tool-btns"><button class="btn white icon" id="fsBtn" title="Full screen" aria-label="Full screen">⛶</button></div>`;
+      <div class="tool-btns"><button class="btn white icon" id="favBtn"></button><button class="btn white icon" id="fsBtn" title="Full screen" aria-label="Full screen">⛶</button></div>`;
     document.body.prepend(top);
     top.querySelector('#fsBtn').onclick = fullscreen;
+    // ⭐ favorite this tool (the home screen shows favorites in their own section)
+    const me = location.pathname.split('/').pop().replace('.html', ''), fb = top.querySelector('#favBtn');
+    const favs = () => { try { return JSON.parse(localStorage.getItem('ct:favs')) || []; } catch { return []; } };
+    const drawFav = () => { const on = favs().includes(me); fb.textContent = on ? '★' : '☆'; fb.style.background = on ? 'var(--sun)' : ''; fb.title = on ? 'Remove from my favorites' : 'Add to my favorites'; fb.setAttribute('aria-label', fb.title); };
+    fb.onclick = () => { const f = favs(), i = f.indexOf(me); i < 0 ? f.push(me) : f.splice(i, 1); try { localStorage.setItem('ct:favs', JSON.stringify(f)); } catch {} tone(i < 0 ? 880 : 440, .12, 'triangle', .18); drawFav(); };
+    drawFav();
     document.querySelector('main').insertAdjacentHTML('afterend', LOGO(''));
     new MutationObserver(refit).observe(document.querySelector('main'), { childList: true, subtree: true });
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).catch(() => {});
