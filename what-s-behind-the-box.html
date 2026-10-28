@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>What's Behind the Box?</title>
+<style>
+.wb-wrap{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:820px){.wb-wrap{grid-template-columns:1fr}}
+.wb-stage{position:relative;aspect-ratio:4/3;border:6px solid var(--ink);border-radius:24px;overflow:hidden;box-shadow:7px 7px 0 var(--ink);background:#FFF6C9}
+.wb-pic{position:absolute;inset:0;display:grid;place-items:center;font-size:min(30vw,280px);line-height:1}
+.wb-pic img{width:100%;height:100%;object-fit:cover}
+.wb-grid{position:absolute;inset:0;display:grid;perspective:1200px}
+.wb-door{position:relative;border:0;padding:0;background:none;cursor:pointer;transform-style:preserve-3d;transition:transform .8s cubic-bezier(.4,1.4,.5,1);transform-origin:left center;font:inherit}
+.wb-door .f{position:absolute;inset:0;border:3px solid var(--ink);display:grid;place-items:center;font-weight:800;font-size:clamp(1.4rem,4vw,2.6rem);color:#fff;text-shadow:2px 2px 0 var(--ink);backface-visibility:hidden}
+.wb-door .f::after{content:"";position:absolute;right:12%;top:50%;width:10px;height:10px;border-radius:50%;background:#fff;border:3px solid var(--ink)}
+.wb-door.open{transform:rotateY(-105deg);pointer-events:none}
+.wb-door.gone{opacity:0;transition:opacity .6s}
+.wb-side{display:grid;gap:14px}
+.wb-turn{font-size:1.3rem;font-weight:700;text-align:center}
+.wb-worth{font-size:3.2rem;font-weight:800;text-align:center;line-height:1}
+.wb-answer{font-size:clamp(1.8rem,5vw,3rem);font-weight:800;text-align:center;color:var(--grape);min-height:1.2em}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🔍", "What's Behind the Box?");
+const DEF=`🐘 | Elephant
+🦒 | Giraffe
+🍕 | Pizza
+🚀 | Rocket
+🌋 | Volcano
+🦋 | Butterfly
+🎸 | Guitar
+🐙 | Octopus
+🏰 | Castle
+🍉 | Watermelon
+🚂 | Train
+🦕 | Dinosaur
+🌈 | Rainbow
+🐧 | Penguin
+⛄ | Snowman`;
+const main=document.querySelector('main');
+main.innerHTML=`<div class="card ln-set" id="set"><div class="row">
+ ${Learn.teamPicker('nT',2)}
+ <label>Boxes <select id="nB" style="width:auto"><option value="9">9 (3 × 3)</option><option value="12" selected>12 (4 × 3)</option><option value="16">16 (4 × 4)</option><option value="20">20 (5 × 4)</option></select></label>
+ <label>📷 Use my own pictures <input type="file" id="pics" accept="image/*" multiple style="max-width:240px"></label>
+ <button class="btn big green" id="go">Start</button></div>
+ <p class="muted" style="margin:8px 0 0">Teams take turns opening one box. They can guess after every box. The fewer boxes open, the more points the guess is worth.</p></div>
+<div id="game" hidden><div id="tm"></div><div class="wb-wrap"><div class="wb-stage" id="stage"><div class="wb-pic" id="pic"></div><div class="wb-grid" id="grid"></div></div>
+ <div class="wb-side"><div class="card"><div class="wb-turn" id="turn"></div><div class="muted" style="text-align:center">A right guess now is worth</div><div class="wb-worth" id="worth"></div></div>
+ <div class="card stack"><div class="row" style="justify-content:center"><button class="btn green" id="right">✓ Right guess</button><button class="btn red" id="wrong">✗ Wrong guess</button></div>
+ <button class="btn white" id="reveal" style="width:100%">👀 Reveal it</button><div class="wb-answer" id="ans"></div>
+ <button class="btn grape" id="next" style="width:100%" hidden>Next picture ➜</button><div class="muted" style="text-align:center" id="left"></div></div></div></div></div>`;
+const L=Learn.list(document.getElementById('set'),{key:'pics',label:'Mystery pictures',help:'One per line: emoji | answer. Or add your own photos with the picture button (they stay for this session only).',def:DEF});
+const $=id=>document.getElementById(id);
+let T,deck=[],cur,nB,opened=0,doneRound=false,shown=0;
+const COLS={9:3,12:4,16:4,20:5};
+$('go').onclick=()=>{
+ nB=+$('nB').value;const files=[...$('pics').files];
+ const fromList=L.rows().map(r=>({emo:r[0],ans:r[1]||'?'}));
+ deck=Kit.shuffle(files.length?files.map(f=>({img:URL.createObjectURL(f),ans:f.name.replace(/\.[^.]+$/,'').replace(/[-_]+/g,' ')})):fromList);
+ if(!deck.length)return alert('Add at least one picture to your list.');
+ $('set').hidden=true;$('game').hidden=false;T=Learn.teams($('tm'),+$('nT').value);shown=0;round()};
+function round(){
+ cur=deck[shown%deck.length];shown++;opened=0;doneRound=false;
+ $('pic').innerHTML=cur.img?`<img src="${cur.img}" alt="">`:cur.emo;
+ const c=COLS[nB];const g=$('grid');g.style.gridTemplateColumns=`repeat(${c},1fr)`;
+ const cols=Kit.COLORS;
+ g.innerHTML=Array.from({length:nB},(_,i)=>`<button class="wb-door" data-i="${i}" aria-label="Box ${i+1}"><span class="f" style="background:${cols[i%cols.length]}">${i+1}</span></button>`).join('');
+ $('ans').textContent='';$('next').hidden=true;$('next').textContent='Next picture ➜';['right','wrong','reveal'].forEach(id=>$(id).disabled=false);
+ $('left').textContent=`Picture ${shown} of ${deck.length}`;draw();
+ window.__t={answer:cur.ans};
+}
+const worth=()=>Math.max(1,nB-opened);
+function draw(){$('worth').textContent=doneRound?'—':Learn.pts(worth());
+ $('turn').innerHTML=T.n>1?`<span class="ln-pill" style="background:${T.colors[T.cur]};color:#fff">${Kit.esc(T.names[T.cur])} team's turn</span><br><small class="muted">Open a box, then guess or pass</small>`:'Open a box, then guess!'}
+$('grid').onclick=e=>{const d=e.target.closest('.wb-door');if(!d||doneRound)return;d.classList.add('open');opened++;Kit.tone(420+opened*30,.15,'triangle',.2);
+ setTimeout(()=>d.classList.add('gone'),700);
+ if(opened>=nB){end(false);return}draw()};
+$('right').onclick=()=>{if(doneRound)return;T.add(worth());end(true)};
+$('wrong').onclick=()=>{if(doneRound)return;Learn.flash($('stage'),false);T.next();draw()};
+$('reveal').onclick=()=>end(false);
+function end(won){doneRound=true;document.querySelectorAll('.wb-door').forEach(d=>{d.classList.add('open');setTimeout(()=>d.classList.add('gone'),600)});
+ $('ans').textContent=cur.ans;if(won){Kit.tada();Kit.confetti(60)}else Kit.ding();
+ ['right','wrong','reveal'].forEach(id=>$(id).disabled=true);$('next').hidden=false;
+ if(shown>=deck.length){$('next').textContent='🏁 See who won';}
+ T.next();draw()}
+$('next').onclick=()=>{if(shown>=deck.length){Learn.finish('🏆',T.n>1?T.winner():'All done!',`You guessed ${deck.length} pictures.`,()=>{$('game').hidden=true;$('set').hidden=false});return}round()};
+</script>
+</body></html>

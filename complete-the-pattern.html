@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Complete the Pattern</title>
+<style>
+.cp-train{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center;padding:clamp(14px,3vw,28px);background:#fff;border:5px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);max-width:1080px;margin:0 auto}
+.cp-cell{width:clamp(56px,8.5vw,96px);aspect-ratio:1;border:4px solid var(--ink);border-radius:18px;display:grid;place-items:center;font-size:clamp(2rem,5.4vw,3.6rem);background:#F4FAFF;line-height:1}
+.cp-cell.gap{border-style:dashed;border-color:#9DB0D0;background:#FFF6C9;cursor:pointer}
+.cp-cell.gap.now{animation:cpnow 1s infinite;border-color:var(--grape)}@keyframes cpnow{50%{transform:translateY(-6px)}}
+.cp-cell.right{background:#C9F1D2;border-style:solid;border-color:var(--ink)}
+.cp-shape{width:70%;height:70%;background:var(--c)}
+.cp-shape.circle{border-radius:50%}.cp-shape.square{border-radius:8%}.cp-shape.tri{clip-path:polygon(50% 4%,96% 92%,4% 92%)}.cp-shape.star{clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)}.cp-shape.hex{clip-path:polygon(25% 4%,75% 4%,100% 50%,75% 96%,25% 96%,0 50%)}.cp-shape.diamond{clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
+.cp-pal{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-top:20px}
+.cp-pal button{font:inherit;border:5px solid var(--ink);border-radius:20px;background:#fff;cursor:pointer;box-shadow:0 6px 0 var(--ink);padding:0;width:clamp(72px,10vw,110px);aspect-ratio:1;display:grid;place-items:center;font-size:clamp(2.2rem,5.6vw,3.8rem)}
+.cp-pal button:active{transform:translateY(6px);box-shadow:none}
+.cp-pal button .cp-shape{width:66%;height:66%}
+.cp-hud{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:14px}
+.cp-rule{text-align:center;font-weight:800;font-size:1.5rem;color:#fff;text-shadow:2px 2px 0 var(--ink);min-height:1.4em;margin-top:14px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🧩", "Complete the Pattern");
+const $=id=>document.getElementById(id);
+const COLS={red:'#FF5A4E',blue:'#2BA8E0',green:'#4CC25E',yellow:'#FFC93C',purple:'#9B6BF2',pink:'#FF8FC7',orange:'#FF9F43'};
+const THEMES={
+ shapes:()=>{const sh=Kit.shuffle(['circle','square','tri','star','hex','diamond']);const c=Kit.shuffle(Object.keys(COLS));return Array.from({length:4},(_,i)=>({k:'s',s:sh[i],c:COLS[c[i]]}))},
+ colors:()=>{const c=Kit.shuffle(Object.keys(COLS));const s=Kit.pick(['circle','square','star','diamond']);return Array.from({length:4},(_,i)=>({k:'s',s,c:COLS[c[i]]}))},
+ animals:()=>Kit.shuffle(['🐶','🐱','🐰','🐸','🐷','🐵','🦁','🐧']).slice(0,4).map(e=>({k:'e',e})),
+ food:()=>Kit.shuffle(['🍎','🍌','🍇','🍓','🥕','🍪','🧀','🍉']).slice(0,4).map(e=>({k:'e',e})),
+ weather:()=>Kit.shuffle(['☀️','🌧️','⛄','🌈','⚡','🌙','⭐','☁️']).slice(0,4).map(e=>({k:'e',e})),
+ letters:()=>Kit.shuffle([...'ABCDEFGHKMPRST']).slice(0,4).map(e=>({k:'t',e})),
+};
+const CORES={1:['AB'],2:['AAB','ABB','ABC','AB'],3:['AABB','ABCD','ABAC','AABC','ABBC','ABCB']};
+document.querySelector('main').innerHTML=`<div class="card ln-set" id="set"><div class="row">
+ <label>Level <select id="lv" style="width:auto"><option value="1">1 · AB patterns</option><option value="2" selected>2 · AAB, ABB, ABC</option><option value="3">3 · Tricky patterns</option></select></label>
+ <label>Pictures <select id="th" style="width:auto"><option value="mix">Mix it up</option><option value="shapes">Shapes</option><option value="colors">Colors</option><option value="animals">Animals</option><option value="food">Food</option><option value="weather">Weather</option><option value="letters">Letters</option></select></label>
+ <label><input type="checkbox" id="mid"> Gaps can be in the middle</label><button class="btn big green" id="go">Start</button></div>
+ <p class="muted" style="margin:8px 0 0">Look at the pattern. What comes in the empty spots? Tap the right piece to fill the blinking spot.</p></div>
+<div id="game" hidden><div class="cp-hud"><span class="ln-pill" id="pr"></span><span class="ln-pill">⭐ <b id="sc">0</b></span><span class="ln-pill">🔥 <b id="st">0</b></span><button class="btn white small" id="say">🗣️ Say the pattern</button><button class="btn white small" id="back">⚙️</button></div>
+<div class="cp-train" id="tr"></div><div class="cp-rule" id="rule"></div><div class="cp-pal" id="pal"></div></div>`;
+let core,unit,seq,gaps,gi,score=0,streak=0,n=0,errs;
+$('go').onclick=()=>{$('set').hidden=true;$('game').hidden=false;score=0;streak=0;n=0;next()};
+$('back').onclick=()=>{$('game').hidden=true;$('set').hidden=false};
+const view=p=>p.k==='s'?`<span class="cp-shape ${p.s}" style="--c:${p.c}"></span>`:p.k==='t'?`<b style="font-size:.85em">${p.e}</b>`:p.e;
+const same=(a,b)=>a.k===b.k&&a.s===b.s&&a.c===b.c&&a.e===b.e;
+function next(){n++;errs=0;const lv=+$('lv').value;core=Kit.pick(CORES[lv]);const th=$('th').value==='mix'?Kit.pick(Object.keys(THEMES)):$('th').value;const pieces=THEMES[th]();
+ const letters=[...new Set(core)];unit=[...core].map(ch=>pieces[letters.indexOf(ch)]);
+ const reps=core.length>=4?2:3;seq=[];for(let r=0;r<reps;r++)seq.push(...unit);seq.push(...unit.slice(0,Math.min(core.length,Kit.rand(1,3))));
+ const L=seq.length;let g=[];const k=Math.min(3,Kit.rand(1,lv+1));
+ if($('mid').checked||lv===3){const cand=Kit.shuffle([...Array(L).keys()].filter(i=>i>=core.length));g=cand.slice(0,k)}else{g=[...Array(k).keys()].map(i=>L-1-i)}
+ gaps=g.sort((a,b)=>a-b);gi=0;
+ const uniq=letters.map(ch=>pieces[letters.indexOf(ch)]);const extra=pieces.filter(p=>!uniq.includes(p)).slice(0,Math.max(0,4-uniq.length));
+ $('pal').innerHTML=Kit.shuffle([...uniq,...extra]).map((p,i)=>`<button data-p='${JSON.stringify(p)}' aria-label="piece">${view(p)}</button>`).join('');
+ $('rule').textContent='';draw();window.__t={need:()=>seq[gaps[gi]]}}
+function draw(){$('tr').innerHTML=seq.map((p,i)=>{const g=gaps.indexOf(i);if(g<0||g<gi)return `<div class="cp-cell ${g>=0?'right':''}">${view(p)}</div>`;return `<div class="cp-cell gap ${g===gi?'now':''}">?</div>`}).join('');
+ $('pr').textContent=`Pattern ${n}`;$('sc').textContent=score;$('st').textContent=streak}
+$('pal').onclick=e=>{const b=e.target.closest('button');if(!b||gi>=gaps.length)return;const p=JSON.parse(b.dataset.p);
+ if(same(p,seq[gaps[gi]])){gi++;Kit.tone(620+gi*90,.14,'triangle',.25);draw();
+  if(gi>=gaps.length){streak++;score+=errs?1:2;draw();$('rule').textContent=`🎉 It's an ${core.split('').join('-')} pattern!`;Kit.tada();if(streak%5===0)Kit.confetti(60);setTimeout(next,1600)}}
+ else{errs++;streak=0;Learn.flash(b,false);$('st').textContent=0}};
+$('say').onclick=()=>{const SN={tri:'triangle',hex:'hexagon'};const names=seq.map((p,i)=>{const g=gaps.indexOf(i);if(g>=gi)return 'what comes next?';return p.k==='s'?`${Object.keys(COLS).find(k=>COLS[k]===p.c)} ${SN[p.s]||p.s}`:p.e});
+ try{const u=new SpeechSynthesisUtterance(names.join(', '));u.rate=.9;speechSynthesis.cancel();speechSynthesis.speak(u)}catch{}};
+</script>
+</body></html>

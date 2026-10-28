@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Mystery Sound Game</title>
+<style>
+.ms-play{display:grid;place-items:center;margin:6px 0 16px}
+.ms-speaker{font:inherit;width:clamp(150px,24vw,220px);aspect-ratio:1;border-radius:50%;border:7px solid var(--ink);background:radial-gradient(circle,#fff 0 30%,var(--grape) 31% 60%,#7A4BD8 61%);box-shadow:0 10px 0 var(--ink);cursor:pointer;font-size:4rem;position:relative}
+.ms-speaker:active{transform:translateY(10px);box-shadow:none}
+.ms-speaker.on{animation:mspulse .5s infinite}@keyframes mspulse{50%{transform:scale(1.06);box-shadow:0 10px 0 var(--ink),0 0 0 18px rgba(155,107,242,.3)}}
+.ms-ch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;max-width:820px;margin:0 auto}
+.ms-ch button{font:inherit;font-weight:700;font-size:clamp(1.1rem,2.6vw,1.6rem);border:5px solid var(--ink);border-radius:20px;background:#fff;padding:12px;cursor:pointer;box-shadow:0 6px 0 var(--ink);display:flex;align-items:center;gap:12px;color:var(--ink)}
+.ms-ch button span{font-size:2.4em;line-height:1}
+.ms-ch button:active{transform:translateY(6px);box-shadow:none}
+.ms-ch button.yes{background:var(--grass)}.ms-ch button.no{background:#FFD9D4;opacity:.6}
+.ms-info{text-align:center;font-weight:700;font-size:1.2rem;margin-bottom:10px}
+.ms-wave{display:flex;gap:4px;justify-content:center;height:40px;align-items:center;margin-top:10px}
+.ms-wave i{width:8px;border-radius:4px;background:var(--ink);height:8px;transition:height .1s}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🎵", "Mystery Sound Game");
+const $=id=>document.getElementById(id);
+/* Every sound is made right here with the Web Audio API, so there are no sound files to download. */
+let AC;const ac=()=>{AC=AC||new (window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();return AC};
+let master;const out=()=>{const a=ac();if(!master){master=a.createGain();master.gain.value=.6;const an=a.createAnalyser();an.fftSize=64;master.connect(an);an.connect(a.destination);master.an=an}return master};
+let noiseBuf;const noise=()=>{const a=ac();if(!noiseBuf){noiseBuf=a.createBuffer(1,a.sampleRate*2,a.sampleRate);const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1}const s=a.createBufferSource();s.buffer=noiseBuf;s.loop=true;return s};
+function osc(type,f,t0,dur,vol=.3,attack=.01){const a=ac(),o=a.createOscillator(),g=a.createGain();o.type=type;o.frequency.setValueAtTime(f,t0);g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(vol,t0+attack);g.gain.exponentialRampToValueAtTime(.001,t0+dur);o.connect(g).connect(out());o.start(t0);o.stop(t0+dur+.05);return o}
+function nz(t0,dur,{type='lowpass',f=1000,q=1,vol=.3,attack=.05}={}){const a=ac(),s=noise(),fl=a.createBiquadFilter(),g=a.createGain();fl.type=type;fl.frequency.value=f;fl.Q.value=q;g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(vol,t0+attack);g.gain.exponentialRampToValueAtTime(.001,t0+dur);s.connect(fl).connect(g).connect(out());s.start(t0);s.stop(t0+dur+.05);return {fl,g}}
+const SOUNDS={
+ siren:['🚑','Ambulance siren',t=>{const o=osc('sawtooth',700,t,3,.18,.05);for(let i=0;i<6;i++){o.frequency.linearRampToValueAtTime(i%2?700:1300,t+.5*(i+1))}}],
+ heart:['❤️','Heartbeat',t=>{for(let i=0;i<4;i++){const b=t+i*.8;osc('sine',60,b,.18,.9);osc('sine',55,b+.22,.2,.7)}}],
+ clock:['⏰','Clock ticking',t=>{for(let i=0;i<8;i++)nz(t+i*.4,.03,{type:'bandpass',f:i%2?2600:3400,q:8,vol:.9,attack:.002})}],
+ doorbell:['🔔','Doorbell',t=>{osc('sine',659,t,1.3,.45);osc('sine',523,t+.6,1.8,.45)}],
+ phone:['☎️','Phone ringing',t=>{for(let r=0;r<2;r++)for(let i=0;i<20;i++){const b=t+r*1.6+i*.05;osc('square',i%2?480:440,b,.05,.08,.002)}}],
+ rain:['🌧️','Rain',t=>{nz(t,3.2,{type:'highpass',f:3000,vol:.25,attack:.4});for(let i=0;i<40;i++)nz(t+Math.random()*3,.02,{type:'bandpass',f:4000+Math.random()*3000,q:4,vol:.5,attack:.002})}],
+ thunder:['⛈️','Thunder',t=>{const n=nz(t,3.4,{f:200,vol:.9,attack:.08});n.fl.frequency.setValueAtTime(900,t);n.fl.frequency.exponentialRampToValueAtTime(90,t+2.5);nz(t+.6,2.4,{f:120,vol:.8,attack:.3})}],
+ waves:['🌊','Ocean waves',t=>{for(let i=0;i<2;i++){const n=nz(t+i*1.7,1.9,{f:600,vol:.5,attack:.9});n.fl.frequency.linearRampToValueAtTime(1600,t+i*1.7+1)}}],
+ bird:['🐦','Bird chirping',t=>{for(let i=0;i<9;i++){const b=t+i*.22+(i>4?.4:0);const o=osc('sine',2600,b,.12,.25);o.frequency.exponentialRampToValueAtTime(4200,b+.08)}}],
+ horn:['🚗','Car horn',t=>{[0,.5].forEach(d=>{osc('square',400,t+d,d?.9:.35,.12);osc('square',500,t+d,d?.9:.35,.12)})}],
+ drum:['🥁','Drum beat',t=>{for(let i=0;i<8;i++){const b=t+i*.3;if(i%2===0){const o=osc('sine',150,b,.25,.9,.003);o.frequency.exponentialRampToValueAtTime(45,b+.2)}else nz(b,.15,{type:'highpass',f:1500,vol:.6,attack:.002})}}],
+ whistle:['🏁','Coach\'s whistle',t=>{for(let i=0;i<2;i++){const o=osc('sine',2900,t+i*.55,i?1:.3,.3);const l=ac().createOscillator(),lg=ac().createGain();l.frequency.value=28;lg.gain.value=120;l.connect(lg).connect(o.frequency);l.start(t+i*.55);l.stop(t+i*.55+1.1)}}],
+ schoolbell:['🛎️','School bell',t=>{for(let i=0;i<34;i++){osc('triangle',1180,t+i*.07,.09,.25,.002);osc('sine',2360,t+i*.07,.06,.08,.002)}}],
+ owl:['🦉','Owl hooting',t=>{[0,.55,1.3].forEach(d=>{const o=osc('sine',360,t+d,.45,.5,.08);o.frequency.linearRampToValueAtTime(330,t+d+.4)})}],
+ cat:['🐱','Cat meowing',t=>{const a=ac(),o=a.createOscillator(),f=a.createBiquadFilter(),g=a.createGain();o.type='sawtooth';o.frequency.setValueAtTime(500,t);o.frequency.linearRampToValueAtTime(820,t+.25);o.frequency.linearRampToValueAtTime(430,t+.9);f.type='bandpass';f.Q.value=3;f.frequency.setValueAtTime(900,t);f.frequency.linearRampToValueAtTime(2200,t+.3);f.frequency.linearRampToValueAtTime(700,t+.9);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.6,t+.1);g.gain.linearRampToValueAtTime(0,t+.95);o.connect(f).connect(g).connect(out());o.start(t);o.stop(t+1)}],
+ bee:['🐝','Bee buzzing',t=>{const o=osc('sawtooth',210,t,2.6,.18,.3);const l=ac().createOscillator(),lg=ac().createGain();l.frequency.value=7;lg.gain.value=18;l.connect(lg).connect(o.frequency);l.start(t);l.stop(t+2.7)}],
+ piano:['🎹','Piano scale',t=>{[262,294,330,349,392,440,494,523].forEach((f,i)=>{osc('triangle',f,t+i*.25,.6,.35,.005);osc('sine',f*2,t+i*.25,.3,.08,.005)})}],
+ alarm:['🚨','Smoke alarm',t=>{for(let i=0;i<3;i++)for(let j=0;j<3;j++)osc('square',3100,t+i*1+j*.22,.15,.07,.003)}],
+ cuckoo:['🕰️','Cuckoo clock',t=>{for(let i=0;i<3;i++){osc('sine',784,t+i*.7,.25,.45);osc('sine',622,t+i*.7+.25,.35,.45)}}],
+ train:['🚂','Train whistle',t=>{[0,1.1].forEach(d=>[392,466,587].forEach(f=>{osc('sawtooth',f,t+d,d?1.4:.8,.06,.08)}))}],
+ rocket:['🚀','Rocket launch',t=>{const n=nz(t,3.4,{f:200,vol:.8,attack:.6});n.fl.frequency.exponentialRampToValueAtTime(2600,t+3)}],
+ ball:['🏓','Bouncing ball',t=>{let b=t,gap=.5;for(let i=0;i<10;i++){osc('sine',900-i*30,b,.06,.6,.002);b+=gap;gap*=.78}}],
+ water:['💧','Dripping water',t=>{for(let i=0;i<6;i++){const b=t+i*.5+Math.random()*.1;const o=osc('sine',900,b,.12,.5,.002);o.frequency.exponentialRampToValueAtTime(1900,b+.08)}}],
+ knock:['🚪','Knock on a door',t=>{[0,.2,.4,1.1,1.3].forEach(d=>{const o=osc('sine',180,t+d,.12,.9,.002);o.frequency.exponentialRampToValueAtTime(80,t+d+.1);nz(t+d,.05,{f:900,vol:.5,attack:.002})})}],
+};
+const playId=id=>{const a=ac(),t=a.currentTime+.05;SOUNDS[id][2](t)};
+document.querySelector('main').innerHTML=`<div class="card ln-set" id="set"><div class="row">${Learn.teamPicker('nT',2)}
+ <label>Rounds <select id="nR" style="width:auto"><option>5</option><option selected>10</option><option>15</option><option value="99">All of them</option></select></label>
+ <label>🎤 Add my own sound files <input type="file" id="mine" accept="audio/*" multiple style="max-width:240px"></label>
+ <button class="btn big green" id="go">Start</button></div>
+ <p class="muted" style="margin:8px 0 0">Listen to the mystery sound and pick what it is. Get it on the first listen for 3 points. Every replay drops the points by one. Your own sound files are named after the file, like <i>dog-bark.mp3</i>.</p>
+ <details style="margin-top:10px"><summary style="cursor:pointer;font-weight:700">🔊 Which sounds can be in the game? <span class="muted" style="font-weight:400">(tap a sound to hear it)</span></summary><div class="row" id="pickS" style="margin-top:10px"></div></details></div>
+<div id="game" hidden><div id="tm"></div><div class="ms-info" id="info"></div><div class="ms-play"><button class="ms-speaker" id="spk" aria-label="Play the sound">🔊</button><div class="ms-wave" id="wave">${'<i></i>'.repeat(18)}</div></div>
+<div class="ms-ch" id="ch"></div><div class="row" style="justify-content:center;margin-top:14px"><button class="btn grape" id="nx" hidden>Next sound ➜</button></div></div>`;
+const OFF=Kit.get('ms-off',[]);
+$('pickS').innerHTML=Object.entries(SOUNDS).map(([id,[e,n]])=>`<label class="btn white small" style="display:inline-flex;gap:6px;align-items:center"><input type="checkbox" data-s="${id}" ${OFF.includes(id)?'':'checked'}> <span data-hear="${id}">${e} ${n}</span></label>`).join('');
+$('pickS').onclick=e=>{const h=e.target.closest('[data-hear]');if(h){e.preventDefault();playId(h.dataset.hear)}};
+$('pickS').onchange=()=>Kit.set('ms-off',[...document.querySelectorAll('[data-s]')].filter(c=>!c.checked).map(c=>c.dataset.s));
+let T,deck,idx,cur,plays,done,mine=[];
+$('go').onclick=()=>{ac();mine=[...$('mine').files].map((f,i)=>({id:'m'+i,e:'🎧',n:f.name.replace(/\.[^.]+$/,'').replace(/[-_]+/g,' '),url:URL.createObjectURL(f)}));
+ const on=Object.keys(SOUNDS).filter(id=>!Kit.get('ms-off',[]).includes(id)).map(id=>({id,e:SOUNDS[id][0],n:SOUNDS[id][1]}));
+ const all=[...on,...mine];if(all.length<4)return alert('Turn on at least 4 sounds.');
+ deck=Kit.shuffle(all).slice(0,Math.min(+$('nR').value,all.length));deck.pool=all;
+ $('set').hidden=true;$('game').hidden=false;T=Learn.teams($('tm'),+$('nT').value);idx=0;round()};
+function play(){plays++;$('spk').classList.add('on');if(cur.url){const au=new Audio(cur.url);au.play();au.onended=()=>$('spk').classList.remove('on');setTimeout(()=>$('spk').classList.remove('on'),8000)}else{playId(cur.id);setTimeout(()=>$('spk').classList.remove('on'),3300)}info()}
+function round(){cur=deck[idx];plays=0;done=false;const wrong=Kit.shuffle(deck.pool.filter(s=>s.id!==cur.id)).slice(0,3);
+ const ch=Kit.shuffle([cur,...wrong]);$('ch').innerHTML=ch.map(s=>`<button data-id="${s.id}"><span>${s.e}</span>${Kit.esc(s.n)}</button>`).join('');
+ $('nx').hidden=true;info();window.__t={answer:cur.id};setTimeout(play,350)}
+const worth=()=>Math.max(1,4-plays);
+function info(){$('info').innerHTML=`Sound ${idx+1} of ${deck.length}${T.n>1?` · <span class="ln-pill" style="background:${T.colors[T.cur]};color:#fff">${Kit.esc(T.names[T.cur])} team</span>`:''} · worth <b>${Learn.pts(worth())}</b> <span class="muted">(${plays} ${plays===1?'listen':'listens'})</span>`}
+$('spk').onclick=()=>{if(!done)play();else if(cur)play()};
+$('ch').onclick=e=>{const b=e.target.closest('button');if(!b||done||b.classList.contains('no'))return;
+ if(b.dataset.id===cur.id){b.classList.add('yes');T.add(worth(),T.cur,b);done=true;Kit.tada();Kit.confetti(40);T.next();finishRound()}
+ else{b.classList.add('no');Learn.flash(b,false);T.next();info()}};
+function finishRound(){$('nx').hidden=false;$('nx').textContent=idx>=deck.length-1?'🏁 Finish':'Next sound ➜';document.querySelectorAll('#ch button').forEach(b=>{if(b.dataset.id===cur.id)b.classList.add('yes')});info()}
+$('nx').onclick=()=>{if(idx>=deck.length-1){Learn.finish('🎵',T.n>1?T.winner():'Great listening!',`You named ${deck.length} sounds.`,()=>{$('game').hidden=true;$('set').hidden=false});return}idx++;round()};
+// little sound bars that bounce with the audio
+(function bars(){requestAnimationFrame(bars);if(!master||$('game').hidden)return;const d=new Uint8Array(master.an.frequencyBinCount);master.an.getByteFrequencyData(d);[...$('wave').children].forEach((b,i)=>b.style.height=8+d[i+1]/255*32+'px')})();
+</script>
+</body></html>

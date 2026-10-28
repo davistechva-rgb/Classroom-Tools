@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Find the Clue</title>
+<style>
+.fc-wrap{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:860px){.fc-wrap{grid-template-columns:1fr}}
+.fc-scene{position:relative;aspect-ratio:16/10;border:7px solid var(--ink);border-radius:24px;overflow:hidden;box-shadow:8px 8px 0 var(--ink);background:var(--bg);cursor:none;touch-action:none;user-select:none}
+.fc-it{position:absolute;transform:translate(-50%,-50%) rotate(var(--r));font-size:var(--s);line-height:1;pointer-events:none}
+.fc-it.found{animation:fcfound .8s forwards}@keyframes fcfound{40%{transform:translate(-50%,-50%) scale(1.8)}100%{transform:translate(-50%,-50%) scale(1.2);filter:drop-shadow(0 0 10px #fff)}}
+.fc-dark{position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle var(--rad) at var(--x) var(--y),transparent 0 70%,rgba(5,8,20,.93) 100%);transition:background .1s}
+.fc-dark.off{background:none}
+.fc-ring{position:absolute;width:calc(var(--rad)*2);height:calc(var(--rad)*2);border:5px solid rgba(255,240,170,.8);border-radius:50%;transform:translate(-50%,-50%);left:var(--x);top:var(--y);pointer-events:none;box-shadow:0 0 30px rgba(255,240,170,.35)}
+.fc-mark{position:absolute;transform:translate(-50%,-50%);font-size:2rem;pointer-events:none;animation:pop .4s}
+.fc-list{display:grid;gap:10px}
+.fc-clue{display:flex;gap:10px;align-items:center;background:#fff;border:4px solid var(--ink);border-radius:16px;padding:8px 12px;font-weight:700;box-shadow:0 4px 0 var(--ink);font-size:clamp(.95rem,1.9vw,1.15rem)}
+.fc-clue .ic{font-size:1.8rem;width:2.2rem;text-align:center;filter:grayscale(1) brightness(.2) opacity(.5)}
+.fc-clue.got{background:#C9F1D2}.fc-clue.got .ic{filter:none}
+.fc-clue.now{outline:5px solid var(--sun)}
+.fc-hud{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🔎", "Find the Clue");
+const SCENES={
+ bedroom:{name:'🛏️ Messy bedroom',bg:'linear-gradient(#9ED0F0 0 62%,#C99A5C 62%)',decoys:['🧦','👕','🧸','📚','🎮','🛏️','🪀','🧩','👟','🎒','🖍️','🧢','🪁','🛹','🎲','📦','🧺','🪑'],
+  clues:[['⏰','Something that wakes you up in the morning'],['🔦','Something that lights up the dark'],['🔑','Something that opens a lock'],['📖','A diary with a secret in it'],['🪙','A coin someone dropped'],['🎟️','A ticket to the show']]},
+ park:{name:'🌳 City park',bg:'linear-gradient(#BDE7FF 0 40%,#7CCB6A 40%)',decoys:['🌳','🌲','🌷','🌼','🐿️','🦆','🐕','🚲','🪨','🍂','🌿','🐦','🛝','🪺','🍃','🌻','🐛','🍄'],
+  clues:[['🧢','A lost baseball cap'],['🪁','A kite that got away'],['🎈','A balloon from a party'],['📷','Someone\'s camera'],['🗺️','A map of the park'],['🥪','A half-eaten sandwich']]},
+ ocean:{name:'🌊 Under the sea',bg:'linear-gradient(#1FA2D6,#0B5D8C 75%,#E8D29A 75%)',decoys:['🐟','🐠','🐡','🪸','🐚','🦀','🪼','🐙','🦑','🌿','🫧','🐬','🐢','🦐','🐳','🦈','🪨','⚓'],
+  clues:[['💎','A sparkling jewel'],['🗝️','An old rusty key'],['🧭','A compass to find north'],['🍾','A message in a bottle'],['👑','A sunken crown'],['🔱','Neptune\'s trident']]},
+ space:{name:'🚀 Outer space',bg:'radial-gradient(circle at 70% 30%,#3B2E7E,#0E1035 70%)',decoys:['⭐','🌟','✨','🪐','🌙','☄️','🌍','🛰️','🌑','💫','🌕','🌌','🔭','🌠','🌒','⭐','✨','🌟'],
+  clues:[['👽','A friendly alien'],['🚀','A lost rocket'],['👨‍🚀','An astronaut floating by'],['🛸','A flying saucer'],['🌮','A snack that floated out of the space station'],['🔋','A spare battery for the ship']]},
+};
+const $=id=>document.getElementById(id);
+document.querySelector('main').innerHTML=`<div class="card ln-set" id="set"><div class="row"><label>Scene <select id="sc" style="width:auto">${Object.entries(SCENES).map(([k,v])=>`<option value="${k}">${v.name}</option>`).join('')}</select></label>
+ <label>Flashlight <select id="rad" style="width:auto"><option value="130">Big</option><option value="95" selected>Medium</option><option value="65">Tiny (hard!)</option></select></label>
+ <label>Clutter <select id="cl" style="width:auto"><option value="20">Some</option><option value="34" selected>Lots</option><option value="50">Tons</option></select></label>${Learn.teamPicker('nT',0)}<button class="btn big green" id="go">Start</button></div>
+ <p class="muted" style="margin:8px 0 0">The lights are out! Move the flashlight around the scene (drag a finger, or move the mouse) and tap each clue on the list when you spot it. The shadow next to each clue is a hint. Peeking with the lights on makes the next find worth less.</p></div>
+<div id="game" hidden><div id="tm"></div><div class="fc-hud"><span class="ln-pill" id="fd"></span><span class="ln-pill">⏱ <b id="tt">0:00</b></span><span class="ln-pill">❌ <b id="ms">0</b> misses</span><button class="btn white small" id="lights">💡 Lights on (peek)</button><button class="btn white small" id="back">⚙️</button></div>
+<div class="fc-wrap"><div class="fc-scene" id="scene"><div class="fc-dark" id="dark"></div><div class="fc-ring" id="ring"></div></div><div class="fc-list" id="list"></div></div></div>`;
+let S,clues,found,t0,tv,misses,T,lightsUsed;
+$('go').onclick=()=>{S=SCENES[$('sc').value];$('set').hidden=true;$('game').hidden=false;T=Learn.teams($('tm'),+$('nT').value);build()};
+$('back').onclick=()=>{clearInterval(tv);$('game').hidden=true;$('set').hidden=false};
+function spots(n){const pts=[];let tries=0;while(pts.length<n&&tries<4000){tries++;const p=[Kit.rand(5,95),Kit.rand(7,93)];if(pts.every(q=>Math.hypot((q[0]-p[0])*1.6,q[1]-p[1])>9))pts.push(p)}return pts}
+function build(){const sc=$('scene');sc.style.setProperty('--bg',S.bg);sc.querySelectorAll('.fc-it,.fc-mark').forEach(e=>e.remove());
+ clues=Kit.shuffle(S.clues).slice(0,5);const nD=+$('cl').value;const P=spots(nD+clues.length);
+ const items=[...clues.map((c,i)=>({e:c[0],clue:i})),...Array.from({length:nD},()=>({e:Kit.pick(S.decoys)}))];
+ Kit.shuffle(items).forEach((it,k)=>{if(!P[k])return;const d=document.createElement('div');d.className='fc-it';d.textContent=it.e;d.style.left=P[k][0]+'%';d.style.top=P[k][1]+'%';d.style.setProperty('--r',Kit.rand(-25,25)+'deg');d.style.setProperty('--s',(it.clue!=null?Kit.rand(26,34):Kit.rand(26,44))/10+'rem');if(it.clue!=null)d.dataset.c=it.clue;sc.insertBefore(d,$('dark'))});
+ found=new Set();misses=0;lightsUsed=0;$('list').innerHTML=clues.map((c,i)=>`<div class="fc-clue" data-i="${i}"><span class="ic">${c[0]}</span>${Kit.esc(c[1])}</div>`).join('');
+ setLight(50,50);$('dark').classList.remove('off');hud();t0=Date.now();clearInterval(tv);tv=setInterval(hud,500);window.__t={pos:()=>[...sc.querySelectorAll('[data-c]')].map(e=>({c:+e.dataset.c,x:parseFloat(e.style.left),y:parseFloat(e.style.top)}))}}
+function setLight(x,y){const sc=$('scene');sc.style.setProperty('--x',x+'%');sc.style.setProperty('--y',y+'%');sc.style.setProperty('--rad',$('rad').value+'px')}
+function hud(){const s=Math.floor((Date.now()-t0)/1000);$('tt').textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;$('fd').textContent=`🔎 ${found.size} of ${clues.length} found`;$('ms').textContent=misses}
+const sceneXY=e=>{const r=$('scene').getBoundingClientRect();return [(e.clientX-r.left)/r.width*100,(e.clientY-r.top)/r.height*100,e.clientX-r.left,e.clientY-r.top]};
+$('scene').addEventListener('pointermove',e=>{const [x,y]=sceneXY(e);setLight(x,y)});
+$('scene').addEventListener('pointerdown',e=>{const [x,y,px,py]=sceneXY(e);setLight(x,y);
+ const hit=[...$('scene').querySelectorAll('.fc-it[data-c]')].find(d=>{if(found.has(+d.dataset.c))return false;const r=d.getBoundingClientRect(),s=$('scene').getBoundingClientRect();return Math.hypot(r.left+r.width/2-s.left-px,r.top+r.height/2-s.top-py)<Math.max(r.width,r.height)*.7});
+ if(hit){const c=+hit.dataset.c;found.add(c);hit.classList.add('found');$('list').querySelector(`[data-i="${c}"]`).classList.add('got');T.add(lightsUsed?1:2,T.cur);Kit.ding();Learn.burst('Found it!',hit,'#FFC93C');T.next();hud();
+  if(found.size===clues.length){clearInterval(tv);$('dark').classList.add('off');Learn.finish('🔦','Every clue found!',`Time: ${$('tt').textContent} · Misses: ${misses}`,()=>{$('game').hidden=true;$('set').hidden=false})}}
+ else{misses++;const m=document.createElement('div');m.className='fc-mark';m.textContent='✗';m.style.left=x+'%';m.style.top=y+'%';$('scene').appendChild(m);setTimeout(()=>m.remove(),700);Kit.tone(200,.15,'triangle',.15);hud()}});
+$('lights').onclick=async()=>{lightsUsed++;$('dark').classList.add('off');$('ring').hidden=true;await Kit.sleep(900);if(found.size<clues.length){$('dark').classList.remove('off');$('ring').hidden=false}};
+</script>
+</body></html>

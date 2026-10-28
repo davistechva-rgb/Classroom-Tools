@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Match-the-Pairs Game</title>
+<style>
+.mp2-board{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(60px,.6fr) minmax(0,1fr);gap:0;background:#fff;border:5px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);padding:clamp(12px,2.4vw,24px)}
+.mp2-col{display:flex;flex-direction:column;gap:12px;z-index:2}
+.mp2-it{position:relative;display:flex;align-items:center;min-height:58px;border:4px solid var(--ink);border-radius:16px;background:#F4FAFF;padding:6px 14px;font-weight:700;font-size:clamp(1rem,2vw,1.35rem);cursor:pointer;user-select:none;touch-action:none;color:var(--ink)}
+.mp2-col.R .mp2-it{justify-content:flex-start}.mp2-col.L .mp2-it{justify-content:flex-end;text-align:right}
+.mp2-it .dot{position:absolute;top:50%;width:22px;height:22px;border-radius:50%;background:var(--ink);border:4px solid #fff;box-shadow:0 0 0 3px var(--ink);transform:translateY(-50%)}
+.mp2-col.L .dot{right:-16px}.mp2-col.R .dot{left:-16px}
+.mp2-it.sel{background:var(--sun)}.mp2-it.linked{background:#fff}
+.mp2-it.ok{background:#C9F1D2}.mp2-it.off{background:#FFD9D4}
+.mp2-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1}
+.mp2-svg line{stroke-width:7;stroke-linecap:round}
+.mp2-top{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center;margin-bottom:14px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🔗", "Match-the-Pairs Game");
+const DEF=`# Animals and their babies
+Cow | Calf
+Dog | Puppy
+Cat | Kitten
+Frog | Tadpole
+Kangaroo | Joey
+Bear | Cub
+Sheep | Lamb
+# Shapes and sides
+Triangle | 3 sides
+Square | 4 equal sides
+Pentagon | 5 sides
+Hexagon | 6 sides
+Octagon | 8 sides
+Circle | No straight sides
+# Opposites
+Hot | Cold
+Up | Down
+Fast | Slow
+Happy | Sad
+Day | Night
+Open | Closed
+# Planets and facts
+Mercury | Closest to the Sun
+Venus | Hottest planet
+Earth | The planet we live on
+Mars | The red planet
+Jupiter | The biggest planet
+Saturn | Famous for its rings`;
+const $=id=>document.getElementById(id);
+document.querySelector('main').innerHTML=`<div class="card ln-set" id="set"><div class="row"><label>Set <select id="pick" style="width:auto"></select></label>
+ <label>Pairs at a time <select id="per" style="width:auto"><option>4</option><option selected>6</option><option>8</option></select></label>${Learn.teamPicker('nT',0)}<button class="btn big green" id="go">Start</button></div>
+ <p class="muted" style="margin:8px 0 0">Draw a line from each word on the left to its partner on the right. Drag from one dot to another, or tap one side and then the other. Press Check when every line is drawn.</p></div>
+<div id="game" hidden><div id="tm"></div><div class="mp2-top"><b id="ti" style="font-size:1.4rem;color:#fff;text-shadow:2px 2px 0 var(--ink)"></b><span class="ln-pill" id="info"></span><button class="btn green" id="chk">✓ Check</button><button class="btn white" id="clr">↺ Erase lines</button><button class="btn grape" id="nx">Next set ➜</button><button class="btn white" id="back">⚙️</button></div>
+<div class="mp2-board" id="bd"><svg class="mp2-svg" id="svg"></svg><div class="mp2-col L" id="cl"></div><div></div><div class="mp2-col R" id="cr"></div></div></div>`;
+const L=Learn.list($('set'),{key:'pairs',label:'My pairs',help:'One pair per line: left | right. Start a new set with a line like # Set name.',def:DEF});
+function sets(){const out=[];let cur=null;L.get().forEach(l=>{if(l.startsWith('#')){cur={name:l.slice(1).trim()||'Set',pairs:[]};out.push(cur)}else{const p=l.split('|').map(s=>s.trim());if(p[0]&&p[1]){if(!cur){cur={name:'My pairs',pairs:[]};out.push(cur)}cur.pairs.push(p)}}});return out.filter(s=>s.pairs.length>=2)}
+const refresh=()=>{$('pick').innerHTML=sets().map((s,i)=>`<option value="${i}">${Kit.esc(s.name)}</option>`).join('')};refresh();L.el.querySelector('textarea').addEventListener('change',refresh);
+let S,si,chunk,links,sel,T,checks,dragLine=null;
+$('go').onclick=()=>{S=sets();if(!S.length)return alert('Add a set with at least 2 pairs.');si=+$('pick').value||0;$('set').hidden=true;$('game').hidden=false;T=Learn.teams($('tm'),+$('nT').value);load()};
+function load(){const per=+$('per').value;chunk=Kit.shuffle(S[si].pairs).slice(0,per);links={};sel=null;checks=0;$('ti').textContent=S[si].name;
+ const ids=chunk.map((_,i)=>i);$('cl').innerHTML=Kit.shuffle(ids).map(i=>`<div class="mp2-it" data-s="L" data-i="${i}">${Kit.esc(chunk[i][0])}<span class="dot"></span></div>`).join('');
+ $('cr').innerHTML=Kit.shuffle(ids).map(i=>`<div class="mp2-it" data-s="R" data-i="${i}"><span class="dot"></span>${Kit.esc(chunk[i][1])}</div>`).join('');$('nx').hidden=S.length<2&&S[si].pairs.length<=per;draw();window.__t={n:chunk.length}}
+const center=el=>{const d=el.querySelector('.dot').getBoundingClientRect(),b=$('bd').getBoundingClientRect();return [d.left+d.width/2-b.left,d.top+d.height/2-b.top]};
+function draw(){const C=Kit.COLORS;let s='';Object.entries(links).forEach(([l,r],k)=>{const a=center($('cl').querySelector(`[data-i="${l}"]`)),b=center($('cr').querySelector(`[data-i="${r}"]`));const col=$('bd').dataset.checked?(+l===+r?'#2E8B3E':'#D9432F'):C[+l%C.length];s+=`<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="${col}"/>`});
+ if(dragLine)s+=`<line x1="${dragLine[0]}" y1="${dragLine[1]}" x2="${dragLine[2]}" y2="${dragLine[3]}" stroke="#1D2B53" stroke-dasharray="10 10"/>`;$('svg').innerHTML=s;
+ document.querySelectorAll('.mp2-it').forEach(e=>{const i=e.dataset.i,isL=e.dataset.s==='L';const on=isL?i in links:Object.values(links).includes(+i);e.classList.toggle('linked',on);e.classList.toggle('sel',sel===e)});
+ $('info').textContent=`${Object.keys(links).length} of ${chunk.length} lines drawn`}
+function link(a,b){if(a.dataset.s===b.dataset.s)return;const l=a.dataset.s==='L'?a:b,r=a.dataset.s==='L'?b:a;const li=+l.dataset.i,ri=+r.dataset.i;
+ for(const k in links)if(links[k]===ri)delete links[k];links[li]=ri;delete $('bd').dataset.checked;document.querySelectorAll('.mp2-it').forEach(e=>e.classList.remove('ok','off'));Kit.tone(600,.1,'triangle',.2);draw()}
+let down=null;
+$('bd').addEventListener('pointerdown',e=>{const it=e.target.closest('.mp2-it');if(!it)return;down={it,x:e.clientX,y:e.clientY,moved:false};$('bd').setPointerCapture(e.pointerId)});
+$('bd').addEventListener('pointermove',e=>{if(!down)return;if(!down.moved&&Math.hypot(e.clientX-down.x,e.clientY-down.y)<10)return;down.moved=true;const a=center(down.it),b=$('bd').getBoundingClientRect();dragLine=[a[0],a[1],e.clientX-b.left,e.clientY-b.top];draw()});
+$('bd').addEventListener('pointerup',e=>{if(!down)return;const it=down.it;
+ if(down.moved){dragLine=null;const el=document.elementFromPoint(e.clientX,e.clientY);const t=el&&el.closest('.mp2-it');if(t)link(it,t);else draw()}
+ else{if(sel&&sel!==it&&sel.dataset.s!==it.dataset.s){link(sel,it);sel=null}else if(sel===it){sel=null}else{if(it.dataset.s==='L'&&it.dataset.i in links&&!sel){delete links[it.dataset.i]}sel=it;Kit.tick()}draw()}down=null});
+addEventListener('resize',()=>{if(!$('game').hidden)draw()});
+$('chk').onclick=()=>{checks++;$('bd').dataset.checked=1;let ok=0;document.querySelectorAll('#cl .mp2-it').forEach(e=>{const i=+e.dataset.i;const r=links[i];const good=r===i;e.classList.toggle('ok',good);e.classList.toggle('off',r!=null&&!good);ok+=good;
+ const R=$('cr').querySelector(`[data-i="${r}"]`);if(R){R.classList.toggle('ok',good);R.classList.toggle('off',!good)}});draw();$('info').textContent=`${ok} of ${chunk.length} matched`;
+ if(ok===chunk.length){if(T.n)T.add(checks===1?3:1);Learn.finish('🔗','All matched!',checks===1?'Perfect on the first check!':`You got it in ${checks} checks.`)}else{Kit.tone(220,.25,'triangle',.18);T.next()}};
+$('clr').onclick=()=>{links={};sel=null;delete $('bd').dataset.checked;document.querySelectorAll('.mp2-it').forEach(e=>e.classList.remove('ok','off'));draw()};
+$('nx').onclick=()=>{if(S.length>1)si=(si+1)%S.length;load()};$('back').onclick=()=>{$('game').hidden=true;$('set').hidden=false;refresh()};
+</script>
+</body></html>
