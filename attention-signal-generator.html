@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Attention Signal Generator</title>
+<style>
+main{max-width:1400px}
+.as-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px}
+.as-b{font:inherit;border:6px solid var(--ink);border-radius:24px;background:var(--bc);color:#fff;cursor:pointer;box-shadow:0 7px 0 var(--ink);padding:14px 10px;display:flex;flex-direction:column;align-items:center;gap:4px;font-weight:800;font-size:1.15rem;text-shadow:2px 2px 0 rgba(0,0,0,.3)}
+.as-b span{font-size:2.8rem;line-height:1}
+.as-b small{font-size:.8rem;opacity:.9;font-weight:700}
+.as-b:active{transform:translateY(7px);box-shadow:none}
+.as-ov{position:fixed;inset:0;z-index:50;display:none;place-items:center;text-align:center;color:#fff;background:var(--oc);cursor:pointer}
+.as-ov.on{display:grid;animation:asin .35s}@keyframes asin{from{opacity:0;transform:scale(1.2)}}
+.as-ov .e{font-size:clamp(6rem,20vw,14rem);line-height:1;animation:aswig 1s ease-in-out infinite}@keyframes aswig{50%{transform:rotate(-8deg) scale(1.06)}}
+.as-ov .t{font-size:clamp(3rem,10vw,8rem);font-weight:800;text-shadow:6px 6px 0 rgba(0,0,0,.3);line-height:1}
+.as-ov .c{font-size:clamp(4rem,14vw,10rem);font-weight:800;font-variant-numeric:tabular-nums}
+.as-ov.pulse{animation:aspulse .5s 3}@keyframes aspulse{50%{filter:brightness(1.5)}}
+.as-ctl{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-bottom:16px;align-items:center}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🔔", "Attention Signal Generator");
+const $=id=>document.getElementById(id);let AC;
+const ac=()=>{AC=AC||new AudioContext();if(AC.state==='suspended')AC.resume();return AC};
+function n(f,t0,d,type='sine',v=.3,a=.005){const c=ac(),o=c.createOscillator(),g=c.createGain(),t=c.currentTime+t0;o.type=type;o.frequency.setValueAtTime(f,t);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+a);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g).connect(c.destination);o.start(t);o.stop(t+d+.05);return o}
+function noise(t0,d,f,v,type='bandpass'){const c=ac(),b=c.createBuffer(1,c.sampleRate*d,c.sampleRate),x=b.getChannelData(0);for(let i=0;i<x.length;i++)x[i]=Math.random()*2-1;const s=c.createBufferSource(),fl=c.createBiquadFilter(),g=c.createGain(),t=c.currentTime+t0;s.buffer=b;fl.type=type;fl.frequency.value=f;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+d*.4);g.gain.linearRampToValueAtTime(0,t+d);s.connect(fl).connect(g).connect(c.destination);s.start(t);return fl}
+const SIG=[
+ ['chimes','🎐','Wind chimes','Freeze and listen','#22C3E6',()=>{[1568,1319,1760,1175,1976,1397].forEach((f,i)=>{n(f,i*.18+Math.random()*.05,2.2,'sine',.18);n(f*2.76,i*.18,1,'sine',.04)})}],
+ ['xylo','🎹','Xylophone','Eyes on me','#9B6BF2',()=>{[523,659,784,1046].forEach((f,i)=>n(f,i*.16,.6,'triangle',.3))}],
+ ['gong','🥁','Gong','Stop and look up','#FF9F43',()=>{[110,165,220,277,331].forEach((f,i)=>n(f,0,4,'sine',.22/(i+1),.02));noise(0,1.5,600,.1)}],
+ ['rain','🌧️','Rainstick','Hands on top','#5DC66E',()=>{const fl=noise(0,3,2500,.25);fl.frequency.linearRampToValueAtTime(5500,ac().currentTime+3);for(let i=0;i<40;i++)n(2500+Math.random()*3000,Math.random()*2.6,.04,'sine',.08)}],
+ ['bell','🛎️','Desk bell','Voices off','#FFC93C',()=>{[0,.5].forEach(d=>{n(2093,d,1.4,'sine',.3);n(5274,d,.5,'sine',.06)})}],
+ ['harp','🪕','Harp sweep','Ready to learn','#FF8FC7',()=>{[262,330,392,523,659,784,1046,1319].forEach((f,i)=>n(f,i*.07,1.6,'triangle',.18))}],
+ ['drum','🪘','Drum roll','Freeze!','#FF6B5B',()=>{for(let i=0;i<24;i++)noise(i*.05,.06,180+i*10,.4,'lowpass');n(80,1.25,.5,'sine',.8)}],
+ ['bird','🐦','Bird song','Quiet, please','#2BC4B0',()=>{for(let i=0;i<7;i++){const o=n(2400,i*.2,.12,'sine',.22);o.frequency.exponentialRampToValueAtTime(3800,ac().currentTime+i*.2+.1)}}],
+ ['train','🚂','Train whistle','All aboard: line up!','#1D2B53',()=>{[392,466,587].forEach(f=>{n(f,0,1.2,'sawtooth',.05,.1);n(f,1.4,1.4,'sawtooth',.05,.1)})}],
+ ['sparkle','✨','Magic sparkle','Show me you\'re ready','#7B5CE6',()=>{for(let i=0;i<14;i++)n(1800+i*180+Math.random()*200,i*.06,.4,'sine',.12)}],
+];
+const st=Kit.get('as-set',{count:5,flash:true,vol:1});
+document.querySelector('main').innerHTML=`<div class="as-ctl"><button class="btn big green" id="rand">🎲 Surprise me</button><label class="ln-pill">Countdown <select id="cnt" style="width:auto;border-width:2px;padding:2px 8px"><option value="0">None</option><option value="3">3</option><option value="5">5</option><option value="10">10</option></select></label><label class="ln-pill"><input type="checkbox" id="fl"> Flash the screen</label></div>
+<div class="as-grid" id="g">${SIG.map((s,i)=>`<button class="as-b" data-i="${i}" style="--bc:${s[4]}"><span>${s[1]}</span>${s[2]}<small>“${Kit.esc(s[3])}”</small></button>`).join('')}</div>
+<p class="muted" style="text-align:center">Every sound is made right in the browser. Tap anywhere on the big screen to close it. Keys 1 to 9 and 0 play the signals.</p><div class="as-ov" id="ov"></div>`;
+$('cnt').value=st.count;$('fl').checked=st.flash;['cnt','fl'].forEach(id=>$(id).onchange=()=>{st.count=+$('cnt').value;st.flash=$('fl').checked;Kit.set('as-set',st)});
+let tv=null;
+function play(i){const s=SIG[i];s[5]();window.__t={last:s[0]};if(!st.flash&&!st.count)return;clearInterval(tv);const o=$('ov');o.style.setProperty('--oc',s[4]);
+ let c=st.count;o.innerHTML=`<div><div class="e">${s[1]}</div><div class="t">${Kit.esc(s[3])}</div>${c?`<div class="c" id="cc">${c}</div>`:''}</div>`;o.className='as-ov on'+(st.flash?' pulse':'');
+ if(c){tv=setInterval(()=>{c--;const e=$('cc');if(!e)return clearInterval(tv);if(c>0){e.textContent=c;n(880,0,.08,'square',.08)}else{e.textContent='👀';n(1318,0,.3,'triangle',.2);clearInterval(tv);setTimeout(()=>o.classList.remove('on'),1500)}},1000)}
+ else setTimeout(()=>o.classList.remove('on'),2600)}
+$('g').onclick=e=>{const b=e.target.closest('.as-b');if(b)play(+b.dataset.i)};
+$('rand').onclick=()=>play(Kit.rand(0,SIG.length-1));
+$('ov').onclick=()=>{clearInterval(tv);$('ov').classList.remove('on')};
+addEventListener('keydown',e=>{const k=e.key==='0'?9:+e.key-1;if(e.key>='0'&&e.key<='9'&&SIG[k])play(k);if(e.key==='Escape')$('ov').click()});
+</script>
+</body></html>

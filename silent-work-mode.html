@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Silent Work Mode</title>
+<style>
+main{max-width:1500px}
+.sw-scr{position:relative;height:min(66vh,640px);border:7px solid var(--ink);border-radius:30px;overflow:hidden;box-shadow:9px 9px 0 var(--ink);background:linear-gradient(160deg,#1E3A6E,#3B2E7E 60%,#1D2B53);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+body.fs .sw-scr{height:calc(100vh - 150px)}
+.sw-b{position:absolute;border-radius:50%;background:radial-gradient(circle at 30% 30%,rgba(255,255,255,.35),rgba(255,255,255,.04));animation:swfl linear infinite;pointer-events:none}
+@keyframes swfl{from{transform:translateY(110%)}to{transform:translateY(-130vh)}}
+.sw-e{font-size:clamp(4rem,11vw,8rem);line-height:1;animation:swbr 6s ease-in-out infinite}@keyframes swbr{50%{transform:scale(1.08)}}
+.sw-t{font-size:clamp(2.6rem,7vw,5.4rem);font-weight:800;letter-spacing:.04em;text-shadow:0 0 24px rgba(150,180,255,.6)}
+.sw-s{font-size:clamp(1.2rem,2.8vw,2rem);font-weight:600;opacity:.9;max-width:30ch}
+.sw-tm{margin-top:14px;font-size:clamp(2.4rem,6vw,4.4rem);font-weight:800;font-variant-numeric:tabular-nums;background:rgba(255,255,255,.12);border:4px solid rgba(255,255,255,.5);border-radius:22px;padding:0 26px}
+.sw-sh{pointer-events:none;position:absolute;inset:0;display:none;place-items:center;background:rgba(255,201,60,.92);color:var(--ink);font-weight:800;font-size:clamp(3rem,9vw,7rem);z-index:5;text-shadow:none;flex-direction:column}
+.sw-sh.on{display:flex;animation:swsh 2.4s forwards}@keyframes swsh{0%{opacity:0}10%,80%{opacity:1}100%{opacity:0}}
+.sw-sh small{font-size:.3em}
+.sw-stars{position:absolute;top:14px;left:18px;font-size:1.6rem;font-weight:800}
+.sw-ctl{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px;align-items:center}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="mic.js"></script>
+<script>
+Kit.mount("🔇", "Silent Work Mode");
+const $=id=>document.getElementById(id);
+const st=Kit.get('sw-set',{mins:15,msg:'Work on your own. If you\'re stuck, raise your hand and wait.',listen:false,limit:55});
+document.querySelector('main').innerHTML=`<div class="sw-scr" id="scr"><span class="sw-stars" id="stars"></span><div class="sw-e">🤫</div><div class="sw-t">Silent work time</div><div class="sw-s" id="msg"></div><div class="sw-tm" id="tm"></div><div class="sw-sh" id="sh">🤫 Shhh…<small>Back to quiet work, please.</small></div></div>
+<div class="sw-ctl"><select id="mins" style="width:auto">${[5,10,15,20,25,30,45].map(m=>`<option value="${m}">${m} minutes</option>`).join('')}</select><button class="btn big green" id="go">▶ Start</button><button class="btn white" id="fs">⛶ Full screen</button>
+<label class="ln-pill"><input type="checkbox" id="lis"> 🎤 Listen for noise</label><label class="ln-pill">Too loud at <input type="range" id="lim" min="25" max="90" style="width:110px;vertical-align:middle"></label><button class="btn white small" id="ed">✏️ Message</button></div>
+<p class="muted" style="text-align:center">With 🎤 on, the screen gently reminds the class when it gets loud. Every quiet minute earns a ⭐. Nothing is recorded.</p>`;
+for(let i=0;i<14;i++){const b=document.createElement('span');b.className='sw-b';const s=Kit.rand(30,120);b.style.cssText=`width:${s}px;height:${s}px;left:${Kit.rand(0,95)}%;bottom:-${s}px;animation-duration:${Kit.rand(18,40)}s;animation-delay:-${Kit.rand(0,40)}s`;$('scr').prepend(b)}
+let left=0,tv=null,quietMin=0,lastLoud=0,stars=0,reminders=0,minuteMark=0;
+const draw=()=>{$('msg').textContent=st.msg;const s=tv?left:st.mins*60;$('tm').textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;$('stars').textContent=st.listen?`⭐ ${stars}`:'';$('mins').value=st.mins;$('lis').checked=st.listen;$('lim').value=st.limit};
+const save=()=>Kit.set('sw-set',st);
+$('mins').onchange=()=>{st.mins=+$('mins').value;save();if(!tv)draw()};$('lim').oninput=()=>{st.limit=+$('lim').value;save()};
+$('lis').onchange=async()=>{st.listen=$('lis').checked;save();if(st.listen){try{await Mic.start();listen()}catch(e){alert(Mic.msg(e));st.listen=false;save()}}draw()};
+$('ed').onclick=()=>{const m=prompt('Message under "Silent work time":',st.msg);if(m!=null){st.msg=m;save();draw()}};
+$('fs').onclick=()=>Kit.fullscreen();
+$('go').onclick=()=>{if(tv){clearInterval(tv);tv=null;$('go').textContent='▶ Start';draw();return}left=st.mins*60;stars=0;minuteMark=Date.now();$('go').textContent='⏹ Stop';Kit.tone(392,.6,'sine',.18);
+ tv=setInterval(()=>{left--;if(st.listen&&Date.now()-minuteMark>=60000){minuteMark=Date.now();if(Date.now()-lastLoud>60000){stars++;Kit.tone(1046,.2,'sine',.12)}}draw();if(left<=0){clearInterval(tv);tv=null;$('go').textContent='▶ Start';Kit.tada();Kit.confetti(80);$('tm').textContent='Done! 🎉'}},1000);draw()};
+let loudFor=0,lastT=0,shownAt=0;function listen(){if(!st.listen||!Mic.on)return;requestAnimationFrame(listen);const now=performance.now(),dt=now-(lastT||now);lastT=now;const v=Mic.level(5);
+ if(v>st.limit){loudFor+=dt;lastLoud=Date.now()}else loudFor=Math.max(0,loudFor-dt*2);
+ if(loudFor>900&&now-shownAt>4000){shownAt=now;loudFor=0;reminders++;$('sh').classList.remove('on');void $('sh').offsetWidth;$('sh').classList.add('on');Kit.tone(660,.5,'sine',.12)}}
+if(st.listen){st.listen=false;save()}draw();
+</script>
+</body></html>

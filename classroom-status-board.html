@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Classroom Status Board</title>
+<style>
+main{max-width:1500px}
+.cs-wrap{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:900px){.cs-wrap{grid-template-columns:1fr}}
+.cs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px}
+.cs-t{font:inherit;border:6px solid var(--ink);border-radius:24px;background:var(--sc);color:#fff;padding:12px;cursor:pointer;box-shadow:0 7px 0 var(--ink);text-align:center;min-height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-shadow:2px 2px 0 rgba(0,0,0,.3);transition:background .3s}
+.cs-t:active{transform:translateY(7px);box-shadow:none}
+.cs-t .nm{font-weight:800;font-size:clamp(1.1rem,2.2vw,1.5rem)}
+.cs-t .e{font-size:2.8rem;line-height:1}
+.cs-t .s{font-weight:700;font-size:1rem;background:rgba(0,0,0,.18);border-radius:99px;padding:1px 12px}
+.cs-t.help{animation:cshelp 1.2s infinite}@keyframes cshelp{50%{box-shadow:0 7px 0 var(--ink),0 0 0 10px rgba(255,201,60,.55)}}
+.cs-q{background:#fff;border:5px solid var(--ink);border-radius:22px;box-shadow:6px 6px 0 var(--ink);padding:14px}
+.cs-q h3{margin:0 0 8px}
+.cs-qi{display:grid;grid-template-columns:auto 1fr auto auto;gap:8px;align-items:center;border:3px solid var(--ink);border-radius:14px;padding:6px 10px;margin-bottom:8px;font-weight:700;background:#FFF6C9}
+.cs-qi .n{width:30px;height:30px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center}
+.cs-qi .w{color:#6B7695;font-variant-numeric:tabular-nums}
+.cs-qi.stuck{background:#FFE3DF}
+.cs-sum{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.cs-legend{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:12px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🚦", "Classroom Status Board");
+const $=id=>document.getElementById(id);
+const S=[['working','📝','Working','#22C3E6'],['help','🙋','Need help','#FFB020'],['stuck','🆘','Stuck!','#FF5A4E'],['done','✅','Done!','#2EAF5A']];
+const st=Kit.get('cs-state',{groups:'Table 1\nTable 2\nTable 3\nTable 4\nTable 5\nTable 6',status:{},queue:[]});
+const save=()=>Kit.set('cs-state',st);
+document.querySelector('main').innerHTML=`<div class="cs-legend">${S.map(s=>`<span class="ln-pill" style="background:${s[3]};color:#fff">${s[1]} ${s[2]}</span>`).join('')}<span class="muted" style="align-self:center">Tap your table to change its status.</span></div>
+<div class="cs-wrap"><div class="cs-grid" id="g"></div><div class="cs-q"><h3>🙋 Help line</h3><div id="q"></div><div class="cs-sum" id="sum"></div>
+<div class="row" style="margin-top:12px"><button class="btn white small" id="all">↺ Everyone back to working</button><button class="btn white small" id="ed">✏️ Tables</button></div></div></div>
+<div class="card stack" id="edc" hidden style="margin-top:14px"><b>✏️ Tables, groups, or students</b><span class="muted">One per line.</span><textarea id="ta" style="min-height:160px"></textarea><button class="btn green" id="sv">✓ Save</button></div>`;
+const names=()=>Kit.lines(st.groups);const stat=n=>st.status[n]||'working';
+const ago=t=>{const s=Math.floor((Date.now()-t)/1000);return s<60?`${s}s`:`${Math.floor(s/60)}m ${s%60}s`};
+function draw(){$('g').innerHTML=names().map(n=>{const s=S.find(x=>x[0]===stat(n));return `<button class="cs-t ${s[0]==='help'||s[0]==='stuck'?'help':''}" data-n="${Kit.esc(n)}" style="--sc:${s[3]}"><span class="nm">${Kit.esc(n)}</span><span class="e">${s[1]}</span><span class="s">${s[2]}</span></button>`}).join('');
+ $('q').innerHTML=st.queue.length?st.queue.map((x,i)=>`<div class="cs-qi ${stat(x.n)==='stuck'?'stuck':''}"><span class="n">${i+1}</span><span>${stat(x.n)==='stuck'?'🆘':'🙋'} ${Kit.esc(x.n)}</span><span class="w" data-t="${x.t}">${ago(x.t)}</span><button class="btn small green" data-help="${Kit.esc(x.n)}">✓ Helped</button></div>`).join(''):'<p class="muted">Nobody is waiting. 🎉</p>';
+ const c=S.map(s=>[s,names().filter(n=>stat(n)===s[0]).length]);$('sum').innerHTML=c.map(([s,k])=>`<span class="ln-pill">${s[1]} ${k}</span>`).join('');window.__t={queue:st.queue.map(x=>x.n)}}
+function set(n,v){st.status[n]=v;if(v==='help'||v==='stuck'){if(!st.queue.some(x=>x.n===n))st.queue.push({n,t:Date.now()})}else st.queue=st.queue.filter(x=>x.n!==n);save();draw()}
+$('g').onclick=e=>{const b=e.target.closest('.cs-t');if(!b)return;const n=b.dataset.n,i=S.findIndex(s=>s[0]===stat(n));const nx=S[(i+1)%S.length][0];set(n,nx);
+ if(nx==='help')Kit.tone(660,.15,'triangle',.2);else if(nx==='stuck')Kit.tone(440,.3,'square',.12);else if(nx==='done')Kit.ding();else Kit.tick();if(nx==='done'&&names().every(x=>stat(x)==='done')){Kit.tada();Kit.confetti(120)}};
+$('q').onclick=e=>{const b=e.target.closest('[data-help]');if(b){set(b.dataset.help,'working');Kit.ding()}};
+$('all').onclick=()=>{st.status={};st.queue=[];save();draw()};
+$('ed').onclick=()=>{$('edc').hidden=!$('edc').hidden;$('ta').value=st.groups};$('sv').onclick=()=>{st.groups=$('ta').value;st.status={};st.queue=[];save();$('edc').hidden=true;draw()};
+setInterval(()=>document.querySelectorAll('.cs-qi .w').forEach(w=>w.textContent=ago(+w.dataset.t)),1000);
+draw();
+</script>
+</body></html>

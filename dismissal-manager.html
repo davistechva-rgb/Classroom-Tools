@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Dismissal Manager</title>
+<style>
+main{max-width:1500px}
+.dm-top{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center;margin-bottom:14px}
+.dm-left{font-weight:800;font-size:1.5rem;color:#fff;text-shadow:2px 2px 0 var(--ink)}
+.dm-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
+.dm-g{background:#fff;border:6px solid var(--ink);border-radius:24px;box-shadow:6px 6px 0 var(--ink);overflow:hidden;transition:opacity .4s}
+.dm-g.gone{opacity:.5}
+.dm-g h3{margin:0;padding:10px 12px;background:var(--gc);color:#fff;text-shadow:2px 2px 0 rgba(0,0,0,.3);display:flex;align-items:center;gap:8px;font-size:1.3rem}
+.dm-g h3 .e{font-size:1.6em}.dm-g h3 .c{margin-left:auto;font-size:.9rem;background:rgba(0,0,0,.2);border-radius:99px;padding:1px 10px}
+.dm-g.called h3{animation:dmcall 1s 3}@keyframes dmcall{50%{filter:brightness(1.35)}}
+.dm-kids{display:flex;flex-wrap:wrap;gap:6px;padding:10px}
+.dm-k{font:inherit;font-weight:700;border:3px solid var(--ink);border-radius:99px;padding:3px 12px;background:#F4FAFF;cursor:pointer;color:var(--ink)}
+.dm-k.out{background:#C9F1D2;text-decoration:line-through;opacity:.7}
+.dm-act{display:flex;gap:6px;padding:0 10px 10px}
+.dm-ban{position:fixed;inset:0;display:none;place-items:center;z-index:40;background:var(--bc);color:#fff;text-align:center;font-weight:800;text-shadow:5px 5px 0 rgba(0,0,0,.3)}
+.dm-ban.on{display:grid}
+.dm-ban .e{font-size:clamp(5rem,16vw,12rem);line-height:1}.dm-ban .t{font-size:clamp(3rem,9vw,7rem)}.dm-ban .s{font-size:clamp(1.4rem,3.4vw,2.6rem)}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🚪", "Dismissal Manager");
+const $=id=>document.getElementById(id);const GC=['#FFB020','#22C3E6','#5DC66E','#9B6BF2','#FF6B5B','#FF8FC7','#2BC4B0','#1D2B53'];
+const st=Kit.get('dm-state',{text:'🚌 Bus 12: Ava, Leo, Mia, Sam\n🚌 Bus 7: Zoe, Eli, Noah\n🚗 Car riders: Liv, Max, Ivy, Ben\n🚶 Walkers: Ana, Kai\n🏫 After care: Ruby, Owen, Jade',day:'',out:[],called:[]});
+if(st.day!==new Date().toDateString()){st.day=new Date().toDateString();st.out=[];st.called=[]}
+const save=()=>Kit.set('dm-state',st);
+document.querySelector('main').innerHTML=`<div class="dm-top"><span class="dm-left" id="lf"></span><button class="btn white" id="rs">↺ New day</button><button class="btn white" id="ed">✏️ Groups</button><label class="ln-pill"><input type="checkbox" id="spk" checked> 🔈 Say it out loud</label></div>
+<div class="dm-grid" id="g"></div><div class="dm-ban" id="ban"></div>
+<div class="card stack" id="edc" hidden style="margin-top:16px"><b>✏️ Dismissal groups</b><span class="muted">One per line: emoji Group name: student, student, ...</span><textarea id="ta" style="min-height:170px"></textarea><button class="btn green" id="sv">✓ Save</button></div>`;
+const G=()=>Kit.lines(st.text).map(l=>{const i=l.indexOf(':');const h=(i>0?l.slice(0,i):l).trim();const m=h.match(/^(\p{Extended_Pictographic}[\u{FE0F}\u{200D}\p{Extended_Pictographic}]*)\s*(.*)$/u);return {e:m?m[1]:'🚪',n:m?m[2]:h,kids:i>0?l.slice(i+1).split(',').map(s=>s.trim()).filter(Boolean):[]}});
+function draw(){const g=G();const all=g.flatMap(x=>x.kids.map(k=>x.n+'|'+k));const left=all.filter(k=>!st.out.includes(k)).length;$('lf').textContent=left?`👥 ${left} of ${all.length} still here`:'🎉 Everyone is on their way!';
+ $('g').innerHTML=g.map((x,i)=>{const out=x.kids.filter(k=>st.out.includes(x.n+'|'+k)).length,done=x.kids.length&&out===x.kids.length;return `<div class="dm-g ${done?'gone':''} ${st.called.includes(x.n)&&!done?'called':''}" style="--gc:${GC[i%8]}"><h3><span class="e">${x.e}</span>${Kit.esc(x.n)}<span class="c">${x.kids.length-out} left</span></h3>
+  <div class="dm-kids">${x.kids.map(k=>`<button class="dm-k ${st.out.includes(x.n+'|'+k)?'out':''}" data-k="${Kit.esc(x.n+'|'+k)}">${Kit.esc(k)}</button>`).join('')}</div>
+  <div class="dm-act"><button class="btn small green" data-call="${i}">📣 Call ${Kit.esc(x.n)}</button><button class="btn small white" data-allout="${i}">✓ All gone</button></div></div>`}).join('');window.__t={left}}
+$('g').onclick=e=>{const k=e.target.closest('[data-k]');if(k){const v=k.dataset.k;st.out=st.out.includes(v)?st.out.filter(x=>x!==v):[...st.out,v];save();Kit.tick();draw();return}
+ const c=e.target.closest('[data-call]');if(c){const x=G()[+c.dataset.call];if(!st.called.includes(x.n))st.called.push(x.n);save();call(x,+c.dataset.call);return}
+ const a=e.target.closest('[data-allout]');if(a){const x=G()[+a.dataset.allout];x.kids.forEach(k=>{if(!st.out.includes(x.n+'|'+k))st.out.push(x.n+'|'+k)});save();Kit.ding();draw()}};
+function call(x,i){const b=$('ban');b.style.setProperty('--bc',GC[i%8]);b.innerHTML=`<div><div class="e">${x.e}</div><div class="t">${Kit.esc(x.n)}</div><div class="s">You may get ready to go! 👋</div><p style="font-size:1rem;opacity:.85">Tap anywhere to close</p></div>`;b.classList.add('on');Kit.tone(659,.3,'sine',.25);Kit.tone(523,.5,'sine',.25,.3);
+ if($('spk').checked)try{const u=new SpeechSynthesisUtterance(`${x.n}, you may get ready to go.`);speechSynthesis.cancel();speechSynthesis.speak(u)}catch{}draw()}
+$('ban').onclick=()=>$('ban').classList.remove('on');
+$('rs').onclick=()=>{st.out=[];st.called=[];save();draw()};
+$('ed').onclick=()=>{$('edc').hidden=!$('edc').hidden;$('ta').value=st.text};$('sv').onclick=()=>{st.text=$('ta').value;save();$('edc').hidden=true;draw()};
+save();draw();
+</script>
+</body></html>

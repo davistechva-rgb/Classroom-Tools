@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Call & Response Generator</title>
+<style>
+main{max-width:1300px}
+.cr-tabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:14px}
+.cr-tabs button{font:inherit;font-weight:800;border:4px solid var(--ink);border-radius:99px;padding:5px 16px;cursor:pointer;background:#fff;color:var(--ink)}
+.cr-tabs button.on{background:var(--sun)}
+.cr-stage{background:#fff;border:7px solid var(--ink);border-radius:30px;box-shadow:9px 9px 0 var(--ink);padding:clamp(18px,3vw,36px);text-align:center;min-height:46vh;display:flex;flex-direction:column;justify-content:center;gap:16px}
+.cr-who{font-weight:800;letter-spacing:.12em;color:#6B7695}
+.cr-call{font-size:clamp(2.4rem,7vw,5rem);font-weight:800;line-height:1.05;color:var(--grape)}
+.cr-resp{font-size:clamp(2.2rem,6.4vw,4.6rem);font-weight:800;line-height:1.05;color:#1E9E6A;min-height:1.1em}
+.cr-resp.hide{color:transparent;background:repeating-linear-gradient(45deg,#E8EEF8 0 14px,#DCE4F1 14px 28px);border-radius:18px}
+.cr-cnt{font-size:2rem;font-weight:800;color:var(--tomato);min-height:1.2em}
+.cr-beats{display:flex;gap:clamp(6px,1.5vw,16px);justify-content:center;flex-wrap:wrap}
+.cr-beat{width:clamp(56px,9vw,96px);aspect-ratio:1;border-radius:50%;border:5px solid var(--ink);display:grid;place-items:center;font-size:clamp(1.8rem,4vw,3rem);background:#F4FAFF;transition:transform .08s,background .08s}
+.cr-beat.rest{border-style:dashed;opacity:.5}
+.cr-beat.hit{transform:scale(1.25);background:var(--sun)}
+.cr-beat.you{background:#E3F2FF}
+.cr-lvl{display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("📢", "Call & Response Generator");
+const $=id=>document.getElementById(id);
+const THEMES={
+ 'Science':`Scientists! | Ask questions!\nHypothesis! | Make a guess!\nWhat do plants need? | Sun, water, air!\nForce! | Push or pull!\nMatter! | Takes up space!`,
+ 'Math':`Math class! | Number smart!\nWhat's 5 plus 5? | Ten, ten, ten!\nNumerator! | On the top!\nDenominator! | Down below!\nShow your work! | Every time!`,
+ 'Reading':`Readers read! | Every day!\nMain idea! | What it's mostly about!\nCharacters! | Who is in it!\nSetting! | Where and when!\nGood readers! | Make pictures in their heads!`,
+ 'Kindness':`Kindness counts! | Every day!\nTeamwork! | Makes the dream work!\nIf you're stuck! | Ask three, then me!\nWe are! | Respectful!\nBe a buddy! | Not a bully!`,
+ 'Fall & winter':`Leaves fall down! | Orange, red, and brown!\nSnowflakes! | Shh, quiet down!\nHot cocoa! | Calm and slow!\nPumpkin pie! | Eyes on the sky!\nBrr, it's cold! | Freeze! Hold!`};
+const RHY=[ // 1 = clap, 2 = stomp, 0 = rest
+ [[1,1,1,0],[1,1,0,0],[1,0,1,0]],[[1,1,1,1,1,0],[1,0,1,1,1,0],[1,1,0,1,1,0]],[[1,1,2,0,1,1,2,0],[1,2,1,2,1,1,1,0],[2,2,1,1,1,0,1,0]]];
+const st=Kit.get('cr-set',{mode:'words',theme:'Science',mine:'',lvl:1,tempo:110});
+document.querySelector('main').innerHTML=`<div class="cr-tabs" id="tabs"></div><div class="cr-stage" id="stg"></div>
+<div class="row" style="justify-content:center;margin-top:14px" id="ctl"></div>
+<div class="card stack" id="edc" hidden style="margin-top:14px"><b>✏️ My own calls</b><span class="muted">One per line: what you say | what the class says.</span><textarea id="ta" style="min-height:140px"></textarea><button class="btn green" id="sv">✓ Save</button></div>`;
+const save=()=>Kit.set('cr-set',st);let AC;const ac=()=>{AC=AC||new AudioContext();if(AC.state==='suspended')AC.resume();return AC};
+function clap(t,stomp){const c=ac(),T=c.currentTime+t;if(stomp){const o=c.createOscillator(),g=c.createGain();o.frequency.setValueAtTime(140,T);o.frequency.exponentialRampToValueAtTime(45,T+.18);g.gain.setValueAtTime(.9,T);g.gain.exponentialRampToValueAtTime(.001,T+.25);o.connect(g).connect(c.destination);o.start(T);o.stop(T+.3);return}
+ const b=c.createBuffer(1,c.sampleRate*.15|0,c.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.exp(-i/(c.sampleRate*.02));const s=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain();s.buffer=b;f.type='bandpass';f.frequency.value=1400;f.Q.value=1.2;g.gain.value=1.4;s.connect(f).connect(g).connect(c.destination);s.start(T)}
+let pairs=[],pi=0,cur=null,pat=null,busy=false;
+function words(){return Kit.lines(st.theme==='__mine'?st.mine:THEMES[st.theme]||'').map(l=>l.split('|').map(s=>s.trim())).filter(p=>p[1])}
+function draw(){$('tabs').innerHTML=`<button data-m="words" class="${st.mode==='words'?'on':''}">💬 Word call & response</button><button data-m="rhythm" class="${st.mode==='rhythm'?'on':''}">👏 Rhythm echo</button>`;
+ if(st.mode==='words'){$('ctl').innerHTML=`<select id="th" style="width:auto">${Object.keys(THEMES).map(k=>`<option ${k===st.theme?'selected':''}>${k}</option>`).join('')}<option value="__mine" ${st.theme==='__mine'?'selected':''}>✏️ My own</option></select><button class="btn big green" id="nx">Next call ➜</button><button class="btn white" id="rv">👀 Show the response</button><button class="btn white small" id="ed">✏️ My own</button>`;
+  $('th').onchange=()=>{st.theme=$('th').value;save();pairs=Kit.shuffle(words());pi=0;next()};$('nx').onclick=next;$('rv').onclick=reveal;$('ed').onclick=()=>{$('edc').hidden=!$('edc').hidden;$('ta').value=st.mine};
+  if(!pairs.length){pairs=Kit.shuffle(words());pi=0;next()}else show()}
+ else{$('ctl').innerHTML=`<div class="cr-lvl"><label class="ln-pill">Level <select id="lv" style="width:auto;border-width:2px;padding:2px 8px"><option value="1">1 · Short</option><option value="2">2 · Longer</option><option value="3">3 · Claps and stomps</option></select></label><label class="ln-pill">Speed <input type="range" id="tp" min="70" max="150" style="vertical-align:middle;width:110px"></label><button class="btn big green" id="pl">▶ Play a rhythm</button><button class="btn white" id="ag">🔁 Again</button></div>`;
+  $('lv').value=st.lvl;$('tp').value=st.tempo;$('lv').onchange=()=>{st.lvl=+$('lv').value;save()};$('tp').oninput=()=>{st.tempo=+$('tp').value;save()};$('pl').onclick=()=>{pat=Kit.pick(RHY[st.lvl-1]);rhythm()};$('ag').onclick=()=>{if(pat)rhythm()};
+  $('stg').innerHTML=`<div class="cr-who">👏 RHYTHM ECHO</div><div class="cr-call" style="font-size:clamp(1.6rem,4vw,2.6rem)">Listen to the pattern, then clap it back!</div><div class="cr-beats" id="bt"></div><div class="cr-cnt" id="cn"></div>`}}
+function next(){if(!pairs.length){$('stg').innerHTML='<div class="cr-call">Add some calls with ✏️ My own.</div>';return}cur=pairs[pi%pairs.length];pi++;show();Kit.tone(523,.12,'triangle',.2)}
+function show(){$('stg').innerHTML=`<div class="cr-who">🧑‍🏫 TEACHER SAYS</div><div class="cr-call">${Kit.esc(cur[0])}</div><div class="cr-who">🧒 CLASS SAYS</div><div class="cr-resp hide" id="rs">${Kit.esc(cur[1])}</div>`;window.__t={call:cur[0]}}
+function reveal(){const r=$('rs');if(r){r.classList.remove('hide');Kit.tone(784,.15,'triangle',.2)}}
+async function rhythm(){if(busy)return;busy=true;const beat=60/st.tempo;const draw2=(you)=>$('bt').innerHTML=pat.map(p=>`<span class="cr-beat ${p?'':'rest'} ${you?'you':''}">${p===2?'🦶':p?'👏':'·'}</span>`).join('');draw2(false);$('cn').textContent='👂 Listen…';
+ const bs=[...$('bt').children];for(let i=0;i<pat.length;i++){if(pat[i])clap(0,pat[i]===2);bs[i].classList.add('hit');await Kit.sleep(beat*1000*.5);bs[i].classList.remove('hit');await Kit.sleep(beat*1000*.5)}
+ for(const t of ['3','2','1']){$('cn').textContent=t;Kit.tone(880,.05,'square',.06);await Kit.sleep(beat*1000)}
+ draw2(true);$('cn').textContent='👏 Your turn!';const bs2=[...$('bt').children];for(let i=0;i<pat.length;i++){bs2[i].classList.add('hit');await Kit.sleep(beat*1000*.5);bs2[i].classList.remove('hit');await Kit.sleep(beat*1000*.5)}
+ $('cn').textContent='🎉 Nice echo!';busy=false;window.__t={pat}}
+$('tabs').onclick=e=>{const b=e.target.closest('[data-m]');if(b){st.mode=b.dataset.m;save();draw()}};
+$('sv').onclick=()=>{st.mine=$('ta').value;st.theme='__mine';save();$('edc').hidden=true;pairs=Kit.shuffle(words());pi=0;draw();next()};
+addEventListener('keydown',e=>{if(e.target.closest('textarea,input'))return;if(st.mode==='words'){if(e.key===' '||e.key==='ArrowRight'){e.preventDefault();next()}if(e.key==='Enter')reveal()}});
+draw();
+</script>
+</body></html>

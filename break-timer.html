@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Break Timer</title>
+<style>
+main{max-width:1400px}
+.bt-wrap{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:24px;align-items:center}
+@media (max-width:820px){.bt-wrap{grid-template-columns:1fr}}
+.bt-glass{position:relative;width:min(100%,280px);aspect-ratio:1/1.6;margin:0 auto}
+.bt-glass svg{width:100%;height:100%}
+.bt-t{text-align:center;font-size:clamp(3rem,9vw,5.6rem);font-weight:800;font-variant-numeric:tabular-nums;color:#fff;text-shadow:4px 4px 0 var(--ink);line-height:1}
+.bt-t.warn{color:var(--sun)}
+.bt-msg{text-align:center;font-weight:800;font-size:clamp(1.3rem,3vw,2rem);color:#fff;text-shadow:2px 2px 0 var(--ink);min-height:1.4em}
+.bt-ch{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.bt-c{font:inherit;border:5px solid var(--ink);border-radius:20px;background:#fff;padding:12px;font-weight:800;font-size:1.1rem;display:flex;flex-direction:column;align-items:center;gap:4px;box-shadow:0 5px 0 var(--ink);cursor:pointer;color:var(--ink)}
+.bt-c span{font-size:2.4rem}
+.bt-c.off{opacity:.35;text-decoration:line-through}
+.bt-ov{position:fixed;inset:0;z-index:40;display:none;place-items:center;background:linear-gradient(135deg,#FF6B5B,#FF9F43);color:#fff;text-align:center;font-weight:800;cursor:pointer}
+.bt-ov.on{display:grid;animation:pop .5s}
+.bt-ov b{font-size:clamp(3rem,10vw,8rem);text-shadow:6px 6px 0 rgba(0,0,0,.25);display:block}
+.bt-ov span{font-size:clamp(1.4rem,3.6vw,2.6rem)}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("☕", "Break Timer");
+const $=id=>document.getElementById(id);
+const DEF='🎨 Draw\n📖 Read a book\n🧩 Puzzle\n💬 Chat quietly\n🧱 Build\n💧 Get water\n🚻 Restroom\n🧘 Rest';
+const st=Kit.get('bt-set',{mins:5,choices:DEF,off:[]});
+document.querySelector('main').innerHTML=`<div class="bt-wrap"><div><div class="bt-glass"><svg viewBox="0 0 100 160" id="sv"></svg></div><div class="bt-t" id="tm"></div><div class="bt-msg" id="msg">Break time!</div></div>
+<div><div class="row" style="margin-bottom:12px"><select id="mins" style="width:auto">${[1,2,3,5,7,10,15,20].map(m=>`<option value="${m}">${m} minute${m>1?'s':''}</option>`).join('')}</select><button class="btn big green" id="go">▶ Start the break</button><button class="btn white" id="p1">＋1 min</button><button class="btn white" id="rs">↺</button></div>
+<b style="color:#fff;text-shadow:2px 2px 0 var(--ink);font-size:1.2rem">☕ Break choices <span style="font-weight:600;font-size:.9rem">(tap to turn one off)</span></b><div class="bt-ch" id="ch" style="margin-top:8px"></div><button class="btn white small" id="ed" style="margin-top:10px">✏️ Edit choices</button></div></div>
+<div class="bt-ov" id="ov"><div><b>⏰ Break is over!</b><span>Head back to your seat. 📚</span><p style="font-size:1rem;opacity:.85">Tap to close</p></div></div>`;
+let total=0,left=0,tv=null;
+function glass(p){const top=Math.max(0,1-p),bot=p;const sTop=6+72*(1-top),sBot=154-72*bot;
+ $('sv').innerHTML=`<defs><clipPath id="c1"><path d="M14 6 H86 C86 40 56 62 52 78 C48 62 14 40 14 6Z"/></clipPath><clipPath id="c2"><path d="M52 82 C56 98 86 120 86 154 H14 C14 120 48 98 52 82Z"/></clipPath></defs>
+ <rect x="6" y="0" width="88" height="8" rx="4" fill="#C99A5C" stroke="#1D2B53" stroke-width="3"/><rect x="6" y="152" width="88" height="8" rx="4" fill="#C99A5C" stroke="#1D2B53" stroke-width="3"/>
+ <path d="M14 6 H86 C86 40 56 62 52 78 C48 62 14 40 14 6Z M52 82 C56 98 86 120 86 154 H14 C14 120 48 98 52 82Z" fill="rgba(255,255,255,.75)"/>
+ <rect clip-path="url(#c1)" x="0" y="${sTop}" width="100" height="80" fill="#FFC93C"/><rect clip-path="url(#c2)" x="0" y="${sBot}" width="100" height="80" fill="#FFC93C"/>
+ ${tv&&left>0?'<line x1="52" y1="76" x2="52" y2="150" stroke="#FFC93C" stroke-width="2.5" stroke-dasharray="3 3"><animate attributeName="stroke-dashoffset" from="0" to="-12" dur=".5s" repeatCount="indefinite"/></line>':''}
+ <path d="M14 6 H86 C86 40 56 62 52 78 C48 62 14 40 14 6Z M52 82 C56 98 86 120 86 154 H14 C14 120 48 98 52 82Z" fill="none" stroke="#1D2B53" stroke-width="4"/>`}
+function draw(){const s=tv||left?left:st.mins*60;$('tm').textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;$('tm').classList.toggle('warn',!!tv&&left<=60);glass(total?1-left/total:0);$('mins').value=st.mins;
+ $('ch').innerHTML=Kit.lines(st.choices).map((c,i)=>{const m=c.match(/^(\p{Extended_Pictographic}[\u{FE0F}\u{200D}\p{Extended_Pictographic}]*)\s*(.*)$/u);return `<button class="bt-c ${st.off.includes(i)?'off':''}" data-i="${i}"><span>${m?m[1]:'⭐'}</span>${Kit.esc(m?m[2]:c)}</button>`}).join('');window.__t={left}}
+const save=()=>Kit.set('bt-set',st);
+$('mins').onchange=()=>{st.mins=+$('mins').value;save();if(!tv){left=0;total=0;draw()}};
+$('go').onclick=()=>{if(tv){clearInterval(tv);tv=null;$('go').textContent='▶ Keep going';draw();return}if(!left){total=left=st.mins*60}$('go').textContent='⏸ Pause';$('msg').textContent='☕ Enjoy your break!';Kit.ding();
+ tv=setInterval(()=>{left--;if(left===120&&total>150){$('msg').textContent='⏳ 2 minutes left!';Kit.tone(660,.3,'triangle',.2)}if(left===30){$('msg').textContent='⚠️ 30 seconds! Start cleaning up.';Kit.tone(880,.3,'triangle',.2)}
+  if(left<=0){clearInterval(tv);tv=null;$('go').textContent='▶ Start the break';$('ov').classList.add('on');Kit.alarm();$('msg').textContent='Break time!';left=0;total=0}draw()},1000);draw()};
+$('p1').onclick=()=>{if(tv){left+=60;total+=60}else{st.mins=Math.min(60,st.mins+1);save()}draw()};
+$('rs').onclick=()=>{clearInterval(tv);tv=null;left=0;total=0;$('go').textContent='▶ Start the break';$('msg').textContent='Break time!';draw()};
+$('ov').onclick=()=>$('ov').classList.remove('on');
+$('ch').onclick=e=>{const b=e.target.closest('.bt-c');if(!b)return;const i=+b.dataset.i;st.off=st.off.includes(i)?st.off.filter(x=>x!==i):[...st.off,i];save();draw()};
+$('ed').onclick=()=>{const v=prompt('Break choices, separated by commas:',Kit.lines(st.choices).join(', '));if(v!=null){st.choices=v.split(',').map(s=>s.trim()).filter(Boolean).join('\n');st.off=[];save();draw()}};
+draw();
+</script>
+</body></html>

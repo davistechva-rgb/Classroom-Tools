@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Noise Meter</title>
+<style>
+main{max-width:1300px}
+.nm-wrap{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:20px;align-items:center}
+@media (max-width:860px){.nm-wrap{grid-template-columns:1fr}}
+.nm-gauge{position:relative;width:100%;max-width:640px;margin:0 auto;aspect-ratio:2/1.15}
+.nm-gauge svg{width:100%;height:100%;overflow:visible}
+.nm-face{font-size:clamp(4rem,10vw,7rem);text-align:center;line-height:1;transition:transform .2s}
+.nm-word{text-align:center;font-weight:800;font-size:clamp(1.8rem,5vw,3.4rem);color:#fff;text-shadow:3px 3px 0 var(--ink)}
+.nm-side{display:grid;gap:12px}
+.nm-hist{height:110px;background:#fff;border:5px solid var(--ink);border-radius:18px;display:flex;align-items:flex-end;gap:2px;padding:6px;overflow:hidden;position:relative}
+.nm-hist i{flex:1;background:var(--c);border-radius:3px 3px 0 0;min-width:3px}
+.nm-hist .lim{position:absolute;left:0;right:0;border-top:3px dashed var(--ink)}
+.nm-stats{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.nm-start{text-align:center;padding:30px}
+.nm-flash{position:fixed;inset:0;background:rgba(255,107,91,.35);pointer-events:none;z-index:40;animation:nmf 1.2s forwards}@keyframes nmf{to{opacity:0}}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="mic.js"></script>
+<script>
+Kit.mount("🔊", "Noise Meter");
+const $=id=>document.getElementById(id);
+const st=Kit.get('nm-set',{limit:60,sens:5,alarm:true});
+const ZONES=[[25,'#5DC66E','😌','Nice and quiet'],[45,'#9BD34A','🙂','Calm voices'],[60,'#FFC93C','😐','Getting loud'],[80,'#FF9F43','😬','Too loud!'],[101,'#FF5A4E','🙉','WAY too loud!']];
+document.querySelector('main').innerHTML=`<div class="card nm-start" id="startc"><div style="font-size:4rem">🎤</div><p style="font-size:1.25rem;font-weight:600">The noise meter listens through your microphone to see how loud the room is. Nothing is recorded or saved.</p><button class="btn big green" id="go">🎤 Turn on the meter</button><p class="muted" id="err"></p></div>
+<div id="game" hidden><div class="nm-wrap"><div><div class="nm-gauge"><svg viewBox="-110 -105 220 125" id="sv"></svg></div><div class="nm-face" id="face">😌</div><div class="nm-word" id="word"></div></div>
+<div class="nm-side"><div class="card stack"><label>Too-loud line: <b id="lv"></b><input type="range" id="lim" min="20" max="95" style="width:100%"></label><label>Mic sensitivity<input type="range" id="sens" min="1" max="10" style="width:100%"></label><label><input type="checkbox" id="al"> Beep and flash when it's too loud</label></div>
+<div class="nm-hist" id="hist"><span class="lim" id="hl"></span></div><div class="nm-stats"><span class="ln-pill">⏱ Quiet streak <b id="qs">0:00</b></span><span class="ln-pill">🙉 Too-loud times <b id="tl">0</b></span><button class="btn white small" id="rs">↺</button></div></div></div></div>`;
+function gauge(){let s='';const r=90;const arc=(a0,a1,c)=>{const p=a=>[Math.cos(Math.PI*(1-a))*r,-Math.sin(Math.PI*(1-a))*r];const [x0,y0]=p(a0),[x1,y1]=p(a1);return `<path d="M${x0} ${y0} A${r} ${r} 0 0 1 ${x1} ${y1}" stroke="${c}" stroke-width="26" fill="none"/>`};
+ let prev=0;ZONES.forEach(z=>{const e=Math.min(100,z[0]);s+=arc(prev/100,e/100,z[1]);prev=e});
+ s+=`<line id="limln" x1="0" y1="0" x2="0" y2="-104" stroke="#1D2B53" stroke-width="4" stroke-dasharray="6 4"/><g id="nd"><polygon points="-6,0 6,0 0,-82" fill="#1D2B53"/></g><circle r="12" fill="#1D2B53"/><circle r="5" fill="#fff"/>`;$('sv').innerHTML=s}
+gauge();
+const setUI=()=>{$('lim').value=st.limit;$('sens').value=st.sens;$('al').checked=st.alarm;$('lv').textContent=st.limit;$('limln').setAttribute('transform',`rotate(${st.limit/100*180-90})`);$('hl').style.bottom=(6+st.limit/100*94)+'px'};
+['lim','sens','al'].forEach(id=>$(id).oninput=()=>{st.limit=+$('lim').value;st.sens=+$('sens').value;st.alarm=$('al').checked;Kit.set('nm-set',st);setUI()});
+let hist=[],over=false,overSince=0,quietSince=Date.now(),tooLoud=0,lastHist=0;
+$('go').onclick=async()=>{try{await Mic.start();$('startc').hidden=true;$('game').hidden=false;setUI();loop()}catch(e){$('err').textContent=Mic.msg(e)}};
+$('rs').onclick=()=>{tooLoud=0;quietSince=Date.now();hist=[];};
+function loop(){requestAnimationFrame(loop);const v=Mic.level(st.sens);const z=ZONES.find(z=>v<z[0]);
+ $('nd').setAttribute('transform',`rotate(${v/100*180-90})`);$('face').textContent=z[2];$('word').textContent=z[3];$('face').style.transform=`scale(${1+v/400})`;
+ const now=Date.now();if(v>st.limit){if(!over&&now-overSince>1500){over=true;tooLoud++;if(st.alarm){Kit.tone(880,.25,'square',.12);document.body.insertAdjacentHTML('beforeend','<div class="nm-flash"></div>');setTimeout(()=>document.querySelector('.nm-flash')?.remove(),1300)}}overSince=now;quietSince=now}
+ else if(over&&now-overSince>1500)over=false;
+ const q=Math.floor((now-quietSince)/1000);$('qs').textContent=`${Math.floor(q/60)}:${String(q%60).padStart(2,'0')}`;$('tl').textContent=tooLoud;
+ if(now-lastHist>500){lastHist=now;hist.push(v);if(hist.length>80)hist.shift();$('hist').querySelectorAll('i').forEach(e=>e.remove());$('hist').insertAdjacentHTML('beforeend',hist.map(h=>`<i style="height:${Math.max(2,h)}%;--c:${ZONES.find(z=>h<z[0])[1]}"></i>`).join(''))}
+ window.__t={v}}
+</script>
+</body></html>

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Focus Timer</title>
+<style>
+main{max-width:1200px}
+.ft-wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:center}
+@media (max-width:820px){.ft-wrap{grid-template-columns:1fr}}
+.ft-ring{position:relative;width:min(100%,440px);aspect-ratio:1;margin:0 auto}
+.ft-ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ft-mid{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.ft-mid .e{font-size:clamp(3rem,8vw,5rem);line-height:1}
+.ft-mid .t{font-size:clamp(3rem,9vw,5.6rem);font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+.ft-mid .ph{font-weight:800;letter-spacing:.12em;color:#55607E}
+.ft-side{display:grid;gap:12px}
+.ft-goal{font-size:clamp(1.3rem,3vw,2rem);font-weight:800;outline:none;background:#fff;border:5px solid var(--ink);border-radius:18px;padding:12px 16px;min-height:2.4em}
+.ft-goal:empty::before{content:"What are we focusing on? (tap to type)";color:#9AA6C3}
+.ft-dots{display:flex;gap:8px;flex-wrap:wrap}
+.ft-dots span{font-size:2rem;filter:grayscale(1) opacity(.35)}.ft-dots span.on{filter:none}
+.ft-pres{display:flex;gap:8px;flex-wrap:wrap}
+.ft-pres button{font:inherit;font-weight:800;border:4px solid var(--ink);border-radius:14px;padding:6px 12px;cursor:pointer;background:#fff;color:var(--ink)}
+.ft-pres button.on{background:var(--sun)}
+.ft-tips{background:#FFF6C9;border:4px dashed #D9B84A;border-radius:16px;padding:10px 14px;font-weight:700}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("👀", "Focus Timer");
+const $=id=>document.getElementById(id);
+const PRE=[['10 / 2',10,2],['15 / 3',15,3],['20 / 5',20,5],['25 / 5',25,5]];
+const TIPS=['📵 Put away anything you don\'t need.','🙋 Stuck? Try 3 ideas before asking for help.','💧 Get a drink during the break, not during focus time.','🎯 Work on one thing at a time.','🐢 Slow and careful beats fast and messy.'];
+const st=Kit.get('ft-set',{work:15,brk:3,goal:'',rounds:4,auto:true});
+document.querySelector('main').innerHTML=`<div class="ft-wrap"><div class="ft-ring"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="#fff" stroke="#1D2B53" stroke-width="5"/><circle id="arc" cx="50" cy="50" r="40" fill="none" stroke="#FF6B5B" stroke-width="9" stroke-linecap="round" pathLength="100" stroke-dasharray="100 100"/></svg>
+<div class="ft-mid"><span class="e" id="em">🍅</span><span class="t" id="tm"></span><span class="ph" id="ph">READY</span></div></div>
+<div class="ft-side"><div class="ft-goal" id="goal" contenteditable="true" spellcheck="false"></div><div><b>Focus / break minutes</b><div class="ft-pres" id="pres"></div></div>
+<div><b>Focus rounds</b> <span class="muted" id="rn"></span><div class="ft-dots" id="dots"></div></div>
+<div class="row"><button class="btn big green" id="go">▶ Start focusing</button><button class="btn white" id="sk">⏭ Skip</button><button class="btn white" id="rs">↺</button></div>
+<label><input type="checkbox" id="au"> Start the next part by itself</label><div class="ft-tips" id="tip"></div></div></div>`;
+let phase='idle',left=0,done=0,tv=null;
+const save=()=>Kit.set('ft-set',st);
+function draw(){const tot=(phase==='break'?st.brk:st.work)*60,s=phase==='idle'?st.work*60:left;$('tm').textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+ $('arc').setAttribute('stroke-dasharray',`${phase==='idle'?100:s/tot*100} 100`);$('arc').setAttribute('stroke',phase==='break'?'#22C3E6':'#FF6B5B');
+ $('em').textContent=phase==='break'?'☕':phase==='done'?'🏆':'🍅';$('ph').textContent={idle:'READY',work:'FOCUS TIME',break:'BREAK TIME',done:'ALL DONE!'}[phase];
+ $('pres').innerHTML=PRE.map(p=>`<button data-w="${p[1]}" data-b="${p[2]}" class="${p[1]===st.work&&p[2]===st.brk?'on':''}">${p[0]}</button>`).join('');
+ $('dots').innerHTML=Array.from({length:st.rounds},(_,i)=>`<span class="${i<done?'on':''}">🍅</span>`).join('')+`<button class="btn white small" id="rp">＋</button><button class="btn white small" id="rm">−</button>`;$('rn').textContent=`${done} of ${st.rounds} done`;
+ $('rp').onclick=()=>{st.rounds=Math.min(8,st.rounds+1);save();draw()};$('rm').onclick=()=>{st.rounds=Math.max(1,st.rounds-1);save();draw()};$('au').checked=st.auto;window.__t={phase,done,left}}
+function begin(p){phase=p;left=(p==='work'?st.work:st.brk)*60;if(p==='work')$('tip').textContent=Kit.pick(TIPS);draw();p==='work'?Kit.tone(392,.5,'sine',.2):Kit.ding()}
+function finishPart(){clearInterval(tv);tv=null;$('go').textContent='▶ Start';
+ if(phase==='work'){done++;if(done>=st.rounds){phase='done';draw();Kit.tada();Kit.confetti(150);return}Kit.alarm();begin('break')}else{Kit.alarm();begin('work')}
+ if(st.auto)run();else draw()}
+function run(){clearInterval(tv);$('go').textContent='⏸ Pause';tv=setInterval(()=>{left--;draw();if(left<=0)finishPart()},1000)}
+$('go').onclick=()=>{if(tv){clearInterval(tv);tv=null;$('go').textContent='▶ Keep going';return}if(phase==='idle'||phase==='done'){done=0;begin('work')}run()};
+$('sk').onclick=()=>{if(phase==='work'||phase==='break'){left=0;finishPart()}};$('rs').onclick=()=>{clearInterval(tv);tv=null;phase='idle';done=0;$('go').textContent='▶ Start focusing';draw()};
+$('pres').onclick=e=>{const b=e.target.closest('button');if(!b)return;st.work=+b.dataset.w;st.brk=+b.dataset.b;save();if(phase==='idle')draw();else draw()};
+$('goal').textContent=st.goal;$('goal').oninput=()=>{st.goal=$('goal').textContent;save()};$('au').onchange=()=>{st.auto=$('au').checked;save()};
+$('tip').textContent=TIPS[0];draw();
+</script>
+</body></html>

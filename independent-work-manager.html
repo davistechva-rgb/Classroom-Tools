@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Independent Work Manager</title>
+<style>
+main{max-width:1500px}
+.iw-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start}
+@media (max-width:980px){.iw-grid{grid-template-columns:1fr}}
+.iw-col{background:#fff;border:6px solid var(--ink);border-radius:24px;box-shadow:6px 6px 0 var(--ink);overflow:hidden}
+.iw-col h3{margin:0;padding:10px 14px;background:var(--cc);color:#fff;text-shadow:2px 2px 0 rgba(0,0,0,.3);font-size:1.4rem;display:flex;justify-content:space-between;align-items:center}
+.iw-body{padding:12px;display:grid;gap:8px}
+.iw-task{display:flex;gap:10px;align-items:center;border:3px solid var(--ink);border-radius:14px;padding:8px 10px;font-weight:700;font-size:clamp(1.05rem,2vw,1.3rem)}
+.iw-task .n{flex:none;width:34px;height:34px;border-radius:50%;background:var(--cc);color:#fff;display:grid;place-items:center;border:3px solid var(--ink)}
+.iw-add{display:flex;gap:6px}.iw-add input{flex:1}
+.iw-q{display:flex;gap:8px;align-items:center;border:3px solid var(--ink);border-radius:14px;padding:6px 10px;background:#FFF6C9;font-weight:700}
+.iw-q .w{margin-left:auto;color:#6B7695;font-variant-numeric:tabular-nums;font-size:.9rem}
+.iw-done{display:flex;flex-wrap:wrap;gap:6px}
+.iw-done span{background:#C9F1D2;border:3px solid var(--ink);border-radius:99px;padding:2px 12px;font-weight:700}
+.iw-top{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:14px}
+.iw-tm{font-weight:800;font-size:2rem;background:#fff;border:5px solid var(--ink);border-radius:18px;padding:0 16px;font-variant-numeric:tabular-nums}
+.iw-rule{font-weight:800;text-align:center;color:#fff;text-shadow:2px 2px 0 var(--ink);font-size:1.2rem;margin-top:12px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("📚", "Independent Work Manager");
+const $=id=>document.getElementById(id);
+const st=Kit.get('iw-state',{must:'Finish page 42 in your math book\nRead for 15 minutes and fill out your reading log\nWrite 3 sentences about your weekend',may:'🎨 Draw a comic about the story\n🧩 Logic puzzles from the bin\n📚 Read a library book\n💻 Math game on the computers',help:[],done:[],mins:30});
+const save=()=>Kit.set('iw-state',st);
+document.querySelector('main').innerHTML=`<div class="iw-top"><span class="iw-tm" id="tm"></span><select id="mins" style="width:auto">${[10,15,20,30,40,45,60].map(m=>`<option value="${m}">${m} min</option>`).join('')}</select><button class="btn green" id="go">▶ Start work time</button><button class="btn white" id="clr">🧽 New work time</button><button class="btn white" id="ed">✏️ Tasks</button></div>
+<div class="iw-grid"><div class="iw-col" style="--cc:#FF6B5B"><h3>✅ Must do <small>first!</small></h3><div class="iw-body" id="must"></div></div>
+<div class="iw-col" style="--cc:#22C3E6"><h3>🌟 May do <small>when you're done</small></h3><div class="iw-body" id="may"></div></div>
+<div class="iw-col" style="--cc:#9B6BF2"><h3>🙋 Help line <small id="hc"></small></h3><div class="iw-body"><div class="iw-add"><input type="text" id="hn" placeholder="Your name"><button class="btn small" id="ha">🙋 I need help</button></div><div id="hl"></div>
+<h3 style="background:#5DC66E;margin:6px -12px 0;border-top:4px solid var(--ink)">🏁 Finished!</h3><div class="iw-add"><input type="text" id="dn" placeholder="Your name"><button class="btn small green" id="da">✓ I'm done</button></div><div class="iw-done" id="dl"></div></div></div></div>
+<div class="iw-rule">🤔 Stuck? Ask 3 before me: 1. Think 2. Check your notes 3. Ask a classmate. Then join the help line!</div>
+<div class="card stack" id="edc" hidden style="margin-top:14px"><b>✏️ Tasks</b><div class="grid2"><label>Must do <textarea id="tmust" style="min-height:140px"></textarea></label><label>May do <textarea id="tmay" style="min-height:140px"></textarea></label></div><button class="btn green" id="sv">✓ Save</button></div>`;
+const ago=t=>{const s=Math.floor((Date.now()-t)/1000);return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`};
+let left=0,tv=null;
+function draw(){$('must').innerHTML=Kit.lines(st.must).map((t,i)=>`<div class="iw-task" style="--cc:#FF6B5B"><span class="n">${i+1}</span>${Kit.esc(t)}</div>`).join('');
+ $('may').innerHTML=Kit.lines(st.may).map(t=>`<div class="iw-task" style="--cc:#22C3E6">${Kit.esc(t)}</div>`).join('');
+ $('hl').innerHTML=st.help.map((h,i)=>`<div class="iw-q"><b>${i+1}.</b> ${Kit.esc(h.n)}<span class="w" data-t="${h.t}">${ago(h.t)}</span><button class="btn small green" data-h="${i}">✓</button></div>`).join('')||'<p class="muted" style="margin:0">Nobody waiting.</p>';
+ $('hc').textContent=st.help.length?`${st.help.length} waiting`:'';$('dl').innerHTML=st.done.map(d=>`<span>${Kit.esc(d)}</span>`).join('');
+ const s=tv||left?left:st.mins*60;$('tm').textContent=`⏱ ${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;$('mins').value=st.mins;window.__t={help:st.help.length,done:st.done.length}}
+const add=(id,f)=>{const v=$(id).value.trim();if(!v)return;f(v);$(id).value='';save();draw()};
+$('ha').onclick=()=>add('hn',v=>{if(!st.help.some(h=>h.n.toLowerCase()===v.toLowerCase())){st.help.push({n:v,t:Date.now()});Kit.tone(660,.15,'triangle',.2)}});
+$('da').onclick=()=>add('dn',v=>{if(!st.done.includes(v)){st.done.push(v);Kit.ding();st.help=st.help.filter(h=>h.n.toLowerCase()!==v.toLowerCase())}});
+$('hn').onkeydown=e=>{if(e.key==='Enter')$('ha').click()};$('dn').onkeydown=e=>{if(e.key==='Enter')$('da').click()};
+$('hl').onclick=e=>{const b=e.target.closest('[data-h]');if(b){st.help.splice(+b.dataset.h,1);save();draw();Kit.tick()}};
+$('mins').onchange=()=>{st.mins=+$('mins').value;save();if(!tv){left=0;draw()}};
+$('go').onclick=()=>{if(tv){clearInterval(tv);tv=null;$('go').textContent='▶ Keep going';return}if(!left)left=st.mins*60;$('go').textContent='⏸ Pause';tv=setInterval(()=>{left--;draw();if(left===300)Kit.tone(880,.2,'triangle',.15);if(left<=0){clearInterval(tv);tv=null;left=0;$('go').textContent='▶ Start work time';Kit.alarm()}},1000)};
+$('clr').onclick=()=>{if(!confirm('Clear the help line and finished list?'))return;st.help=[];st.done=[];save();clearInterval(tv);tv=null;left=0;$('go').textContent='▶ Start work time';draw()};
+$('ed').onclick=()=>{$('edc').hidden=!$('edc').hidden;$('tmust').value=st.must;$('tmay').value=st.may};$('sv').onclick=()=>{st.must=$('tmust').value;st.may=$('tmay').value;save();$('edc').hidden=true;draw()};
+setInterval(()=>document.querySelectorAll('.iw-q .w').forEach(w=>w.textContent=ago(+w.dataset.t)),1000);
+draw();
+</script>
+</body></html>

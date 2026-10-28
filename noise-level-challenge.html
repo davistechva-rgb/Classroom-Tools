@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Noise Level Challenge</title>
+<style>
+main{max-width:1300px}
+.nc-wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;align-items:center}
+@media (max-width:820px){.nc-wrap{grid-template-columns:1fr}}
+.nc-jar{position:relative;width:min(100%,380px);aspect-ratio:3/4;margin:0 auto}
+.nc-glass{position:absolute;inset:10% 6% 0;border:7px solid var(--ink);border-top:0;border-radius:0 0 60px 60px;background:rgba(255,255,255,.55);overflow:hidden;box-shadow:inset -14px 0 0 rgba(255,255,255,.5)}
+.nc-lid{position:absolute;left:0;right:0;top:3%;height:9%;background:#C99A5C;border:7px solid var(--ink);border-radius:14px}
+.nc-m{position:absolute;width:11%;aspect-ratio:1;border-radius:50%;border:3px solid var(--ink);background:radial-gradient(circle at 30% 30%,#fff 0 18%,var(--mc) 22%);transition:bottom .6s cubic-bezier(.5,1.6,.5,1)}
+.nc-m.out{transition:transform .7s,opacity .7s;transform:translateY(-300px) rotate(200deg);opacity:0}
+.nc-goal{position:absolute;left:-4%;right:-4%;border-top:5px dashed var(--ink)}
+.nc-goal span{position:absolute;right:0;top:-30px;background:var(--sun);border:3px solid var(--ink);border-radius:99px;padding:0 10px;font-weight:800}
+.nc-side{display:grid;gap:12px;text-align:center}
+.nc-big{font-size:clamp(3rem,8vw,5rem);font-weight:800;color:#fff;text-shadow:4px 4px 0 var(--ink);line-height:1}
+.nc-meter{height:28px;border:5px solid var(--ink);border-radius:99px;background:#fff;overflow:hidden;position:relative}
+.nc-meter b{display:block;height:100%;background:var(--grass);transition:width .15s}
+.nc-meter i{position:absolute;top:0;bottom:0;width:4px;background:var(--ink)}
+.nc-msg{font-weight:800;font-size:1.5rem;color:#fff;text-shadow:2px 2px 0 var(--ink);min-height:1.4em}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="mic.js"></script><script src="learn.js"></script>
+<script>
+Kit.mount("🎚️", "Noise Level Challenge");
+const $=id=>document.getElementById(id);const MC=['#FF6B5B','#22C3E6','#FFC93C','#5DC66E','#9B6BF2','#FF8FC7'];
+const st=Kit.get('nc-set',{goal:20,every:30,limit:55,reward:'5 minutes of free time!'});
+document.querySelector('main').innerHTML=`<div class="card ln-set" id="set"><div class="row"><label>Marbles to win <select id="goal" style="width:auto">${[10,15,20,30,40].map(n=>`<option>${n}</option>`).join('')}</select></label>
+<label>Earn a marble every <select id="ev" style="width:auto"><option value="15">15 seconds</option><option value="30">30 seconds</option><option value="60">minute</option></select> of quiet</label><label>Reward <input type="text" id="rw" style="width:240px"></label><button class="btn big green" id="go">🎤 Start the challenge</button></div>
+<p class="muted" style="margin:8px 0 0">The microphone listens to how loud the room is (nothing is recorded). Stay under the line to earn marbles. Get too loud and a marble jumps out! Fill the jar to win the reward.</p><p class="muted" id="err"></p></div>
+<div id="game" hidden><div class="nc-wrap"><div class="nc-jar"><div class="nc-lid"></div><div class="nc-glass" id="jar"><div class="nc-goal" id="gl"><span>🎁 Goal</span></div></div></div>
+<div class="nc-side"><div class="nc-big" id="cnt">0</div><div style="font-weight:800;color:#fff;text-shadow:2px 2px 0 var(--ink)" id="sub"></div><div class="nc-meter"><b id="mb"></b><i id="mi"></i></div>
+<label style="font-weight:800;color:#fff;text-shadow:2px 2px 0 var(--ink)">Too-loud line <input type="range" id="lim" min="25" max="90" style="vertical-align:middle"></label><div class="nc-meter" style="height:16px"><b id="pb" style="background:var(--sun)"></b></div><div class="nc-msg" id="msg"></div>
+<div class="row" style="justify-content:center"><button class="btn white" id="pz">⏸ Pause</button><button class="btn white" id="stop">✕ End</button><button class="btn white small" id="add">＋1</button><button class="btn white small" id="sub1">−1</button></div></div></div></div>`;
+$('goal').value=st.goal;$('ev').value=st.every;$('rw').value=st.reward;
+let n=0,quietMs=0,loudMs=0,last=0,paused=false,running=false,won=false;
+function place(){const ms=[...$('jar').querySelectorAll('.nc-m:not(.out)')];const per=8;ms.forEach((m,k)=>{const row=Math.floor(k/per),col=k%per;m.style.left=(4+col*11.6+(row%2)*5)+'%';m.style.bottom=(2+row*8.2)+'%'})}
+function addM(){n++;const m=document.createElement('i');m.className='nc-m';m.style.setProperty('--mc',Kit.pick(MC));m.style.bottom='110%';m.style.left=Kit.rand(10,80)+'%';$('jar').appendChild(m);requestAnimationFrame(()=>place());Kit.tone(900+n*15,.08,'sine',.2);Kit.tone(1400,.05,'triangle',.1,.08);hud();
+ if(n>=st.goal&&!won){won=true;running=false;Kit.tada();Kit.confetti(200);$('msg').textContent='🎉 Jar full! You earned: '+st.reward;Learn.finish('🫙','The jar is full!',`You earned: ${st.reward}`)}}
+function popM(){const ms=[...$('jar').querySelectorAll('.nc-m:not(.out)')];const m=ms[ms.length-1];if(!m)return;n--;m.classList.add('out');setTimeout(()=>m.remove(),800);place();Kit.tone(200,.35,'sawtooth',.15);hud()}
+function hud(){$('cnt').textContent=`${n} / ${st.goal}`;$('sub').textContent=`marbles · reward: ${st.reward}`;const rows=Math.ceil(st.goal/8);$('gl').style.bottom=(2+rows*8.2)+'%';window.__t={n}}
+$('go').onclick=async()=>{st.goal=+$('goal').value;st.every=+$('ev').value;st.reward=$('rw').value||'A reward!';Kit.set('nc-set',st);
+ try{await Mic.start()}catch(e){$('err').textContent=Mic.msg(e);return}$('set').hidden=true;$('game').hidden=false;$('lim').value=st.limit;$('mi').style.left=st.limit+'%';n=0;won=false;running=true;$('jar').querySelectorAll('.nc-m').forEach(m=>m.remove());hud();last=performance.now();loop()};
+$('lim').oninput=()=>{st.limit=+$('lim').value;$('mi').style.left=st.limit+'%';Kit.set('nc-set',st)};
+$('pz').onclick=()=>{paused=!paused;$('pz').textContent=paused?'▶ Keep going':'⏸ Pause';last=performance.now()};
+$('stop').onclick=()=>{running=false;$('game').hidden=true;$('set').hidden=false};
+$('add').onclick=addM;$('sub1').onclick=popM;
+function loop(){if(!running)return;requestAnimationFrame(loop);const now=performance.now(),dt=now-last;last=now;const v=Mic.level(5);$('mb').style.width=v+'%';$('mb').style.background=v>st.limit?'var(--tomato)':'var(--grass)';if(paused)return;
+ if(v>st.limit){loudMs+=dt;if(loudMs>1200){loudMs=0;quietMs=0;popM();$('msg').textContent='😬 Too loud! A marble jumped out.'}}
+ else{loudMs=Math.max(0,loudMs-dt);quietMs+=dt;if(quietMs>=st.every*1000){quietMs=0;addM();$('msg').textContent='😌 Nice and quiet! +1 marble'}}
+ $('pb').style.width=Math.min(100,quietMs/(st.every*1000)*100)+'%'}
+</script>
+</body></html>
