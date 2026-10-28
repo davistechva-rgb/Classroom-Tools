@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Missing Number Game</title>
+<style>
+.mn-wrap{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:860px){.mn-wrap{grid-template-columns:1fr}}
+.mn-chart{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:4px;background:var(--ink);border:5px solid var(--ink);border-radius:16px;padding:4px;box-shadow:6px 6px 0 rgba(29,43,83,.4)}
+.mn-chart button{font:inherit;font-weight:800;font-size:clamp(.85rem,2vw,1.35rem);aspect-ratio:1;border:0;border-radius:6px;background:#fff;color:var(--ink);padding:0;cursor:default}
+.mn-chart button.hid{background:#FFF6C9;cursor:pointer;color:var(--grape);background-image:repeating-linear-gradient(45deg,transparent 0 6px,rgba(255,201,60,.35) 6px 12px)}
+.mn-chart button.sel{outline:4px solid var(--grape);outline-offset:-4px;animation:mnsel 1s infinite}@keyframes mnsel{50%{background:#E9DDFF}}
+.mn-chart button.got{background:#C9F1D2}
+.mn-line{position:relative;height:200px;margin:30px 10px 10px}
+.mn-line .bar{position:absolute;left:0;right:0;top:80px;height:8px;background:var(--ink);border-radius:4px}
+.mn-line .bar::before,.mn-line .bar::after{content:"";position:absolute;top:-10px;border:14px solid transparent}
+.mn-line .bar::before{left:-22px;border-right-color:var(--ink)}.mn-line .bar::after{right:-22px;border-left-color:var(--ink)}
+.mn-tick{position:absolute;top:62px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center}
+.mn-tick i{width:6px;height:44px;background:var(--ink);border-radius:3px}
+.mn-tick b{margin-top:8px;font-size:clamp(1.1rem,2.6vw,1.8rem);background:#fff;border:4px solid var(--ink);border-radius:12px;padding:0 10px;min-width:2.4em;text-align:center}
+.mn-tick.hid b{background:#FFF6C9;color:var(--grape);border-style:dashed;cursor:pointer}
+.mn-tick.sel b{outline:4px solid var(--grape)}.mn-tick.got b{background:#C9F1D2;border-style:solid}
+.mn-hop{position:absolute;top:22px;height:44px;border:4px solid var(--grape);border-bottom:0;border-radius:50% 50% 0 0;opacity:.55}
+.mn-hop span{position:absolute;top:-26px;left:50%;transform:translateX(-50%);font-weight:800;color:var(--grape);font-size:.9rem}
+.mn-eq{font-size:clamp(2.2rem,7vw,4.4rem);font-weight:800;text-align:center;padding:30px 0;display:flex;justify-content:center;align-items:center;gap:.3em;flex-wrap:wrap}
+.mn-eq .box{min-width:1.6em;border:5px dashed var(--grape);border-radius:16px;background:#FFF6C9;color:var(--grape);padding:0 .2em}
+.mn-eq .box.got{border-style:solid;background:#C9F1D2;color:var(--ink)}
+.mn-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:320px;margin:0 auto}
+.mn-pad button{font:inherit;font-size:1.8rem;font-weight:800;border:4px solid var(--ink);border-radius:16px;background:#fff;padding:8px;cursor:pointer;box-shadow:0 4px 0 var(--ink);color:var(--ink)}
+.mn-pad button:active{transform:translateY(4px);box-shadow:none}
+.mn-scr{font:800 2.4rem/1.2 ui-monospace,Consolas,monospace;text-align:center;background:#0E1A12;color:#7CFF9B;border:5px solid var(--ink);border-radius:14px;margin:0 auto 10px;max-width:320px;min-height:1.4em}
+.mn-scr.bad{color:#FF6B5B;animation:lnbad .45s}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🔢", "Missing Number Game");
+const $=id=>document.getElementById(id);
+document.querySelector('main').innerHTML=`<div class="card ln-set" id="set"><div class="row">
+ <label>Game <select id="md" style="width:auto"><option value="chart">Hundreds chart</option><option value="line">Number line</option><option value="eq">Missing number in a problem</option></select></label>
+ <label id="rgL">Chart <select id="rg" style="width:auto"><option value="1">1 to 100</option><option value="101">101 to 200</option><option value="0">0 to 99</option><option value="901">901 to 1,000</option></select></label>
+ <label id="hiL">Hidden <select id="hi" style="width:auto"><option value="8">8 numbers</option><option value="15" selected>15 numbers</option><option value="25">25 numbers</option><option value="row">A whole row</option><option value="col">A whole column</option></select></label>
+ <label id="skL" hidden>Count by <select id="sk" style="width:auto"><option>1</option><option selected>2</option><option>3</option><option>5</option><option>10</option><option>25</option><option>100</option></select></label>
+ <label id="opL" hidden>Problems <select id="op" style="width:auto"><option value="+">Addition</option><option value="-">Subtraction</option><option value="x">Multiplication</option><option value="/">Division</option><option value="mix">Mixed</option></select></label>
+ <button class="btn big green" id="go">Start</button></div>
+ <p class="muted" style="margin:8px 0 0">Tap a hidden spot, then type the number that belongs there. Look for the pattern!</p></div>
+<div id="game" hidden><div class="row" style="justify-content:center;margin-bottom:12px"><span class="ln-pill" id="pr"></span><span class="ln-pill">⭐ <b id="sc">0</b></span><button class="btn white small" id="new">🔀 New puzzle</button><button class="btn white small" id="back">⚙️ Settings</button></div>
+<div class="mn-wrap"><div class="card" id="board"></div><div class="card"><div class="mn-scr" id="scr"></div><div class="mn-pad" id="pad">${[1,2,3,4,5,6,7,8,9].map(n=>`<button data-k="${n}">${n}</button>`).join('')}<button data-k="C" style="background:#FFD9D4">C</button><button data-k="0">0</button><button data-k="E" style="background:var(--grass)">✓</button></div><p class="muted" style="text-align:center" id="hint"></p></div></div></div>`;
+const sync=()=>{const m=$('md').value;$('rgL').hidden=$('hiL').hidden=m!=='chart';$('skL').hidden=m!=='line';$('opL').hidden=m!=='eq'};$('md').onchange=sync;sync();
+let mode,hidden,sel,typed='',score=0,solvedN=0,eq;
+$('go').onclick=()=>{mode=$('md').value;$('set').hidden=true;$('game').hidden=false;score=0;newPuzzle()};
+$('new').onclick=()=>newPuzzle();$('back').onclick=()=>{$('game').hidden=true;$('set').hidden=false};
+function newPuzzle(){typed='';sel=null;solvedN=0;
+ if(mode==='chart'){const st=+$('rg').value;const nums=Array.from({length:100},(_,i)=>st+i);const h=$('hi').value;let hid;
+  if(h==='row'){const r=Kit.rand(0,9);hid=nums.filter((_,i)=>Math.floor(i/10)===r)}else if(h==='col'){const c=Kit.rand(0,9);hid=nums.filter((_,i)=>i%10===c)}else hid=Kit.shuffle(nums).slice(0,+h);
+  hidden=new Set(hid);$('board').innerHTML=`<div class="mn-chart" id="ch">${nums.map(n=>`<button data-n="${n}" class="${hidden.has(n)?'hid':''}">${hidden.has(n)?'?':n}</button>`).join('')}</div>`;
+  $('hint').textContent='Tip: going down a column adds 10. Going across adds 1.';pickNext()}
+ if(mode==='line'){const k=+$('sk').value;const start=k*Kit.rand(0,k>=25?8:12);const vals=Array.from({length:8},(_,i)=>start+i*k);
+  const hid=Kit.shuffle(vals.slice(1)).slice(0,3);hidden=new Set(hid);
+  $('board').innerHTML=`<div class="mn-line"><div class="bar"></div>${vals.map((v,i)=>{const x=4+i*92/7;return `${i<7?`<div class="mn-hop" style="left:${x}%;width:${92/7}%"><span>+${k}</span></div>`:''}<div class="mn-tick ${hidden.has(v)?'hid':''}" data-n="${v}" style="left:${x}%"><i></i><b>${hidden.has(v)?'?':v.toLocaleString()}</b></div>`}).join('')}</div>`;
+  $('hint').textContent=`Each hop adds ${k}.`;pickNext()}
+ if(mode==='eq'){const op=$('op').value==='mix'?Kit.pick(['+','-','x','/']):$('op').value;let a,b,c;
+  if(op==='+'){a=Kit.rand(1,50);b=Kit.rand(1,50);c=a+b}else if(op==='-'){c=Kit.rand(1,50);b=Kit.rand(1,40);a=c+b}else if(op==='x'){a=Kit.rand(2,12);b=Kit.rand(2,12);c=a*b}else{b=Kit.rand(2,12);c=Kit.rand(2,12);a=b*c}
+  const parts=[a,b,c];const miss=Kit.rand(0,2);eq={parts,miss,op};hidden=new Set([parts[miss]]);sel=parts[miss];
+  const sym={'+':'+','-':'−','x':'×','/':'÷'}[op];const P=i=>i===miss?`<span class="box" id="bx">?</span>`:`<span>${parts[i]}</span>`;
+  $('board').innerHTML=`<div class="mn-eq">${P(0)}<span>${sym}</span>${P(1)}<span>=</span>${P(2)}</div>`;$('hint').textContent='What number makes this true?'}
+ draw();window.__t={hidden:[...hidden],sel}}
+function pickNext(){const left=[...document.querySelectorAll('#board .hid')];sel=left.length?+left[0].dataset.n:null;mark()}
+function mark(){document.querySelectorAll('#board [data-n]').forEach(e=>e.classList.toggle('sel',+e.dataset.n===sel&&e.classList.contains('hid')));window.__t&&(window.__t.sel=sel)}
+function draw(){$('scr').textContent=typed||'?';$('sc').textContent=score;$('pr').textContent=mode==='eq'?`Problem ${score+1}`:`${solvedN} of ${hidden.size} found`}
+$('board').onclick=e=>{const c=e.target.closest('.hid');if(!c)return;sel=+c.dataset.n;typed='';mark();draw();Kit.tick()};
+const press=k=>{if(sel==null)return;if(k==='C')typed='';else if(k==='E'){if(!typed)return;check();return}else if(typed.length<5)typed+=k;Kit.tick();draw()};
+$('pad').onclick=e=>{const b=e.target.closest('[data-k]');if(b)press(b.dataset.k)};
+addEventListener('keydown',e=>{if($('game').hidden)return;if(/^\d$/.test(e.key))press(e.key);else if(e.key==='Enter')press('E');else if(e.key==='Backspace')press('C')});
+function check(){const v=+typed;typed='';
+ if(v===sel){score++;solvedN++;Kit.ding();
+  if(mode==='eq'){$('bx').textContent=v;$('bx').classList.add('got');draw();setTimeout(newPuzzle,900);return}
+  const el=document.querySelector(`#board [data-n="${sel}"]`);el.classList.remove('hid','sel');el.classList.add('got');(el.querySelector('b')||el).textContent=v.toLocaleString();
+  draw();pickNext();if(!document.querySelector('#board .hid')){Learn.finish('🔢','Puzzle solved!',`You found all ${hidden.size} missing numbers.`);}}
+ else{$('scr').textContent=v;$('scr').classList.remove('bad');void $('scr').offsetWidth;$('scr').classList.add('bad');Kit.tone(180,.3,'sawtooth',.15);setTimeout(draw,700)}}
+</script>
+</body></html>

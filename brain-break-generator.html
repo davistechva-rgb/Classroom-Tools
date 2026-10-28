@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Brain Break Generator</title>
+<style>
+main{max-width:1300px}
+.bb-cats{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:14px}
+.bb-cats label{font-weight:800;border:4px solid var(--ink);border-radius:99px;padding:4px 14px;background:#fff;cursor:pointer}
+.bb-cats input{margin-right:4px}
+.bb-slot{position:relative;max-width:900px;margin:0 auto;height:clamp(150px,24vh,220px);border:7px solid var(--ink);border-radius:30px;overflow:hidden;background:#fff;box-shadow:9px 9px 0 var(--ink)}
+.bb-slot::before,.bb-slot::after{content:"";position:absolute;left:0;right:0;height:30%;z-index:2;pointer-events:none}
+.bb-slot::before{top:0;background:linear-gradient(#fff,rgba(255,255,255,0))}.bb-slot::after{bottom:0;background:linear-gradient(rgba(255,255,255,0),#fff)}
+.bb-reel{position:absolute;left:0;right:0;top:0}
+.bb-row{height:clamp(150px,24vh,220px);display:flex;align-items:center;justify-content:center;gap:18px;font-weight:800;font-size:clamp(1.6rem,4.4vw,3rem);padding:0 20px;text-align:left}
+.bb-row span{font-size:1.8em}
+.bb-card{max-width:900px;margin:18px auto 0;background:var(--cc);border:6px solid var(--ink);border-radius:26px;box-shadow:7px 7px 0 var(--ink);padding:18px 22px;color:var(--ink)}
+.bb-card h3{margin:0 0 6px;font-size:1.1rem;letter-spacing:.1em}
+.bb-card p{margin:0;font-size:clamp(1.2rem,2.8vw,1.9rem);font-weight:700;line-height:1.3}
+.bb-tm{font-size:2.6rem;font-weight:800;font-variant-numeric:tabular-nums}
+.bb-ctl{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px;align-items:center}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🧘", "Brain Break Generator");
+const $=id=>document.getElementById(id);
+const CAT={calm:['🧘 Calm','#C9F1D2'],silly:['🤪 Silly','#FDE7F3'],think:['🧠 Think','#E3F2FF'],move:['🙆 Wiggle','#FFF1B8']};
+const DEF=`calm | 🌬️ | Balloon breathing | Breathe in slowly and fill your belly like a balloon. Hold for 3. Let it out slowly. Do it 5 times.
+calm | 🖐️ | Five-finger breathing | Trace up and down each finger with your other hand. Breathe in going up, out going down.
+calm | 🧊 | Melt like ice | Stand stiff like an ice cube, then slowly melt down to the floor.
+calm | 👂 | Listening minute | Close your eyes. How many different sounds can you hear in one minute?
+calm | 🐢 | Turtle stretch | Tuck in like a turtle in its shell, then stretch out slowly. Repeat 3 times.
+silly | 🎭 | Silly faces | Make your silliest face! Now happy, surprised, grumpy, and sleepy faces.
+silly | 🤖 | Robot talk | Say your name and favorite food in a robot voice. Then a whisper voice!
+silly | 🦩 | Flamingo freeze | Stand on one foot like a flamingo. Who can hold it the longest?
+silly | 🙃 | Opposite Simon Says | Do the opposite of what the leader says!
+silly | 🐒 | Animal parade | Walk in place like a penguin, then a monkey, then an elephant.
+think | 🔤 | ABC categories | Go around the room: name an animal for each letter of the alphabet.
+think | 🔢 | Count by 5s | Count by 5s to 100 together. Clap on every 25!
+think | 🕵️ | I spy | One person says "I spy something..." and the class guesses.
+think | 🔁 | Rhyme time | Start with "cat." Everyone takes a turn saying a word that rhymes.
+think | ✋ | Rock paper scissors | Find a partner. Best 2 out of 3!
+move | 🙌 | Shake it out | Shake your right hand 10 times, left hand, right foot, left foot. Then 9, 8, 7...
+move | 🧍 | Stand up, sit down | Stand up if you like pizza! Sit down if you have a pet...
+move | 🌳 | Grow like a tree | Start as a tiny seed on the floor, then slowly grow into a tall tree in the wind.
+move | 🎵 | Freeze dance | Dance while the music plays. Freeze when it stops!
+move | 🤸 | Cross the middle | Touch your right hand to your left knee, then left hand to right knee. 10 times!`;
+const st=Kit.get('bb-set',{text:DEF,cats:['calm','silly','think','move'],mins:2});
+document.querySelector('main').innerHTML=`<div class="bb-cats" id="cats">${Object.entries(CAT).map(([k,v])=>`<label style="background:${v[1]}"><input type="checkbox" data-c="${k}" ${st.cats.includes(k)?'checked':''}>${v[0]}</label>`).join('')}</div>
+<div class="bb-slot"><div class="bb-reel" id="reel"></div></div><div class="bb-card" id="card" hidden><h3 id="ch"></h3><p id="cp"></p></div>
+<div class="bb-ctl"><button class="btn big green" id="spin">🎰 Spin!</button><select id="mins" style="width:auto"><option value="1">1 minute</option><option value="2">2 minutes</option><option value="3">3 minutes</option><option value="5">5 minutes</option></select><button class="btn" id="go" disabled>⏱ Start the break</button><span class="bb-tm" id="tm"></span><button class="btn white small" id="ed">✏️ Edit</button></div>
+<div class="card stack" id="edc" hidden style="margin-top:14px"><b>✏️ Brain breaks</b><span class="muted">One per line: calm, silly, think, or move | emoji | name | how to do it.</span><textarea id="ta" style="min-height:220px"></textarea><button class="btn green" id="sv">✓ Save</button></div>`;
+const list=()=>Kit.lines(st.text).map(l=>l.split('|').map(s=>s.trim())).filter(p=>p.length>=3).map(p=>({c:CAT[p[0]]?p[0]:'move',e:p[1],n:p[2],d:p[3]||''})).filter(x=>st.cats.includes(x.c));
+const H=parseFloat(getComputedStyle(document.documentElement).fontSize);let cur=null,spinning=false,tv=null,recent=[];
+const rowH=()=>$('reel').parentElement.clientHeight;
+function setReel(items){$('reel').innerHTML=items.map(x=>`<div class="bb-row"><span>${x.e}</span>${Kit.esc(x.n)}</div>`).join('')}
+$('spin').onclick=async()=>{const L=list();if(!L.length)return alert('Turn on at least one kind of break.');if(spinning)return;spinning=true;$('card').hidden=true;$('go').disabled=true;
+ let pickL=L.filter(x=>!recent.includes(x.n));if(!pickL.length){recent=[];pickL=L}cur=Kit.pick(pickL);recent.push(cur.n);if(recent.length>Math.min(6,L.length-1))recent.shift();
+ const seq=[...Array(24)].map(()=>Kit.pick(L));seq.push(cur);setReel(seq);const r=$('reel');r.style.transition='none';r.style.transform='translateY(0)';void r.offsetWidth;
+ r.style.transition='transform 2.6s cubic-bezier(.12,.75,.15,1)';r.style.transform=`translateY(-${(seq.length-1)*rowH()}px)`;
+ for(let i=0;i<16;i++){setTimeout(()=>Kit.tick(),i*i*10)}await Kit.sleep(2700);spinning=false;Kit.tada();
+ $('card').hidden=false;$('card').style.setProperty('--cc',CAT[cur.c][1]);$('ch').textContent=`${CAT[cur.c][0].toUpperCase()} BREAK: ${cur.n.toUpperCase()}`;$('cp').textContent=cur.d;$('go').disabled=false;window.__t={cur:cur.n}};
+$('mins').value=st.mins;$('mins').onchange=()=>{st.mins=+$('mins').value;Kit.set('bb-set',st)};
+$('go').onclick=()=>{clearInterval(tv);let s=st.mins*60;const d=()=>$('tm').textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;d();Kit.ding();tv=setInterval(()=>{s--;d();if(s<=3&&s>0)Kit.tick();if(s<=0){clearInterval(tv);$('tm').textContent='Back to work! 📚';Kit.alarm()}},1000)};
+$('cats').onchange=()=>{st.cats=[...document.querySelectorAll('[data-c]:checked')].map(c=>c.dataset.c);Kit.set('bb-set',st)};
+$('ed').onclick=()=>{$('edc').hidden=!$('edc').hidden;$('ta').value=st.text};$('sv').onclick=()=>{st.text=$('ta').value;Kit.set('bb-set',st);$('edc').hidden=true};
+setReel([{e:'🎰',n:'Spin for a brain break!'}]);
+</script>
+</body></html>

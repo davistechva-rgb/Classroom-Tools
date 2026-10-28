@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Announcement Screen</title>
+<style>
+main{max-width:1600px}
+.an-screen{position:relative;height:min(68vh,640px);border:7px solid var(--ink);border-radius:28px;overflow:hidden;box-shadow:9px 9px 0 var(--ink);background:var(--bg);transition:background .8s}
+body.fs .an-screen{height:calc(100vh - 150px)}
+.an-slide{position:absolute;inset:0 0 64px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:4% 6%;color:#fff;text-shadow:4px 4px 0 rgba(0,0,0,.28)}
+.an-slide .e{font-size:clamp(4rem,12vw,9rem);line-height:1;animation:anbob 3s ease-in-out infinite}@keyframes anbob{50%{transform:translateY(-10px) rotate(4deg)}}
+.an-slide h2{margin:.15em 0 .1em;font-size:clamp(2.2rem,6.4vw,5.4rem);line-height:1.02}
+.an-slide p{margin:0;font-size:clamp(1.2rem,3vw,2.4rem);font-weight:700;max-width:28ch}
+.an-slide.in{animation:anin .7s cubic-bezier(.3,1.3,.5,1)}@keyframes anin{from{transform:translateX(12%) scale(.9);opacity:0}}
+.an-tick{position:absolute;left:0;right:0;bottom:0;height:64px;background:var(--ink);color:#fff;display:flex;align-items:center;overflow:hidden;font-weight:800;font-size:clamp(1.1rem,2.4vw,1.6rem)}
+.an-tick .lab{flex:none;background:var(--sun);color:var(--ink);height:100%;display:flex;align-items:center;padding:0 18px;z-index:2}
+.an-tick .run{white-space:nowrap;padding-left:100%;animation:anrun var(--dur,30s) linear infinite}@keyframes anrun{to{transform:translateX(-100%)}}
+.an-clock{position:absolute;top:14px;right:18px;background:rgba(255,255,255,.92);border:4px solid var(--ink);border-radius:14px;padding:2px 14px;font-weight:800;font-size:1.5rem;z-index:3}
+.an-dots{position:absolute;bottom:78px;left:0;right:0;display:flex;gap:8px;justify-content:center}
+.an-dots i{width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.45);border:2px solid rgba(0,0,0,.2)}.an-dots i.on{background:#fff;transform:scale(1.3)}
+.an-ctl{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("📢", "Announcement Screen");
+const $=id=>document.getElementById(id);
+const BG={sky:'linear-gradient(135deg,#22C3E6,#2E7DD7)',sun:'linear-gradient(135deg,#FFC93C,#FF8A3D)',grass:'linear-gradient(135deg,#5DC66E,#1E9E6A)',grape:'linear-gradient(135deg,#9B6BF2,#5B3DC9)',pink:'linear-gradient(135deg,#FF8FC7,#E8508F)',red:'linear-gradient(135deg,#FF6B5B,#D63A3A)',night:'linear-gradient(135deg,#2B3350,#1D2B53)'};
+const DEF=`🎉 | Happy birthday, Jordan! | Have an awesome day! | pink
+📚 | Book fair this week | In the library, Tuesday to Friday | grape
+⚽ | Field day is Friday! | Wear sneakers and bring a water bottle | grass
+🧥 | It's chilly today | Grab your jacket for recess | sky
+🌟 | Star of the week: Priya! | Thank you for always helping others | sun
+🎭 | School play tryouts | Wednesday after school in the gym | red`;
+const st=Kit.get('an-state',{text:DEF,ticker:'Picture day is next Monday 📸 · Return permission slips by Thursday ✍️ · Keep up the great reading! 📖',secs:10,clock:true});
+document.querySelector('main').innerHTML=`<div class="an-screen" id="sc"><div class="an-clock" id="ck"></div><div id="sl"></div><div class="an-dots" id="dt"></div><div class="an-tick"><span class="lab">📣 NEWS</span><span class="run" id="tk"></span></div></div>
+<div class="an-ctl"><button class="btn white" id="pv">◀</button><button class="btn" id="pp">⏸ Pause</button><button class="btn white" id="nx">▶</button><button class="btn white" id="fs">⛶ Full screen</button><button class="btn white" id="ed">✏️ Edit</button></div>
+<div class="card stack" id="edc" hidden style="margin-top:16px"><b>✏️ Announcements</b><span class="muted">One slide per line: emoji | headline | details | color. Colors: ${Object.keys(BG).join(', ')}.</span><textarea id="ta" style="min-height:200px"></textarea>
+<label>Scrolling news at the bottom<input type="text" id="tki"></label><div class="row"><label>Seconds per slide <input type="number" id="secs" min="3" max="120"></label><label><input type="checkbox" id="cl"> Show the clock</label></div><button class="btn green" id="sv">✓ Save</button></div>`;
+let i=0,timer=null,paused=false;
+const slides=()=>Kit.lines(st.text).map(l=>{const p=l.split('|').map(s=>s.trim());return {e:p[0]||'📢',h:p[1]||'',d:p[2]||'',c:BG[(p[3]||'').toLowerCase()]?p[3].toLowerCase():Object.keys(BG)[0]}});
+function show(){const s=slides();if(!s.length){$('sl').innerHTML='';return}i=(i+s.length)%s.length;const x=s[i];$('sc').style.setProperty('--bg',BG[x.c]);
+ $('sl').innerHTML=`<div class="an-slide in"><div class="e">${Kit.esc(x.e)}</div><h2>${Kit.esc(x.h)}</h2><p>${Kit.esc(x.d)}</p></div>`;$('dt').innerHTML=s.map((_,k)=>`<i class="${k===i?'on':''}"></i>`).join('');window.__t={i,n:s.length}}
+function sched(){clearInterval(timer);if(!paused)timer=setInterval(()=>{i++;show()},Math.max(3,st.secs)*1000)}
+function ticker(){$('tk').textContent=st.ticker;$('tk').parentElement.hidden=!st.ticker;$('tk').style.setProperty('--dur',Math.max(12,st.ticker.length/6)+'s')}
+const clock=()=>{$('ck').hidden=!st.clock;$('ck').textContent=new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})};
+$('pv').onclick=()=>{i--;show();sched()};$('nx').onclick=()=>{i++;show();sched()};
+$('pp').onclick=()=>{paused=!paused;$('pp').textContent=paused?'▶ Play':'⏸ Pause';sched()};
+$('fs').onclick=()=>Kit.fullscreen();
+$('ed').onclick=()=>{$('edc').hidden=!$('edc').hidden;$('ta').value=st.text;$('tki').value=st.ticker;$('secs').value=st.secs;$('cl').checked=st.clock};
+$('sv').onclick=()=>{st.text=$('ta').value;st.ticker=$('tki').value;st.secs=+$('secs').value||10;st.clock=$('cl').checked;Kit.set('an-state',st);$('edc').hidden=true;i=0;show();ticker();clock();sched()};
+addEventListener('keydown',e=>{if(e.target.closest('textarea,input'))return;if(e.key==='ArrowRight')$('nx').click();if(e.key==='ArrowLeft')$('pv').click();if(e.key===' '){e.preventDefault();$('pp').click()}});
+show();ticker();clock();sched();setInterval(clock,10000);
+</script>
+</body></html>

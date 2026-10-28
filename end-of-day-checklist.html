@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>End-of-Day Checklist</title>
+<style>
+main{max-width:1400px}
+.ed-head{text-align:center;color:#fff;text-shadow:3px 3px 0 var(--ink);font-weight:800;font-size:clamp(1.8rem,4.6vw,3.2rem);margin-bottom:6px}
+.ed-bar{max-width:900px;margin:0 auto 18px;height:30px;border:5px solid var(--ink);border-radius:99px;background:#fff;overflow:hidden;position:relative}
+.ed-bar b{display:block;height:100%;background:linear-gradient(90deg,var(--grass),var(--sun));transition:width .6s cubic-bezier(.3,1.4,.5,1)}
+.ed-bar span{position:absolute;inset:0;display:grid;place-items:center;font-weight:800}
+.ed-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px}
+.ed-it{font:inherit;position:relative;border:6px solid var(--ink);border-radius:26px;background:#fff;box-shadow:0 8px 0 var(--ink);cursor:pointer;padding:16px 12px;display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--ink);font-weight:800;font-size:clamp(1.1rem,2.4vw,1.6rem);text-align:center;min-height:200px;justify-content:center;transition:background .3s}
+.ed-it .e{font-size:clamp(3.4rem,7vw,5rem);line-height:1}
+.ed-it .n{position:absolute;top:10px;left:12px;width:36px;height:36px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-size:1rem}
+.ed-it.ok{background:#C9F1D2;transform:translateY(6px);box-shadow:0 2px 0 var(--ink)}
+.ed-it.ok::after{content:"✔";position:absolute;top:4px;right:12px;font-size:2.6rem;color:#1E8E3E;animation:pop .4s}
+.ed-it.ok .e{filter:grayscale(.3)}
+.ed-done{display:none;text-align:center;margin-top:18px}
+.ed-done.on{display:block;animation:pop .6s}
+.ed-done b{font-size:clamp(2rem,6vw,4rem);color:#fff;text-shadow:4px 4px 0 var(--ink)}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🎒", "End-of-Day Checklist");
+const $=id=>document.getElementById(id);
+const LISTS={'End of the day':'🪑 Stack your chair\n📁 Put your folder in your backpack\n🧹 Clean up around your desk\n📚 Return library books\n🧥 Get your jacket and lunchbox\n🚶 Line up quietly','Start of the day':'👋 Say good morning\n🎒 Hang up your backpack\n📁 Turn in your homework\n🍎 Make your lunch choice\n✏️ Sharpen two pencils\n📝 Start your morning work','Before lunch':'🧼 Wash your hands\n🍱 Grab your lunch\n🧹 Clear your desk\n🚶 Line up'};
+const st=Kit.get('ed-state',{lists:LISTS,cur:'End of the day',done:{},day:''});
+if(st.day!==new Date().toDateString()){st.day=new Date().toDateString();st.done={}}
+const save=()=>Kit.set('ed-state',st);
+document.querySelector('main').innerHTML=`<div class="row" style="justify-content:center;margin-bottom:10px"><select id="ls" style="width:auto"></select><button class="btn white small" id="rs">↺ Uncheck all</button><button class="btn white small" id="ed">✏️ Edit</button></div>
+<div class="ed-head" id="hd"></div><div class="ed-bar"><b id="bar"></b><span id="bt"></span></div><div class="ed-grid" id="g"></div><div class="ed-done" id="dn"><b>🎉 All done! See you tomorrow! 👋</b></div>
+<div class="card stack" id="edc" hidden style="margin-top:16px"><b>✏️ ${'<span id="en"></span>'}</b><span class="muted">One step per line, emoji first.</span><textarea id="ta" style="min-height:170px"></textarea><div class="row"><button class="btn green" id="sv">✓ Save</button><button class="btn white" id="nl">＋ New list</button></div></div>`;
+const items=()=>Kit.lines(st.lists[st.cur]||'').map(l=>{const m=l.match(/^(\p{Extended_Pictographic}[\u{FE0F}\u{200D}\p{Extended_Pictographic}]*)\s*(.*)$/u);return m?{e:m[1],t:m[2]}:{e:'⭐',t:l}});
+function draw(){$('ls').innerHTML=Object.keys(st.lists).map(k=>`<option ${k===st.cur?'selected':''}>${Kit.esc(k)}</option>`).join('');const it=items(),d=st.done[st.cur]||[];
+ $('hd').textContent=`✅ ${st.cur} checklist`;$('g').innerHTML=it.map((x,i)=>`<button class="ed-it ${d.includes(i)?'ok':''}" data-i="${i}"><span class="n">${i+1}</span><span class="e">${x.e}</span>${Kit.esc(x.t)}</button>`).join('');
+ const p=it.length?d.length/it.length:0;$('bar').style.width=p*100+'%';$('bt').textContent=`${d.length} of ${it.length} done`;$('dn').classList.toggle('on',it.length>0&&d.length===it.length);window.__t={done:d.length,n:it.length}}
+$('g').onclick=e=>{const b=e.target.closest('.ed-it');if(!b)return;const i=+b.dataset.i,d=st.done[st.cur]||(st.done[st.cur]=[]);const k=d.indexOf(i);k<0?d.push(i):d.splice(k,1);save();
+ if(k<0){Kit.tone(520+d.length*70,.16,'triangle',.22)}draw();if(k<0&&d.length===items().length){Kit.tada();Kit.confetti(150)}};
+$('ls').onchange=()=>{st.cur=$('ls').value;save();draw()};$('rs').onclick=()=>{st.done[st.cur]=[];save();draw()};
+$('ed').onclick=()=>{$('edc').hidden=!$('edc').hidden;$('ta').value=st.lists[st.cur];$('en').textContent=st.cur};
+$('sv').onclick=()=>{st.lists[st.cur]=$('ta').value;st.done[st.cur]=[];save();$('edc').hidden=true;draw()};
+$('nl').onclick=()=>{const n=prompt('Name of the new checklist:','After recess');if(!n)return;st.lists[n]=st.lists[n]||'⭐ First step\n⭐ Second step';st.cur=n;save();draw();$('ta').value=st.lists[n];$('en').textContent=n};
+save();draw();
+</script>
+</body></html>

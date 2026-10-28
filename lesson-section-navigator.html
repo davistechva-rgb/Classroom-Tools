@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Lesson Section Navigator</title>
+<style>
+main{max-width:1500px}
+.sn-wrap{display:grid;grid-template-columns:260px minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:860px){.sn-wrap{grid-template-columns:1fr}}
+.sn-map{display:flex;flex-direction:column;gap:0;background:#fff;border:5px solid var(--ink);border-radius:20px;box-shadow:6px 6px 0 var(--ink);padding:12px;position:sticky;top:10px}
+.sn-stop{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:6px 4px;cursor:pointer;border-radius:12px;position:relative;font-weight:700}
+.sn-stop:not(:last-child)::after{content:"";position:absolute;left:22px;top:42px;bottom:-8px;width:5px;background:#D5DEEE;border-radius:3px}
+.sn-stop.done:not(:last-child)::after{background:var(--grass)}
+.sn-stop .d{width:38px;height:38px;border-radius:50%;border:4px solid var(--ink);display:grid;place-items:center;background:#fff;font-size:1.1rem;z-index:1}
+.sn-stop.done .d{background:var(--grass)}.sn-stop.on .d{background:var(--sun);transform:scale(1.15)}
+.sn-stop.on{background:#FFF6C9}
+.sn-stop small{color:#6B7695;font-weight:700}
+.sn-main{background:#fff;border:7px solid var(--ink);border-radius:28px;box-shadow:9px 9px 0 var(--ink);overflow:hidden;min-height:56vh;display:flex;flex-direction:column}
+.sn-hd{background:var(--sc);color:#fff;padding:16px 22px;text-shadow:2px 2px 0 rgba(0,0,0,.3)}
+.sn-hd small{font-weight:800;letter-spacing:.1em;opacity:.9}
+.sn-hd h2{margin:2px 0 0;font-size:clamp(2rem,5vw,3.6rem);line-height:1.05}
+.sn-bd{padding:18px 22px;flex:1;display:grid;gap:14px;align-content:start}
+.sn-say{font-size:clamp(1.3rem,3vw,2.1rem);font-weight:700;line-height:1.3;white-space:pre-wrap}
+.sn-res{display:flex;flex-wrap:wrap;gap:10px}
+.sn-res a{text-decoration:none}
+.sn-notes{background:#FFF6C9;border:4px dashed #D9B84A;border-radius:16px;padding:10px 14px;font-weight:600;white-space:pre-wrap}
+.sn-notes b{display:block;font-size:.85rem;letter-spacing:.08em;color:#9A7A20}
+.sn-ft{display:flex;gap:10px;justify-content:space-between;align-items:center;padding:12px 18px;border-top:4px solid #E3E9F4;flex-wrap:wrap}
+.sn-time{font-weight:800;font-variant-numeric:tabular-nums;font-size:1.3rem}
+.sn-time.over{color:var(--tomato)}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🗂️", "Lesson Section Navigator");
+const $=id=>document.getElementById(id);const SC=['#FF6B5B','#FF9F43','#22C3E6','#5DC66E','#9B6BF2','#FF8FC7','#1D2B53'];
+const DEF=`## 🌅 Warm-up | 5
+What do you already know about volcanoes? Talk with your partner.
+> Ask 2 or 3 pairs to share. Write ideas on the board.
+@ Random name picker | name-picker.html
+
+## 🎬 Watch and wonder | 10
+Watch the video. Write down one thing that surprises you.
+> Pause at 2:10 to point out the magma chamber.
+@ Video | https://www.youtube.com/results?search_query=volcano+for+kids
+
+## 🧪 Try it: baking soda volcano | 20
+Work with your lab group. Follow the steps on your card.
+Safety goggles on!
+> Groups of 4. Paper towels are under the sink.
+@ Work timer | classroom-timer.html
+@ Make the groups | team-generator.html
+
+## 🗣️ Share and wrap up | 10
+What did your volcano do? Why do you think that happened?
+> Exit ticket: 1 thing I learned, 1 question I have.
+@ Exit ticket | exit-ticket-display.html`;
+const st=Kit.get('sn-state',{text:DEF,cur:0,notes:true});
+document.querySelector('main').innerHTML=`<div class="sn-wrap"><div class="sn-map" id="map"></div><div class="sn-main" id="mn"></div></div>
+<div class="row" style="justify-content:center;margin-top:14px"><label><input type="checkbox" id="shn"> Show my teacher notes</label><button class="btn white" id="ed">✏️ Edit lesson</button></div>
+<div class="card stack" id="edc" hidden style="margin-top:14px"><b>✏️ Lesson sections</b><span class="muted">Start each section with <b>## name | minutes</b>. Then lines for students to see. Start a line with <b>&gt;</b> for a teacher note, or <b>@ label | link</b> for a button (a Classroom Tool like <i>name-picker.html</i>, or any website).</span><textarea id="ta" style="min-height:320px"></textarea><button class="btn green" id="sv">✓ Save</button></div>`;
+let secs=[],enter=Date.now(),tv;
+function parse(){secs=st.text.split(/^##\s*/m).map(b=>b.trim()).filter(Boolean).map(b=>{const [h,...ls]=b.split('\n');const p=h.split('|');return {name:p[0].trim(),min:parseFloat(p[1])||0,say:ls.filter(l=>l.trim()&&!/^[>@]/.test(l.trim())).join('\n'),notes:ls.filter(l=>l.trim().startsWith('>')).map(l=>l.trim().slice(1).trim()).join('\n'),res:ls.filter(l=>l.trim().startsWith('@')).map(l=>{const q=l.trim().slice(1).split('|');return {label:q[0].trim(),url:(q[1]||'').trim()}})}});st.cur=Math.min(st.cur,Math.max(0,secs.length-1))}
+function draw(){const s=secs[st.cur];$('map').innerHTML=`<b style="margin-bottom:6px">🗺️ Today's lesson</b>`+secs.map((x,i)=>`<div class="sn-stop ${i<st.cur?'done':''} ${i===st.cur?'on':''}" data-i="${i}"><span class="d">${i<st.cur?'✓':i+1}</span><span>${Kit.esc(x.name)}</span><small>${x.min?x.min+'m':''}</small></div>`).join('')+`<div class="muted" style="margin-top:8px;font-weight:700">Total: ${secs.reduce((a,b)=>a+b.min,0)} min</div>`;
+ if(!s){$('mn').innerHTML='<div class="sn-bd">Add a section with ✏️ Edit lesson.</div>';return}
+ $('mn').style.setProperty('--sc',SC[st.cur%SC.length]);
+ $('mn').innerHTML=`<div class="sn-hd"><small>PART ${st.cur+1} OF ${secs.length}${s.min?` · ${s.min} MINUTES`:''}</small><h2>${Kit.esc(s.name)}</h2></div><div class="sn-bd"><div class="sn-say">${Kit.esc(s.say)}</div>
+ ${s.res.length?`<div class="sn-res">${s.res.map(r=>{const u=r.url;const ext=/^https?:/i.test(u);return u?`<a class="btn ${ext?'white':''}" href="${Kit.esc(u)}" target="_blank" rel="noopener">${ext?'🌐':'🧰'} ${Kit.esc(r.label)}</a>`:''}).join('')}</div>`:''}
+ ${st.notes&&s.notes?`<div class="sn-notes"><b>🔒 TEACHER NOTES</b>${Kit.esc(s.notes)}</div>`:''}</div>
+ <div class="sn-ft"><button class="btn white" id="bk" ${st.cur?'':'disabled'}>◀ Back</button><span class="sn-time" id="tm"></span><button class="btn green big" id="fw">${st.cur>=secs.length-1?'🏁 Finish':'Next part ▶'}</button></div>`;
+ $('bk').onclick=()=>go(-1);$('fw').onclick=()=>{if(st.cur>=secs.length-1){Kit.tada();Kit.confetti(100);return}go(1)};tick();window.__t={cur:st.cur,n:secs.length}}
+function tick(){const s=secs[st.cur];if(!s||!$('tm'))return;const e=(Date.now()-enter)/1000,lim=s.min*60;$('tm').textContent=lim?`⏱ ${lim-e>=0?'':'+'}${Math.floor(Math.abs(lim-e)/60)}:${String(Math.floor(Math.abs(lim-e))%60).padStart(2,'0')} ${lim-e>=0?'left':'over'}`:`⏱ ${Math.floor(e/60)}:${String(Math.floor(e)%60).padStart(2,'0')}`;$('tm').classList.toggle('over',lim&&e>lim)}
+const save=()=>Kit.set('sn-state',st);
+function go(d){st.cur=Math.max(0,Math.min(secs.length-1,st.cur+d));enter=Date.now();save();Kit.tone(520+st.cur*50,.12,'triangle',.2);draw()}
+$('map').onclick=e=>{const s=e.target.closest('.sn-stop');if(s){st.cur=+s.dataset.i;enter=Date.now();save();draw()}};
+$('shn').checked=st.notes;$('shn').onchange=()=>{st.notes=$('shn').checked;save();draw()};
+$('ed').onclick=()=>{$('edc').hidden=!$('edc').hidden;$('ta').value=st.text};$('sv').onclick=()=>{st.text=$('ta').value;st.cur=0;save();parse();$('edc').hidden=true;enter=Date.now();draw()};
+addEventListener('keydown',e=>{if(e.target.closest('textarea,input'))return;if(e.key==='ArrowRight'||e.key==='PageDown')go(1);if(e.key==='ArrowLeft'||e.key==='PageUp')go(-1)});
+parse();draw();setInterval(tick,1000);
+</script>
+</body></html>

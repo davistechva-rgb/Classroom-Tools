@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Drag-and-Drop Categorization</title>
+<style>
+.dc2-tray{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;min-height:70px;padding:12px;border:4px dashed rgba(29,43,83,.35);border-radius:20px;background:rgba(255,255,255,.35);margin-bottom:16px}
+.dc2-it{font:inherit;font-weight:700;font-size:clamp(1rem,2vw,1.3rem);background:#fff;border:4px solid var(--ink);border-radius:14px;padding:6px 14px;box-shadow:0 4px 0 var(--ink);color:var(--ink)}
+.dc2-it.ok{background:#C9F1D2}.dc2-it.off{background:#FFD9D4}
+.dc2-bins{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.dc2-bin{border:5px solid var(--ink);border-radius:22px;background:#fff;box-shadow:6px 6px 0 var(--ink);overflow:hidden;min-height:220px;display:flex;flex-direction:column}
+.dc2-bin h3{margin:0;padding:10px;text-align:center;background:var(--bc);color:#fff;font-size:clamp(1.1rem,2.4vw,1.5rem);text-shadow:2px 2px 0 rgba(0,0,0,.3);border-bottom:5px solid var(--ink)}
+.dc2-bin .in{flex:1;display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start;padding:12px;background:repeating-linear-gradient(-45deg,#fff 0 14px,#F6F9FE 14px 28px)}
+.dc2-bin .in .dc2-it{box-shadow:none;font-size:clamp(.95rem,1.7vw,1.15rem)}
+.dc2-top{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center;margin-bottom:14px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🧩", "Drag-and-Drop Categorization");
+const DEF=`# Living or nonliving?
+Living: dog, tree, mushroom, fish, flower, person, bird, grass
+Nonliving: rock, water, chair, cloud, pencil, sun, car, shoe
+# Solid, liquid, or gas?
+Solid: ice cube, rock, book, spoon, apple, brick
+Liquid: milk, juice, rain, honey, ocean water, melted butter
+Gas: steam, air, helium in a balloon, oxygen, smoke from a fire
+# Nouns, verbs, and adjectives
+Nouns: teacher, school, dog, city, ball, friend
+Verbs: run, jump, write, sing, swim, think
+Adjectives: happy, tall, blue, soft, loud, tiny
+# Mammals, birds, reptiles, fish
+Mammals: whale, bat, dog, elephant, mouse
+Birds: eagle, penguin, owl, robin, ostrich
+Reptiles: snake, turtle, lizard, crocodile
+Fish: shark, salmon, goldfish, tuna
+# Even or odd?
+Even: 2, 8, 14, 20, 36, 100
+Odd: 3, 7, 15, 21, 49, 99`;
+const BC=['#FF6B5B','#22C3E6','#5DC66E','#9B6BF2','#FF9F43','#FF8FC7'];
+const $=id=>document.getElementById(id);
+document.querySelector('main').innerHTML=`<div class="card ln-set" id="set"><div class="row"><label>Activity <select id="pick" style="width:auto"></select></label>
+ <label>Feedback <select id="fb" style="width:auto"><option value="check">When I press Check</option><option value="live">Right away (items bounce back)</option></select></label><button class="btn big green" id="go">Start</button></div>
+ <p class="muted" style="margin:8px 0 0">Drag every card into the box where it belongs, or tap a card and then tap a box.</p></div>
+<div id="game" hidden><div class="dc2-top"><b id="ti" style="font-size:1.4rem;color:#fff;text-shadow:2px 2px 0 var(--ink)"></b><span class="ln-pill" id="info"></span><button class="btn green" id="chk">✓ Check</button><button class="btn white" id="clr">↺ Start over</button><button class="btn grape" id="nx">Next ➜</button><button class="btn white" id="back">⚙️</button></div>
+<div class="dc2-tray dz-zone" id="tray" data-tray></div><div class="dc2-bins" id="bins"></div></div>`;
+const L=Learn.list($('set'),{key:'cats',label:'My activities',help:'Start each activity with # and its name. Then one line per box: Box name: item, item, item',def:DEF});
+function acts(){const out=[];let cur=null;L.get().forEach(l=>{if(l.startsWith('#')){cur={name:l.slice(1).trim(),bins:[]};out.push(cur)}else if(l.includes(':')){if(!cur){cur={name:'Sort it',bins:[]};out.push(cur)}const i=l.indexOf(':');cur.bins.push({name:l.slice(0,i).trim(),items:l.slice(i+1).split(',').map(s=>s.trim()).filter(Boolean)})}});return out.filter(a=>a.bins.length>=2)}
+const refresh=()=>{$('pick').innerHTML=acts().map((a,i)=>`<option value="${i}">${Kit.esc(a.name)}</option>`).join('')};refresh();L.el.querySelector('textarea').addEventListener('change',refresh);
+let A,ai,checks,total;
+$('go').onclick=()=>{A=acts();if(!A.length)return alert('Add an activity with at least 2 boxes.');ai=+$('pick').value||0;$('set').hidden=true;$('game').hidden=false;load()};
+function load(){const a=A[ai];checks=0;$('ti').textContent=a.name;
+ $('bins').innerHTML=a.bins.map((b,i)=>`<div class="dc2-bin"><h3 style="--bc:${BC[i%BC.length]}">${Kit.esc(b.name)}</h3><div class="in dz-zone" data-b="${i}"></div></div>`).join('');
+ const items=a.bins.flatMap((b,i)=>b.items.map(t=>({t,i})));total=items.length;$('tray').innerHTML=Kit.shuffle(items).map(x=>`<span class="dc2-it dz-item" data-b="${x.i}">${Kit.esc(x.t)}</span>`).join('');
+ $('nx').hidden=A.length<2;info();window.__t={total}}
+function info(t){$('info').textContent=t||`${total-$('tray').children.length} of ${total} sorted`}
+Learn.drag($('game'),{item:'.dc2-it',zone:'.dz-zone',drop(it,z){it.classList.remove('ok','off');
+ if(z.dataset.tray!=null){z.appendChild(it);info();return}
+ if($('fb').value==='live'&&it.dataset.b!==z.dataset.b){Learn.flash(it,false);it.classList.add('off');setTimeout(()=>it.classList.remove('off'),700);return}
+ z.appendChild(it);if($('fb').value==='live'){it.classList.add('ok');it.dataset.locked=1;Kit.tone(700,.12,'triangle',.2)}else Kit.tick();info();
+ if($('fb').value==='live'&&!$('tray').children.length)win()}});
+function win(){Learn.finish('🧩','Sorted!',checks<=1?'Every card is in the right box.':`You got it in ${checks} checks.`)}
+$('chk').onclick=()=>{checks++;let ok=0;document.querySelectorAll('.dc2-bin .dc2-it').forEach(it=>{const g=it.dataset.b===it.parentElement.dataset.b;it.classList.toggle('ok',g);it.classList.toggle('off',!g);ok+=g});
+ info(`${ok} of ${total} in the right box`);if(ok===total)win();else Kit.tone(220,.25,'triangle',.18)};
+$('clr').onclick=load;$('nx').onclick=()=>{ai=(ai+1)%A.length;load()};$('back').onclick=()=>{$('game').hidden=true;$('set').hidden=false;refresh()};
+</script>
+</body></html>

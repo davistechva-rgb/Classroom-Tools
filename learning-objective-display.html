@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Learning Objective Display</title>
+<style>
+main{max-width:1300px}
+.lo-tabs{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:14px}
+.lo-tabs button{font:inherit;font-weight:800;border:4px solid var(--ink);border-radius:99px;padding:4px 16px;cursor:pointer;background:#fff;color:var(--ink)}
+.lo-tabs button.on{background:var(--sc);color:#fff;text-shadow:1px 1px 0 rgba(0,0,0,.3)}
+.lo-card{background:#fff;border:7px solid var(--ink);border-radius:30px;box-shadow:9px 9px 0 var(--ink);overflow:hidden}
+.lo-walt{background:var(--sc);color:#fff;padding:clamp(16px,3vw,30px);text-shadow:2px 2px 0 rgba(0,0,0,.3)}
+.lo-walt small{display:block;font-weight:800;letter-spacing:.12em;opacity:.9}
+.lo-walt b{display:block;font-size:clamp(1.8rem,4.6vw,3.4rem);line-height:1.1;outline:none}
+.lo-sc{padding:clamp(14px,2.6vw,26px);display:grid;gap:12px}
+.lo-sc h3{margin:0;font-size:1.05rem;letter-spacing:.1em;color:#6B7695}
+.lo-c{display:flex;gap:14px;align-items:center;border:4px solid var(--ink);border-radius:18px;padding:10px 14px;font-weight:700;font-size:clamp(1.2rem,2.8vw,1.9rem);cursor:pointer;transition:background .3s}
+.lo-c .bx{flex:none;width:50px;height:50px;border:4px solid var(--ink);border-radius:14px;display:grid;place-items:center;font-size:1.9rem;background:#fff}
+.lo-c.ok{background:#C9F1D2}.lo-c.ok .bx{background:var(--grass)}
+.lo-why{padding:0 clamp(14px,2.6vw,26px) 18px;font-weight:700;font-size:1.15rem;color:#55607E}
+.lo-conf{margin-top:18px;background:#fff;border:5px solid var(--ink);border-radius:24px;box-shadow:6px 6px 0 var(--ink);padding:14px;text-align:center}
+.lo-conf .q{font-weight:800;font-size:1.3rem}
+.lo-faces{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:10px}
+.lo-faces button{font:inherit;border:4px solid var(--ink);border-radius:18px;background:#F4FAFF;cursor:pointer;padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:2px;font-weight:700;color:var(--ink)}
+.lo-faces button span{font-size:2.6rem}
+.lo-faces button i{font-style:normal;font-size:1.6rem;font-weight:800;background:var(--ink);color:#fff;border-radius:10px;min-width:2em}
+.lo-bars{display:flex;height:18px;border:3px solid var(--ink);border-radius:99px;overflow:hidden;margin-top:12px;background:#eee}
+.lo-bars b{display:block;height:100%}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🎯", "Learning Objective Display");
+const $=id=>document.getElementById(id);
+const COL={Math:'#22C3E6',Reading:'#FF8FC7',Writing:'#FF9F43',Science:'#5DC66E','Social studies':'#FFC93C',Art:'#9B6BF2',Other:'#4B5D8A'};
+const DEF=[{subj:'Math',walt:'We are learning to add fractions with the same denominator.',sc:['I can name the numerator and denominator.','I can add the numerators and keep the denominator.','I can explain my answer with a picture.'],why:'So we can share pizza fairly and follow recipes!'},
+ {subj:'Reading',walt:'We are learning to find the main idea of a paragraph.',sc:['I can tell what the paragraph is mostly about.','I can find two details that support it.','I can say the main idea in my own words.'],why:'Good readers know what really matters in a text.'},
+ {subj:'Science',walt:'We are learning how water moves through the water cycle.',sc:['I can name the stages: evaporation, condensation, precipitation.','I can draw and label the water cycle.','I can explain where rain comes from.'],why:'Every glass of water you drink has traveled the water cycle!'}];
+const st=Kit.get('lo-state',{list:DEF,cur:0,checks:{},votes:{}});
+const FACES=[['😕','I need help'],['🤔','I\'m getting there'],['🙂','I\'ve got it'],['🤩','I could teach it!']];
+document.querySelector('main').innerHTML=`<div class="lo-tabs" id="tabs"></div><div class="lo-card" id="card"></div>
+<div class="lo-conf"><div class="q">✋ How do you feel about today's goal?</div><div class="lo-faces" id="fc"></div><div class="lo-bars" id="bars"></div><div class="row" style="justify-content:center;margin-top:10px"><button class="btn white small" id="vr">↺ Clear votes</button><button class="btn white small" id="ed">✏️ Edit goals</button></div></div>
+<div class="card stack" id="edc" hidden style="margin-top:16px"><b>✏️ Learning goals</b><span class="muted">One goal per block. First line: subject | "We are learning to..." line. Then lines starting with - for each "I can" step. Then a line starting with ? for why it matters. Leave a blank line between goals.</span><textarea id="ta" style="min-height:280px"></textarea><button class="btn green" id="sv">✓ Save</button></div>`;
+const cur=()=>st.list[st.cur]||st.list[0];const save=()=>Kit.set('lo-state',st);
+function draw(){const g=cur();if(!g){$('card').innerHTML='<div class="lo-sc">Add a goal with ✏️ Edit goals.</div>';return}const sc=COL[g.subj]||COL.Other;
+ $('tabs').innerHTML=st.list.map((x,i)=>`<button data-i="${i}" class="${i===st.cur?'on':''}" style="--sc:${COL[x.subj]||COL.Other}">${Kit.esc(x.subj)}</button>`).join('');
+ const ch=st.checks[st.cur]||[];$('card').style.setProperty('--sc',sc);
+ $('card').innerHTML=`<div class="lo-walt" style="--sc:${sc}"><small>🎯 ${Kit.esc(g.subj.toUpperCase())} · WE ARE LEARNING TO…</small><b>${Kit.esc(g.walt.replace(/^we are learning to\s*/i,''))}</b></div>
+ <div class="lo-sc"><h3>✅ I'LL KNOW I'VE GOT IT WHEN…</h3>${g.sc.map((c,i)=>`<div class="lo-c ${ch.includes(i)?'ok':''}" data-c="${i}"><span class="bx">${ch.includes(i)?'✔':''}</span>${Kit.esc(c)}</div>`).join('')}</div>${g.why?`<div class="lo-why">💡 Why it matters: ${Kit.esc(g.why)}</div>`:''}`;
+ const v=st.votes[st.cur]||[0,0,0,0],tot=v.reduce((a,b)=>a+b,0);$('fc').innerHTML=FACES.map((f,i)=>`<button data-f="${i}"><span>${f[0]}</span>${f[1]}<i>${v[i]}</i></button>`).join('');
+ const BC=['#FF6B5B','#FFC93C','#5DC66E','#22C3E6'];$('bars').innerHTML=tot?v.map((n,i)=>`<b style="width:${n/tot*100}%;background:${BC[i]}"></b>`).join(''):''}
+$('tabs').onclick=e=>{const b=e.target.closest('button');if(!b)return;st.cur=+b.dataset.i;save();draw()};
+$('card').onclick=e=>{const c=e.target.closest('.lo-c');if(!c)return;const i=+c.dataset.c;const a=st.checks[st.cur]||(st.checks[st.cur]=[]);const k=a.indexOf(i);k<0?a.push(i):a.splice(k,1);save();k<0?Kit.ding():Kit.tick();draw();if(a.length===cur().sc.length&&k<0){Kit.tada();Kit.confetti(90)}};
+$('fc').onclick=e=>{const b=e.target.closest('button');if(!b)return;const v=st.votes[st.cur]||(st.votes[st.cur]=[0,0,0,0]);v[+b.dataset.f]++;save();Kit.tone(400+ +b.dataset.f*120,.1,'triangle',.2);draw()};
+$('vr').onclick=()=>{st.votes[st.cur]=[0,0,0,0];st.checks[st.cur]=[];save();draw()};
+const toText=()=>st.list.map(g=>[`${g.subj} | ${g.walt}`,...g.sc.map(c=>'- '+c),...(g.why?['? '+g.why]:[])].join('\n')).join('\n\n');
+$('ed').onclick=()=>{$('edc').hidden=!$('edc').hidden;$('ta').value=toText()};
+$('sv').onclick=()=>{const blocks=$('ta').value.split(/\n\s*\n/).map(b=>Kit.lines(b)).filter(b=>b.length);st.list=blocks.map(b=>{const [h,...rest]=b;const p=h.split('|');return {subj:(p[1]?p[0]:'Other').trim(),walt:(p[1]||p[0]).trim(),sc:rest.filter(l=>l.startsWith('-')).map(l=>l.slice(1).trim()),why:(rest.find(l=>l.startsWith('?'))||'').slice(1).trim()}});
+ st.cur=0;st.checks={};st.votes={};save();$('edc').hidden=true;draw()};
+draw();
+</script>
+</body></html>

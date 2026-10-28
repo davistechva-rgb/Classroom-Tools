@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Brainstorm Board</title>
+<style>
+main{max-width:none}
+.br-top{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center;margin-bottom:8px}
+.br-prompt{font-weight:800;font-size:clamp(1.4rem,3.4vw,2.4rem);text-align:center;color:#fff;text-shadow:3px 3px 0 var(--ink);outline:none;margin-bottom:8px}
+.br-board{position:relative;height:calc(100vh - 260px);min-height:440px;border:6px solid var(--ink);border-radius:22px;box-shadow:7px 7px 0 var(--ink);background:#FFFDF6;background-image:linear-gradient(#EEF2F8 2px,transparent 2px),linear-gradient(90deg,#EEF2F8 2px,transparent 2px);background-size:40px 40px;overflow:hidden}
+body.fs .br-board{height:calc(100vh - 190px)}
+.br-c{position:absolute;width:190px;min-height:90px;background:var(--cc);border:4px solid var(--ink);border-radius:14px;box-shadow:4px 5px 0 rgba(29,43,83,.3);padding:10px;font-weight:700;font-size:1.1rem;touch-action:none;cursor:grab;user-select:none;transition:box-shadow .2s}
+.br-c.drag{cursor:grabbing;box-shadow:10px 14px 0 rgba(29,43,83,.3);z-index:9;transform:rotate(2deg)}
+.br-c .dots{display:flex;gap:3px;flex-wrap:wrap;margin-top:6px}.br-c .dots i{width:14px;height:14px;border-radius:50%;background:var(--ink)}
+.br-c .x{position:absolute;top:2px;right:4px;border:0;background:none;cursor:pointer;opacity:.4;font-size:.9rem}
+body.voting .br-c{cursor:pointer}
+body.voting .br-c:hover{outline:4px solid var(--grape)}
+.br-c.top{outline:5px solid var(--sun);outline-offset:2px}
+.br-add{display:flex;gap:6px;flex:1;max-width:560px}.br-add input{flex:1;border-radius:99px;border-width:4px}
+.br-sw{display:flex;gap:4px}.br-sw button{width:30px;height:30px;border-radius:50%;border:3px solid var(--ink);cursor:pointer}.br-sw button.on{outline:3px solid var(--ink);outline-offset:2px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("💡", "Brainstorm Board");
+const $=id=>document.getElementById(id);const CC=['#FFF1B8','#C9F1D2','#FDE7F3','#E3F2FF','#FFE3C4','#EAE0FF'];
+const st=Kit.get('br-state',{prompt:'How can we make recess more fun for everyone?',cards:[],next:1,col:0});
+const save=()=>Kit.set('br-state',st);let voting=false;
+document.querySelector('main').innerHTML=`<div class="br-prompt" id="pr" contenteditable="true" spellcheck="false"></div><div class="br-top"><div class="br-add"><input type="text" id="add" placeholder="💡 Type an idea and press Enter"></div><div class="br-sw" id="sw">${CC.map((c,i)=>`<button data-c="${i}" style="background:${c}" aria-label="Color ${i+1}"></button>`).join('')}</div>
+<button class="btn" id="vt">🔴 Dot vote</button><button class="btn white" id="so">🏆 Sort by votes</button><button class="btn white" id="gr">🎨 Group by color</button><button class="btn white" id="sc">🔀 Scatter</button><button class="btn white small" id="clr">🧽 Clear</button></div>
+<div class="br-board" id="bd"></div>`;
+function draw(){const mx=Math.max(0,...st.cards.map(c=>c.v||0));$('bd').innerHTML=st.cards.map(c=>`<div class="br-c ${mx&&c.v===mx?'top':''}" data-id="${c.id}" style="left:${c.x}%;top:${c.y}%;--cc:${CC[c.c]}"><button class="x" data-x="${c.id}">✕</button>${Kit.esc(c.t)}<div class="dots">${'<i></i>'.repeat(c.v||0)}</div></div>`).join('')||'<p class="muted" style="text-align:center;margin-top:20%">Every idea counts! Add as many as you can.</p>';
+ [...$('sw').children].forEach((b,i)=>b.classList.toggle('on',i===st.col));if(document.activeElement!==$('pr'))$('pr').textContent=st.prompt;window.__t={n:st.cards.length,votes:st.cards.reduce((a,c)=>a+(c.v||0),0)}}
+const free=()=>{const n=st.cards.length;return {x:2+(n*19)%78,y:3+(Math.floor(n/5)*22+Math.random()*6)%70}};
+$('add').onkeydown=e=>{if(e.key!=='Enter')return;const t=$('add').value.trim();if(!t)return;st.cards.push({id:st.next++,t,c:st.col,v:0,...free()});$('add').value='';save();Kit.tone(500+Math.random()*400,.08,'triangle',.18);draw()};
+$('sw').onclick=e=>{const b=e.target.closest('[data-c]');if(b){st.col=+b.dataset.c;save();draw()}};
+$('pr').oninput=()=>{st.prompt=$('pr').textContent;save()};
+$('vt').onclick=()=>{voting=!voting;document.body.classList.toggle('voting',voting);$('vt').textContent=voting?'✓ Done voting':'🔴 Dot vote'};
+let dr=null;
+$('bd').addEventListener('pointerdown',e=>{const x=e.target.closest('[data-x]');if(x){if(confirm('Remove this idea?')){st.cards=st.cards.filter(c=>c.id!==+x.dataset.x);save();draw()}return}
+ const el=e.target.closest('.br-c');if(!el)return;const c=st.cards.find(c=>c.id===+el.dataset.id);
+ if(voting){c.v=(c.v||0)+1;save();Kit.tone(700+c.v*40,.06,'square',.08);draw();return}
+ e.preventDefault();const r=$('bd').getBoundingClientRect();dr={el,c,sx:e.clientX,sy:e.clientY,ox:c.x,oy:c.y,r};el.classList.add('drag');el.setPointerCapture(e.pointerId)});
+$('bd').addEventListener('pointermove',e=>{if(!dr)return;const c=dr.c;c.x=Math.max(0,Math.min(100-dr.el.offsetWidth/dr.r.width*100,dr.ox+(e.clientX-dr.sx)/dr.r.width*100));c.y=Math.max(0,Math.min(100-dr.el.offsetHeight/dr.r.height*100,dr.oy+(e.clientY-dr.sy)/dr.r.height*100));dr.el.style.left=c.x+'%';dr.el.style.top=c.y+'%'});
+$('bd').addEventListener('pointerup',()=>{if(!dr)return;dr.el.classList.remove('drag');dr=null;save()});
+function lay(arr){const W=$('bd').clientWidth,H=$('bd').clientHeight,cols=Math.max(1,Math.floor(W/205));arr.forEach((c,i)=>{c.x=(i%cols)*205/W*100+1;c.y=Math.floor(i/cols)*120/H*100+2});save();draw()}
+$('so').onclick=()=>lay([...st.cards].sort((a,b)=>(b.v||0)-(a.v||0)));$('gr').onclick=()=>lay([...st.cards].sort((a,b)=>a.c-b.c));$('sc').onclick=()=>{st.cards.forEach(c=>{c.x=Kit.rand(1,78);c.y=Kit.rand(2,74)});save();draw()};
+$('clr').onclick=()=>{if(confirm('Clear the board?')){st.cards=[];save();draw()}};
+draw();
+</script>
+</body></html>

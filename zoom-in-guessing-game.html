@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Zoom-In Guessing Game</title>
+<style>
+.zg-wrap{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:820px){.zg-wrap{grid-template-columns:1fr}}
+.zg-lens{position:relative;aspect-ratio:1;margin:16px auto;width:min(100%,58vh);border:8px solid var(--ink);border-radius:50%;overflow:hidden;background:#fff;box-shadow:0 0 0 10px #fff,0 0 0 16px var(--ink),10px 12px 0 16px rgba(29,43,83,.4)}
+.zg-pic{position:absolute;inset:0;display:grid;place-items:center;font-size:min(36vw,360px);line-height:1;transition:transform 1.1s cubic-bezier(.3,.9,.3,1)}
+.zg-pic img{width:100%;height:100%;object-fit:cover}
+.zg-glare{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 30% 25%,rgba(255,255,255,.55),transparent 28%);pointer-events:none}
+.zg-ladder{display:flex;flex-direction:column-reverse;gap:6px}
+.zg-ladder div{display:flex;justify-content:space-between;border:3px solid var(--ink);border-radius:12px;padding:4px 12px;font-weight:700;background:#F4FAFF}
+.zg-ladder div.now{background:var(--sun);transform:scale(1.04)}
+.zg-ladder div.past{opacity:.4;text-decoration:line-through}
+.zg-turn{text-align:center;font-weight:700;font-size:1.2rem}
+.zg-ans{font-size:clamp(1.8rem,5vw,3rem);font-weight:800;text-align:center;color:var(--grape);min-height:1.2em}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🔎", "Zoom-In Guessing Game");
+const DEF=`🐝 | Bee
+🍍 | Pineapple
+🐸 | Frog
+🎈 | Balloon
+🦓 | Zebra
+🍩 | Donut
+🌵 | Cactus
+🐞 | Ladybug
+🎂 | Birthday cake
+🦜 | Parrot
+🌽 | Corn
+🐳 | Whale`;
+const $=id=>document.getElementById(id);
+const ZOOMS=[14,9,6,4,2.4,1];
+document.querySelector('main').innerHTML=`<div class="card ln-set" id="set"><div class="row">${Learn.teamPicker('nT',2)}
+ <label>📷 My own pictures <input type="file" id="pics" accept="image/*" multiple style="max-width:240px"></label><button class="btn big green" id="go">Start</button></div>
+ <p class="muted" style="margin:8px 0 0">The picture starts zoomed way in. Each wrong guess (or pass) zooms out one step and the next team gets a try. Guess early for big points!</p></div>
+<div id="game" hidden><div id="tm"></div><div class="zg-wrap"><div><div class="zg-lens" id="lens"><div class="zg-pic" id="pic"></div><div class="zg-glare"></div></div></div>
+<div class="card stack"><div class="zg-turn" id="turn"></div><div class="zg-ladder" id="lad"></div>
+<div class="row" style="justify-content:center"><button class="btn green" id="ok">✓ Right</button><button class="btn red" id="no">✗ Wrong / Pass</button></div>
+<div class="zg-ans" id="ans"></div><button class="btn grape" id="nx" hidden style="width:100%">Next picture ➜</button><div class="muted" style="text-align:center" id="cnt"></div></div></div></div>`;
+const L=Learn.list($('set'),{key:'pics',label:'Mystery pictures',help:'One per line: emoji | answer.',def:DEF});
+let T,deck,idx,step,over;
+$('go').onclick=()=>{const f=[...$('pics').files];deck=Kit.shuffle(f.length?f.map(x=>({img:URL.createObjectURL(x),ans:x.name.replace(/\.[^.]+$/,'').replace(/[-_]+/g,' ')})):L.rows().map(r=>({emo:r[0],ans:r[1]||'?'})));
+ if(!deck.length)return alert('Add a picture first.');$('set').hidden=true;$('game').hidden=false;T=Learn.teams($('tm'),+$('nT').value);idx=0;round()};
+function round(){const c=deck[idx];step=0;over=false;$('pic').innerHTML=c.img?`<img src="${c.img}" alt="">`:c.emo;
+ const fx=Kit.rand(38,62),fy=Kit.rand(38,62);$('pic').style.transformOrigin=`${fx}% ${fy}%`;$('pic').style.transition='none';zoom();void $('pic').offsetWidth;$('pic').style.transition='';
+ $('ans').textContent='';$('nx').hidden=true;$('ok').disabled=$('no').disabled=false;$('cnt').textContent=`Picture ${idx+1} of ${deck.length}`;draw();window.__t={answer:c.ans}}
+const worth=()=>ZOOMS.length-step;
+function zoom(){$('pic').style.transform=`scale(${ZOOMS[step]})`}
+function draw(){$('lad').innerHTML=ZOOMS.map((z,i)=>`<div class="${i===step&&!over?'now':i<step?'past':''}"><span>🔎 ${z}× zoom</span><span>${Learn.pts(ZOOMS.length-i)}</span></div>`).join('');
+ $('turn').innerHTML=over?'':T.n>1?`<span class="ln-pill" style="background:${T.colors[T.cur]};color:#fff">${Kit.esc(T.names[T.cur])} team, what is it?</span>`:'What is it?'}
+$('ok').onclick=()=>{if(over)return;T.add(worth());end(true)};
+$('no').onclick=()=>{if(over)return;Learn.flash($('lens'),false);T.next();if(step>=ZOOMS.length-1){end(false);return}step++;zoom();Kit.tone(300-step*20,.25,'triangle',.18);draw()};
+function end(w){over=true;step=ZOOMS.length-1;zoom();$('ans').textContent=deck[idx].ans;w?(Kit.tada(),Kit.confetti(60)):Kit.ding();if(w)T.next();
+ $('ok').disabled=$('no').disabled=true;$('nx').hidden=false;$('nx').textContent=idx>=deck.length-1?'🏁 Finish':'Next picture ➜';draw()}
+$('nx').onclick=()=>{if(idx>=deck.length-1){Learn.finish('🏆',T.n>1?T.winner():'All done!','Nice detective work!',()=>{$('game').hidden=true;$('set').hidden=false});return}idx++;round()};
+</script>
+</body></html>

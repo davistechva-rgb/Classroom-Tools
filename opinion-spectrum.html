@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Opinion Spectrum</title>
+<style>
+main{max-width:1600px}
+.os-st{font-weight:800;font-size:clamp(1.6rem,4.2vw,3rem);text-align:center;background:#fff;border:6px solid var(--ink);border-radius:24px;box-shadow:6px 6px 0 var(--ink);padding:14px 18px;margin-bottom:16px}
+.os-line{position:relative;height:clamp(240px,40vh,380px);border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);background:linear-gradient(90deg,#FFD9D4,#FFF1B8 50%,#C9F1D2);overflow:hidden}
+.os-axis{position:absolute;left:3%;right:3%;bottom:54px;height:8px;background:var(--ink);border-radius:4px}
+.os-lab{position:absolute;bottom:8px;transform:translateX(-50%);font-weight:800;font-size:clamp(.75rem,1.5vw,1.05rem);text-align:center;white-space:nowrap}
+.os-lab span{display:block;font-size:1.8em}
+.os-chip{position:absolute;transform:translate(-50%,-50%);background:#fff;border:3px solid var(--ink);border-radius:99px;padding:3px 10px;font-weight:700;font-size:.95rem;touch-action:none;cursor:grab;white-space:nowrap;box-shadow:0 3px 0 var(--ink);z-index:2}
+.os-chip.anon{width:26px;height:26px;padding:0;color:transparent;background:var(--grape)}
+.os-avg{position:absolute;top:0;bottom:46px;width:5px;margin-left:-2px;background:var(--grape);z-index:1;transition:left .4s}
+.os-avg::before{content:"Class average";position:absolute;top:6px;left:8px;white-space:nowrap;font-weight:800;color:var(--grape);font-size:.9rem}
+.os-tray{display:flex;flex-wrap:wrap;gap:6px;min-height:46px;padding:10px;border:4px dashed rgba(29,43,83,.35);border-radius:18px;background:rgba(255,255,255,.4);margin-top:14px}
+.os-tray .os-chip{position:static;transform:none}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("📊", "Opinion Spectrum");
+const $=id=>document.getElementById(id);
+const DEF=`Homework helps us learn.
+Dogs make better pets than cats.
+Kids should be allowed to choose their own bedtime.
+Summer is the best season.
+It's important to learn a second language.
+Video games can be good for you.
+School lunches should be longer.
+Reading on paper is better than reading on a screen.`;
+const L5=[['😠','Strongly disagree'],['🙁','Disagree'],['😐','Not sure'],['🙂','Agree'],['😄','Strongly agree']];
+const st=Kit.get('os-set',{text:DEF,anon:false,hist:{}});
+let idx=0,pos={};
+document.querySelector('main').innerHTML=`<div class="os-st" id="st"></div><div class="os-line" id="ln"><div class="os-axis"></div>${L5.map((l,i)=>`<div class="os-lab" style="left:${3+i*23.5}%"><span>${l[0]}</span>${l[1]}</div>`).join('')}<div class="os-avg" id="avg" hidden></div></div>
+<div class="os-tray" id="tray"></div><div class="row" style="justify-content:center;margin-top:12px"><button class="btn white" id="pv">◀</button><button class="btn big green" id="nx">Next statement ▶</button><label class="ln-pill"><input type="checkbox" id="an"> 🙈 Hide names (dots only)</label><button class="btn white small" id="rs">↺ Everyone back</button><button class="btn white small" id="ed">✏️ Statements</button></div>
+<div class="card stack" id="edc" hidden style="margin-top:14px"><b>✏️ Statements</b><span class="muted">One per line.</span><textarea id="ta" style="min-height:160px"></textarea><button class="btn green" id="sv">✓ Save</button></div><div id="ros" class="card" style="margin-top:12px"></div>`;
+Learn.rosterEditor($('ros'));$('ros').addEventListener('roster',()=>draw());
+const S=()=>Kit.lines(st.text);
+function draw(){const s=S()[idx]||'Add a statement';$('st').textContent=`💬 “${s}”`;pos=st.hist[s]||(st.hist[s]={});const R=Learn.roster();
+ $('ln').querySelectorAll('.os-chip').forEach(c=>c.remove());$('tray').innerHTML=R.filter(n=>pos[n]==null).map(n=>`<span class="os-chip" data-n="${Kit.esc(n)}">${Kit.esc(n)}</span>`).join('')||'<span class="muted">Everyone is on the line!</span>';
+ R.filter(n=>pos[n]!=null).forEach(n=>{const p=pos[n];const c=document.createElement('span');c.className='os-chip'+(st.anon?' anon':'');c.dataset.n=n;c.textContent=n;c.title=st.anon?'':n;c.style.left=p.x+'%';c.style.top=p.y+'%';$('ln').appendChild(c)});
+ const xs=Object.values(pos).map(p=>p.x);$('avg').hidden=!xs.length;if(xs.length)$('avg').style.left=xs.reduce((a,b)=>a+b,0)/xs.length+'%';$('an').checked=st.anon;
+ Kit.set('os-set',st);window.__t={placed:xs.length,avg:xs.length?xs.reduce((a,b)=>a+b,0)/xs.length:null}}
+let dr=null,sel=null;
+document.addEventListener('pointerdown',e=>{const c=e.target.closest('.os-chip');if(!c)return;e.preventDefault();const r=c.getBoundingClientRect();dr={n:c.dataset.n,g:c.cloneNode(true),sx:e.clientX,sy:e.clientY,tray:!!c.closest('#tray')};dr.g.style.cssText=`position:fixed;left:${e.clientX}px;top:${e.clientY}px;transform:translate(-50%,-50%);z-index:99;pointer-events:none`;dr.g.className='os-chip';document.body.appendChild(dr.g);c.style.opacity='.3'});
+document.addEventListener('pointermove',e=>{if(!dr)return;dr.g.style.left=e.clientX+'px';dr.g.style.top=e.clientY+'px'});
+document.addEventListener('pointerup',e=>{const r=$('ln').getBoundingClientRect();const inLine=e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom;
+ if(!dr){if(sel&&inLine){pos[sel]={x:Math.max(3,Math.min(97,(e.clientX-r.left)/r.width*100)),y:Math.max(8,Math.min(76,(e.clientY-r.top)/r.height*100))};sel=null;Kit.tick();draw()}return}
+ dr.g.remove();const n=dr.n;const tap=Math.hypot(e.clientX-dr.sx,e.clientY-dr.sy)<8;const fromTray=dr.tray;dr=null;
+ if(tap&&fromTray){sel=n;draw();const c=$('tray').querySelector(`[data-n="${CSS.escape(n)}"]`);if(c){c.style.outline='4px solid var(--grape)'}return}
+ if(e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom){pos[n]={x:Math.max(3,Math.min(97,(e.clientX-r.left)/r.width*100)),y:Math.max(8,Math.min(76,(e.clientY-r.top)/r.height*100))};Kit.tick()}else delete pos[n];draw()});
+$('nx').onclick=()=>{idx=(idx+1)%S().length;draw();Kit.tone(600,.1,'triangle',.2)};$('pv').onclick=()=>{idx=(idx-1+S().length)%S().length;draw()};
+$('an').onchange=()=>{st.anon=$('an').checked;draw()};$('rs').onclick=()=>{st.hist[S()[idx]]={};draw()};
+$('ed').onclick=()=>{$('edc').hidden=!$('edc').hidden;$('ta').value=st.text};$('sv').onclick=()=>{st.text=$('ta').value;idx=0;$('edc').hidden=true;draw()};
+draw();
+</script>
+</body></html>

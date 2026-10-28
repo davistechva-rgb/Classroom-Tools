@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Screen Cover / Reveal Tool</title>
+<style>
+main{max-width:1600px}
+.sc2-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;margin-bottom:12px}
+.sc2-bar label{background:#fff;border:3px solid var(--ink);border-radius:14px;padding:4px 10px}
+.sc2-stage{position:relative;border:6px solid var(--ink);border-radius:20px;overflow:hidden;box-shadow:7px 7px 0 var(--ink);background:#fff;min-height:50vh;touch-action:none;user-select:none}
+.sc2-src{display:block;width:100%;height:auto}
+.sc2-txt{padding:4% 5%;font-size:clamp(1.3rem,3vw,2.3rem);font-weight:700;line-height:1.5;white-space:pre-wrap;outline:none;min-height:50vh}
+.sc2-sh{position:absolute;background:var(--shade);z-index:3;transition:none}
+.sc2-sh.anim{transition:all .35s}
+.sc2-sh .h{position:absolute;background:var(--sun);border:3px solid var(--ink);border-radius:99px;display:grid;place-items:center;font-weight:800;font-size:.9rem;color:var(--ink);cursor:grab;touch-action:none}
+#sT{left:0;right:0;top:0}#sB{left:0;right:0;bottom:0}#sL{top:0;bottom:0;left:0}#sR{top:0;bottom:0;right:0}
+#sT .h{left:50%;bottom:-18px;transform:translateX(-50%);width:110px;height:32px}
+#sB .h{left:50%;top:-18px;transform:translateX(-50%);width:110px;height:32px}
+#sL .h{top:50%;right:-18px;transform:translateY(-50%);width:32px;height:110px}
+#sR .h{top:50%;left:-18px;transform:translateY(-50%);width:32px;height:110px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("⬛", "Screen Cover / Reveal Tool");
+const $=id=>document.getElementById(id);
+const st=Kit.get('sc2-state',{text:'1. What is the capital of Virginia?\n   Richmond\n2. What is 12 × 4?\n   48\n3. Name the three states of matter.\n   Solid, liquid, and gas\n4. Who wrote the Declaration of Independence?\n   Thomas Jefferson',shade:'#1D2B53'});
+document.querySelector('main').innerHTML=`<div class="sc2-bar"><button class="btn green" id="share">🖥️ Share a window</button><label>🖼️ Picture <input type="file" id="pic" accept="image/*" style="max-width:190px"></label><button class="btn white" id="usetxt">📝 Type on the board</button>
+<label>Shade <select id="col" style="width:auto"><option value="#1D2B53">Navy</option><option value="#000000">Black</option><option value="#F4F1E8">Paper</option><option value="#2F5D3A">Chalkboard</option></select></label>
+<button class="btn" id="down">⬇ Show next line</button><button class="btn white" id="up">⬆ Cover a line</button><button class="btn white" id="all">👀 Uncover all</button><button class="btn white" id="cov">⬛ Cover all</button></div>
+<div class="sc2-stage" id="stg"><div id="content"></div><div class="sc2-sh" id="sT"><span class="h">⇕</span></div><div class="sc2-sh" id="sB"><span class="h">⇕</span></div><div class="sc2-sh" id="sL"><span class="h">⇔</span></div><div class="sc2-sh" id="sR"><span class="h">⇔</span></div></div>
+<p class="muted" style="text-align:center">Drag the yellow handles to slide the covers, just like a sheet of paper on an overhead projector. Or press ⬇ (or the down arrow key) to show one line at a time.</p>`;
+const S={T:0,B:0,L:0,R:0};
+function apply(anim){['T','B','L','R'].forEach(k=>{const e=$('s'+k);e.classList.toggle('anim',!!anim);if(k==='T'||k==='B')e.style.height=S[k]+'%';else e.style.width=S[k]+'%'});$('stg').style.setProperty('--shade',st.shade);window.__t={...S}}
+function useText(){$('content').innerHTML=`<div class="sc2-txt" id="tx" contenteditable="true" spellcheck="false"></div>`;$('tx').textContent=st.text;$('tx').oninput=()=>{st.text=$('tx').innerText;Kit.set('sc2-state',st)};const t=$('tx'),pad=parseFloat(getComputedStyle(t).paddingTop)/$('stg').clientHeight*100;S.T=0;S.B=Math.max(0,100-pad-lineStep()*1.15);S.L=0;S.R=0;apply(true)}
+$('usetxt').onclick=useText;
+$('share').onclick=async()=>{try{const s=await navigator.mediaDevices.getDisplayMedia({video:true});const v=document.createElement('video');v.className='sc2-src';v.srcObject=s;v.muted=true;v.autoplay=true;$('content').innerHTML='';$('content').appendChild(v);await v.play();S.T=0;S.B=100;apply(true)}catch(e){}};
+$('pic').onchange=()=>{const f=$('pic').files[0];if(!f)return;$('content').innerHTML=`<img class="sc2-src" src="${URL.createObjectURL(f)}" alt="">`;S.T=0;S.B=100;apply(true)};
+$('col').value=st.shade;$('col').onchange=()=>{st.shade=$('col').value;Kit.set('sc2-state',st);apply()};
+const lineStep=()=>{const t=$('tx');if(!t)return 8;const lh=parseFloat(getComputedStyle(t).lineHeight)||40;return lh/$('stg').clientHeight*100};
+$('down').onclick=()=>{S.B=Math.max(0,S.B-lineStep());apply(true);Kit.tick()};
+$('up').onclick=()=>{S.B=Math.min(100-S.T,S.B+lineStep());apply(true)};
+$('all').onclick=()=>{S.T=S.B=S.L=S.R=0;apply(true)};$('cov').onclick=()=>{S.T=0;S.B=100;S.L=S.R=0;apply(true)};
+let drag=null;
+$('stg').addEventListener('pointerdown',e=>{const h=e.target.closest('.h');if(!h)return;drag=h.parentElement.id[1];h.setPointerCapture(e.pointerId);e.preventDefault()});
+$('stg').addEventListener('pointermove',e=>{if(!drag)return;const r=$('stg').getBoundingClientRect();const px=(e.clientX-r.left)/r.width*100,py=(e.clientY-r.top)/r.height*100;
+ if(drag==='T')S.T=Math.max(0,Math.min(100-S.B,py));if(drag==='B')S.B=Math.max(0,Math.min(100-S.T,100-py));if(drag==='L')S.L=Math.max(0,Math.min(100-S.R,px));if(drag==='R')S.R=Math.max(0,Math.min(100-S.L,100-px));apply()});
+$('stg').addEventListener('pointerup',()=>drag=null);
+addEventListener('keydown',e=>{if(e.target.closest('[contenteditable],input,textarea'))return;if(e.key==='ArrowDown'){e.preventDefault();$('down').click()}if(e.key==='ArrowUp'){e.preventDefault();$('up').click()}});
+useText();
+</script>
+</body></html>

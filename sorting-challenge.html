@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Sorting Challenge</title>
+<style>
+.sc-stage{position:relative;height:min(40vh,320px);border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);overflow:hidden;background:linear-gradient(#BFE6FA,#E8F6FF)}
+.sc-belt{position:absolute;left:0;right:0;bottom:22%;height:64px;background:repeating-linear-gradient(90deg,#3B4A6B 0 30px,#2C3A58 30px 60px);border-top:6px solid var(--ink);border-bottom:6px solid var(--ink);animation:scbelt var(--bs,1s) linear infinite}
+@keyframes scbelt{to{background-position:60px 0}}
+.sc-belt::before,.sc-belt::after{content:"";position:absolute;top:-6px;width:70px;height:64px;border-radius:50%;background:#55658A;border:6px solid var(--ink)}
+.sc-belt::before{left:-30px}.sc-belt::after{right:-30px}
+.sc-box{position:absolute;bottom:calc(22% + 64px);transform:translateX(-50%);background:#fff;border:5px solid var(--ink);border-radius:16px;padding:10px 18px;font-weight:800;font-size:clamp(1.3rem,3.4vw,2.2rem);white-space:nowrap;box-shadow:0 6px 0 rgba(29,43,83,.35)}
+.sc-box.go{transition:transform .45s cubic-bezier(.5,-.4,.6,1),opacity .45s;opacity:0}
+.sc-end{position:absolute;right:0;top:0;bottom:0;width:12%;background:repeating-linear-gradient(-45deg,#FF6B5B 0 16px,#fff 16px 32px);opacity:.35}
+.sc-bins{display:grid;gap:14px;margin-top:16px}
+.sc-bin{font:inherit;font-weight:800;font-size:clamp(1.2rem,3vw,1.9rem);border:6px solid var(--ink);border-radius:24px;padding:18px 10px;cursor:pointer;color:#fff;background:var(--bc);box-shadow:0 8px 0 var(--ink);text-shadow:2px 2px 0 rgba(0,0,0,.3)}
+.sc-bin small{display:block;font-size:.55em;opacity:.9}
+.sc-bin:active,.sc-bin.hit{transform:translateY(8px);box-shadow:none}
+.sc-hud{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
+.sc-life{font-size:1.6rem;letter-spacing:4px}
+.sc-msg{position:absolute;left:50%;top:18%;transform:translateX(-50%);font-weight:800;font-size:2rem;color:var(--ink);text-shadow:2px 2px 0 #fff}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🗃️", "Sorting Challenge");
+const DEF=`# Living or nonliving?
+Living: dog, tree, mushroom, fish, flower, person, bird, grass, frog, bee, cactus, whale
+Nonliving: rock, water, chair, cloud, pencil, sun, car, shoe, spoon, sand, robot, kite
+# Even or odd?
+Even: 2, 8, 14, 20, 36, 100, 48, 62, 6, 74, 90, 12
+Odd: 3, 7, 15, 21, 49, 99, 1, 53, 77, 35, 11, 85
+# Fruit or vegetable?
+Fruit: apple, banana, grape, orange, cherry, peach, mango, pear, plum, kiwi
+Vegetable: carrot, broccoli, celery, spinach, potato, onion, lettuce, pea, radish, cabbage
+# Noun or verb?
+Noun: teacher, school, dog, city, ball, friend, river, table, book, window
+Verb: run, jump, write, sing, swim, think, climb, laugh, build, read
+# Land, water, or air?
+Land: car, bike, train, bus, truck, tractor, scooter
+Water: boat, ship, submarine, canoe, kayak, sailboat
+Air: plane, helicopter, rocket, hot air balloon, glider, jet`;
+const BC=['#FF6B5B','#22C3E6','#5DC66E'];const KEYS=[['ArrowLeft','a','1'],['ArrowRight','l','2'],['ArrowDown','s','3']];
+const $=id=>document.getElementById(id);
+document.querySelector('main').innerHTML=`<div class="card ln-set" id="set"><div class="row"><label>Sort <select id="pick" style="width:auto"></select></label>
+ <label>Speed <select id="sp" style="width:auto"><option value="7000">Easy</option><option value="5200" selected>Medium</option><option value="3800">Fast</option></select></label><button class="btn big green" id="go">Start</button></div>
+ <p class="muted" style="margin:8px 0 0">Things ride down the conveyor belt. Send each one to the right bin before it falls off the end! Tap a bin, or use the arrow keys (← and →). The belt speeds up as you go. Three mistakes and the factory closes.</p></div>
+<div id="game" hidden><div class="sc-hud"><span class="ln-pill">⭐ <b id="sc">0</b></span><span class="ln-pill">🔥 Streak <b id="st">0</b></span><span class="ln-pill sc-life" id="lv"></span><span class="ln-pill">🏆 Best <b id="bs">0</b></span></div>
+<div class="sc-stage" id="stage"><div class="sc-end"></div><div class="sc-belt" id="belt"></div><div class="sc-msg" id="msg"></div></div><div class="sc-bins" id="bins"></div></div>`;
+const L=Learn.list($('set'),{key:'sorts',label:'My sorting lists',help:'Start each sort with # and its name. Then 2 or 3 lines: Bin name: item, item, item',def:DEF});
+function acts(){const out=[];let cur=null;L.get().forEach(l=>{if(l.startsWith('#')){cur={name:l.slice(1).trim(),bins:[]};out.push(cur)}else if(l.includes(':')){if(!cur){cur={name:'Sort it',bins:[]};out.push(cur)}const i=l.indexOf(':');cur.bins.push({name:l.slice(0,i).trim(),items:l.slice(i+1).split(',').map(s=>s.trim()).filter(Boolean)})}});return out.filter(a=>a.bins.length>=2).map(a=>({...a,bins:a.bins.slice(0,3)}))}
+const refresh=()=>{$('pick').innerHTML=acts().map((a,i)=>`<option value="${i}">${Kit.esc(a.name)}</option>`).join('')};refresh();L.el.querySelector('textarea').addEventListener('change',refresh);
+let A,bag,cur,el,t0,dur,raf,score,streak,lives,running,key;
+$('go').onclick=()=>{const all=acts();if(!all.length)return alert('Add a sort with at least 2 bins.');A=all[+$('pick').value||0];key='sc-best-'+A.name;
+ $('bins').style.gridTemplateColumns=`repeat(${A.bins.length},minmax(0,1fr))`;$('bins').innerHTML=A.bins.map((b,i)=>`<button class="sc-bin" data-b="${i}" style="--bc:${BC[i]}">${Kit.esc(b.name)}<small>${['← left','→ right','↓ down'][i]}</small></button>`).join('');
+ $('set').hidden=true;$('game').hidden=false;score=0;streak=0;lives=3;dur=+$('sp').value;bag=[];running=true;$('bs').textContent=Kit.get(key,0);hud();countdown()};
+async function countdown(){for(const t of ['3','2','1','Go!']){$('msg').textContent=t;Kit.tone(t==='Go!'?880:440,.15,'square',.15);await Kit.sleep(600)}$('msg').textContent='';spawn()}
+function draw(){const all=A.bins.flatMap((b,i)=>b.items.map(t=>({t,i})));if(!bag.length)bag=Kit.shuffle(all);return bag.pop()}
+function spawn(){if(!running)return;cur=draw();el=document.createElement('div');el.className='sc-box';el.textContent=cur.t;$('stage').appendChild(el);t0=performance.now();window.__t={bin:cur.i};
+ $('belt').style.setProperty('--bs',(dur/7000).toFixed(2)+'s');cancelAnimationFrame(raf);raf=requestAnimationFrame(move)}
+function move(now){if(!running||!el)return;const p=(now-t0)/dur;el.style.left=(-10+p*104)+'%';if(p>=.92){fall();return}raf=requestAnimationFrame(move)}
+function fall(){const e=el;el=null;e.style.transition='transform .6s ease-in,opacity .6s';e.style.transform='translate(-20%,180px) rotate(60deg)';e.style.opacity='0';setTimeout(()=>e.remove(),700);miss('Missed it!')}
+function miss(t){streak=0;lives--;Kit.tone(150,.4,'sawtooth',.2);$('msg').textContent=t;setTimeout(()=>$('msg').textContent='',800);Learn.flash($('stage'),false);hud();if(lives<=0)return over();setTimeout(spawn,700)}
+function send(i){if(!el||!running)return;const b=$('bins').children[i];b.classList.add('hit');setTimeout(()=>b.classList.remove('hit'),120);cancelAnimationFrame(raf);const e=el;el=null;
+ const br=b.getBoundingClientRect(),er=e.getBoundingClientRect();e.classList.add('go');e.style.transform=`translate(calc(-50% + ${br.left+br.width/2-er.left-er.width/2}px),${br.top-er.top+20}px) scale(.5)`;setTimeout(()=>e.remove(),500);
+ if(i===cur.i){streak++;score+=1+Math.floor(streak/5);dur=Math.max(1500,dur*.96);Kit.tone(600+Math.min(streak,10)*40,.12,'triangle',.22);if(streak%10===0){Kit.confetti(40);$('msg').textContent=`🔥 ${streak} in a row!`;setTimeout(()=>$('msg').textContent='',900)}hud();setTimeout(spawn,350)}
+ else miss(`Oops! ${cur.t} goes in ${A.bins[cur.i].name}`)}
+function hud(){$('sc').textContent=score;$('st').textContent=streak;$('lv').textContent='❤️'.repeat(Math.max(0,lives))+'🤍'.repeat(3-Math.max(0,lives))}
+function over(){running=false;const best=Math.max(score,Kit.get(key,0));const nb=score>Kit.get(key,0);Kit.set(key,best);$('bs').textContent=best;
+ Learn.finish(nb?'🏆':'🏭',nb?'New best score!':'Factory closed!',`You sorted ${score} points' worth.${nb?'':` Best: ${best}.`}`,()=>{$('game').hidden=true;$('set').hidden=false})}
+$('bins').onclick=e=>{const b=e.target.closest('.sc-bin');if(b)send(+b.dataset.b)};
+addEventListener('keydown',e=>{if($('game').hidden)return;KEYS.forEach((ks,i)=>{if(i<A.bins.length&&ks.includes(e.key)){e.preventDefault();send(i)}})});
+</script>
+</body></html>

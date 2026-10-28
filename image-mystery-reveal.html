@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Image Mystery Reveal</title>
+<style>
+.ir-stage{position:relative;aspect-ratio:16/10;max-height:60vh;margin:0 auto;border:6px solid var(--ink);border-radius:24px;overflow:hidden;box-shadow:7px 7px 0 var(--ink);background:#fff}
+.ir-pic{position:absolute;inset:0;display:grid;place-items:center;font-size:min(34vw,330px);line-height:1}
+.ir-pic img{width:100%;height:100%;object-fit:cover}
+.ir-tiles{position:absolute;inset:0;display:grid}
+.ir-tiles i{background:var(--c);border:1px solid rgba(29,43,83,.25);transition:opacity .45s,transform .45s}
+.ir-tiles i.off{opacity:0;transform:scale(.3) rotate(25deg)}
+.ir-bar{display:flex;align-items:center;gap:12px;justify-content:center;flex-wrap:wrap;margin:14px 0}
+.ir-meter{width:min(420px,80vw);height:22px;border:4px solid var(--ink);border-radius:99px;background:#fff;overflow:hidden}
+.ir-meter b{display:block;height:100%;background:linear-gradient(90deg,var(--grass),var(--sun),var(--tomato));transition:width .3s}
+.ir-buzz{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.ir-buzz button{font:inherit;font-weight:800;font-size:1.3rem;color:#fff;background:var(--tc);border:5px solid var(--ink);border-radius:50%;width:clamp(90px,12vw,130px);aspect-ratio:1;cursor:pointer;box-shadow:0 8px 0 var(--ink);text-shadow:2px 2px 0 rgba(0,0,0,.3)}
+.ir-buzz button:active{transform:translateY(8px);box-shadow:none}
+.ir-buzz button:disabled{filter:grayscale(1);opacity:.45;cursor:not-allowed}
+.ir-ov{position:fixed;inset:0;background:rgba(15,22,45,.6);display:grid;place-items:center;z-index:40}
+.ir-ov .card{text-align:center;max-width:560px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🖼️", "Image Mystery Reveal");
+const DEF=`🦁 | Lion
+🗽 | Statue of Liberty
+🌻 | Sunflower
+🐢 | Turtle
+🎡 | Ferris wheel
+🦈 | Shark
+🍔 | Hamburger
+🏀 | Basketball
+🦉 | Owl
+🌍 | Earth
+🚁 | Helicopter
+🍓 | Strawberry`;
+const $=id=>document.getElementById(id);
+document.querySelector('main').innerHTML=`<div class="card ln-set" id="set"><div class="row">
+ ${Learn.teamPicker('nT',2)}
+ <label>Reveal speed <select id="sp" style="width:auto"><option value="900">Slow</option><option value="550" selected>Medium</option><option value="300">Fast</option></select></label>
+ <label>📷 My own pictures <input type="file" id="pics" accept="image/*" multiple style="max-width:240px"></label>
+ <button class="btn big green" id="go">Start</button></div>
+ <p class="muted" style="margin:8px 0 0">The picture uncovers itself a little at a time. Hit your team's buzzer (or press the number key 1 to 6) when you know it. More cover left means more points. A wrong guess locks your team out for that picture.</p></div>
+<div id="game" hidden><div id="tm"></div><div class="ir-stage" id="stage"><div class="ir-pic" id="pic"></div><div class="ir-tiles" id="tiles"></div></div>
+<div class="ir-bar"><b>Still covered</b><div class="ir-meter"><b id="mt"></b></div><b id="pct"></b><button class="btn white small" id="pause">⏸ Pause</button></div>
+<div class="ir-buzz" id="buzz"></div></div>`;
+const L=Learn.list($('set'),{key:'pics',label:'Mystery pictures',help:'One per line: emoji | answer. Your own photos stay for this session only.',def:DEF});
+let T,deck=[],idx=0,cur,tiles=[],order=[],covered=0,timer=null,paused=false,locked=new Set(),judging=false;
+const C=16,R=10,N=C*R;
+$('go').onclick=()=>{const files=[...$('pics').files];
+ deck=Kit.shuffle(files.length?files.map(f=>({img:URL.createObjectURL(f),ans:f.name.replace(/\.[^.]+$/,'').replace(/[-_]+/g,' ')})):L.rows().map(r=>({emo:r[0],ans:r[1]||'?'})));
+ if(!deck.length)return alert('Add at least one picture.');
+ $('set').hidden=true;$('game').hidden=false;T=Learn.teams($('tm'),+$('nT').value,{turns:false});idx=0;
+ const n=Math.max(1,T.n);$('buzz').innerHTML=Array.from({length:n},(_,i)=>`<button data-i="${i}" style="--tc:${T.n?T.colors[i]:'#9B6BF2'}">${T.n?Kit.esc(T.names[i]):'I know it!'}<br><small>${i+1}</small></button>`).join('');
+ round()};
+function round(){cur=deck[idx];locked.clear();judging=false;paused=false;$('pause').textContent='⏸ Pause';
+ $('pic').innerHTML=cur.img?`<img src="${cur.img}" alt="">`:cur.emo;
+ $('tiles').style.gridTemplateColumns=`repeat(${C},1fr)`;
+ $('tiles').innerHTML=Array.from({length:N},(_,i)=>`<i style="--c:hsl(${200+((i*37)%60)},70%,${45+(i*13)%20}%)"></i>`).join('');
+ tiles=[...$('tiles').children];order=Kit.shuffle(tiles.map((_,i)=>i));covered=N;
+ document.querySelectorAll('.ir-buzz button').forEach(b=>b.disabled=false);meter();
+ clearInterval(timer);timer=setInterval(step,+$('sp').value);window.__t={answer:cur.ans};}
+function step(){if(paused||judging)return;const k=Math.max(1,Math.round(N/90));for(let j=0;j<k&&covered>0;j++){tiles[order[N-covered]].classList.add('off');covered--}
+ meter();if(covered<=0){clearInterval(timer);reveal(null)}}
+const worth=()=>Math.max(1,Math.round(covered/N*100));
+function meter(){const p=Math.round(covered/N*100);$('mt').style.width=p+'%';$('pct').textContent=p+'% · worth '+Learn.pts(worth())}
+function buzz(i){if(judging||covered<=0||locked.has(i))return;judging=true;Kit.tone(520,.3,'square',.2);
+ const ov=document.createElement('div');ov.className='ir-ov';const nm=T.n?T.names[i]+' team':'You';
+ ov.innerHTML=`<div class="card stack"><div style="font-size:3rem">🔔</div><div class="ln-big">${Kit.esc(nm)} buzzed in!</div><p>What's your guess? Worth <b>${Learn.pts(worth())}</b>.</p>
+ <div class="row" style="justify-content:center"><button class="btn green big" data-y>✓ Right</button><button class="btn red big" data-n>✗ Wrong</button></div></div>`;
+ document.body.appendChild(ov);
+ ov.onclick=e=>{if(e.target.closest('[data-y]')){ov.remove();T.add(worth(),i);reveal(i)}
+  else if(e.target.closest('[data-n]')){ov.remove();locked.add(i);const b=document.querySelector(`.ir-buzz [data-i="${i}"]`);if(b)b.disabled=true;Learn.flash($('stage'),false);judging=false;
+   if(T.n&&locked.size>=T.n){clearInterval(timer);reveal(null)}}}}
+$('buzz').onclick=e=>{const b=e.target.closest('button');if(b)buzz(+b.dataset.i)};
+addEventListener('keydown',e=>{if($('game').hidden)return;const n=+e.key;if(n>=1&&n<=Math.max(1,T.n))buzz(n-1);if(e.key===' '){e.preventDefault();$('pause').click()}});
+$('pause').onclick=()=>{paused=!paused;$('pause').textContent=paused?'▶ Keep going':'⏸ Pause'};
+function reveal(w){clearInterval(timer);tiles.forEach(t=>t.classList.add('off'));covered=0;meter();if(w!=null){Kit.tada();Kit.confetti(70)}else Kit.ding();
+ const ov=document.createElement('div');ov.className='ir-ov';const last=idx>=deck.length-1;
+ ov.innerHTML=`<div class="card stack"><div class="ln-big">${Kit.esc(cur.ans)}!</div>${w!=null&&T.n?`<p>${Kit.esc(T.names[w])} team got it.</p>`:''}<button class="btn big green" id="nx">${last?'🏁 Finish':'Next picture ➜'}</button></div>`;
+ setTimeout(()=>{document.body.appendChild(ov);ov.querySelector('#nx').onclick=()=>{ov.remove();if(last)Learn.finish('🏆',T.n>1?T.winner():'All done!',`You figured out ${deck.length} pictures.`,()=>{$('game').hidden=true;$('set').hidden=false});else{idx++;round()}}},900)}
+</script>
+</body></html>

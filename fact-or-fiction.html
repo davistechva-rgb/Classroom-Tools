@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Fact or Fiction</title>
+<style>
+.ff-st{max-width:980px;margin:0 auto;background:#fff;border:6px solid var(--ink);border-radius:26px;box-shadow:8px 8px 0 var(--ink);padding:clamp(18px,3vw,32px);text-align:center;font-weight:800;font-size:clamp(1.5rem,4vw,2.6rem);line-height:1.2;position:relative}
+.ff-st .tag{position:absolute;top:-18px;left:50%;transform:translateX(-50%);background:var(--grape);color:#fff;border:4px solid var(--ink);border-radius:99px;padding:2px 16px;font-size:1rem}
+.ff-votes{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:980px;margin:22px auto 0}
+.ff-v{font:inherit;border:6px solid var(--ink);border-radius:26px;padding:16px;cursor:pointer;color:#fff;box-shadow:0 8px 0 var(--ink);text-shadow:2px 2px 0 rgba(0,0,0,.3);display:flex;flex-direction:column;align-items:center;gap:4px}
+.ff-v .big{font-size:clamp(1.6rem,4vw,2.6rem);font-weight:800}
+.ff-v .n{font-size:clamp(2rem,5vw,3.4rem);font-weight:800;background:rgba(255,255,255,.25);border-radius:16px;min-width:2em}
+.ff-v.f{background:#22A36B}.ff-v.x{background:#E5533F}
+.ff-v:active{transform:translateY(8px);box-shadow:none}
+.ff-v:disabled{cursor:default}
+.ff-det{max-width:520px;margin:22px auto 0;background:#2B3350;border:6px solid var(--ink);border-radius:26px;box-shadow:8px 8px 0 var(--ink);padding:16px;color:#fff;text-align:center}
+.ff-dial{position:relative;height:150px;overflow:hidden}
+.ff-arc{position:absolute;left:50%;bottom:-130px;width:300px;height:300px;transform:translateX(-50%);border-radius:50%;background:conic-gradient(from -90deg,#E5533F 0 90deg,#22A36B 90deg 180deg,transparent 180deg);border:6px solid #fff}
+.ff-arc::after{content:"";position:absolute;inset:40px;border-radius:50%;background:#2B3350}
+.ff-lab{position:absolute;bottom:22px;font-weight:800;font-size:1.1rem}.ff-lab.l{left:8%}.ff-lab.r{right:8%}
+.ff-needle{position:absolute;left:50%;bottom:0;width:8px;height:132px;background:var(--sun);border:2px solid var(--ink);border-radius:4px;transform-origin:bottom center;transform:translateX(-50%) rotate(0deg);transition:transform .25s}
+.ff-res{font-size:clamp(2rem,6vw,3.4rem);font-weight:800;min-height:1.2em;letter-spacing:.05em}
+.ff-res.f{color:#5DFFA8}.ff-res.x{color:#FF8A7A}
+.ff-why{font-size:1.15rem;font-weight:600;min-height:1.2em}
+.ff-hud{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:22px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🧠", "Fact or Fiction");
+const DEF=`Octopuses have three hearts. | fact | Two hearts pump blood to the gills, and one pumps it to the rest of the body.
+Goldfish can only remember things for 3 seconds. | fiction | Goldfish can remember things for months.
+Lightning never strikes the same place twice. | fiction | Tall buildings like the Empire State Building get hit many times every year.
+Honey can last for thousands of years without going bad. | fact | Honey found in ancient Egyptian tombs was still safe to eat.
+Bats are blind. | fiction | Bats can see. Many also use echoes to find their way in the dark.
+A group of flamingos is called a flamboyance. | fact | It fits their bright pink feathers!
+You can see the Great Wall of China from the Moon with just your eyes. | fiction | The wall is far too narrow to see from that far away.
+Bananas grow on trees. | fiction | Banana plants are giant herbs. Their "trunk" is really tightly rolled leaves.
+Sharks were around before trees. | fact | Sharks have lived for over 400 million years, longer than trees have.
+An ostrich's eye is bigger than its brain. | fact | Each eye is about the size of a pool ball.
+People only use 10% of their brains. | fiction | We use every part of our brain, just not all at the same time.
+Venus is the hottest planet in our solar system. | fact | Its thick clouds trap heat, so it's even hotter than Mercury.
+Penguins live at the North Pole. | fiction | Wild penguins live in the southern half of the world.
+A day on Venus is longer than its whole year. | fact | Venus spins so slowly that it goes around the Sun before it finishes one spin.
+Chameleons change color just to match what's behind them. | fiction | They mostly change color to show their mood and to warm up or cool down.
+Dogs can only see in black and white. | fiction | Dogs can see some colors, mostly blues and yellows.
+Mount Everest is the tallest mountain above sea level. | fact | Its peak is about 29,000 feet high.
+Some turtles can breathe through their back ends. | fact | A few kinds of turtles soak up oxygen through an opening near their tail while they stay underwater.`;
+const $=id=>document.getElementById(id);
+document.querySelector('main').innerHTML=`<div class="card ln-set" id="set"><div class="row"><label>How do we vote? <select id="vm" style="width:auto"><option value="count">Everyone taps a button (count the votes)</option><option value="one">The class agrees on one answer</option></select></label>
+ <label>Statements <select id="nS" style="width:auto"><option>5</option><option selected>10</option><option value="99">All</option></select></label><button class="btn big green" id="go">Start</button></div>
+ <p class="muted" style="margin:8px 0 0">Read the statement. Is it a real fact or made-up fiction? Everyone votes, then run the lie detector to find out!</p></div>
+<div id="game" hidden><div class="ff-hud"><span class="ln-pill" id="pr"></span><span class="ln-pill">🧠 Class score <b id="cs">0%</b></span></div>
+<div class="ff-st"><span class="tag" id="tag"></span><span id="st"></span></div>
+<div class="ff-votes"><button class="ff-v f" data-v="fact"><span class="big">✅ FACT</span><span class="n" id="nf">0</span></button><button class="ff-v x" data-v="fiction"><span class="big">🧚 FICTION</span><span class="n" id="nx2">0</span></button></div>
+<div class="ff-det"><b>🕵️ LIE DETECTOR 3000</b><div class="ff-dial"><div class="ff-arc"></div><span class="ff-lab l">FICTION</span><span class="ff-lab r">FACT</span><div class="ff-needle" id="nd"></div></div><div class="ff-res" id="res"></div><div class="ff-why" id="why"></div>
+<div class="row" style="justify-content:center;margin-top:12px"><button class="btn big" id="run">⚡ Run the detector</button><button class="btn big green" id="nx" hidden>Next ➜</button></div></div></div>`;
+const L=Learn.list($('set'),{key:'stmts',label:'My statements',help:'One per line: statement | fact or fiction | why (optional).',def:DEF});
+let deck,idx,votes,right=0,total=0,running=false,done;
+$('go').onclick=()=>{deck=Kit.shuffle(L.rows().filter(r=>r[1]&&/^(fact|fiction|true|false)/i.test(r[1]))).slice(0,+$('nS').value);if(!deck.length)return alert('Add a statement marked fact or fiction.');$('set').hidden=true;$('game').hidden=false;idx=0;right=0;total=0;round()};
+const isFact=r=>/^(fact|true)/i.test(r[1]);
+function round(){const r=deck[idx];votes={fact:0,fiction:0};done=false;$('st').textContent=r[0];$('tag').textContent=`Statement ${idx+1} of ${deck.length}`;$('res').textContent='';$('res').className='ff-res';$('why').textContent='';
+ $('nd').style.transform='translateX(-50%) rotate(0deg)';$('run').hidden=false;$('nx').hidden=true;document.querySelectorAll('.ff-v').forEach(b=>{b.disabled=false;b.style.opacity=''});draw();window.__t={fact:isFact(r)}}
+function draw(){$('nf').textContent=votes.fact;$('nx2').textContent=votes.fiction;$('pr').textContent=`${idx+1} of ${deck.length}`;$('cs').textContent=total?Math.round(right/total*100)+'%':'—'}
+document.querySelector('.ff-votes').onclick=e=>{const b=e.target.closest('.ff-v');if(!b||done||running)return;
+ if($('vm').value==='one'){votes={fact:0,fiction:0};votes[b.dataset.v]=1;document.querySelectorAll('.ff-v').forEach(x=>x.style.opacity=x===b?'':'.5')}else votes[b.dataset.v]++;
+ Kit.tone(b.dataset.v==='fact'?660:440,.08,'triangle',.2);Learn.burst('+1',b,'#fff');draw()};
+$('run').onclick=async()=>{if(running||done)return;if(!votes.fact&&!votes.fiction){$('why').textContent='Vote first!';return}running=true;$('run').hidden=true;
+ const f=isFact(deck[idx]);for(let i=0;i<14;i++){$('nd').style.transform=`translateX(-50%) rotate(${(Math.random()*150-75).toFixed(0)}deg)`;Kit.tone(300+Math.random()*500,.06,'square',.08);await Kit.sleep(120)}
+ $('nd').style.transform=`translateX(-50%) rotate(${f?55:-55}deg)`;await Kit.sleep(400);
+ $('res').textContent=f?'✅ FACT!':'🧚 FICTION!';$('res').classList.add(f?'f':'x');$('why').textContent=deck[idx][2]||'';
+ const v=votes.fact+votes.fiction,good=f?votes.fact:votes.fiction;right+=good;total+=v;Kit.tada();if(good/v>=.75)Kit.confetti(60);
+ if($('vm').value==='count'&&v>1)$('why').textContent+=` · ${good} of ${v} voters got it right.`;
+ running=false;done=true;document.querySelectorAll('.ff-v').forEach(b=>b.disabled=true);$('nx').hidden=false;$('nx').textContent=idx>=deck.length-1?'🏁 Finish':'Next ➜';draw()};
+$('nx').onclick=()=>{if(idx>=deck.length-1){Learn.finish('🕵️',`Class score: ${total?Math.round(right/total*100):0}%`,'Great job spotting facts and fiction!',()=>{$('game').hidden=true;$('set').hidden=false});return}idx++;round()};
+</script>
+</body></html>

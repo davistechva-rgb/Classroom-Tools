@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Movement Break Generator</title>
+<style>
+main{max-width:1400px}
+.mv-scr{position:relative;border:7px solid var(--ink);border-radius:30px;box-shadow:9px 9px 0 var(--ink);background:var(--bg,linear-gradient(135deg,#FF9F43,#FF6B5B));color:#fff;text-align:center;padding:clamp(16px,3vw,32px);min-height:52vh;display:flex;flex-direction:column;justify-content:center;gap:8px;overflow:hidden}
+.mv-scr.rest{--bg:linear-gradient(135deg,#22C3E6,#2E7DD7)}
+.mv-e{font-size:clamp(5rem,15vw,10rem);line-height:1;display:inline-block}
+.mv-e.a-jump{animation:mvj .5s infinite}@keyframes mvj{50%{transform:translateY(-30px) scale(1.05)}}
+.mv-e.a-side{animation:mvs .8s infinite}@keyframes mvs{25%{transform:translateX(-30px)}75%{transform:translateX(30px)}}
+.mv-e.a-squat{animation:mvq 1.4s infinite}@keyframes mvq{50%{transform:scaleY(.75) translateY(20px)}}
+.mv-e.a-spin{animation:mvr 2s linear infinite}@keyframes mvr{to{transform:rotate(360deg)}}
+.mv-e.a-reach{animation:mvh 1.6s infinite}@keyframes mvh{50%{transform:translateY(-20px) scale(1.15)}}
+.mv-e.a-calm{animation:mvc 4s ease-in-out infinite}@keyframes mvc{50%{transform:scale(1.12)}}
+.mv-n{font-size:clamp(2.2rem,6.4vw,4.6rem);font-weight:800;line-height:1;text-shadow:4px 4px 0 rgba(29,43,83,.35)}
+.mv-h{font-size:clamp(1.1rem,2.6vw,1.8rem);font-weight:700;opacity:.95}
+.mv-t{font-size:clamp(3rem,9vw,6rem);font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+.mv-prog{display:flex;gap:6px;justify-content:center;margin-top:8px}
+.mv-prog i{width:30px;height:12px;border-radius:6px;background:rgba(255,255,255,.35)}.mv-prog i.on{background:#fff}.mv-prog i.cur{background:var(--sun)}
+.mv-next{font-weight:800;font-size:1.2rem;background:rgba(29,43,83,.3);border-radius:99px;padding:4px 16px;align-self:center}
+.mv-ctl{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px;align-items:center}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🏃", "Movement Break Generator");
+const $=id=>document.getElementById(id);
+const MOVES=[['🤸','Jumping jacks','Arms up, feet out! Arms down, feet in!','jump',2],['🏃','Run in place','Lift those knees high!','jump',2],['🦵','Squats','Sit back like there\'s a chair behind you, then stand.','squat',2],['🙆','Reach for the sky','Stretch up tall, then touch your toes.','reach',1],
+ ['🦀','Side steps','Step side to side, quick feet!','side',1],['🐸','Frog jumps','Squat down, then jump up like a frog!','jump',3],['🥊','Shadow boxing','Punch the air! Left, right, left, right!','side',2],['🌀','Arm circles','Big circles forward, then backward.','spin',1],
+ ['🦩','Balance on one foot','Switch feet halfway through!','calm',1],['⛷️','Ski jumps','Hop side to side over an invisible line.','side',3],['🧗','Climb the ladder','Reach up with one arm and lift the opposite knee.','reach',2],['🐻','Bear crawl in place','Hands on the floor, wiggle like a bear (stay in your spot!).','squat',3],
+ ['💃','Dance party','Show us your best moves!','side',2],['🚴','Air bike','Stand tall and lift your knees like you\'re riding a bike.','jump',2],['🙇','Toe touches','Touch your toes, then stand up tall.','squat',1],['🐍','Wiggle like a noodle','Wiggle your whole body!','spin',1]];
+const st=Kit.get('mv-set',{len:3,lvl:2,each:30,beats:true});
+document.querySelector('main').innerHTML=`<div class="mv-scr" id="scr"><div><span class="mv-e" id="em">🏃</span></div><div class="mv-n" id="nm">Get ready to move!</div><div class="mv-h" id="hw">Stand up and find your own space.</div><div class="mv-t" id="tm"></div><div class="mv-next" id="nx" hidden></div><div class="mv-prog" id="pg"></div></div>
+<div class="mv-ctl"><select id="len" style="width:auto"><option value="2">2 minutes</option><option value="3">3 minutes</option><option value="5">5 minutes</option></select><select id="lvl" style="width:auto"><option value="1">😌 Gentle</option><option value="2">🙂 Medium</option><option value="3">🔥 Energetic</option></select><select id="each" style="width:auto"><option value="20">20 s each</option><option value="30">30 s each</option><option value="40">40 s each</option></select>
+<button class="btn big green" id="go">▶ Start moving</button><button class="btn white" id="sk">⏭ Skip</button><label class="ln-pill"><input type="checkbox" id="bt"> 🥁 Beat</label><button class="btn white small" id="fs">⛶</button></div>`;
+['len','lvl','each'].forEach(id=>$(id).value=st[id]);$('bt').checked=st.beats;['len','lvl','each','bt'].forEach(id=>$(id).onchange=()=>{st.len=+$('len').value;st.lvl=+$('lvl').value;st.each=+$('each').value;st.beats=$('bt').checked;Kit.set('mv-set',st)});
+let plan=[],k=0,left=0,tv=null;
+function build(){const n=Math.max(2,Math.round(st.len*60/(st.each+10)));const pool=MOVES.filter(m=>m[4]<=st.lvl);let out=[],bag=[];
+ for(let i=0;i<n;i++){if(!bag.length)bag=Kit.shuffle(pool);out.push({m:bag.pop(),secs:st.each});if(i<n-1)out.push({rest:true,secs:10})}
+ out.push({cool:true,secs:20});return out}
+function show(){const s=plan[k];$('scr').className='mv-scr'+(s.rest||s.cool?' rest':'');const nx=plan.slice(k+1).find(x=>x.m);
+ if(s.m){$('em').textContent=s.m[0];$('em').className='mv-e a-'+s.m[3];$('nm').textContent=s.m[1];$('hw').textContent=s.m[2]}
+ else if(s.rest){$('em').textContent='💧';$('em').className='mv-e a-calm';$('nm').textContent='Quick rest';$('hw').textContent='Shake it out and breathe.'}
+ else{$('em').textContent='🧘';$('em').className='mv-e a-calm';$('nm').textContent='Cool down';$('hw').textContent='Breathe in slowly… and out. You did it!'}
+ $('nx').hidden=!nx;if(nx)$('nx').textContent=`Up next: ${nx.m[0]} ${nx.m[1]}`;const ms=plan.filter(x=>x.m);const done=plan.slice(0,k).filter(x=>x.m).length;$('pg').innerHTML=ms.map((_,i)=>`<i class="${i<done?'on':i===done&&s.m?'cur':''}"></i>`).join('');tdraw();window.__t={k,n:plan.length,name:$('nm').textContent}}
+const tdraw=()=>$('tm').textContent=`${left}`;
+function step(){left--;if(st.beats&&plan[k].m){Kit.tone(plan[k].m[4]>1?180:140,.07,'sine',.35)}if(left<=3&&left>0)Kit.tone(880,.06,'square',.08);tdraw();if(left<=0)adv()}
+function adv(){k++;if(k>=plan.length){clearInterval(tv);tv=null;$('go').textContent='▶ Start moving';$('em').textContent='🏆';$('em').className='mv-e a-reach';$('nm').textContent='Great job!';$('hw').textContent='Take a sip of water and sit back down.';$('tm').textContent='';$('nx').hidden=true;Kit.tada();Kit.confetti(120);return}
+ left=plan[k].secs;Kit.ding();show()}
+$('go').onclick=()=>{if(tv){clearInterval(tv);tv=null;$('go').textContent='▶ Keep going';return}if(!plan.length||k>=plan.length){plan=build();k=0;left=plan[0].secs;show()}$('go').textContent='⏸ Pause';tv=setInterval(step,1000)};
+$('sk').onclick=()=>{if(plan.length&&k<plan.length)adv()};$('fs').onclick=()=>Kit.fullscreen();
+</script>
+</body></html>

@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Classroom Voting System</title>
+<style>
+main{max-width:1300px}
+.cv-booth{background:#fff;border:7px solid var(--ink);border-radius:30px;box-shadow:9px 9px 0 var(--ink);padding:clamp(16px,3vw,32px);text-align:center}
+.cv-t{font-size:clamp(1.6rem,4vw,2.6rem);font-weight:800;margin-bottom:6px}
+.cv-c{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin:16px 0}
+.cv-cand{font:inherit;position:relative;border:6px solid var(--ink);border-radius:24px;background:#F4FAFF;padding:14px;cursor:pointer;box-shadow:0 6px 0 var(--ink);display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--ink)}
+.cv-cand .e{font-size:3rem}.cv-cand b{font-size:1.4rem}.cv-cand small{font-weight:600;color:#55607E}
+.cv-cand .rk{position:absolute;top:-16px;right:-12px;width:46px;height:46px;border-radius:50%;background:var(--sun);border:4px solid var(--ink);display:grid;place-items:center;font-weight:800;font-size:1.3rem}
+.cv-cand.on{background:#FFF6C9}
+.cv-who{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:10px 0}
+.cv-who button{font:inherit;font-weight:700;border:3px solid var(--ink);border-radius:99px;padding:3px 12px;background:#fff;cursor:pointer;color:var(--ink)}
+.cv-who button.voted{background:#C9F1D2;text-decoration:line-through;cursor:not-allowed;opacity:.7}.cv-who button.on{background:var(--sun)}
+.cv-round{text-align:left;margin-top:12px}
+.cv-bar{display:grid;grid-template-columns:minmax(120px,26%) 1fr 4em;gap:10px;align-items:center;font-weight:800;margin:6px 0}
+.cv-bar .tr{height:34px;border:4px solid var(--ink);border-radius:12px;background:#F4FAFF;overflow:hidden}.cv-bar .tr b{display:block;height:100%;background:var(--cc);transition:width .9s}
+.cv-bar.out{opacity:.35;text-decoration:line-through}
+.cv-win{font-size:clamp(2rem,6vw,4rem);font-weight:800;margin:10px 0}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🗳️", "Classroom Voting System");
+const $=id=>document.getElementById(id);const CC=['#FF6B5B','#22C3E6','#5DC66E','#9B6BF2','#FF9F43','#FF8FC7'];
+const st=Kit.get('cv-state',{title:'Class president',cands:'🦁 Ava | Longer recess for everyone!\n🚀 Leo | A class pet fish\n🌈 Mia | Art party every Friday',ranked:true,ballots:[],voted:[],useRoster:true});
+const save=()=>Kit.set('cv-state',st);let mode='booth',voter=null,picks=[];
+document.querySelector('main').innerHTML=`<div class="cv-booth" id="bo"></div><div class="row" style="justify-content:center;margin-top:16px"><button class="btn green" id="cnt">📊 Count the votes</button><button class="btn white" id="bk">🗳️ Back to the booth</button><button class="btn white" id="ed">⚙️ Set up the election</button></div>
+<div class="card stack" id="edc" hidden style="margin-top:14px"><b>⚙️ Election</b><label>What are we voting for? <input type="text" id="tt"></label><label>Choices <span class="muted">(emoji name | slogan)</span><textarea id="tc" style="min-height:120px"></textarea></label><label><input type="checkbox" id="rk"> Ranked choice (voters pick 1st, 2nd, 3rd)</label><label><input type="checkbox" id="ur"> Use the class list so everyone votes once</label><div id="ros"></div><button class="btn green" id="sv">✓ Start a new election</button></div>`;
+Learn.rosterEditor($('ros'));
+const cands=()=>Kit.lines(st.cands).map(l=>{const p=l.split('|');const m=p[0].trim().match(/^(\p{Extended_Pictographic}[\u{FE0F}\u{200D}\p{Extended_Pictographic}]*)\s*(.*)$/u);return {e:m?m[1]:'⭐',n:m?m[2]:p[0].trim(),s:(p[1]||'').trim()}});
+function booth(){const C=cands(),R=Learn.roster(),need=st.ranked?Math.min(3,C.length):1;
+ if(mode==='thanks'){$('bo').innerHTML=`<div class="cv-t">✅ Your vote is in!</div><p style="font-size:1.3rem;font-weight:700">It's a secret ballot. Please pass to the next voter.</p><button class="btn big green" id="nv">👉 Next voter</button><p class="muted">${st.ballots.length} ballots cast</p>`;$('nv').onclick=()=>{mode='booth';voter=null;picks=[];booth()};return}
+ const chooseWho=st.useRoster&&!voter;
+ $('bo').innerHTML=`<div class="cv-t">🗳️ ${Kit.esc(st.title)}</div>${chooseWho?`<p style="font-weight:700">Tap your name to start voting:</p><div class="cv-who">${R.map(n=>`<button data-v="${Kit.esc(n)}" class="${st.voted.includes(n)?'voted':''}">${Kit.esc(n)}</button>`).join('')}</div><p class="muted">${st.voted.length} of ${R.length} have voted</p>`:
+ `<p style="font-weight:700">${voter?`Hi ${Kit.esc(voter)}! `:''}${st.ranked?`Tap your favorite first, then your 2nd${need>2?' and 3rd':''} choice.`:'Tap your choice.'}</p><div class="cv-c">${C.map((c,i)=>`<button class="cv-cand ${picks.includes(i)?'on':''}" data-c="${i}">${picks.includes(i)?`<span class="rk">${picks.indexOf(i)+1}</span>`:''}<span class="e">${c.e}</span><b>${Kit.esc(c.n)}</b><small>${Kit.esc(c.s)}</small></button>`).join('')}</div>
+ <div class="row" style="justify-content:center"><button class="btn white" id="cl">↺ Start my ballot over</button><button class="btn big green" id="cast" ${picks.length>=need?'':'disabled'}>✓ Cast my vote</button></div>`}`;
+ $('bo').onclick=e=>{const v=e.target.closest('[data-v]');if(v&&!v.classList.contains('voted')){voter=v.dataset.v;booth();return}
+  const c=e.target.closest('[data-c]');if(c){const i=+c.dataset.c;if(picks.includes(i))picks=picks.filter(x=>x!==i);else if(picks.length<need)picks.push(i);else if(need===1)picks=[i];Kit.tick();booth();return}
+  if(e.target.closest('#cl')){picks=[];booth();return}
+  if(e.target.closest('#cast')){st.ballots.push([...picks]);if(voter)st.voted.push(voter);save();Kit.ding();mode='thanks';booth()}};window.__t={ballots:st.ballots.length}}
+function count(){const C=cands();let out=new Set(),rounds=[];const B=st.ballots;if(!B.length){$('bo').innerHTML='<div class="cv-t">No votes yet!</div>';return}
+ while(true){const tally=C.map(()=>0);B.forEach(b=>{const f=b.find(i=>!out.has(i));if(f!=null)tally[f]++});const live=tally.reduce((a,b)=>a+b,0);rounds.push({tally:[...tally],out:new Set(out)});
+  const best=Math.max(...tally.filter((_,i)=>!out.has(i)));if(!st.ranked||best*2>live||C.length-out.size<=2)break;
+  const min=Math.min(...tally.filter((_,i)=>!out.has(i)));const lo=tally.map((t,i)=>t===min&&!out.has(i)?i:-1).filter(i=>i>=0);out.add(lo[lo.length-1]);if(out.size>=C.length-1)break}
+ const last=rounds[rounds.length-1],mx=Math.max(...last.tally.filter((_,i)=>!last.out.has(i))),W=last.tally.map((t,i)=>t===mx&&!last.out.has(i)?i:-1).filter(i=>i>=0);
+ $('bo').innerHTML=`<div class="cv-t">📊 ${Kit.esc(st.title)}: the results</div>${rounds.map((r,k)=>{const tot=r.tally.reduce((a,b)=>a+b,0);return `<div class="cv-round"><b>${rounds.length>1?`Round ${k+1}`:'Votes'}</b>${C.map((c,i)=>`<div class="cv-bar ${r.out.has(i)?'out':''}" style="--cc:${CC[i%6]}"><span>${c.e} ${Kit.esc(c.n)}</span><div class="tr"><b style="width:${tot?r.tally[i]/tot*100:0}%"></b></div><span>${r.out.has(i)?'out':r.tally[i]}</span></div>`).join('')}</div>`}).join('')}
+ <div class="cv-win">${W.length>1?`🤝 It's a tie: ${W.map(i=>Kit.esc(C[i].n)).join(' & ')}!`:`🏆 ${C[W[0]].e} ${Kit.esc(C[W[0]].n)} wins!`}</div>${rounds.length>1?'<p class="muted">With ranked choice, the choice with the fewest votes is out each round, and those ballots go to their next pick.</p>':''}`;
+ Kit.tada();Kit.confetti(160);window.__t={winner:W.map(i=>C[i].n),rounds:rounds.length}}
+$('cnt').onclick=()=>{mode='count';count()};$('bk').onclick=()=>{mode='booth';voter=null;picks=[];booth()};
+$('ed').onclick=()=>{$('edc').hidden=!$('edc').hidden;$('tt').value=st.title;$('tc').value=st.cands;$('rk').checked=st.ranked;$('ur').checked=st.useRoster};
+$('sv').onclick=()=>{if(st.ballots.length&&!confirm('Start over? The votes so far will be erased.'))return;st.title=$('tt').value||'Our election';st.cands=$('tc').value;st.ranked=$('rk').checked;st.useRoster=$('ur').checked;st.ballots=[];st.voted=[];save();$('edc').hidden=true;mode='booth';voter=null;picks=[];booth()};
+booth();
+</script>
+</body></html>

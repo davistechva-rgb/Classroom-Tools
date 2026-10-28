@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Lesson Timeline</title>
+<style>
+main{max-width:1400px}
+.lt-now{text-align:center;margin:6px 0 18px}
+.lt-now .what{font-size:clamp(2rem,5.6vw,4rem);font-weight:800;color:#fff;text-shadow:4px 4px 0 var(--ink);line-height:1.05}
+.lt-now .left{display:inline-block;margin-top:10px;font-size:clamp(2.2rem,6vw,4.4rem);font-weight:800;background:#fff;border:6px solid var(--ink);border-radius:22px;padding:2px 26px;box-shadow:0 7px 0 var(--ink);font-variant-numeric:tabular-nums}
+.lt-now .left.warn{background:var(--sun)}.lt-now .left.up{background:var(--tomato);color:#fff}
+.lt-track{position:relative;display:flex;height:clamp(90px,14vh,130px);border:6px solid var(--ink);border-radius:24px;overflow:hidden;box-shadow:7px 7px 0 var(--ink);background:#fff}
+.lt-seg{position:relative;flex:var(--m);background:var(--c);border-right:4px solid var(--ink);display:flex;flex-direction:column;justify-content:center;padding:6px 10px;color:#fff;text-shadow:2px 2px 0 rgba(0,0,0,.35);overflow:hidden;cursor:pointer;min-width:0}
+.lt-seg:last-child{border-right:0}
+.lt-seg b{font-size:clamp(.85rem,1.8vw,1.3rem);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lt-seg small{font-weight:700;opacity:.9}
+.lt-seg.past{filter:saturate(.25) brightness(1.15)}
+.lt-seg .fill{position:absolute;left:0;top:0;bottom:0;background:rgba(255,255,255,.35);pointer-events:none}
+.lt-mark{position:absolute;top:-8px;bottom:-8px;width:8px;margin-left:-4px;background:var(--ink);border-radius:4px;transition:left .9s linear;z-index:2}
+.lt-mark::before{content:"▼";position:absolute;top:-30px;left:50%;transform:translateX(-50%);font-size:1.6rem;color:var(--ink)}
+.lt-clock{display:flex;justify-content:space-between;font-weight:800;color:#fff;text-shadow:2px 2px 0 var(--ink);margin:8px 4px 0;font-size:1.1rem}
+.lt-ctl{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+.lt-ed{margin-top:16px}
+.lt-ed textarea{min-height:200px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🕐", "Lesson Timeline");
+const $=id=>document.getElementById(id);const C=['#FF6B5B','#FF9F43','#FFC93C','#5DC66E','#22C3E6','#9B6BF2','#FF8FC7','#4B5D8A'];
+const PRE={'Math lesson (60 min)':'Warm-up | 8\nMini lesson | 15\nGuided practice | 12\nPartner work | 15\nExit ticket | 5\nClean up | 5','Reading block (45 min)':'Read aloud | 10\nWord work | 10\nIndependent reading | 15\nShare | 5\nReflect | 5','Science lab (50 min)':'Question & predict | 8\nSafety check | 4\nLab time | 25\nClean up | 5\nShare results | 8','Quick 30-minute plan':'Hook | 5\nLearn | 10\nTry it | 10\nWrap up | 5'};
+const st=Kit.get('lt-state',{plan:PRE['Math lesson (60 min)'],chime:true});
+document.querySelector('main').innerHTML=`<div class="lt-now"><div class="what" id="what">Ready to start?</div><div class="left" id="left">--:--</div></div>
+<div class="lt-track" id="tr"></div><div class="lt-clock"><span id="c0"></span><span id="ct"></span><span id="c1"></span></div>
+<div class="lt-ctl"><button class="btn big green" id="go">▶ Start the lesson</button><button class="btn white" id="pz" hidden>⏸ Pause</button><button class="btn white" id="sk" hidden>⏭ Skip to next part</button><button class="btn white" id="add" hidden>＋2 min</button><button class="btn white" id="rs">↺ Reset</button><button class="btn white" id="ed">✏️ Plan</button></div>
+<div class="card lt-ed stack" id="edc" hidden><b>✏️ Lesson plan</b><span class="muted">One part per line: name | minutes. Tap a part on the timeline to jump to it.</span><div class="row"><label>Start from <select id="pre" style="width:auto"><option value="">(keep mine)</option>${Object.keys(PRE).map(k=>`<option>${k}</option>`).join('')}</select></label><label><input type="checkbox" id="ch"> Chime when a part ends</label></div><textarea id="ta"></textarea><button class="btn green" id="sv">✓ Save plan</button></div>`;
+let plan,elapsed=0,running=false,paused=false,lastT=0,segStartWarned=-1,curI=-1,tv;
+const parse=()=>Kit.lines(st.plan).map(l=>{const p=l.split('|');return {name:p[0].trim(),min:Math.max(1,parseFloat(p[1])||5)}});
+function build(){plan=parse();let acc=0;plan.forEach(p=>{p.start=acc;acc+=p.min*60;p.end=acc});
+ $('tr').innerHTML=plan.map((p,i)=>`<div class="lt-seg" data-i="${i}" style="--m:${p.min};--c:${C[i%C.length]}"><b>${Kit.esc(p.name)}</b><small>${p.min} min</small><i class="fill"></i></div>`).join('')+'<div class="lt-mark" id="mk" style="left:0"></div>';
+ $('c0').textContent='0 min';$('c1').textContent=Math.round(acc/60)+' min';draw()}
+const total=()=>plan.length?plan[plan.length-1].end:0;
+const fmt=s=>{s=Math.max(0,Math.ceil(s));return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`};
+function draw(){const T=total();const i=plan.findIndex(p=>elapsed<p.end);const segs=$('tr').querySelectorAll('.lt-seg');
+ segs.forEach((s,k)=>{s.classList.toggle('past',k<i||i<0);const p=plan[k];s.querySelector('.fill').style.width=k===i?((elapsed-p.start)/(p.end-p.start)*100)+'%':'0'});
+ $('mk').style.left=Math.min(100,elapsed/T*100)+'%';$('ct').textContent=running?`${fmt(elapsed)} of ${fmt(T)}`:'';
+ if(!running){$('what').textContent='Ready to start?';$('left').textContent=fmt(T);$('left').className='left';return}
+ if(i<0){$('what').textContent='🎉 Lesson complete!';$('left').textContent='0:00';$('left').className='left up';return}
+ const p=plan[i],rem=p.end-elapsed;$('what').textContent=p.name;$('left').textContent=fmt(rem);$('left').className='left'+(rem<=60?' warn':'');
+ if(i!==curI){if(curI>=0&&st.chime){Kit.ding()}curI=i}
+ if(rem<=60&&segStartWarned!==i){segStartWarned=i;if(st.chime)Kit.tone(880,.12,'triangle',.15)}}
+function loop(){if(!running)return;const t=performance.now();if(!paused){elapsed+=(t-lastT)/1000}lastT=t;if(elapsed>=total()){elapsed=total();draw();running=false;clearInterval(tv);Kit.tada();Kit.confetti(80);$('what').textContent='🎉 Lesson complete!';ctl();return}draw()}
+function ctl(){$('go').hidden=running;['pz','sk','add'].forEach(id=>$(id).hidden=!running);$('pz').textContent=paused?'▶ Keep going':'⏸ Pause'}
+$('go').onclick=()=>{if(!plan.length)return;running=true;paused=false;elapsed=elapsed>=total()?0:elapsed;curI=-1;lastT=performance.now();clearInterval(tv);tv=setInterval(loop,250);ctl();draw()};
+$('pz').onclick=()=>{paused=!paused;lastT=performance.now();ctl()};
+$('sk').onclick=()=>{const i=plan.findIndex(p=>elapsed<p.end);if(i>=0)elapsed=plan[i].end+.01;draw()};
+$('add').onclick=()=>{const i=plan.findIndex(p=>elapsed<p.end);if(i<0)return;plan[i].min+=2;for(let k=i;k<plan.length;k++){plan[k].end+=120;if(k>i)plan[k].start+=120}$('tr').querySelectorAll('.lt-seg')[i].style.setProperty('--m',plan[i].min);$('tr').querySelectorAll('.lt-seg')[i].querySelector('small').textContent=plan[i].min+' min';$('c1').textContent=Math.round(total()/60)+' min';draw()};
+$('rs').onclick=()=>{running=false;clearInterval(tv);elapsed=0;curI=-1;build();ctl()};
+$('tr').onclick=e=>{const s=e.target.closest('.lt-seg');if(!s)return;elapsed=plan[+s.dataset.i].start+.01;if(!running){$('go').click()}draw()};
+$('ed').onclick=()=>{$('edc').hidden=!$('edc').hidden;$('ta').value=st.plan;$('ch').checked=st.chime;$('pre').value=''};
+$('pre').onchange=()=>{if($('pre').value)$('ta').value=PRE[$('pre').value]};
+$('sv').onclick=()=>{st.plan=$('ta').value;st.chime=$('ch').checked;Kit.set('lt-state',st);$('edc').hidden=true;$('rs').click()};
+window.__t={skip:()=>$('sk').click(),state:()=>({elapsed,i:plan.findIndex(p=>elapsed<p.end)})};
+build();ctl();
+</script>
+</body></html>

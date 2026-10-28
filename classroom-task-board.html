@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Classroom Task Board</title>
+<style>
+main{max-width:1500px}
+.tb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+.tb-j{position:relative;background:#fff;border:6px solid var(--ink);border-radius:22px;box-shadow:6px 6px 0 var(--ink);overflow:hidden;text-align:center}
+.tb-j .hd{background:var(--jc);padding:10px 8px 6px;color:#fff;text-shadow:2px 2px 0 rgba(0,0,0,.3)}
+.tb-j .e{font-size:2.6rem;line-height:1}.tb-j .n{font-weight:800;font-size:1.2rem}
+.tb-j .who{font-weight:800;font-size:clamp(1.3rem,2.4vw,1.7rem);padding:10px 6px 4px;min-height:1.6em}
+.tb-j .who.flip{animation:tbflip .6s}@keyframes tbflip{0%{transform:rotateX(90deg)}}
+.tb-j .d{font-size:.9rem;color:#55607E;font-weight:600;padding:0 8px 10px}
+.tb-j .lk{position:absolute;top:6px;right:8px;background:rgba(255,255,255,.85);border:2px solid var(--ink);border-radius:10px;cursor:pointer;font-size:1rem;padding:0 6px}
+.tb-j.locked{outline:5px solid var(--sun)}
+.tb-top{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:14px}
+.tb-off{margin-top:16px;background:#fff;border:5px solid var(--ink);border-radius:20px;padding:10px 14px}
+.tb-off span{display:inline-block;margin:3px;border:3px solid var(--ink);border-radius:99px;padding:2px 12px;font-weight:700;cursor:pointer;background:#F4FAFF}
+.tb-off span.abs{background:#FFD9D4;text-decoration:line-through}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("📝", "Classroom Task Board");
+const $=id=>document.getElementById(id);const JC=['#FF6B5B','#22C3E6','#5DC66E','#9B6BF2','#FF9F43','#FF8FC7','#2BC4B0','#FFB020'];
+const st=Kit.get('tb-state',{jobs:'🚪 Door holder | Holds the door and leads the line\n💡 Light monitor | Turns the lights off and on\n🌱 Plant helper | Waters the plants\n📬 Messenger | Takes notes to the office\n📚 Librarian | Keeps the class library neat\n🧹 Floor patrol | Checks the floor at cleanup\n📋 Paper passer | Hands out papers\n🐟 Pet helper | Feeds the class pet\n🖍️ Supply manager | Fills the pencil and crayon bins\n⏱️ Timekeeper | Reminds us of the time',kids:'Ava\nLeo\nMia\nSam\nZoe\nEli\nNoah\nLiv\nMax\nIvy\nBen\nAna\nKai\nRuby',shift:0,locks:{},absent:[],since:Date.now()});
+const save=()=>Kit.set('tb-state',st);
+document.querySelector('main').innerHTML=`<div class="tb-top"><b style="color:#fff;text-shadow:2px 2px 0 var(--ink);font-size:1.2rem" id="sn"></b><button class="btn big green" id="rot">🔄 New jobs for the week</button><button class="btn white" id="mix">🔀 Shuffle everyone</button><button class="btn white" id="bk">↶ Undo</button><button class="btn white small" id="ed">✏️ Jobs & class</button></div>
+<div class="tb-grid" id="g"></div><div class="tb-off" id="off"></div>
+<div class="card stack" id="edc" hidden style="margin-top:14px"><b>✏️ Jobs and students</b><div class="grid2"><label>Jobs <span class="muted">(emoji name | what they do)</span><textarea id="tj" style="min-height:200px"></textarea></label><label>Students <span class="muted">(one per line)</span><textarea id="tk" style="min-height:200px"></textarea></label></div><button class="btn green" id="sv">✓ Save</button></div>`;
+const jobs=()=>Kit.lines(st.jobs).map(l=>{const p=l.split('|');const m=p[0].trim().match(/^(\p{Extended_Pictographic}[\u{FE0F}\u{200D}\p{Extended_Pictographic}]*)\s*(.*)$/u);return {e:m?m[1]:'⭐',n:m?m[2]:p[0].trim(),d:(p[1]||'').trim()}});
+function assign(){const J=jobs(),K=Kit.lines(st.kids).filter(k=>!st.absent.includes(k)),out={},used=new Set(Object.entries(st.locks).filter(([j,k])=>K.includes(k)).map(([,k])=>k));
+ Object.entries(st.locks).forEach(([j,k])=>{if(K.includes(k))out[j]=k});const free=K.filter(k=>!used.has(k));const n=free.length;let c=0;
+ J.forEach((j,i)=>{if(out[j.n])return;if(!n){out[j.n]='';return}out[j.n]=free[((c++ + st.shift)%n+n)%n]});return out}
+function draw(flip){const J=jobs(),A=assign(),K=Kit.lines(st.kids);$('g').innerHTML=J.map((j,i)=>`<div class="tb-j ${st.locks[j.n]?'locked':''}" style="--jc:${JC[i%8]}"><div class="hd"><div class="e">${j.e}</div><div class="n">${Kit.esc(j.n)}</div></div><button class="lk" data-lock="${Kit.esc(j.n)}" title="Keep this job the same">${st.locks[j.n]?'🔒':'🔓'}</button><div class="who ${flip&&!st.locks[j.n]?'flip':''}">${Kit.esc(A[j.n]||'—')}</div>${j.d?`<div class="d">${Kit.esc(j.d)}</div>`:''}</div>`).join('');
+ const has=new Set(Object.values(A));$('off').innerHTML=`<b>🏖️ No job this week:</b> ${K.filter(k=>!has.has(k)&&!st.absent.includes(k)).map(k=>`<span style="cursor:default">${Kit.esc(k)}</span>`).join('')||'<i class="muted">everyone has a job</i>'}<br><b>🤒 Absent (tap a name to mark):</b> ${K.map(k=>`<span data-ab="${Kit.esc(k)}" class="${st.absent.includes(k)?'abs':''}">${Kit.esc(k)}</span>`).join('')}`;
+ $('sn').textContent=`Jobs since ${new Date(st.since).toLocaleDateString(undefined,{month:'short',day:'numeric'})}`;window.__t={A}}
+$('rot').onclick=()=>{st.shift++;st.since=Date.now();save();Kit.tone(523,.12,'triangle',.2);Kit.tone(784,.2,'triangle',.2,.1);draw(true)};
+$('bk').onclick=()=>{st.shift--;save();draw(true)};
+$('mix').onclick=()=>{st.kids=Kit.shuffle(Kit.lines(st.kids)).join('\n');st.since=Date.now();save();draw(true)};
+$('g').onclick=e=>{const b=e.target.closest('[data-lock]');if(!b)return;const j=b.dataset.lock;if(st.locks[j])delete st.locks[j];else st.locks[j]=assign()[j];save();draw()};
+$('off').onclick=e=>{const sp=e.target.closest('[data-ab]');if(!sp)return;const k=sp.dataset.ab;st.absent=st.absent.includes(k)?st.absent.filter(x=>x!==k):[...st.absent,k];save();draw()};
+$('ed').onclick=()=>{$('edc').hidden=!$('edc').hidden;$('tj').value=st.jobs;$('tk').value=st.kids};$('sv').onclick=()=>{st.jobs=$('tj').value;st.kids=$('tk').value;st.locks={};save();$('edc').hidden=true;draw()};
+draw();
+</script>
+</body></html>

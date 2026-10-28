@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Class Progress Dashboard</title>
+<style>
+main{max-width:1500px}
+.pd-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px}
+.pd-g{background:#fff;border:5px solid var(--ink);border-radius:24px;box-shadow:6px 6px 0 var(--ink);padding:14px;display:flex;flex-direction:column;align-items:center;gap:8px;position:relative}
+.pd-g h3{margin:0;font-size:1.25rem;text-align:center;line-height:1.15}
+.pd-tube{position:relative;width:76px;height:clamp(180px,30vh,260px);border:5px solid var(--ink);border-radius:38px 38px 30px 30px;background:#F1F5FB;overflow:hidden}
+.pd-tube b{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(var(--gc),color-mix(in srgb,var(--gc) 70%,#000));transition:height 1s cubic-bezier(.3,1.3,.5,1)}
+.pd-tube b::before{content:"";position:absolute;left:0;right:0;top:-8px;height:16px;border-radius:50%;background:color-mix(in srgb,var(--gc) 80%,#fff)}
+.pd-tube i{position:absolute;left:0;width:18px;border-top:3px solid rgba(29,43,83,.35)}
+.pd-goalflag{position:absolute;top:2px;left:50%;transform:translateX(-50%);font-size:1.4rem;z-index:2}
+.pd-num{font-size:2rem;font-weight:800;line-height:1}
+.pd-num small{font-size:.5em;color:#6B7695}
+.pd-btns{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.pd-g.win{background:#FFF6C9;animation:pdwin 1s}@keyframes pdwin{30%{transform:scale(1.05) rotate(-1deg)}}
+.pd-reward{font-weight:700;text-align:center;font-size:.98rem;color:#55607E}
+.pd-g.win .pd-reward{color:var(--ink);font-size:1.1rem}
+.pd-log{margin-top:16px}
+.pd-log div{display:flex;gap:10px;font-weight:600;border-bottom:2px solid #E3E9F4;padding:4px 0}
+.pd-log span{color:#6B7695;min-width:8em}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("📊", "Class Progress Dashboard");
+const $=id=>document.getElementById(id);const GC=['#FF6B5B','#22C3E6','#5DC66E','#9B6BF2','#FF9F43','#FF8FC7'];
+const st=Kit.get('pd-state',{goals:[{name:'📚 Books read',now:37,goal:100,reward:'Pajama reading day'},{name:'⭐ Kindness points',now:18,goal:50,reward:'Extra recess'},{name:'✅ Homework turned in',now:64,goal:80,reward:'Popcorn party'},{name:'➗ Math facts mastered',now:9,goal:20,reward:'Choose the class game'}],log:[]});
+const save=()=>Kit.set('pd-state',st);
+document.querySelector('main').innerHTML=`<div class="pd-grid" id="g"></div><div class="row" style="justify-content:center;margin-top:16px"><button class="btn white" id="ed">✏️ Edit goals</button><button class="btn white" id="lg">📜 History</button></div>
+<div class="card pd-log" id="lgc" hidden></div>
+<div class="card stack" id="edc" hidden style="margin-top:16px"><b>✏️ Class goals</b><span class="muted">One per line: name | where you are now | the goal | the reward.</span><textarea id="ta" style="min-height:170px"></textarea><button class="btn green" id="sv">✓ Save</button></div>`;
+function draw(){$('g').innerHTML=st.goals.map((g,i)=>{const p=Math.min(1,g.now/Math.max(1,g.goal)),win=g.now>=g.goal;return `<div class="pd-g ${win?'win':''}" data-i="${i}" style="--gc:${GC[i%6]}"><h3>${Kit.esc(g.name)}</h3><div class="pd-tube"><span class="pd-goalflag">${win?'🏆':'🎯'}</span>${[.25,.5,.75].map(f=>`<i style="bottom:${f*100}%"></i>`).join('')}<b style="height:${p*100}%"></b></div>
+ <div class="pd-num">${g.now}<small> / ${g.goal}</small></div><div class="pd-btns"><button class="btn small white" data-d="-1">−1</button><button class="btn small" data-d="1">+1</button><button class="btn small" data-d="5">+5</button></div><div class="pd-reward">${win?'🎉 You earned: ':'🎁 Reward: '}${Kit.esc(g.reward||'')}</div></div>`}).join('');window.__t={goals:st.goals}}
+$('g').onclick=e=>{const b=e.target.closest('[data-d]');if(!b)return;const i=+b.closest('.pd-g').dataset.i,g=st.goals[i],d=+b.dataset.d,was=g.now>=g.goal;g.now=Math.max(0,g.now+d);
+ st.log.unshift({t:Date.now(),txt:`${d>0?'+':''}${d} ${g.name}`});st.log=st.log.slice(0,100);save();Kit.tone(d>0?600:300,.1,'triangle',.2);draw();
+ if(!was&&g.now>=g.goal){Kit.tada();Kit.confetti(160)}};
+$('lg').onclick=()=>{$('lgc').hidden=!$('lgc').hidden;$('lgc').innerHTML=st.log.length?st.log.map(l=>`<div><span>${new Date(l.t).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</span>${Kit.esc(l.txt)}</div>`).join(''):'No changes yet.'};
+$('ed').onclick=()=>{$('edc').hidden=!$('edc').hidden;$('ta').value=st.goals.map(g=>`${g.name} | ${g.now} | ${g.goal} | ${g.reward}`).join('\n')};
+$('sv').onclick=()=>{st.goals=Kit.lines($('ta').value).map(l=>{const p=l.split('|').map(s=>s.trim());return {name:p[0],now:+p[1]||0,goal:+p[2]||10,reward:p[3]||''}});save();$('edc').hidden=true;draw()};
+draw();
+</script>
+</body></html>

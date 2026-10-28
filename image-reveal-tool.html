@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Image Reveal Tool</title>
+<style>
+main{max-width:1500px}
+.ir2-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;margin-bottom:12px}
+.ir2-bar label{background:#fff;border:3px solid var(--ink);border-radius:14px;padding:4px 10px}
+.ir2-stage{position:relative;aspect-ratio:16/10;max-height:72vh;margin:0 auto;border:7px solid var(--ink);border-radius:22px;overflow:hidden;box-shadow:8px 8px 0 var(--ink);background:#fff;touch-action:none}
+.ir2-pic{position:absolute;inset:0;display:grid;place-items:center;text-align:center;font-weight:800;font-size:clamp(2rem,6vw,5rem);padding:5%;color:var(--ink);line-height:1.1}
+.ir2-pic img{width:100%;height:100%;object-fit:contain}
+.ir2-pic .big{font-size:2.4em;display:block}
+#cov{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair}
+.ir2-pct{position:absolute;right:12px;top:10px;background:#fff;border:3px solid var(--ink);border-radius:12px;padding:0 10px;font-weight:800;z-index:2;pointer-events:none}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🖼️", "Image Reveal Tool");
+const $=id=>document.getElementById(id);
+document.querySelector('main').innerHTML=`<div class="ir2-bar"><label>📷 Picture <input type="file" id="pic" accept="image/*" style="max-width:200px"></label><label>or type <input type="text" id="txt" placeholder="🦒 Giraffe" style="width:170px"></label>
+<label>Cover <select id="cs" style="width:auto"><option value="silver">🪙 Scratch-off silver</option><option value="chalk">🟩 Chalkboard</option><option value="paper">📄 Paper</option><option value="stars">✨ Night sky</option></select></label>
+<label>Brush <select id="br" style="width:auto"><option value="18">Small</option><option value="38" selected>Medium</option><option value="70">Big</option></select></label>
+<button class="btn white" id="dab">🎲 Random peek</button><button class="btn" id="all">👀 Show it all</button><button class="btn white" id="cover">↺ Cover it up</button></div>
+<div class="ir2-stage" id="stg"><div class="ir2-pic" id="pv"></div><canvas id="cov"></canvas><span class="ir2-pct" id="pct"></span></div>
+<p class="muted" style="text-align:center">Rub the cover with your finger or the mouse to scratch it away a little at a time. Great for "what is it?" warm-ups, vocabulary pictures, or revealing an answer.</p>`;
+const cv=$('cov'),cx=cv.getContext('2d');let drawing=false,last=null;
+function size(){const r=$('stg').getBoundingClientRect();cv.width=Math.round(r.width*devicePixelRatio);cv.height=Math.round(r.height*devicePixelRatio)}
+function paint(){size();const W=cv.width,H=cv.height,s=$('cs').value;cx.globalCompositeOperation='source-over';
+ if(s==='silver'){const g=cx.createLinearGradient(0,0,W,H);g.addColorStop(0,'#C9CED8');g.addColorStop(.5,'#EEF1F6');g.addColorStop(1,'#AEB5C3');cx.fillStyle=g;cx.fillRect(0,0,W,H);for(let i=0;i<1600;i++){cx.fillStyle=`rgba(255,255,255,${Math.random()*.25})`;cx.fillRect(Math.random()*W,Math.random()*H,2,2)}
+  cx.fillStyle='rgba(90,100,125,.55)';cx.font=`800 ${H/9}px Fredoka,system-ui`;cx.textAlign='center';cx.textBaseline='middle';cx.fillText('★ SCRATCH ME ★',W/2,H/2)}
+ if(s==='chalk'){cx.fillStyle='#2F5D3A';cx.fillRect(0,0,W,H);cx.fillStyle='rgba(255,255,255,.08)';for(let i=0;i<400;i++)cx.fillRect(Math.random()*W,Math.random()*H,Math.random()*30,1.5);cx.fillStyle='rgba(255,255,255,.7)';cx.font=`700 ${H/10}px "Comic Sans MS",cursive`;cx.textAlign='center';cx.textBaseline='middle';cx.fillText('What could it be?',W/2,H/2)}
+ if(s==='paper'){cx.fillStyle='#FFF9E6';cx.fillRect(0,0,W,H);cx.strokeStyle='#CFE0F5';cx.lineWidth=2*devicePixelRatio;for(let y=H/12;y<H;y+=H/12){cx.beginPath();cx.moveTo(0,y);cx.lineTo(W,y);cx.stroke()}cx.fillStyle='#9DB0D0';cx.font=`800 ${H/9}px Fredoka,system-ui`;cx.textAlign='center';cx.textBaseline='middle';cx.fillText('?',W/2,H/2)}
+ if(s==='stars'){const g=cx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#1B1F4B');g.addColorStop(1,'#3B2E7E');cx.fillStyle=g;cx.fillRect(0,0,W,H);for(let i=0;i<260;i++){cx.fillStyle=`rgba(255,255,220,${Math.random()})`;cx.beginPath();cx.arc(Math.random()*W,Math.random()*H,Math.random()*2.4*devicePixelRatio,0,7);cx.fill()}}
+ pct()}
+function rub(x,y){const r=+$('br').value*devicePixelRatio;cx.globalCompositeOperation='destination-out';cx.lineCap='round';cx.lineWidth=r*2;cx.beginPath();if(last){cx.moveTo(last[0],last[1])}else cx.moveTo(x,y);cx.lineTo(x+.1,y+.1);cx.stroke();last=[x,y]}
+let pt=0;function pct(){clearTimeout(pt);pt=setTimeout(()=>{const W=cv.width,H=cv.height,d=cx.getImageData(0,0,W,H).data;let n=0,c=0;for(let i=3;i<d.length;i+=4*97){c++;if(d[i]<20)n++}const p=Math.round(n/c*100);$('pct').textContent=`${p}% showing`;window.__t={pct:p}},120)}
+const xy=e=>{const r=cv.getBoundingClientRect();return [(e.clientX-r.left)*devicePixelRatio,(e.clientY-r.top)*devicePixelRatio]};
+cv.onpointerdown=e=>{drawing=true;last=null;cv.setPointerCapture(e.pointerId);rub(...xy(e))};cv.onpointermove=e=>{if(drawing){rub(...xy(e));if(Math.random()<.15)Kit.tone(1800+Math.random()*900,.02,'square',.02)}};
+cv.onpointerup=cv.onpointercancel=()=>{drawing=false;last=null;pct()};
+$('dab').onclick=()=>{const W=cv.width,H=cv.height;last=null;const x=Math.random()*W*.8+W*.1,y=Math.random()*H*.8+H*.1;for(let k=0;k<6;k++){last=null;rub(x+(Math.random()-.5)*60,y+(Math.random()-.5)*60)}last=null;pct();Kit.tick()};
+$('all').onclick=()=>{cv.animate([{opacity:1},{opacity:0}],{duration:600}).onfinish=()=>{cx.clearRect(0,0,cv.width,cv.height);pct()};Kit.tada()};
+$('cover').onclick=paint;$('cs').onchange=paint;
+function content(){const f=$('pic').files[0];if(f){$('pv').innerHTML=`<img src="${URL.createObjectURL(f)}" alt="">`;return}const t=$('txt').value.trim()||'🦒 Giraffe';const m=t.match(/^(\p{Extended_Pictographic}[\u{FE0F}\u{200D}\p{Extended_Pictographic}]*)\s*(.*)$/u);$('pv').innerHTML=m?`<div><span class="big">${m[1]}</span>${Kit.esc(m[2])}</div>`:`<div>${Kit.esc(t)}</div>`}
+$('pic').onchange=()=>{content();paint()};$('txt').onchange=()=>{content();paint()};
+addEventListener('resize',()=>{clearTimeout(window._rz);window._rz=setTimeout(()=>{const t=document.createElement('canvas');t.width=cv.width;t.height=cv.height;t.getContext('2d').drawImage(cv,0,0);size();cx.globalCompositeOperation='source-over';cx.drawImage(t,0,0,cv.width,cv.height);pct()},200)});
+content();requestAnimationFrame(paint);
+</script>
+</body></html>

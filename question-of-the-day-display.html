@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Question of the Day Display</title>
+<style>
+main{max-width:1400px}
+.qd-board{background:#2F5D3A;border:10px solid #8A5A2B;border-radius:22px;box-shadow:inset 0 0 40px rgba(0,0,0,.35),9px 9px 0 var(--ink);padding:clamp(16px,3vw,32px);color:#fff}
+.qd-date{font-family:"Comic Sans MS","Chalkboard SE","Segoe Print",cursive;font-size:1.2rem;opacity:.85}
+.qd-q{font-family:"Comic Sans MS","Chalkboard SE","Segoe Print",cursive;font-size:clamp(1.8rem,4.8vw,3.4rem);line-height:1.15;margin:8px 0 18px;text-shadow:0 0 1px #fff}
+.qd-cols{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:clamp(10px,2vw,22px);align-items:end}
+.qd-col{display:flex;flex-direction:column;align-items:center;gap:8px}
+.qd-stack{width:100%;min-height:clamp(140px,26vh,240px);display:flex;flex-wrap:wrap-reverse;align-content:flex-start;justify-content:center;gap:5px;padding:8px;border-bottom:5px solid rgba(255,255,255,.8)}
+.qd-dot{width:clamp(22px,3vw,32px);height:clamp(22px,3vw,32px);border-radius:50%;background:var(--dc);border:3px solid var(--ink);box-shadow:inset -3px -3px 0 rgba(0,0,0,.18);animation:pop .35s}
+.qd-ch{font:inherit;width:100%;font-weight:800;font-size:clamp(1.1rem,2.6vw,1.8rem);border:5px solid var(--ink);border-radius:20px;background:var(--dc);color:#fff;padding:10px;cursor:pointer;box-shadow:0 6px 0 var(--ink);text-shadow:2px 2px 0 rgba(0,0,0,.3)}
+.qd-ch:active{transform:translateY(6px);box-shadow:none}
+.qd-ch .e{display:block;font-size:1.8em;line-height:1.1}
+.qd-n{font-weight:800;font-size:1.4rem;background:#fff;color:var(--ink);border-radius:99px;padding:0 12px}
+.qd-ctl{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px}
+.qd-arch{display:grid;gap:8px;margin-top:10px}
+.qd-arch div{background:#fff;border:3px solid var(--ink);border-radius:12px;padding:6px 12px;font-weight:600}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("💡", "Question of the Day Display");
+const $=id=>document.getElementById(id);const DC=['#FF6B5B','#22C3E6','#FFC93C','#5DC66E'];
+const BANK=`Would you rather fly or be invisible? | 🦅 Fly | 👻 Be invisible
+Which season is the best? | 🌸 Spring | ☀️ Summer | 🍂 Fall | ❄️ Winter
+Pizza or tacos? | 🍕 Pizza | 🌮 Tacos
+Would you rather live in the ocean or in space? | 🌊 Ocean | 🚀 Space
+Cats or dogs? | 🐱 Cats | 🐶 Dogs
+What's the best way to spend a rainy day? | 📚 Read | 🎮 Play games | 🎨 Make art | 🍿 Watch a movie
+Would you rather be a giant or tiny? | 🦖 Giant | 🐜 Tiny
+Which superpower would you pick? | ⚡ Super speed | 🧠 Mind reading | 💪 Super strength | 🕰️ Time travel
+Morning or night? | 🌅 Morning | 🌙 Night
+Would you rather explore a jungle or a desert? | 🌴 Jungle | 🏜️ Desert
+Which would you rather be? | 🧑‍🚀 Astronaut | 🧑‍🔬 Scientist | 🧑‍🍳 Chef | 🧑‍🎨 Artist
+How did you get to school today? | 🚌 Bus | 🚗 Car | 🚶 Walked | 🚲 Bike
+What's your favorite subject? | ➗ Math | 📖 Reading | 🔬 Science | 🎨 Art
+Would you rather have a pet dragon or a pet unicorn? | 🐉 Dragon | 🦄 Unicorn
+Which is the best snack? | 🍎 Fruit | 🧀 Cheese | 🍪 Cookies | 🥨 Pretzels
+Would you rather go to the beach or the mountains? | 🏖️ Beach | ⛰️ Mountains
+Do you like to read books with pictures or chapter books? | 🖼️ Pictures | 📚 Chapters
+Would you rather talk to animals or speak every language? | 🐾 Animals | 🌍 Every language
+Which would you rather ride? | 🐎 Horse | 🐘 Elephant | 🐫 Camel | 🐬 Dolphin
+Would you rather build a robot or a time machine? | 🤖 Robot | ⏳ Time machine
+What's the best weather? | ☀️ Sunny | 🌧️ Rainy | ❄️ Snowy | 💨 Windy
+Would you rather be the teacher or the student for a day? | 🧑‍🏫 Teacher | 🧒 Student
+Hot chocolate or lemonade? | ☕ Hot chocolate | 🍋 Lemonade
+Would you rather visit the past or the future? | 🏛️ The past | 🛸 The future
+How are you feeling today? | 😄 Great | 🙂 Good | 😐 Okay | 😴 Sleepy`;
+const st=Kit.get('qd-state',{bank:BANK,days:{},offset:0});
+const today=()=>new Date().toDateString();
+const rows=()=>Kit.lines(st.bank).map(l=>l.split('|').map(s=>s.trim())).filter(r=>r.length>=3);
+const dayNum=()=>Math.floor((new Date().setHours(0,0,0,0))/864e5);
+function todays(){const r=rows();if(!r.length)return null;const d=st.days[today()];if(d&&d.q)return d;const q=r[(dayNum()+st.offset)%r.length];return st.days[today()]={q:q[0],ch:q.slice(1,5),votes:q.slice(1,5).map(()=>0)}}
+document.querySelector('main').innerHTML=`<div class="qd-board"><div class="qd-date" id="dt"></div><div class="qd-q" id="q"></div><div class="qd-cols" id="cols"></div></div>
+<div class="qd-ctl"><button class="btn white" id="un">↶ Undo</button><button class="btn white" id="nw">🔀 Different question</button><button class="btn white" id="ar">📅 Past days</button><button class="btn white" id="ed">✏️ My questions</button></div>
+<div class="card" id="arc" hidden style="margin-top:14px"><b>📅 Past questions and how the class answered</b><div class="qd-arch" id="al"></div></div>
+<div class="card stack" id="edc" hidden style="margin-top:14px"><b>✏️ Question bank</b><span class="muted">One per line: question | choice | choice (2 to 4 choices). A different one comes up each day.</span><textarea id="ta" style="min-height:240px"></textarea><button class="btn green" id="sv">✓ Save</button></div>`;
+let hist=[];
+function draw(){const d=todays();Kit.set('qd-state',st);$('dt').textContent=new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});
+ if(!d){$('q').textContent='Add some questions with ✏️';$('cols').innerHTML='';return}$('q').textContent=d.q;$('cols').style.setProperty('--n',d.ch.length);
+ $('cols').innerHTML=d.ch.map((c,i)=>{const m=c.match(/^(\p{Extended_Pictographic}[\u{FE0F}\u{200D}\p{Extended_Pictographic}]*)\s*(.*)$/u);return `<div class="qd-col" style="--dc:${DC[i]}"><span class="qd-n">${d.votes[i]}</span><div class="qd-stack">${'<i class="qd-dot"></i>'.repeat(d.votes[i])}</div><button class="qd-ch" data-i="${i}">${m?`<span class="e">${m[1]}</span>${Kit.esc(m[2])}`:Kit.esc(c)}</button></div>`}).join('');window.__t={votes:d.votes}}
+$('cols').onclick=e=>{const b=e.target.closest('.qd-ch');if(!b)return;const d=todays();d.votes[+b.dataset.i]++;hist.push(+b.dataset.i);Kit.tone(500+ +b.dataset.i*110,.1,'triangle',.22);draw()};
+$('un').onclick=()=>{const i=hist.pop();if(i==null)return;const d=todays();d.votes[i]=Math.max(0,d.votes[i]-1);draw()};
+$('nw').onclick=()=>{const d=st.days[today()];if(d&&d.votes.some(Boolean)&&!confirm('Switch questions? Today\'s votes will be cleared.'))return;st.offset++;delete st.days[today()];hist=[];draw()};
+$('ar').onclick=()=>{$('arc').hidden=!$('arc').hidden;const ks=Object.keys(st.days).sort((a,b)=>new Date(b)-new Date(a));
+ $('al').innerHTML=ks.length?ks.map(k=>{const d=st.days[k],t=d.votes.reduce((a,b)=>a+b,0);return `<div><b>${new Date(k).toLocaleDateString(undefined,{month:'short',day:'numeric'})}:</b> ${Kit.esc(d.q)} <span class="muted">· ${d.ch.map((c,i)=>`${Kit.esc(c)} ${d.votes[i]}`).join(' · ')}${t?'':' · no votes'}</span></div>`}).join(''):'<div>No past days yet.</div>'};
+$('ed').onclick=()=>{$('edc').hidden=!$('edc').hidden;$('ta').value=st.bank};
+$('sv').onclick=()=>{st.bank=$('ta').value;const d=st.days[today()];if(d&&!d.votes.some(Boolean))delete st.days[today()];$('edc').hidden=true;draw()};
+draw();
+</script>
+</body></html>

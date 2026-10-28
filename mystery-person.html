@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Mystery Person</title>
+<style>
+.mp-wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr);gap:22px;align-items:start}
+@media (max-width:820px){.mp-wrap{grid-template-columns:1fr}}
+.mp-frame{background:linear-gradient(#C99A5C,#9B6B35);border:7px solid var(--ink);border-radius:20px;padding:18px;box-shadow:7px 7px 0 var(--ink)}
+.mp-portrait{aspect-ratio:3/4;background:radial-gradient(circle at 50% 35%,#FFF6C9,#F1D79A);border:5px solid #6B4423;border-radius:12px;display:grid;place-items:center;position:relative;overflow:hidden}
+.mp-sil{font-size:clamp(6rem,18vw,11rem);filter:brightness(0) opacity(.85);transition:filter 1s}
+.mp-q{position:absolute;font-size:clamp(3rem,8vw,5rem);font-weight:800;color:#fff;text-shadow:3px 3px 0 var(--ink)}
+.mp-name{position:absolute;bottom:10px;left:10px;right:10px;background:#fff;border:4px solid var(--ink);border-radius:12px;font-weight:800;font-size:clamp(1.2rem,3vw,1.8rem);text-align:center;padding:4px;transform:scale(0);transition:transform .6s cubic-bezier(.3,1.6,.5,1)}
+.mp-frame.solved .mp-name{transform:scale(1)}.mp-frame.solved .mp-q{display:none}.mp-frame.solved .mp-sil{filter:none}
+.mp-clues{display:grid;gap:10px}
+.mp-clue{display:flex;gap:12px;align-items:center;border:4px solid var(--ink);border-radius:16px;padding:10px 14px;background:#fff;box-shadow:0 4px 0 var(--ink);font-size:clamp(1.05rem,2.3vw,1.4rem);font-weight:600;min-height:62px}
+.mp-clue .n{flex:none;width:44px;height:44px;border-radius:50%;background:var(--sun);border:4px solid var(--ink);display:grid;place-items:center;font-weight:800}
+.mp-clue.hid{background:repeating-linear-gradient(45deg,#E8EEF8 0 12px,#DCE4F1 12px 24px);color:transparent;cursor:pointer}
+.mp-clue.hid .n{background:#fff;color:var(--ink)}
+.mp-clue.new{animation:mpin .5s cubic-bezier(.3,1.5,.5,1)}@keyframes mpin{from{transform:rotateX(90deg)}}
+.mp-ctrl{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:12px}
+.mp-turn{text-align:center;font-weight:700;margin-bottom:10px;font-size:1.15rem}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("👤", "Mystery Person");
+const DEF=`Benjamin Franklin | I was born in Boston in 1706. | I started a library, a fire company, and a post office. | I flew a kite in a thunderstorm to learn about electricity. | I helped write the Declaration of Independence. | My face is on the $100 bill.
+George Washington | I worked as a land surveyor when I was young. | I led the Continental Army in the American Revolution. | I crossed the icy Delaware River on Christmas night. | I was born in Virginia and lived at Mount Vernon. | I was the first President of the United States.
+Abraham Lincoln | I grew up in log cabins in Kentucky and Indiana. | I taught myself law by reading books. | I gave the Gettysburg Address. | I was President during the Civil War. | I'm on the penny and the $5 bill.
+Harriet Tubman | I was born enslaved in Maryland. | I escaped to freedom in Philadelphia. | I went back again and again to lead others to freedom. | I was a "conductor" on the Underground Railroad. | People called me "Moses."
+Martin Luther King Jr. | I was a minister in Montgomery, Alabama. | I believed in peaceful protest. | I helped lead the March on Washington in 1963. | I won the Nobel Peace Prize. | I gave the "I Have a Dream" speech.
+Rosa Parks | I was born in Tuskegee, Alabama. | I worked as a seamstress. | In 1955 I was arrested in Montgomery. | My arrest started the Montgomery Bus Boycott. | I would not give up my seat on a bus.
+Albert Einstein | I was born in Germany in 1879. | I worked in a patent office while I did science. | I won the Nobel Prize in Physics. | My wild hair made me easy to spot. | I came up with E = mc².
+Marie Curie | I was born in Warsaw, Poland. | I studied science in Paris, France. | I discovered two elements: polonium and radium. | I was the first woman to win a Nobel Prize. | I won Nobel Prizes in two different sciences.
+Amelia Earhart | I was born in Kansas in 1897. | I worked as a nurse's aide during World War I. | I set many records as a pilot. | I was the first woman to fly alone across the Atlantic Ocean. | I disappeared while trying to fly around the world.
+Neil Armstrong | I was born in Ohio. | I was a Navy pilot and a test pilot. | I flew on Gemini 8. | I was the commander of Apollo 11. | I was the first person to walk on the Moon.
+Thomas Edison | My mother taught me at home. | I built a lab in Menlo Park, New Jersey. | I invented the phonograph to record sound. | I held more than 1,000 patents. | I made a long-lasting light bulb.
+Helen Keller | I was born in Alabama in 1880. | An illness took my sight and hearing when I was a baby. | My teacher, Anne Sullivan, spelled words into my hand. | I learned the word "water" at a water pump. | I was the first deaf-blind person to earn a college degree.
+Sacagawea | I was a Lemhi Shoshone woman. | I carried my baby son on a very long journey. | I helped translate languages on an expedition. | I traveled west with Lewis and Clark. | My picture is on a golden dollar coin.`;
+const $=id=>document.getElementById(id);
+document.querySelector('main').innerHTML=`<div class="card ln-set" id="set"><div class="row">${Learn.teamPicker('nT',2)}
+ <label>People <select id="nP" style="width:auto"><option>5</option><option selected>8</option><option value="99">All</option></select></label>
+ <label><input type="checkbox" id="steal" checked> Wrong guess lets the next team steal</label><button class="btn big green" id="go">Start</button></div>
+ <p class="muted" style="margin:8px 0 0">Clues go from hard to easy. Guess after clue 1 for 5 points, after clue 2 for 4 points, and so on. Make your own with real people, book characters, or community helpers.</p></div>
+<div id="game" hidden><div id="tm"></div><div class="mp-wrap"><div class="mp-frame" id="fr"><div class="mp-portrait"><span class="mp-sil" id="sil">🧑</span><span class="mp-q">?</span><div class="mp-name" id="nm"></div></div></div>
+<div><div class="mp-turn" id="turn"></div><div class="mp-clues" id="cl"></div>
+<div class="mp-ctrl"><button class="btn" id="more">🔍 Show the next clue</button><button class="btn green" id="ok">✓ Right guess</button><button class="btn red" id="no">✗ Wrong guess</button><button class="btn white" id="give">Reveal</button><button class="btn grape" id="nx" hidden>Next person ➜</button></div>
+<p class="muted" style="text-align:center" id="cnt"></p></div></div></div>`;
+const L=Learn.list($('set'),{key:'people',label:'Mystery people',help:'One per line: name | clue 1 (hardest) | clue 2 | clue 3 | ... | last clue (easiest). Up to 8 clues each.',def:DEF});
+let T,deck,idx,shown,over;
+const FACES=['🧑','👩','👨','🧓','👵','👴','🧔','👱'];
+$('go').onclick=()=>{deck=Kit.shuffle(L.rows().filter(r=>r.length>2)).slice(0,+$('nP').value);if(!deck.length)return alert('Add someone with at least 2 clues.');
+ $('set').hidden=true;$('game').hidden=false;T=Learn.teams($('tm'),+$('nT').value);idx=0;round()};
+function round(){shown=1;over=false;$('fr').classList.remove('solved');$('sil').textContent=Kit.pick(FACES);$('nm').textContent=deck[idx][0];
+ ['more','ok','no','give'].forEach(id=>$(id).hidden=false);$('nx').hidden=true;$('cnt').textContent=`Person ${idx+1} of ${deck.length}`;draw(true);window.__t={answer:deck[idx][0]}}
+const clues=()=>deck[idx].slice(1).filter(Boolean);
+const worth=()=>Math.max(1,clues().length-shown+1);
+function draw(anim){const c=clues();$('cl').innerHTML=c.map((t,i)=>`<div class="mp-clue ${i<shown?'':'hid'} ${anim&&i===shown-1?'new':''}" data-i="${i}"><span class="n">${i+1}</span><span>${i<shown?Kit.esc(t):'Hidden clue'}</span></div>`).join('');
+ $('more').disabled=shown>=c.length||over;$('turn').innerHTML=over?'':`${T.n>1?`<span class="ln-pill" style="background:${T.colors[T.cur]};color:#fff">${Kit.esc(T.names[T.cur])} team</span> `:''}Who am I? Worth <b>${Learn.pts(worth())}</b>`}
+$('more').onclick=()=>{if(shown<clues().length){shown++;Kit.tone(500+shown*40,.15,'triangle',.2);draw(true)}};
+$('cl').onclick=e=>{const c=e.target.closest('.mp-clue.hid');if(c&&+c.dataset.i===shown)$('more').click()};
+$('ok').onclick=()=>{if(over)return;T.add(worth());end(true)};
+$('no').onclick=()=>{if(over)return;Learn.flash($('cl'),false);if($('steal').checked&&T.n>1){T.next()}if(shown<clues().length){shown++;draw(true)}else{end(false)}};
+$('give').onclick=()=>end(false);
+function end(w){over=true;shown=clues().length;$('fr').classList.add('solved');draw();w?(Kit.tada(),Kit.confetti(60)):Kit.ding();if(w||!$('steal').checked)T.next();
+ ['more','ok','no','give'].forEach(id=>$(id).hidden=true);$('nx').hidden=false;$('nx').textContent=idx>=deck.length-1?'🏁 Finish':'Next person ➜';draw()}
+$('nx').onclick=()=>{if(idx>=deck.length-1){Learn.finish('🏆',T.n>1?T.winner():'All done!','You uncovered every mystery person.',()=>{$('game').hidden=true;$('set').hidden=false});return}idx++;round()};
+</script>
+</body></html>

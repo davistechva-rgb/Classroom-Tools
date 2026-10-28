@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Evidence Analyzer</title>
+<style>
+.ea-claim{max-width:980px;margin:0 auto 16px;background:#FFF6C9;border:6px solid var(--ink);border-radius:22px;box-shadow:7px 7px 0 var(--ink);padding:14px 20px;text-align:center}
+.ea-claim small{display:block;font-weight:800;letter-spacing:.1em;color:#9A7A20}
+.ea-claim b{font-size:clamp(1.4rem,3.6vw,2.3rem);line-height:1.2}
+.ea-tray{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;min-height:70px;padding:12px;border:4px dashed rgba(29,43,83,.35);border-radius:20px;background:rgba(255,255,255,.35);margin-bottom:12px}
+.ea-ev{font:inherit;font-weight:700;font-size:clamp(.95rem,1.8vw,1.15rem);background:#fff;border:4px solid var(--ink);border-radius:14px;padding:8px 12px;box-shadow:0 4px 0 var(--ink);color:var(--ink);max-width:320px;text-align:left}
+.ea-ev::before{content:"📄 "}
+.ea-ev.ok{background:#C9F1D2}.ea-ev.off{background:#FFD9D4}
+.ea-scale{position:relative;max-width:1000px;margin:0 auto;height:clamp(330px,46vh,420px)}
+.ea-post{position:absolute;left:50%;bottom:0;width:22px;height:70%;transform:translateX(-50%);background:linear-gradient(90deg,#8A6A3C,#B48A52,#8A6A3C);border:4px solid var(--ink);border-radius:8px}
+.ea-base{position:absolute;left:50%;bottom:-6px;width:200px;height:30px;transform:translateX(-50%);background:#8A6A3C;border:4px solid var(--ink);border-radius:16px 16px 6px 6px}
+.ea-beam{position:absolute;left:8%;right:8%;top:22%;height:18px;background:#B48A52;border:4px solid var(--ink);border-radius:9px;transform-origin:50% 50%;transition:transform .9s cubic-bezier(.3,1.4,.5,1)}
+.ea-beam::after{content:"";position:absolute;left:50%;top:50%;width:34px;height:34px;transform:translate(-50%,-50%);border-radius:50%;background:var(--sun);border:4px solid var(--ink)}
+.ea-pan{position:absolute;top:0;width:44%;transform:translate(-50%,0);display:flex;flex-direction:column;align-items:center;transition:top .9s cubic-bezier(.3,1.4,.5,1)}
+.ea-pan.L{left:16%}.ea-pan.R{left:84%}
+.ea-pan .ch{width:3px;height:60px;background:var(--ink)}
+.ea-pan .dish{width:100%;min-height:150px;background:#fff;border:5px solid var(--ink);border-radius:0 0 50% 50%/0 0 34% 34%;padding:36px 10px 26px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-content:flex-start;position:relative}
+.ea-pan .dish h4{position:absolute;top:4px;left:0;right:0;margin:0;text-align:center;font-size:1rem;color:var(--pc)}
+.ea-pan .ea-ev{box-shadow:none;font-size:clamp(.8rem,1.4vw,.98rem);padding:4px 8px}
+.ea-pan.L{--pc:#1E8E3E}.ea-pan.R{--pc:#C9412E}
+.ea-pan.L .dish{background:#EFFBF2}.ea-pan.R .dish{background:#FFF1EE}
+.ea-bin{position:absolute;left:50%;bottom:44px;transform:translateX(-50%);width:min(240px,30%);min-height:86px;border:4px dashed var(--ink);border-radius:18px;background:#F4F4F8;display:flex;flex-wrap:wrap;gap:4px;padding:28px 6px 6px;justify-content:center;z-index:2}
+.ea-bin h4{position:absolute;top:4px;left:0;right:0;margin:0;font-size:.85rem;text-align:center}
+.ea-bin .ea-ev{box-shadow:none;font-size:.78rem;padding:3px 6px}
+.ea-top{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center;margin-bottom:14px}
+.ea-verdict{text-align:center;font-weight:800;font-size:clamp(1.2rem,3vw,1.8rem);color:#fff;text-shadow:2px 2px 0 var(--ink);min-height:1.4em;margin-top:10px}
+@media (max-width:700px){.ea-pan{width:48%}.ea-pan.L{left:25%}.ea-pan.R{left:75%}.ea-bin{bottom:auto;top:calc(100% + 10px);width:80%}.ea-scale{margin-bottom:140px}}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🕵️", "Evidence Analyzer");
+const DEF=`# Our school should have a longer recess.
++ Kids who play outside more pay better attention in class.
++ Running around helps kids stay healthy.
++ Recess gives kids time to practice getting along.
+- A longer recess means less time for lessons.
+- On very hot or cold days, being outside a long time isn't safe.
+~ The cafeteria serves pizza on Fridays.
+~ Our school mascot is an eagle.
+# Plants need sunlight to grow.
++ A plant in a dark closet turned yellow and droopy.
++ Plants on a sunny windowsill grew taller than plants in the shade.
++ Leaves use sunlight to make food for the plant.
+- Mushrooms grow fine in the dark (but mushrooms aren't plants!).
+~ Some plants have pretty flowers.
+~ Cactuses have spines.
+# Dogs make better pets than cats.
++ Dogs can learn lots of tricks.
++ Dogs love going on walks with you.
+- Cats don't need to be walked, so they're easier on busy days.
+- Cats take up less space in a small apartment.
+~ Dogs and cats both have four legs.
+~ The first pet in space was a dog named Laika.`;
+const $=id=>document.getElementById(id);
+document.querySelector('main').innerHTML=`<div class="card ln-set" id="set"><div class="row"><label>Claim <select id="pick" style="width:auto"></select></label><button class="btn big green" id="go">Start</button></div>
+ <p class="muted" style="margin:8px 0 0">Read the claim. Weigh each piece of evidence: does it <b>support</b> the claim, <b>go against</b> it, or is it <b>not related</b>? Watch the scale tip! Then decide: how strong is the claim?</p></div>
+<div id="game" hidden><div class="ea-top"><span class="ln-pill" id="info"></span><button class="btn green" id="chk">✓ Check my sorting</button><button class="btn white" id="clr">↺ Start over</button><button class="btn grape" id="nx">Next claim ➜</button><button class="btn white" id="back">⚙️</button></div>
+<div class="ea-claim"><small>THE CLAIM</small><b id="cl"></b></div><div class="ea-tray dz-zone" id="tray" data-z="tray"></div>
+<div class="ea-scale"><div class="ea-post"></div><div class="ea-base"></div><div class="ea-beam" id="beam"></div>
+<div class="ea-pan L" id="pL"><div class="ch"></div><div class="dish dz-zone" data-z="+"><h4>👍 Supports it</h4></div></div><div class="ea-pan R" id="pR"><div class="ch"></div><div class="dish dz-zone" data-z="-"><h4>👎 Goes against it</h4></div></div>
+<div class="ea-bin dz-zone" data-z="~"><h4>🗑️ Not related</h4></div></div><div class="ea-verdict" id="vd"></div></div>`;
+const L=Learn.list($('set'),{key:'claims',label:'My claims and evidence',help:'Start each claim with #. Then one line per piece of evidence: + supports it, - goes against it, ~ not related.',def:DEF});
+function claims(){const out=[];let c=null;L.get().forEach(l=>{if(l.startsWith('#')){c={claim:l.slice(1).trim(),ev:[]};out.push(c)}else if(c&&/^[+\-~]/.test(l))c.ev.push({k:l[0],t:l.slice(1).trim()})});return out.filter(c=>c.ev.length>=2)}
+const refresh=()=>{$('pick').innerHTML=claims().map((c,i)=>`<option value="${i}">${Kit.esc(c.claim)}</option>`).join('')};refresh();L.el.querySelector('textarea').addEventListener('change',refresh);
+let C,ci;
+$('go').onclick=()=>{C=claims();if(!C.length)return alert('Add a claim with evidence.');ci=+$('pick').value||0;$('set').hidden=true;$('game').hidden=false;load()};
+function load(){const c=C[ci];$('cl').textContent=c.claim;document.querySelectorAll('.ea-scale .ea-ev').forEach(e=>e.remove());
+ $('tray').innerHTML=Kit.shuffle(c.ev).map(e=>`<span class="ea-ev dz-item" data-k="${e.k}">${Kit.esc(e.t)}</span>`).join('');$('vd').textContent='';$('nx').hidden=C.length<2;tilt();window.__t={n:c.ev.length}}
+function tilt(){const n=k=>document.querySelectorAll(`.dz-zone[data-z="${k}"] .ea-ev`).length;const d=n('+')-n('-');const a=Math.max(-14,Math.min(14,d*-5));
+ $('beam').style.transform=`rotate(${a}deg)`;const w=$('beam').offsetWidth;const dy=Math.sin(a*Math.PI/180)*w*.34;$('pL').style.top=(-dy)+'px';$('pR').style.top=dy+'px';
+ $('info').textContent=`${$('tray').children.length} pieces of evidence left to weigh`}
+Learn.drag($('game'),{item:'.ea-ev',zone:'.dz-zone',drop(it,z){it.classList.remove('ok','off');z.appendChild(it);Kit.tone(z.dataset.z==='+'?520:z.dataset.z==='-'?300:400,.15,'triangle',.22);tilt()}});
+$('chk').onclick=()=>{if($('tray').children.length){$('vd').textContent='Weigh every piece of evidence first!';return}let ok=0,all=0;document.querySelectorAll('.ea-scale .ea-ev').forEach(e=>{all++;const g=e.dataset.k===e.parentElement.dataset.z;e.classList.toggle('ok',g);e.classList.toggle('off',!g);ok+=g});
+ if(ok<all){$('vd').textContent=`${ok} of ${all} are sorted right. Move the red ones and check again.`;Kit.tone(220,.25,'triangle',.18);return}
+ const s=C[ci].ev.filter(e=>e.k==='+').length,a=C[ci].ev.filter(e=>e.k==='-').length;
+ $('vd').textContent=s>a?`⚖️ ${s} for, ${a} against: the evidence leans toward the claim. Is it enough to convince you?`:s<a?`⚖️ ${s} for, ${a} against: the evidence leans against the claim!`:`⚖️ ${s} for and ${a} against: it's balanced. You decide which reasons matter most!`;
+ Learn.finish('🕵️','Evidence sorted!',`Every piece is in the right place. ${s>a?'The scale tips toward the claim.':s<a?'The scale tips against the claim.':'The scale is balanced.'}`)};
+$('clr').onclick=load;$('nx').onclick=()=>{ci=(ci+1)%C.length;load()};$('back').onclick=()=>{$('game').hidden=true;$('set').hidden=false;refresh()};
+addEventListener('resize',()=>{if(!$('game').hidden)tilt()});
+</script>
+</body></html>

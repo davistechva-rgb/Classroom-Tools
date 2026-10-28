@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Question of the Day</title>
+<style>
+main{max-width:1400px}
+.qq-wrap{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:900px){.qq-wrap{grid-template-columns:1fr}}
+.qq-card{background:#fff;border:7px solid var(--ink);border-radius:30px;box-shadow:9px 9px 0 var(--ink);padding:clamp(16px,3vw,32px)}
+.qq-date{font-weight:800;letter-spacing:.1em;color:#6B7695}
+.qq-q{font-size:clamp(1.8rem,4.6vw,3.2rem);font-weight:800;line-height:1.15;margin:8px 0 14px}
+.qq-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.qq-step{font:inherit;border:4px solid var(--ink);border-radius:18px;padding:10px 6px;background:#F4FAFF;font-weight:800;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--ink)}
+.qq-step span{font-size:1.8rem}.qq-step small{font-weight:700;font-variant-numeric:tabular-nums}
+.qq-step.on{background:var(--sun);transform:translateY(-4px)}.qq-step.done{background:#C9F1D2}
+.qq-wall{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.qq-wall span{background:var(--nc);border:3px solid var(--ink);border-radius:14px;padding:6px 12px;font-weight:700;transform:rotate(var(--r))}
+.qq-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;font-weight:700;text-align:center}
+.qq-cal b{font-size:.8rem;color:#6B7695}
+.qq-cal button{font:inherit;border:3px solid #D5DEEE;border-radius:10px;background:#fff;padding:6px 0;cursor:pointer;color:var(--ink)}
+.qq-cal button.has{border-color:var(--ink);background:#E3F2FF}.qq-cal button.today{background:var(--sun);border-color:var(--ink)}.qq-cal button.sel{outline:4px solid var(--grape)}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🎤", "Question of the Day");
+const $=id=>document.getElementById(id);
+const BANK=`What is something that made you smile this week?
+If you could have any animal as a class pet, what would it be and why?
+What is one thing you're really good at?
+If you could meet anyone from history, who would it be?
+What would you do with an extra hour every day?
+What is the best advice anyone has ever given you?
+If you could design a new holiday, what would it celebrate?
+What is something new you learned recently?
+What's a food you didn't like before but like now?
+If you wrote a book, what would it be about?
+What is one way you can be kind today?
+What job would you like to try for one day?
+What would your perfect weekend look like?
+If you could change one rule at school, what would it be?
+What makes someone a good leader?
+What place would you most like to visit?
+What is your favorite sound, and why?
+What's something hard that you kept trying until you got it?
+If you had a robot helper, what would it do for you?
+What's one thing you want to get better at this month?`;
+const st=Kit.get('qq-state',{bank:BANK,days:{},steps:[60,90,120]});
+const key=d=>d.toISOString().slice(0,10);const today=key(new Date(new Date().setHours(12)));
+const qFor=k=>{const b=Kit.lines(st.bank);const n=Math.floor(new Date(k+'T12:00').getTime()/864e5);return b[n%b.length]||''};
+let sel=today,step=-1,left=0,tv=null,month=new Date();
+document.querySelector('main').innerHTML=`<div class="qq-wrap"><div class="qq-card"><div class="qq-date" id="dt"></div><div class="qq-q" id="q" contenteditable="true" spellcheck="false"></div>
+<div class="qq-steps" id="st"></div><div class="row" style="margin-top:12px"><input type="text" id="ans" placeholder="Type what someone shares and press Enter" style="flex:1;min-width:200px"><button class="btn white small" id="nw">🔀 Different question</button></div><div class="qq-wall" id="wall"></div></div>
+<div class="qq-card"><div class="row" style="justify-content:space-between"><button class="btn white small" id="pm">◀</button><b id="mn"></b><button class="btn white small" id="nm">▶</button></div><div class="qq-cal" id="cal" style="margin-top:8px"></div><p class="muted">Tap a day to see what the class said. Days with answers are blue.</p><details><summary style="cursor:pointer;font-weight:700">✏️ Question bank</summary><textarea id="ta" style="min-height:160px;margin-top:8px"></textarea><button class="btn green small" id="sv">✓ Save</button></details></div></div>`;
+const day=k=>st.days[k]||{q:qFor(k),a:[]};const save=()=>Kit.set('qq-state',st);
+const NC=['#FFF1B8','#C9F1D2','#FDE7F3','#E3F2FF','#FFE3C4','#EAE0FF'];
+function draw(){const d=day(sel);$('dt').textContent='🎤 QUESTION OF THE DAY · '+new Date(sel+'T12:00').toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'}).toUpperCase();if(document.activeElement!==$('q'))$('q').textContent=d.q;
+ $('st').innerHTML=[['🤔','Think'],['✍️','Write'],['🗣️','Share']].map((s,i)=>`<button class="qq-step ${i===step?'on':i<step?'done':''}" data-i="${i}"><span>${s[0]}</span>${s[1]}<small>${i===step?`${Math.floor(left/60)}:${String(left%60).padStart(2,'0')}`:Math.round(st.steps[i]/60*10)/10+' min'}</small></button>`).join('');
+ $('wall').innerHTML=d.a.map((a,i)=>`<span style="--nc:${NC[i%6]};--r:${(i%3-1)*2}deg">${Kit.esc(a)}</span>`).join('');
+ const y=month.getFullYear(),m=month.getMonth(),first=new Date(y,m,1).getDay(),n=new Date(y,m+1,0).getDate();$('mn').textContent=month.toLocaleDateString(undefined,{month:'long',year:'numeric'});
+ $('cal').innerHTML=['S','M','T','W','T','F','S'].map(x=>`<b>${x}</b>`).join('')+'<span></span>'.repeat(first)+Array.from({length:n},(_,i)=>{const k=key(new Date(y,m,i+1,12));return `<button data-k="${k}" class="${st.days[k]&&st.days[k].a.length?'has':''} ${k===today?'today':''} ${k===sel?'sel':''}">${i+1}</button>`}).join('');window.__t={sel,a:d.a.length,step}}
+$('st').onclick=e=>{const b=e.target.closest('.qq-step');if(!b)return;step=+b.dataset.i;left=st.steps[step];clearInterval(tv);Kit.ding();tv=setInterval(()=>{left--;if(left<=0){clearInterval(tv);Kit.alarm();if(step<2){step++;left=st.steps[step];$('st').querySelector(`[data-i="${step}"]`).click();return}}draw()},1000);draw()};
+$('ans').onkeydown=e=>{if(e.key!=='Enter')return;const v=$('ans').value.trim();if(!v)return;const d=st.days[sel]||(st.days[sel]=day(sel));d.a.push(v);$('ans').value='';save();Kit.tick();draw()};
+$('q').oninput=()=>{const d=st.days[sel]||(st.days[sel]=day(sel));d.q=$('q').textContent;save()};
+$('nw').onclick=()=>{const b=Kit.lines(st.bank);const d=st.days[sel]||(st.days[sel]=day(sel));d.q=Kit.pick(b.filter(x=>x!==d.q))||d.q;save();draw()};
+$('cal').onclick=e=>{const b=e.target.closest('[data-k]');if(b){sel=b.dataset.k;draw()}};
+$('pm').onclick=()=>{month=new Date(month.getFullYear(),month.getMonth()-1,1);draw()};$('nm').onclick=()=>{month=new Date(month.getFullYear(),month.getMonth()+1,1);draw()};
+$('ta').value=st.bank;$('sv').onclick=()=>{st.bank=$('ta').value;save();draw();Kit.ding()};
+draw();
+</script>
+</body></html>

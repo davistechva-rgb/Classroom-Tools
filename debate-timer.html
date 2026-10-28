@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Debate Timer</title>
+<style>
+main{max-width:1500px}
+.db-wrap{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:900px){.db-wrap{grid-template-columns:1fr}}
+.db-now{border:7px solid var(--ink);border-radius:30px;box-shadow:9px 9px 0 var(--ink);background:var(--sc);color:#fff;text-align:center;padding:clamp(16px,3vw,30px);text-shadow:3px 3px 0 rgba(0,0,0,.25);transition:background .5s}
+.db-now small{font-weight:800;letter-spacing:.12em;opacity:.9}
+.db-now .ph{font-size:clamp(2rem,5.4vw,3.6rem);font-weight:800;line-height:1.05}
+.db-now .t{font-size:clamp(4rem,13vw,8.6rem);font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+.db-now .t.warn{color:var(--sun)}.db-now .t.over{color:#fff;animation:dbo .5s infinite}@keyframes dbo{50%{opacity:.3}}
+.db-bar{height:18px;border:4px solid var(--ink);border-radius:99px;background:rgba(255,255,255,.4);overflow:hidden;margin-top:10px}.db-bar b{display:block;height:100%;background:#fff;transition:width 1s linear}
+.db-list{background:#fff;border:6px solid var(--ink);border-radius:24px;box-shadow:6px 6px 0 var(--ink);padding:10px;display:grid;gap:6px}
+.db-it{display:grid;grid-template-columns:14px 1fr auto;gap:10px;align-items:center;border:3px solid #D5DEEE;border-radius:12px;padding:6px 10px;font-weight:700;cursor:pointer}
+.db-it i{width:14px;height:14px;border-radius:50%;background:var(--sc);border:2px solid var(--ink)}
+.db-it.now{border-color:var(--ink);background:#FFF6C9}.db-it.done{opacity:.45}
+.db-score{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.db-team{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:10px;text-align:center}
+.db-team b{font-size:1.2rem}.db-team .p{font-size:2.6rem;font-weight:800}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("⚖️", "Debate Timer");
+const $=id=>document.getElementById(id);
+const FORMATS={'Classroom debate (about 15 min)':`for | Opening: For side | 2\nagainst | Opening: Against side | 2\nboth | Team huddle | 1\nfor | Rebuttal: For side | 1.5\nagainst | Rebuttal: Against side | 1.5\nboth | Questions from the audience | 3\nagainst | Closing: Against side | 1\nfor | Closing: For side | 1`,
+ 'Quick debate (about 6 min)':`for | For side speaks | 1\nagainst | Against side speaks | 1\nboth | Think time | 0.5\nfor | For side answers back | 1\nagainst | Against side answers back | 1`,
+ 'Four corners share':`both | Pick your corner | 1\nfor | Strongly agree corner shares | 1\nfor | Agree corner shares | 1\nagainst | Disagree corner shares | 1\nagainst | Strongly disagree corner shares | 1\nboth | Change corners if you changed your mind | 1`};
+const SC={for:'#2EAF5A',against:'#E5533F',both:'#6B5FD3'};
+const st=Kit.get('db-set',{fmt:Object.keys(FORMATS)[0],custom:'',teams:['For team','Against team'],score:[0,0]});
+document.querySelector('main').innerHTML=`<div class="db-wrap"><div><div class="db-now" id="now"></div><div class="row" style="justify-content:center;margin-top:14px"><button class="btn big green" id="go">▶ Start</button><button class="btn white" id="nx">⏭ Next part</button><button class="btn white" id="p30">＋30 s</button><button class="btn white" id="rs">↺ Reset</button></div></div>
+<div><select id="fm" style="width:100%;margin-bottom:10px"></select><div class="db-list" id="ls"></div><div class="db-score">${[0,1].map(i=>`<div class="db-team"><b id="tn${i}"></b><div class="p" id="sc${i}">0</div><div class="row" style="justify-content:center;gap:6px"><button class="btn small white" data-s="${i}" data-d="-1">−</button><button class="btn small" data-s="${i}" data-d="1">＋ point</button></div></div>`).join('')}</div>
+<details style="margin-top:10px"><summary style="cursor:pointer;font-weight:700">✏️ My own format</summary><p class="muted">One part per line: for, against, or both | name | minutes</p><textarea id="ta" style="min-height:140px"></textarea><button class="btn green small" id="sv">✓ Use my format</button></details></div></div>`;
+const parts=()=>Kit.lines(st.fmt==='__mine'?st.custom:FORMATS[st.fmt]||'').map(l=>{const p=l.split('|').map(s=>s.trim());return {s:SC[p[0]]?p[0]:'both',n:p[1]||p[0],m:parseFloat(p[2])||1}});
+let k=0,left=0,tot=0,tv=null;
+function draw(){const P=parts(),p=P[k];$('fm').innerHTML=Object.keys(FORMATS).map(f=>`<option ${f===st.fmt?'selected':''}>${f}</option>`).join('')+`<option value="__mine" ${st.fmt==='__mine'?'selected':''}>✏️ My own format</option>`;
+ $('ls').innerHTML=P.map((x,i)=>`<div class="db-it ${i===k?'now':i<k?'done':''}" data-i="${i}" style="--sc:${SC[x.s]}"><i></i>${Kit.esc(x.n)}<span>${x.m} min</span></div>`).join('');
+ [0,1].forEach(i=>{$('tn'+i).textContent=st.teams[i];$('sc'+i).textContent=st.score[i]});
+ if(!p){$('now').style.setProperty('--sc','#1D2B53');$('now').innerHTML='<div class="ph">🏁 Debate over!</div><div style="font-size:1.4rem;font-weight:700">Who made the strongest case?</div>';return}
+ const s=tv||left?left:p.m*60;const t=Math.abs(s);$('now').style.setProperty('--sc',SC[p.s]);
+ $('now').innerHTML=`<small>PART ${k+1} OF ${P.length} · ${p.s==='both'?'EVERYONE':p.s==='for'?'👍 FOR SIDE':'👎 AGAINST SIDE'}</small><div class="ph">${Kit.esc(p.n)}</div><div class="t ${s<0?'over':s<=30&&tv?'warn':''}">${s<0?'+':''}${Math.floor(t/60)}:${String(t%60).padStart(2,'0')}</div><div class="db-bar"><b style="width:${tot?Math.max(0,s)/tot*100:100}%"></b></div>`;window.__t={k,left:s}}
+function start(){const p=parts()[k];if(!p)return;if(!left){left=tot=Math.round(p.m*60)}$('go').textContent='⏸ Pause';clearInterval(tv);
+ tv=setInterval(()=>{left--;if(left===30)Kit.tone(880,.2,'triangle',.18);if(left===0){Kit.alarm()}if(left<-15){clearInterval(tv);tv=null;$('go').textContent='▶ Start'}draw()},1000);draw()}
+$('go').onclick=()=>{if(tv){clearInterval(tv);tv=null;$('go').textContent='▶ Keep going';return}start()};
+$('nx').onclick=()=>{const run=!!tv;clearInterval(tv);tv=null;k++;left=0;tot=0;Kit.ding();if(run&&parts()[k])start();else{$('go').textContent='▶ Start';draw()}};
+$('p30').onclick=()=>{if(!left&&!tv){const p=parts()[k];if(!p)return;left=tot=Math.round(p.m*60)}left+=30;tot+=30;draw()};
+$('rs').onclick=()=>{clearInterval(tv);tv=null;k=0;left=0;tot=0;st.score=[0,0];Kit.set('db-set',st);$('go').textContent='▶ Start';draw()};
+$('ls').onclick=e=>{const it=e.target.closest('[data-i]');if(!it)return;clearInterval(tv);tv=null;k=+it.dataset.i;left=0;tot=0;$('go').textContent='▶ Start';draw()};
+$('fm').onchange=()=>{st.fmt=$('fm').value;Kit.set('db-set',st);$('rs').click()};
+document.querySelector('.db-score').onclick=e=>{const b=e.target.closest('[data-s]');if(!b)return;const i=+b.dataset.s;st.score[i]=Math.max(0,st.score[i]+ +b.dataset.d);Kit.set('db-set',st);Kit.tick();draw()};
+$('tn0').onclick=$('tn1').onclick=()=>{const n=prompt('Team names, separated by a comma:',st.teams.join(', '));if(n){const t=n.split(',').map(s=>s.trim());if(t.length===2){st.teams=t;Kit.set('db-set',st);draw()}}};
+$('ta').value=st.custom;$('sv').onclick=()=>{st.custom=$('ta').value;st.fmt='__mine';Kit.set('db-set',st);$('rs').click()};
+draw();
+</script>
+</body></html>

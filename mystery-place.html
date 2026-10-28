@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Mystery Place</title>
+<style>
+.pl-bid{display:grid;gap:14px;max-width:900px;margin:0 auto}
+.pl-bidrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center;background:#fff;border:4px solid var(--ink);border-radius:18px;padding:10px;box-shadow:0 5px 0 var(--ink)}
+.pl-bidrow .nm{font-weight:800;min-width:110px;color:#fff;background:var(--tc);border:3px solid var(--ink);border-radius:999px;padding:4px 12px;text-align:center}
+.pl-bidrow button{font:inherit;font-weight:800;font-size:1.3rem;width:56px;height:56px;border:4px solid var(--ink);border-radius:14px;background:#F4FAFF;cursor:pointer;box-shadow:0 4px 0 var(--ink);color:var(--ink)}
+.pl-bidrow button.on{background:var(--sun);transform:translateY(4px);box-shadow:none}
+.pl-pass{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0;max-width:1000px;margin:0 auto;border:7px solid var(--ink);border-radius:24px;box-shadow:8px 8px 0 var(--ink);overflow:hidden;background:#1E3A6E}
+@media (max-width:760px){.pl-pass{grid-template-columns:1fr}}
+.pl-page{background:#FBF4E2;padding:18px;min-height:330px;position:relative;background-image:linear-gradient(rgba(29,43,83,.05) 1px,transparent 1px);background-size:100% 28px}
+.pl-page+.pl-page{border-left:3px dashed #C9B98E}
+.pl-page h3{margin:0 0 10px;font-size:1.1rem;letter-spacing:.12em;text-transform:uppercase;color:#7A6A40}
+.pl-stamps{display:grid;gap:12px}
+.pl-stamp{border:4px dashed var(--sc);border-radius:14px;padding:10px 14px;font-weight:700;font-size:clamp(1rem,2.2vw,1.3rem);color:var(--ink);background:rgba(255,255,255,.7);transform:rotate(var(--r))}.pl-stamp.fresh{animation:plstamp .5s cubic-bezier(.2,1.8,.5,1)}
+.pl-stamp b{color:var(--sc);display:block;font-size:.8em;letter-spacing:.08em;text-transform:uppercase}
+@keyframes plstamp{from{transform:scale(2.4) rotate(var(--r));opacity:0}}
+.pl-blank{border:4px dashed #CFC3A0;border-radius:14px;padding:16px;text-align:center;color:#A99A70;font-weight:700}
+.pl-big{font-size:clamp(1.6rem,4vw,2.6rem);font-weight:800;text-align:center;color:var(--ink)}
+.pl-info{text-align:center;font-weight:700;font-size:1.2rem;margin:10px 0}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🏛️", "Mystery Place");
+const DEF=`Egypt | It's in Africa. | Most of it is desert. | People there speak Arabic. | The Nile River runs through it. | The Great Pyramids of Giza are there.
+France | It's in Europe. | People there speak French. | It's famous for long loaves of bread called baguettes. | Its capital is Paris. | The Eiffel Tower is there.
+Japan | It's in Asia and made of islands. | People there speak Japanese. | Bullet trains zoom between its cities. | Sushi comes from here. | Mount Fuji is there.
+Brazil | It's in South America. | People there speak Portuguese. | Most of the Amazon rainforest is here. | Its soccer team has won the World Cup five times. | Rio de Janeiro is there.
+Australia | It's a country and a whole continent. | Kangaroos and koalas live here. | The Great Barrier Reef is off its coast. | Its biggest city is Sydney. | The Sydney Opera House is there.
+India | It's in Asia. | More people live here than in any other country. | Hindi is one of its main languages. | Its capital is New Delhi. | The Taj Mahal is there.
+China | It's in Asia. | Giant pandas live in its mountain forests. | People there speak Mandarin. | Its capital is Beijing. | The Great Wall is there.
+Mexico | It's in North America. | People there speak Spanish. | Tacos and tamales come from here. | It's just south of the United States. | The ancient city of Chichén Itzá is there.
+Italy | It's in Europe. | It's shaped like a boot. | Pizza and pasta come from here. | Its capital is Rome. | The Leaning Tower of Pisa is there.
+Canada | It's in North America. | People there speak English and French. | Its flag has a red maple leaf. | It's the second biggest country in the world. | It shares Niagara Falls with the United States.
+Peru | It's in South America. | Llamas and alpacas live in its mountains. | The Andes Mountains run through it. | Its capital is Lima. | Machu Picchu is there.
+United Kingdom | It's in Europe. | It's made of England, Scotland, Wales, and Northern Ireland. | Its capital is London. | The king lives in Buckingham Palace. | Big Ben is there.
+Antarctica | It's the coldest place on Earth. | No country owns it. | Scientists visit to study the ice. | Emperor penguins live there. | The South Pole is there.
+Virginia | It's one of the 50 United States. | Eight U.S. presidents were born here. | Jamestown, the first lasting English colony in America, is here. | Its capital is Richmond. | Mount Vernon, George Washington's home, is here.`;
+const $=id=>document.getElementById(id);const SC=['#FF6B5B','#22C3E6','#9B6BF2','#5DC66E','#FF9F43','#FF8FC7','#1D2B53','#FFC93C'];
+document.querySelector('main').innerHTML=`<div class="card ln-set" id="set"><div class="row">${Learn.teamPicker('nT',2)}
+ <label>Places <select id="nP" style="width:auto"><option>5</option><option selected>8</option><option value="99">All</option></select></label><button class="btn big green" id="go">Start</button></div>
+ <p class="muted" style="margin:8px 0 0">Before any clues show, every team bids: "We can name this place in ___ clues!" The lowest bid gets to try. Name it with that many passport stamps (or fewer) to win points. Miss it, and every other team gets one guess after all the clues.</p></div>
+<div id="game" hidden><div id="tm"></div><div id="view"></div></div>`;
+const L=Learn.list($('set'),{key:'places',label:'Mystery places',help:'One per line: place | clue 1 (hardest) | clue 2 | ... | last clue (easiest).',def:DEF});
+let T,deck,idx,bids,bidder,shown,phase,fresh=-1;
+$('go').onclick=()=>{deck=Kit.shuffle(L.rows().filter(r=>r.length>2)).slice(0,+$('nP').value);if(!deck.length)return alert('Add a place with clues.');
+ $('set').hidden=true;$('game').hidden=false;T=Learn.teams($('tm'),+$('nT').value,{turns:false});idx=0;round()};
+const clues=()=>deck[idx].slice(1).filter(Boolean);
+function round(){shown=0;bids={};bidder=null;window.__t={answer:deck[idx][0],clues:clues().length};
+ if(T.n<2){bidder=0;phase='clues';bids[0]=clues().length;draw();return}
+ phase='bid';draw()}
+function draw(){const c=clues(),n=c.length,v=$('view');
+ if(phase==='bid'){v.innerHTML=`<div class="pl-info">✈️ Mystery place ${idx+1} of ${deck.length}. It has <b>${n}</b> clues. How many does your team need?</div>
+  <div class="pl-bid">${Array.from({length:T.n},(_,i)=>`<div class="pl-bidrow" style="--tc:${T.colors[i]}"><span class="nm">${Kit.esc(T.names[i])}</span>${Array.from({length:n},(_,k)=>`<button data-t="${i}" data-b="${k+1}" class="${bids[i]===k+1?'on':''}">${k+1}</button>`).join('')}</div>`).join('')}
+  <div class="row" style="justify-content:center"><button class="btn big green" id="lock" ${Object.keys(bids).length<T.n?'disabled':''}>🔒 Lock in the bids</button></div></div>`;
+  v.querySelector('.pl-bid').onclick=e=>{const b=e.target.closest('[data-b]');if(!b)return;bids[b.dataset.t]=+b.dataset.b;Kit.tick();draw()};
+  $('lock').onclick=()=>{const low=Math.min(...Object.values(bids));const who=Object.keys(bids).filter(k=>bids[k]===low).map(Number);bidder=Kit.pick(who);
+   Kit.tada();phase='clues';shown=0;draw();Learn.burst(`${T.names[bidder]}: ${low} clue${low>1?'s':''}!`,$('view'),T.colors[bidder])};return}
+ const lim=bids[bidder];const worth=T.n<2?Math.max(1,n-shown+1):Math.max(1,n-lim+1)*2;
+ const stamps=c.slice(0,shown).map((t,i)=>`<div class="pl-stamp ${i===fresh?'fresh':''}" style="--sc:${SC[i%SC.length]};--r:${(i%2?1:-1)*(1+i%3)}deg"><b>Stamp ${i+1}</b>${Kit.esc(t)}</div>`);
+ const left=stamps.slice(0,Math.ceil(n/2)),right=stamps.slice(Math.ceil(n/2));
+ const blank=k=>`<div class="pl-blank">Stamp ${k+1}</div>`;
+ const fill=(arr,from,to)=>arr.concat(Array.from({length:Math.max(0,to-from-arr.length)},(_,i)=>blank(from+arr.length+i))).join('');
+ const who=T.n>1&&phase!=='done'?`<span class="ln-pill" style="background:${T.colors[bidder]};color:#fff">${Kit.esc(T.names[bidder])}</span> bid <b>${lim}</b>.`:'';
+ let ctl='';
+ if(phase==='clues'){ctl=`<div class="pl-info">${who} Stamps shown: <b>${shown}</b> of ${T.n>1?lim:n}. ${T.n>1?`Right answer: <b>${Learn.pts(worth)}</b>`:`Worth <b>${Learn.pts(worth)}</b>`}</div>
+  <div class="row" style="justify-content:center"><button class="btn" id="st" ${shown>=(T.n>1?lim:n)?'disabled':''}>🛂 Stamp the next clue</button><button class="btn green" id="ok" ${shown<1?'disabled':''}>✓ Right</button><button class="btn red" id="no" ${shown<1?'disabled':''}>✗ Wrong</button></div>`}
+ if(phase==='steal'){ctl=`<div class="pl-info">Every other team gets one guess now. Tap the team that names it (1 point).</div><div class="row" style="justify-content:center">${Array.from({length:T.n},(_,i)=>i===bidder?'':`<button class="btn" data-steal="${i}" style="background:${T.colors[i]};color:#fff">${Kit.esc(T.names[i])}</button>`).join('')}<button class="btn white" id="nobody">Nobody got it</button></div>`}
+ if(phase==='done'){ctl=`<div class="pl-big">📍 ${Kit.esc(deck[idx][0])}</div><div class="row" style="justify-content:center;margin-top:10px"><button class="btn big grape" id="nx">${idx>=deck.length-1?'🏁 Finish':'Next place ➜'}</button></div>`}
+ v.innerHTML=`<div class="pl-pass" id="pass"><div class="pl-page"><h3>🛂 Passport · Page 1</h3><div class="pl-stamps">${fill(left,0,Math.ceil(n/2))}</div></div><div class="pl-page"><h3>Page 2</h3><div class="pl-stamps">${fill(right,Math.ceil(n/2),n)}</div></div></div><div style="margin-top:14px">${ctl}</div>`;
+ fresh=-1;const on=(id,f)=>{const e=$(id);if(e)e.onclick=f};
+ on('st',()=>{fresh=shown;shown++;Kit.tone(240,.08,'square',.3);Kit.tone(120,.2,'sine',.4,.05);draw()});
+ on('ok',()=>{T.add(worth,T.n?bidder:0);Kit.confetti(70);Kit.tada();shown=n;phase='done';draw()});
+ on('no',()=>{Learn.flash($('pass'),false);shown=n;phase=T.n>1?'steal':'done';draw()});
+ v.querySelectorAll('[data-steal]').forEach(b=>b.onclick=()=>{T.add(1,+b.dataset.steal);Kit.ding();phase='done';draw()});
+ on('nobody',()=>{phase='done';draw()});
+ on('nx',()=>{if(idx>=deck.length-1){Learn.finish('🌎',T.n>1?T.winner():'World traveler!',`You visited ${deck.length} mystery places.`,()=>{$('game').hidden=true;$('set').hidden=false});return}idx++;round()});
+}
+</script>
+</body></html>

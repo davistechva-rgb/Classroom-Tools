@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Classroom Announcement Queue</title>
+<style>
+main{max-width:1400px}
+.aq-wrap{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:900px){.aq-wrap{grid-template-columns:minmax(0,1fr)}}
+.aq-now{background:linear-gradient(135deg,#9B6BF2,#5B3DC9);border:7px solid var(--ink);border-radius:30px;box-shadow:9px 9px 0 var(--ink);color:#fff;padding:clamp(18px,3vw,34px);min-height:300px;display:flex;flex-direction:column;justify-content:center;text-align:center;text-shadow:3px 3px 0 rgba(0,0,0,.25)}
+.aq-now small{font-weight:800;letter-spacing:.12em;opacity:.85}
+.aq-now .t{font-size:clamp(2rem,5.4vw,3.8rem);font-weight:800;line-height:1.1;margin-top:6px}
+.aq-now.in{animation:aqin .6s cubic-bezier(.3,1.4,.5,1)}@keyframes aqin{from{transform:scale(.85);opacity:0}}
+.aq-box{background:#fff;border:6px solid var(--ink);border-radius:24px;box-shadow:6px 6px 0 var(--ink);padding:14px}
+.aq-add{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px}.aq-add input{min-width:0}
+.aq-it{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;border:3px solid var(--ink);border-radius:14px;padding:6px 10px;margin-top:8px;font-weight:700;background:#F4FAFF}
+.aq-it.due{background:#FFF6C9;outline:4px solid var(--sun)}
+.aq-it.hi{border-left:10px solid var(--tomato)}
+.aq-it .tm{font-variant-numeric:tabular-nums;color:#55607E;font-size:.9rem;white-space:nowrap}
+.aq-it .b{display:flex;gap:4px}
+.aq-done{opacity:.55;text-decoration:line-through}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("📢", "Classroom Announcement Queue");
+const $=id=>document.getElementById(id);
+const st=Kit.get('aq-state',{items:[{id:1,t:'Library books are due tomorrow! 📚',at:'',hi:false,daily:false},{id:2,t:'Pack your homework folder before you line up 🎒',at:'14:45',hi:false,daily:true},{id:3,t:'Picture day forms go home today 📸',at:'',hi:true,daily:false}],done:[],next:4,day:''});
+if(st.day!==new Date().toDateString()){st.day=new Date().toDateString();st.done=st.done.filter(d=>!st.items.find(i=>i.id===d&&i.daily));st.items=st.items.filter(i=>i.daily||!st.done.includes(i.id));st.done=[]}
+const save=()=>Kit.set('aq-state',st);
+document.querySelector('main').innerHTML=`<div class="aq-wrap"><div><div class="aq-now" id="now"><small>📢 ANNOUNCEMENT</small><div class="t">Nothing to share right now.</div></div>
+<div class="row" style="justify-content:center;margin-top:14px"><button class="btn big green" id="rd">📣 Share the next one</button><button class="btn white" id="say">🔈 Read it aloud</button><label class="ln-pill"><input type="checkbox" id="auto" checked> Pop up timed ones by themselves</label></div></div>
+<div class="aq-box"><b>🗂️ Up next</b><div class="aq-add" style="margin-top:8px"><input type="text" id="tx" placeholder="Type an announcement"><input type="time" id="at" style="width:auto" title="Optional time"><button class="btn small" id="ad">＋ Add</button></div>
+<div class="row" style="margin-top:6px;gap:12px"><label><input type="checkbox" id="hi"> ❗ Important</label><label><input type="checkbox" id="dy"> 🔁 Every day</label></div><div id="q"></div><div id="dn" style="margin-top:12px"></div></div></div>`;
+let shown=null;
+const hm=t=>{if(!t)return '';const [h,m]=t.split(':').map(Number);const d=new Date();d.setHours(h,m,0,0);return d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})};
+const isDue=i=>{if(!i.at)return false;const [h,m]=i.at.split(':').map(Number);const n=new Date();return n.getHours()*60+n.getMinutes()>=h*60+m};
+const pending=()=>st.items.filter(i=>!st.done.includes(i.id)).sort((a,b)=>(b.hi-a.hi)||((isDue(b)-isDue(a)))||((a.at||'99')<(b.at||'99')?-1:1));
+function draw(){const P=pending();$('q').innerHTML=P.map(i=>`<div class="aq-it ${isDue(i)?'due':''} ${i.hi?'hi':''}"><span>${i.daily?'🔁':i.hi?'❗':'📌'}</span><span>${Kit.esc(i.t)}</span><span class="b"><span class="tm">${i.at?'⏰ '+hm(i.at):''}</span><button class="btn small" data-show="${i.id}">📣</button><button class="btn small white" data-del="${i.id}">✕</button></span></div>`).join('')||'<p class="muted">The queue is empty.</p>';
+ const D=st.items.filter(i=>st.done.includes(i.id));$('dn').innerHTML=D.length?`<b>✅ Shared today</b>${D.map(i=>`<div class="aq-it aq-done"><span>✓</span><span>${Kit.esc(i.t)}</span><span></span></div>`).join('')}`:'';window.__t={pending:P.length,shown:shown&&shown.t}}
+function show(i){shown=i;if(!st.done.includes(i.id))st.done.push(i.id);save();$('now').innerHTML=`<small>📢 ANNOUNCEMENT${i.hi?' · ❗ IMPORTANT':''}</small><div class="t">${Kit.esc(i.t)}</div>`;$('now').classList.remove('in');void $('now').offsetWidth;$('now').classList.add('in');Kit.tone(659,.25,'sine',.25);Kit.tone(880,.35,'sine',.22,.2);draw()}
+$('rd').onclick=()=>{const p=pending()[0];if(p)show(p);else{$('now').innerHTML='<small>📢 ANNOUNCEMENT</small><div class="t">All caught up! 🎉</div>'}};
+$('say').onclick=()=>{if(!shown)return;try{const u=new SpeechSynthesisUtterance(shown.t.replace(/\p{Extended_Pictographic}/gu,''));speechSynthesis.cancel();speechSynthesis.speak(u)}catch{}};
+$('ad').onclick=()=>{const t=$('tx').value.trim();if(!t)return;st.items.push({id:st.next++,t,at:$('at').value,hi:$('hi').checked,daily:$('dy').checked});$('tx').value='';$('at').value='';$('hi').checked=$('dy').checked=false;save();draw();Kit.tick()};
+$('tx').onkeydown=e=>{if(e.key==='Enter')$('ad').click()};
+$('q').onclick=e=>{const s=e.target.closest('[data-show]');if(s){show(st.items.find(i=>i.id===+s.dataset.show));return}const d=e.target.closest('[data-del]');if(d){st.items=st.items.filter(i=>i.id!==+d.dataset.del);save();draw()}};
+setInterval(()=>{if(!$('auto').checked)return;const due=pending().find(i=>i.at&&isDue(i));if(due)show(due);else draw()},15000);
+draw();
+</script>
+</body></html>
