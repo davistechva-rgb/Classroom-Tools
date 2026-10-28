@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Teacher Quick-Notes Board</title>
+<style>
+main{max-width:none}
+.qn-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;margin-bottom:10px}
+.qn-bar input[type=text]{width:min(460px,80vw);border-radius:99px;border-width:4px;background:#fff}
+.qn-sw{display:flex;gap:4px}.qn-sw button{width:30px;height:30px;border-radius:50%;border:3px solid var(--ink);cursor:pointer}.qn-sw button.on{outline:4px solid var(--ink);outline-offset:1px}
+.qn-cork{position:relative;height:calc(100vh - 220px);min-height:460px;border:10px solid #8A5A2B;border-radius:18px;box-shadow:inset 0 0 30px rgba(0,0,0,.3),7px 7px 0 var(--ink);overflow:hidden;background:#C9975F;background-image:radial-gradient(rgba(0,0,0,.12) 1.2px,transparent 1.6px),radial-gradient(rgba(255,255,255,.12) 1px,transparent 1.4px);background-size:14px 14px,9px 9px}
+.qn-n{position:absolute;width:210px;min-height:150px;background:var(--nc);box-shadow:3px 6px 0 rgba(0,0,0,.25);padding:26px 12px 12px;transform:rotate(var(--r));touch-action:none;display:flex;flex-direction:column;transition:filter .3s}
+.qn-n.drag{transform:rotate(0) scale(1.05);z-index:20;box-shadow:8px 14px 0 rgba(0,0,0,.25)}
+.qn-n .pin{position:absolute;top:4px;left:50%;transform:translateX(-50%);font-size:1.4rem;cursor:grab}
+.qn-n .tx{flex:1;outline:none;font-family:"Comic Sans MS","Chalkboard SE","Segoe Print",cursive;font-size:1.15rem;line-height:1.3;white-space:pre-wrap;word-break:break-word}
+.qn-n .ft{display:flex;gap:4px;justify-content:flex-end;margin-top:6px;opacity:.55}.qn-n:hover .ft{opacity:1}
+.qn-n .ft button{border:0;background:rgba(255,255,255,.55);border-radius:8px;cursor:pointer;font-size:.95rem;padding:2px 6px}
+.qn-n.done .tx{text-decoration:line-through;opacity:.55}
+.qn-n.hit{outline:5px solid var(--grape)}
+body.private .qn-n .tx{filter:blur(9px)}
+.qn-priv{position:absolute;inset:auto 0 12px;text-align:center;pointer-events:none;display:none}
+body.private .qn-priv{display:block}
+.qn-priv span{background:var(--ink);color:#fff;border-radius:99px;padding:4px 14px;font-weight:800}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("📌", "Teacher Quick-Notes Board");
+const $=id=>document.getElementById(id);const NC=['#FFF1B8','#C9F1D2','#FDE7F3','#E3F2FF','#FFE3C4','#EAE0FF'];
+const st=Kit.get('qn-notes',{notes:[{id:1,t:'📞 Call Sam\'s mom about the field trip form',c:4,x:4,y:6},{id:2,t:'Make copies of the fraction worksheet (28)',c:0,x:22,y:10},{id:3,t:'Ava, Leo, and Mia need reading conference this week',c:2,x:41,y:5},{id:4,t:'Order more glue sticks 🧴',c:1,x:60,y:12,d:true}],nextId:5,color:0});
+const save=()=>Kit.set('qn-notes',st);
+document.querySelector('main').innerHTML=`<div class="qn-bar"><input type="text" id="add" placeholder="📌 Type a quick note and press Enter"><div class="qn-sw" id="sw">${NC.map((c,i)=>`<button data-c="${i}" style="background:${c}" aria-label="Note color ${i+1}"></button>`).join('')}</div>
+<input type="text" id="find" placeholder="🔍 Find" style="width:150px"><button class="btn white small" id="pv">🙈 Privacy (P)</button><button class="btn white small" id="tidy">🧹 Tidy up</button><button class="btn white small" id="clr">🗑 Clear done</button></div>
+<div class="qn-cork" id="cork"><div class="qn-priv"><span>🙈 Notes are hidden from the class. Press P to show them.</span></div></div>`;
+function draw(){const q=$('find').value.toLowerCase().trim();$('cork').querySelectorAll('.qn-n').forEach(e=>e.remove());
+ st.notes.forEach((n,i)=>{const d=document.createElement('div');d.className='qn-n'+(n.d?' done':'')+(q&&n.t.toLowerCase().includes(q)?' hit':'');d.dataset.id=n.id;d.style.cssText=`left:${n.x}%;top:${n.y}%;--nc:${NC[n.c]};--r:${((n.id*37)%7-3)*1}deg`;
+  d.innerHTML=`<span class="pin">📌</span><div class="tx" contenteditable="true" spellcheck="false">${Kit.esc(n.t)}</div><div class="ft"><button data-a="done" title="Done">✔️</button><button data-a="col" title="Color">🎨</button><button data-a="del" title="Remove">🗑️</button></div>`;$('cork').appendChild(d)});
+ [...$('sw').children].forEach((b,i)=>b.classList.toggle('on',i===st.color));window.__t={n:st.notes.length}}
+const find=id=>st.notes.find(n=>n.id===+id);
+$('add').onkeydown=e=>{if(e.key!=='Enter')return;const t=$('add').value.trim();if(!t)return;const n=st.notes.length;st.notes.push({id:st.nextId++,t,c:st.color,x:3+(n*17)%80,y:6+Math.floor(n/5)*24%70});$('add').value='';save();draw();Kit.tick()};
+$('sw').onclick=e=>{const b=e.target.closest('[data-c]');if(b){st.color=+b.dataset.c;save();draw()}};
+$('find').oninput=draw;
+$('cork').addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b)return;const n=find(b.closest('.qn-n').dataset.id);
+ if(b.dataset.a==='done'){n.d=!n.d;if(n.d)Kit.ding()}if(b.dataset.a==='col')n.c=(n.c+1)%NC.length;if(b.dataset.a==='del'){if(!confirm('Remove this note?'))return;st.notes=st.notes.filter(x=>x!==n)}save();draw()});
+$('cork').addEventListener('input',e=>{const t=e.target.closest('.tx');if(!t)return;find(t.closest('.qn-n').dataset.id).t=t.innerText;save()});
+let dr=null;
+$('cork').addEventListener('pointerdown',e=>{const nEl=e.target.closest('.qn-n');if(!nEl||e.target.closest('.tx,button'))return;e.preventDefault();const r=$('cork').getBoundingClientRect(),n=find(nEl.dataset.id);dr={nEl,n,sx:e.clientX,sy:e.clientY,ox:n.x,oy:n.y,r};nEl.classList.add('drag');nEl.setPointerCapture(e.pointerId);$('cork').appendChild(nEl)});
+$('cork').addEventListener('pointermove',e=>{if(!dr)return;const n=dr.n;n.x=Math.max(0,Math.min(100-dr.nEl.offsetWidth/dr.r.width*100,dr.ox+(e.clientX-dr.sx)/dr.r.width*100));n.y=Math.max(0,Math.min(100-dr.nEl.offsetHeight/dr.r.height*100,dr.oy+(e.clientY-dr.sy)/dr.r.height*100));dr.nEl.style.left=n.x+'%';dr.nEl.style.top=n.y+'%'});
+$('cork').addEventListener('pointerup',()=>{if(!dr)return;dr.nEl.classList.remove('drag');const n=dr.n;st.notes=st.notes.filter(x=>x!==n);st.notes.push(n);dr=null;save()});
+$('pv').onclick=()=>document.body.classList.toggle('private');
+addEventListener('keydown',e=>{if(e.target.closest('input,[contenteditable]'))return;if(e.key.toLowerCase()==='p')$('pv').click()});
+$('tidy').onclick=()=>{const W=$('cork').clientWidth,cols=Math.max(1,Math.floor(W/230));st.notes.forEach((n,i)=>{n.x=(i%cols)*230/W*100+1;n.y=Math.floor(i/cols)*190/$('cork').clientHeight*100+2});save();draw()};
+$('clr').onclick=()=>{const k=st.notes.filter(n=>n.d).length;if(!k)return;if(confirm(`Remove ${k} finished ${k===1?'note':'notes'}?`)){st.notes=st.notes.filter(n=>!n.d);save();draw()}};
+draw();
+</script>
+</body></html>

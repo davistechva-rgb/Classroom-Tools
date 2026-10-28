@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Progressive Question Reveal</title>
+<style>
+main{max-width:1300px}
+.pq-card{background:#fff;border:7px solid var(--ink);border-radius:28px;box-shadow:9px 9px 0 var(--ink);padding:clamp(18px,3.4vw,40px);min-height:52vh}
+.pq-title{font-size:clamp(1.1rem,2.4vw,1.5rem);font-weight:800;letter-spacing:.08em;color:#6B7695;text-transform:uppercase;margin-bottom:10px;display:flex;justify-content:space-between;gap:10px}
+.pq-lines{display:grid;gap:14px}
+.pq-l{font-size:clamp(1.4rem,3.4vw,2.5rem);font-weight:700;line-height:1.25;animation:pqin .45s cubic-bezier(.3,1.4,.5,1)}@keyframes pqin{from{transform:translateY(18px);opacity:0}}
+.pq-l.q{background:#FFF6C9;border-left:10px solid var(--sun);border-radius:12px;padding:6px 14px;font-weight:800}
+.pq-l.a{background:#C9F1D2;border-left:10px solid var(--grass);border-radius:12px;padding:6px 14px;font-weight:800}
+.pq-l.a.hid{background:repeating-linear-gradient(45deg,#E8EEF8 0 14px,#DCE4F1 14px 28px);color:transparent;cursor:pointer;animation:none;position:relative}
+.pq-l.a.hid::after{content:"👀 Tap to show the answer";position:absolute;left:18px;top:50%;transform:translateY(-50%);color:#55607E;font-size:.7em}
+.pq-think{display:flex;align-items:center;gap:14px;font-weight:800;font-size:clamp(1.2rem,2.8vw,1.8rem);color:var(--grape)}
+.pq-think .ring{width:72px;height:72px;border-radius:50%;background:conic-gradient(var(--grape) var(--p),#EEE6FF 0);display:grid;place-items:center}
+.pq-think .ring b{width:52px;height:52px;border-radius:50%;background:#fff;display:grid;place-items:center;color:var(--ink)}
+.pq-more{display:flex;gap:6px;justify-content:center;margin-top:18px}
+.pq-more i{width:14px;height:14px;border-radius:50%;background:#D5DEEE;border:2px solid var(--ink)}.pq-more i.on{background:var(--ink)}
+.pq-ctl{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🧩", "Progressive Question Reveal");
+const $=id=>document.getElementById(id);
+const DEF=`Word problem: the bake sale
+Maya baked 24 cookies.
+She sold 3 bags with 5 cookies in each bag.
+? How many cookies did she sell?
+⏳ 20
+= 3 × 5 = 15 cookies
+? How many cookies does she have left?
+⏳ 20
+= 24 − 15 = 9 cookies
+
+Think like a scientist
+We put one plant in a sunny window and one in a dark closet.
+After a week, the closet plant is yellow and droopy.
+? What do you think happened?
+⏳ 30
+= Plants need sunlight to make food. Without light, the plant got weak.
+? How could we test it again to be sure?
+
+Riddle time
+I have hands, but I can't clap.
+I have a face, but I can't smile.
+I tell you something important all day long.
+? What am I?
+⏳ 15
+= A clock! ⏰`;
+const st=Kit.get('pq-state',{text:DEF});
+document.querySelector('main').innerHTML=`<div class="pq-card" id="cd"></div>
+<div class="pq-ctl"><button class="btn white" id="pp">⏮ Last problem</button><button class="btn white" id="bk">◀ Hide one</button><button class="btn big green" id="fw">Show next ▶</button><button class="btn white" id="np">Next problem ⏭</button><button class="btn white" id="ed">✏️ Edit</button></div>
+<div class="card stack" id="edc" hidden style="margin-top:16px"><b>✏️ My problems</b><span class="muted">Leave a blank line between problems. The first line is the title. Start a line with <b>?</b> for a question, <b>=</b> for an answer (it stays hidden until you tap it), or <b>⏳ 30</b> for 30 seconds of think time.</span><textarea id="ta" style="min-height:300px"></textarea><button class="btn green" id="sv">✓ Save</button></div>`;
+let P=[],pi=0,shown=0,timer=null,opened=new Set();
+const parse=()=>{P=st.text.split(/\n\s*\n/).map(b=>Kit.lines(b)).filter(b=>b.length).map(([t,...ls])=>({title:t,lines:ls.map(l=>l.startsWith('?')?{k:'q',t:l.slice(1).trim()}:l.startsWith('=')?{k:'a',t:l.slice(1).trim()}:/^⏳/.test(l)?{k:'w',s:parseInt(l.replace(/\D/g,''))||20}:{k:'p',t:l})}))};
+function draw(){clearInterval(timer);const p=P[pi];if(!p){$('cd').innerHTML='<div class="pq-l">Add a problem with ✏️ Edit.</div>';return}
+ const vis=p.lines.slice(0,shown);let html='';vis.forEach((l,k)=>{if(l.k==='w'){if(k===shown-1)html+=`<div class="pq-think" id="th"><span class="ring" style="--p:100%"><b id="ts">${l.s}</b></span>🤔 Think time…</div>`;return}
+  const hid=l.k==='a'&&!opened.has(k);html+=`<div class="pq-l ${l.k}${hid?' hid':''}" data-k="${k}">${l.k==='q'?'❓ ':l.k==='a'?'✅ ':''}${Kit.esc(l.t)}</div>`});
+ $('cd').innerHTML=`<div class="pq-title"><span>${Kit.esc(p.title)}</span><span>${pi+1} / ${P.length}</span></div><div class="pq-lines">${html}</div><div class="pq-more">${p.lines.filter(l=>l.k!=='w').map((l,k)=>`<i class="${p.lines.filter(x=>x.k!=='w').indexOf(l)<vis.filter(x=>x.k!=='w').length?'on':''}"></i>`).join('')}</div>`;
+ const last=vis[vis.length-1];if(last&&last.k==='w'){let s=last.s;timer=setInterval(()=>{s--;const ts=$('ts');if(!ts)return clearInterval(timer);ts.textContent=s;ts.parentElement.style.setProperty('--p',s/last.s*100+'%');if(s<=3&&s>0)Kit.tick();if(s<=0){clearInterval(timer);Kit.ding();$('th').innerHTML='⏰ Time\'s up! Share your thinking.'}},1000)}
+ $('fw').disabled=shown>=p.lines.length;window.__t={shown,n:p.lines.length}}
+$('fw').onclick=()=>{const p=P[pi];if(!p||shown>=p.lines.length)return;shown++;Kit.tone(560,.08,'triangle',.18);draw()};
+$('bk').onclick=()=>{if(shown>0){shown--;draw()}};
+$('np').onclick=()=>{if(pi<P.length-1){pi++;shown=0;opened.clear();draw()}};$('pp').onclick=()=>{if(pi>0){pi--;shown=0;opened.clear();draw()}};
+$('cd').onclick=e=>{const a=e.target.closest('.pq-l.a.hid');if(a){opened.add(+a.dataset.k);Kit.tada();draw()}};
+$('ed').onclick=()=>{$('edc').hidden=!$('edc').hidden;$('ta').value=st.text};$('sv').onclick=()=>{st.text=$('ta').value;Kit.set('pq-state',st);parse();pi=0;shown=0;opened.clear();$('edc').hidden=true;draw()};
+addEventListener('keydown',e=>{if(e.target.closest('textarea,input'))return;if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();$('fw').click()}if(e.key==='ArrowLeft')$('bk').click();if(e.key==='ArrowDown'||e.key==='PageDown')$('np').click();if(e.key==='ArrowUp'||e.key==='PageUp')$('pp').click()});
+parse();draw();
+</script>
+</body></html>

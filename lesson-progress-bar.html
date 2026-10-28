@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Lesson Progress Bar</title>
+<style>
+main{max-width:1400px}
+.lp-sky{position:relative;height:clamp(230px,36vh,330px);border:6px solid var(--ink);border-radius:26px;overflow:hidden;box-shadow:8px 8px 0 var(--ink);background:var(--bg)}
+.lp-path{position:absolute;left:6%;right:6%;top:58%;height:22px;border-radius:12px;background:rgba(255,255,255,.35);border:4px solid var(--ink)}
+.lp-fill{position:absolute;left:0;top:0;bottom:0;border-radius:8px;background:var(--fc);transition:width 1.2s cubic-bezier(.3,1.3,.5,1)}
+.lp-flag{position:absolute;top:50%;transform:translate(-50%,-50%);width:34px;height:34px;border-radius:50%;background:#fff;border:4px solid var(--ink);display:grid;place-items:center;font-weight:800;font-size:.95rem;z-index:2;transition:background .4s}
+.lp-flag.done{background:var(--sun)}
+.lp-flag span{position:absolute;top:44px;left:50%;transform:translateX(-50%);white-space:nowrap;font-weight:800;font-size:clamp(.75rem,1.4vw,1rem);color:#fff;text-shadow:2px 2px 0 var(--ink);max-width:14vw;overflow:hidden;text-overflow:ellipsis}
+.lp-flag.cur span{background:var(--ink);border-radius:8px;padding:0 8px;text-shadow:none;max-width:none;z-index:4}
+.lp-rider{position:absolute;top:58%;font-size:clamp(3rem,7vw,5rem);transform:translate(-50%,-92%);transition:left 1.2s cubic-bezier(.3,1.3,.5,1);z-index:3;filter:drop-shadow(3px 4px 0 rgba(0,0,0,.25))}
+.lp-rider.hop{animation:lphop 1.2s}@keyframes lphop{30%{transform:translate(-50%,-150%) rotate(-10deg)}}
+.lp-goal{position:absolute;right:2%;top:58%;transform:translateY(-80%);font-size:clamp(3rem,7vw,5rem)}
+.lp-deco{position:absolute;font-size:2rem;opacity:.9}
+.lp-pct{position:absolute;left:16px;top:12px;background:#fff;border:4px solid var(--ink);border-radius:14px;padding:2px 14px;font-weight:800;font-size:1.5rem}
+.lp-step{text-align:center;margin:18px 0 6px}
+.lp-step small{display:block;font-weight:800;color:#fff;text-shadow:2px 2px 0 var(--ink);letter-spacing:.1em}
+.lp-step b{font-size:clamp(1.8rem,5vw,3.4rem);color:#fff;text-shadow:4px 4px 0 var(--ink);line-height:1.1}
+.lp-ctl{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("📚", "Lesson Progress Bar");
+const $=id=>document.getElementById(id);
+const TH={rocket:{r:'🚀',g:'🌕',bg:'linear-gradient(#1B1F4B,#3B2E7E)',fc:'linear-gradient(90deg,#FF9F43,#FFC93C)',deco:['⭐','✨','🪐','⭐','☄️','✨']},
+ car:{r:'🏎️',g:'🏁',bg:'linear-gradient(#9ED8F6 0 58%,#6BBF59 58%)',fc:'linear-gradient(90deg,#FF6B5B,#FF9F43)',deco:['☁️','🌳','🌳','☁️','🏠','🌲']},
+ mountain:{r:'🧗',g:'🏔️',bg:'linear-gradient(#BFE6FA,#E8F6FF)',fc:'linear-gradient(90deg,#5DC66E,#22C3E6)',deco:['🦅','☁️','🌲','☁️','🌲','🐐']},
+ boat:{r:'⛵',g:'🏝️',bg:'linear-gradient(#9ED8F6 0 55%,#1FA2D6 55%)',fc:'linear-gradient(90deg,#fff,#FFF6C9)',deco:['🐟','☀️','🐬','☁️','🐠','🦀']},
+ snail:{r:'🐌',g:'🥬',bg:'linear-gradient(#C9F1D2,#8BD17A)',fc:'linear-gradient(90deg,#9B6BF2,#FF8FC7)',deco:['🌼','🍄','🌷','🐞','🌼','🍃']}};
+const st=Kit.get('lp-state',{steps:'Warm-up\nLearn the new idea\nPractice together\nTry it on your own\nShare and reflect',theme:'rocket',at:0});
+document.querySelector('main').innerHTML=`<div class="lp-sky" id="sky"><div class="lp-pct" id="pct"></div><div class="lp-path"><div class="lp-fill" id="fill"></div></div><div class="lp-goal" id="goal"></div><div class="lp-rider" id="rd"></div></div>
+<div class="lp-step"><small id="sn"></small><b id="sb"></b></div>
+<div class="lp-ctl"><button class="btn white" id="bk">◀ Back</button><button class="btn big green" id="nx">✓ Step done!</button><button class="btn white" id="rs">↺ Start over</button><button class="btn white" id="ed">✏️ Steps</button></div>
+<div class="card stack" id="edc" hidden style="margin-top:16px"><b>✏️ Lesson steps</b><span class="muted">One step per line.</span><textarea id="ta" style="min-height:160px"></textarea><div class="row"><label>Theme <select id="th" style="width:auto"><option value="rocket">🚀 Rocket to the Moon</option><option value="car">🏎️ Race car</option><option value="mountain">🧗 Mountain climb</option><option value="boat">⛵ Sail to the island</option><option value="snail">🐌 Snail to the snack</option></select></label><button class="btn green" id="sv">✓ Save</button></div></div>`;
+const steps=()=>Kit.lines(st.steps);
+function scene(){const t=TH[st.theme]||TH.rocket;$('sky').style.setProperty('--bg',t.bg);$('fill').style.setProperty('--fc',t.fc);$('rd').textContent=t.r;$('goal').textContent=t.g;
+ $('sky').querySelectorAll('.lp-deco,.lp-flag').forEach(e=>e.remove());t.deco.forEach((d,i)=>$('sky').insertAdjacentHTML('beforeend',`<span class="lp-deco" style="left:${8+i*15}%;top:${i%2?12:28}%">${d}</span>`));
+ const n=steps().length;steps().forEach((s,i)=>{const x=6+88*(i+1)/(n+0);$('sky').insertAdjacentHTML('beforeend',`<div class="lp-flag" data-i="${i}" style="left:${6+88*((i+1)/n)}%;top:58%"><b>${i+1}</b><span>${Kit.esc(s)}</span></div>`)});
+ $('sky').querySelectorAll('.lp-flag').forEach(f=>f.style.top='calc(58% + 11px)');draw(false)}
+function draw(anim=true){const s=steps(),n=s.length,at=Math.min(st.at,n),p=n?at/n:0;$('fill').style.width=p*100+'%';$('rd').style.left=`calc(6% + ${88*p}%)`;$('pct').textContent=Math.round(p*100)+'%';
+ if(anim){$('rd').classList.remove('hop');void $('rd').offsetWidth;$('rd').classList.add('hop')}
+ $('sky').querySelectorAll('.lp-flag').forEach(f=>{const i=+f.dataset.i;f.classList.toggle('done',i<at);f.classList.toggle('cur',i===at)});
+ if(at>=n){$('sn').textContent='ALL DONE!';$('sb').textContent='🎉 We finished the lesson!'}else{$('sn').textContent=`STEP ${at+1} OF ${n}`;$('sb').textContent=s[at]}
+ $('bk').disabled=at<=0;$('nx').disabled=at>=n;window.__t={at,n}}
+const save=()=>Kit.set('lp-state',st);
+$('nx').onclick=()=>{if(st.at>=steps().length)return;st.at++;save();Kit.tone(523+st.at*60,.2,'triangle',.25);draw();if(st.at>=steps().length){setTimeout(()=>{Kit.tada();Kit.confetti(140)},1100)}};
+$('bk').onclick=()=>{if(st.at>0){st.at--;save();draw()}};$('rs').onclick=()=>{st.at=0;save();draw()};
+$('ed').onclick=()=>{$('edc').hidden=!$('edc').hidden;$('ta').value=st.steps;$('th').value=st.theme};
+$('sv').onclick=()=>{st.steps=$('ta').value;st.theme=$('th').value;st.at=0;save();$('edc').hidden=true;scene()};
+addEventListener('keydown',e=>{if(e.target.closest('textarea,input,select'))return;if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();$('nx').click()}if(e.key==='ArrowLeft')$('bk').click()});
+scene();
+</script>
+</body></html>
