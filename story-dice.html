@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Story Dice</title>
+<style>
+main{max-width:1400px}
+.sd-tray{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:16px;padding:clamp(14px,3vw,28px);background:radial-gradient(circle at 50% 40%,#3E8E5A,#2A6B42);border:9px solid #8A5A2B;border-radius:28px;box-shadow:inset 0 0 30px rgba(0,0,0,.35),8px 8px 0 var(--ink)}
+.sd-d{font:inherit;position:relative;aspect-ratio:1;border:5px solid var(--ink);border-radius:22px;background:linear-gradient(145deg,#fff,#E9EEF8);box-shadow:0 8px 0 var(--ink),inset -6px -6px 0 rgba(0,0,0,.06);display:grid;place-items:center;font-size:clamp(3rem,7vw,4.6rem);cursor:pointer;transform:rotate(var(--r))}
+.sd-d.roll{animation:sdroll .7s cubic-bezier(.3,1.3,.5,1)}@keyframes sdroll{0%{transform:translateY(-60px) rotate(-200deg) scale(.6)}60%{transform:translateY(8px) rotate(20deg)}}
+.sd-d.used{opacity:.45;filter:grayscale(.6)}
+.sd-d .n{position:absolute;top:6px;left:8px;width:30px;height:30px;border-radius:50%;background:var(--ink);color:#fff;font-size:1rem;display:grid;place-items:center;font-weight:800}
+.sd-d .lk{position:absolute;bottom:6px;right:8px;font-size:1rem}
+.sd-ctl{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:16px;align-items:center}
+.sd-tm{font-size:2rem;font-weight:800;font-variant-numeric:tabular-nums;color:#fff;text-shadow:2px 2px 0 var(--ink)}
+.sd-say{margin-top:14px;background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px 16px;font-weight:700;font-size:1.25rem;text-align:center}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🎲", "Story Dice");
+const $=id=>document.getElementById(id);
+const FACES=[['🏰','🌋','🏝️','🌲','🏫','🚀'],['🐉','🦊','🤖','👻','🧙','🐙'],['🔑','🗺️','💎','📦','🕯️','🎁'],['⚡','🌧️','❄️','🌪️','🌈','🌙'],['😱','😂','😢','😡','🤔','😴'],['🏃','🧗','🏊','🛸','🕵️','🎭'],['⏰','🍕','📱','🎈','🧩','🎸'],['🐾','👣','🚪','🪜','🌉','🕳️'],['👑','🧪','🪄','⚽','📜','🦴']];
+const st=Kit.get('sd-set',{n:6,secs:60});
+let faces=[],lock=[],used=[],tv=null,tick=0;
+document.querySelector('main').innerHTML=`<div class="sd-tray" id="tr"></div><div class="sd-ctl"><button class="btn big green" id="go">🎲 Roll the dice</button><select id="n" style="width:auto">${[3,4,5,6,9].map(n=>`<option value="${n}">${n} dice</option>`).join('')}</select><select id="secs" style="width:auto"><option value="0">No timer</option><option value="30">30 s</option><option value="60">1 min</option><option value="120">2 min</option></select><button class="btn white" id="tm">⏱ Start telling</button><span class="sd-tm" id="tt"></span></div>
+<div class="sd-say" id="say">Roll the dice, then tell a story that uses every picture. Tap a die to mark it used, or double-tap to keep it for the next roll.</div>`;
+function draw(anim){$('tr').innerHTML=faces.map((f,i)=>`<button class="sd-d ${anim&&!lock[i]?'roll':''} ${used[i]?'used':''}" data-i="${i}" style="--r:${(i*37%11)-5}deg;animation-delay:${i*.06}s"><span class="n">${i+1}</span>${f}${lock[i]?'<span class="lk">🔒</span>':''}</button>`).join('');window.__t={faces:[...faces],used:used.filter(Boolean).length}}
+function roll(){const n=st.n;faces=faces.slice(0,n);lock=lock.slice(0,n);for(let i=0;i<n;i++){if(!lock[i])faces[i]=Kit.pick(FACES[i%FACES.length])}used=Array(n).fill(false);for(let k=0;k<10;k++)setTimeout(()=>Kit.tone(300+Math.random()*500,.03,'square',.06),k*45);draw(true)}
+let lastTap=0,lastI=-1;
+$('tr').onclick=e=>{const d=e.target.closest('.sd-d');if(!d)return;const i=+d.dataset.i,now=Date.now();if(now-lastTap<350&&lastI===i){lock[i]=!lock[i];used[i]=!used[i]}else used[i]=!used[i];lastTap=now;lastI=i;Kit.tick();draw();
+ if(used.every(Boolean)&&used.length){$('say').textContent='🎉 You used every die! What a story!';Kit.tada()}};
+$('go').onclick=roll;$('n').value=st.n;$('secs').value=st.secs;
+$('n').onchange=()=>{st.n=+$('n').value;Kit.set('sd-set',st);roll()};$('secs').onchange=()=>{st.secs=+$('secs').value;Kit.set('sd-set',st)};
+$('tm').onclick=()=>{clearInterval(tv);if(!st.secs){$('tt').textContent='';return}let s=st.secs;const d=()=>$('tt').textContent=s>0?`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`:'⏰ The end!';d();Kit.ding();tv=setInterval(()=>{s--;d();if(s<=0){clearInterval(tv);Kit.alarm()}},1000)};
+roll();
+</script>
+</body></html>

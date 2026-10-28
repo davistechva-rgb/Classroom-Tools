@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Prefix/Suffix Game</title>
+<style>
+main{max-width:1300px}
+.ps-mean{text-align:center;background:#fff;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);padding:14px;margin-bottom:16px}
+.ps-mean small{font-weight:800;letter-spacing:.12em;color:#6B7695}
+.ps-mean b{display:block;font-size:clamp(1.6rem,4.4vw,2.8rem)}
+.ps-build{display:flex;justify-content:center;align-items:stretch;gap:0;margin:10px 0 18px}
+.ps-slot{min-width:clamp(90px,14vw,150px);min-height:clamp(70px,10vw,96px);border:5px dashed #9DB0D0;display:grid;place-items:center;font-weight:800;font-size:clamp(1.6rem,4.4vw,2.8rem);background:rgba(255,255,255,.7);cursor:pointer}
+.ps-slot.pre{border-radius:24px 0 0 24px;border-right-style:solid}.ps-slot.suf{border-radius:0 24px 24px 0;border-left-style:solid}
+.ps-slot.root{background:#fff;border-style:solid;border-color:var(--ink);min-width:clamp(120px,18vw,200px)}
+.ps-slot.f{border-style:solid;border-color:var(--ink);background:var(--pc)}
+.ps-bank{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+@media (max-width:760px){.ps-bank{grid-template-columns:1fr}}
+.ps-col{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:10px;text-align:center}
+.ps-col h3{margin:0 0 8px;font-size:1rem;letter-spacing:.08em}
+.ps-col div{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.ps-p{font:inherit;font-weight:800;font-size:1.4rem;border:4px solid var(--ink);border-radius:14px;padding:4px 14px;cursor:pointer;background:var(--pc);box-shadow:0 4px 0 var(--ink);color:var(--ink)}
+.ps-p:active{transform:translateY(4px);box-shadow:none}
+.ps-hud{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
+.ps-msg{text-align:center;font-weight:800;font-size:1.3rem;color:#fff;text-shadow:2px 2px 0 var(--ink);min-height:1.5em}
+.ps-key{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:14px}.ps-key span{background:#fff;border:3px solid var(--ink);border-radius:99px;padding:2px 12px;font-weight:700;font-size:.95rem}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🔤", "Prefix/Suffix Game");
+const $=id=>document.getElementById(id);
+const W=[['','happy','','happy','glad'],['un','happy','','unhappy','not happy'],['re','play','','replay','play again'],['','help','ful','helpful','full of help'],['','fear','less','fearless','without fear'],['pre','heat','','preheat','heat before'],['dis','agree','','disagree','not agree'],['','teach','er','teacher','a person who teaches'],['','quick','ly','quickly','in a quick way'],['mis','spell','','misspell','spell wrong'],['','wash','able','washable','able to be washed'],['un','lock','','unlock','opposite of lock'],['re','read','','reread','read again'],['','care','less','careless','without care'],['','joy','ful','joyful','full of joy'],['un','kind','ly','unkindly','in a way that is not kind'],['re','fill','able','refillable','able to be filled again'],['pre','view','','preview','see before'],['dis','like','','dislike','not like'],['','paint','er','painter','a person who paints'],['','slow','ly','slowly','in a slow way'],['un','fair','','unfair','not fair'],['re','build','','rebuild','build again'],['','color','ful','colorful','full of color']].filter(w=>w[0]||w[2]);
+const PRE=[['un','not / opposite'],['re','again'],['pre','before'],['dis','not / opposite'],['mis','wrong']],SUF=[['ful','full of'],['less','without'],['er','a person who'],['ly','in a way'],['able','able to be']];
+let cur,sel={pre:'',suf:''},sc=0,n=0,miss=false,bag=[];
+document.querySelector('main').innerHTML=`<div class="ps-hud"><span class="ln-pill" id="pr"></span><span class="ln-pill">⭐ <b id="sc">0</b></span></div><div class="ps-mean"><small>MAKE A WORD THAT MEANS</small><b id="mn"></b></div>
+<div class="ps-build"><div class="ps-slot pre" id="sp" title="Tap to clear">＿</div><div class="ps-slot root" id="sr"></div><div class="ps-slot suf" id="ss" title="Tap to clear">＿</div></div>
+<div class="ps-bank"><div class="ps-col"><h3>🔵 PREFIXES (go first)</h3><div id="bp"></div></div><div class="ps-col"><h3>🌱 ROOT WORD</h3><div id="br"></div></div><div class="ps-col"><h3>🟣 SUFFIXES (go last)</h3><div id="bs"></div></div></div>
+<div class="ps-msg" id="msg"></div><div class="row" style="justify-content:center"><button class="btn big green" id="chk">✓ Check my word</button><button class="btn white" id="sk">Skip ➜</button></div>
+<div class="ps-key">${[...PRE.map(p=>`<span>${p[0]}- = ${p[1]}</span>`),...SUF.map(p=>`<span>-${p[0]} = ${p[1]}</span>`)].join('')}</div>`;
+$('bp').innerHTML=PRE.map(p=>`<button class="ps-p" data-pre="${p[0]}" style="--pc:#BFE6FA">${p[0]}-</button>`).join('');$('bs').innerHTML=SUF.map(p=>`<button class="ps-p" data-suf="${p[0]}" style="--pc:#E3D3FF">-${p[0]}</button>`).join('');
+function next(){if(!bag.length)bag=Kit.shuffle(W);cur=bag.pop();sel={pre:'',suf:''};miss=false;n++;$('mn').textContent=`"${cur[4]}"`;$('sr').textContent=cur[1];
+ const roots=Kit.shuffle([cur[1],...Kit.shuffle(W.map(w=>w[1]).filter(r=>r!==cur[1])).slice(0,2)]);$('br').innerHTML=roots.map(r=>`<button class="ps-p" data-root="${r}" style="--pc:#C9F1D2">${r}</button>`).join('');$('sr').textContent='＿';sel.root='';
+ $('msg').textContent='';draw();window.__t={pre:cur[0],root:cur[1],suf:cur[2]}}
+function draw(){$('sp').textContent=sel.pre?sel.pre+'-':'＿';$('ss').textContent=sel.suf?'-'+sel.suf:'＿';$('sr').textContent=sel.root||'＿';$('sp').classList.toggle('f',!!sel.pre);$('sp').style.setProperty('--pc','#BFE6FA');$('ss').classList.toggle('f',!!sel.suf);$('ss').style.setProperty('--pc','#E3D3FF');$('pr').textContent=`Word ${n}`;$('sc').textContent=sc}
+document.querySelector('.ps-bank').onclick=e=>{const b=e.target.closest('.ps-p');if(!b)return;if(b.dataset.pre!=null)sel.pre=sel.pre===b.dataset.pre?'':b.dataset.pre;if(b.dataset.suf!=null)sel.suf=sel.suf===b.dataset.suf?'':b.dataset.suf;if(b.dataset.root!=null)sel.root=b.dataset.root;Kit.tick();draw()};
+$('sp').onclick=()=>{sel.pre='';draw()};$('ss').onclick=()=>{sel.suf='';draw()};
+$('chk').onclick=()=>{const word=sel.pre+(sel.root||'')+sel.suf;if(sel.pre===cur[0]&&sel.root===cur[1]&&sel.suf===cur[2]){if(!miss)sc++;$('msg').textContent=`🎉 ${word.toUpperCase()} means "${cur[4]}"!`;Kit.tada();draw();setTimeout(next,1500)}
+ else{miss=true;Learn.flash($('msg'),false);$('msg').textContent=!sel.root?'Pick a root word first.':sel.root!==cur[1]?'💡 Which root word is hiding in the meaning?':(sel.pre!==cur[0]?(cur[0]?'💡 Check the prefix. Look at the key below.':'💡 This word doesn\'t need a prefix.'):(cur[2]?'💡 Check the suffix. Look at the key below.':'💡 This word doesn\'t need a suffix.'))}};
+$('sk').onclick=next;next();
+</script>
+</body></html>

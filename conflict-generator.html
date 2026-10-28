@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Conflict Generator</title>
+<style>
+main{max-width:1400px}
+.cf-wrap{overflow-x:clip;display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.3fr);gap:20px;align-items:center}
+@media (max-width:860px){.cf-wrap{grid-template-columns:1fr}}
+.cf-wheel{position:relative;width:min(100%,380px);aspect-ratio:1;margin:0 auto}
+.cf-disc{position:absolute;inset:0;border-radius:50%;border:7px solid var(--ink);box-shadow:8px 8px 0 var(--ink);background:conic-gradient(#FF6B5B 0 72deg,#22C3E6 72deg 144deg,#5DC66E 144deg 216deg,#9B6BF2 216deg 288deg,#FF9F43 288deg);transition:transform 3s cubic-bezier(.15,.8,.2,1);overflow:hidden}
+.cf-disc span{position:absolute;left:50%;top:50%;transform-origin:0 0;font-weight:800;color:#fff;text-shadow:2px 2px 0 rgba(0,0,0,.35);font-size:clamp(.8rem,1.8vw,1.05rem);white-space:nowrap}
+.cf-ptr{position:absolute;top:-22px;left:50%;transform:translateX(-50%);font-size:3rem;z-index:2;filter:drop-shadow(2px 3px 0 var(--ink))}
+.cf-hub{position:absolute;inset:38%;border-radius:50%;background:#fff;border:6px solid var(--ink);display:grid;place-items:center;font-size:2.2rem;z-index:2}
+.cf-card{background:#fff;border:7px solid var(--ink);border-radius:28px;box-shadow:8px 8px 0 var(--ink);padding:clamp(14px,3vw,28px)}
+.cf-type{display:inline-block;background:var(--tc);color:#fff;border:4px solid var(--ink);border-radius:99px;padding:2px 14px;font-weight:800;text-shadow:1px 1px 0 rgba(0,0,0,.3)}
+.cf-q{font-size:clamp(1.4rem,3.4vw,2.3rem);font-weight:800;line-height:1.2;margin:10px 0}
+.cf-st{font-weight:700;font-size:1.15rem;color:#55607E}
+.cf-obs{display:grid;gap:8px;margin-top:12px}
+.cf-o{border:4px solid var(--ink);border-radius:14px;padding:8px 12px;font-weight:700;background:#FFF1EE;animation:pop .4s}
+.cf-o.worse{background:#FFD9D4}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("⚔️", "Conflict Generator");
+const $=id=>document.getElementById(id);
+const T=[['Character vs. Character','#FF6B5B','🥊',['A new kid at school keeps taking credit for {h}\'s ideas.','{h}\'s best friend is suddenly on the other team for the big game.','A bully tells everyone a secret about {h}.','{h}\'s little sibling keeps ruining every plan.','Two friends both want to be class president.']],
+ ['Character vs. Self','#22C3E6','🪞',['{h} has to sing a solo but is terrified of the crowd.','{h} told a lie and now has to decide whether to tell the truth.','{h} keeps giving up on hard things and wants to change.','{h} is jealous of a friend who wins everything.','{h} broke a promise and feels terrible about it.']],
+ ['Character vs. Nature','#5DC66E','🌪️',['A huge storm traps {h} in a cabin in the woods.','{h} gets lost on a hiking trail as the sun goes down.','A flood is heading toward {h}\'s town.','{h} must cross a frozen lake to get help.','A volcano starts rumbling near {h}\'s island.']],
+ ['Character vs. Society','#9B6BF2','🏛️',['The town makes a rule that kids can\'t play in the park anymore.','{h}\'s school wants to cut the art program.','Nobody in town believes {h} can do a "grown-up" job.','The kingdom says only dragons can be knights, but {h} is a mouse.','The library is going to close forever.']],
+ ['Character vs. Technology','#FF9F43','🤖',['{h}\'s robot helper starts doing everything wrong on purpose.','A video game starts pulling players inside it, including {h}.','All the phones in town stop working on the day of the big event.','{h}\'s smart house locks every door and won\'t let anyone in.','A machine that makes homework disappear also erases {h}\'s memory.']]];
+const HEROES=['Maya','Leo','a brave mouse','Captain Zee','a young dragon','Jordan','a talking dog','Grandma Rose'];
+const OBS=['They only have until sundown.','The only person who can help is far away.','They are scared and want to give up.','Someone they trust is keeping a secret.','They lose the one tool they needed.','A friend gets hurt and needs help.','Everyone is watching them.','The rules say they can\'t do it alone.'];
+const WORSE=['🔥 Make it worse: now it\'s happening TODAY.','🔥 Make it worse: their best friend is on the other side.','🔥 Make it worse: they lose their map, phone, and snacks.','🔥 Make it worse: a second problem shows up at the same time.','🔥 Make it worse: they get blamed for the whole thing.','🔥 Make it worse: the one thing that could help is broken.'];
+const STAKES=['If they fail, they will lose their home.','If they fail, their friend will never trust them again.','If they fail, the whole town will be in danger.','If they fail, they will never get another chance.','If they fail, everyone will think they were wrong.'];
+let ti=0,cur={},rot=0,worse=[];
+const n=T.length;
+document.querySelector('main').innerHTML=`<div class="cf-wrap"><div><div class="cf-wheel"><span class="cf-ptr">🔻</span><div class="cf-disc" id="dc">${T.map((t,i)=>`<span style="transform:rotate(${i*72+36-90}deg) translate(28%,-50%)">${t[2]} ${t[0].replace('Character vs. ','vs. ')}</span>`).join('')}</div><div class="cf-hub">⚔️</div></div>
+<div class="row" style="justify-content:center;margin-top:16px"><button class="btn big green" id="sp">🎡 Spin</button></div></div>
+<div class="cf-card" id="cd"></div></div><div class="row" style="justify-content:center;margin-top:14px"><button class="btn" id="wr">🔥 Make it worse!</button><button class="btn white" id="nw">🎲 Same type, new problem</button><label class="ln-pill">Main character <input type="text" id="h" value="Maya" style="width:150px;border-width:2px;padding:2px 8px"></label></div>`;
+function make(){const t=T[ti],h=$('h').value.trim()||Kit.pick(HEROES);cur={t,q:Kit.pick(t[3]).replace(/\{h\}/g,h),stake:Kit.pick(STAKES),obs:Kit.shuffle(OBS).slice(0,2)};worse=[];draw()}
+function draw(){const t=cur.t;$('cd').style.setProperty('--tc',t[1]);$('cd').innerHTML=`<span class="cf-type" style="--tc:${t[1]}">${t[2]} ${t[0]}</span><div class="cf-q">${Kit.esc(cur.q)}</div><div class="cf-st">⚠️ ${Kit.esc(cur.stake)}</div><div class="cf-obs"><b>🧱 What's in the way:</b>${cur.obs.map(o=>`<div class="cf-o">${Kit.esc(o)}</div>`).join('')}${worse.map(o=>`<div class="cf-o worse">${Kit.esc(o)}</div>`).join('')}</div><p style="font-weight:800;margin-bottom:0">✏️ How will your character solve it?</p>`;window.__t={type:t[0],worse:worse.length}}
+$('sp').onclick=()=>{ti=Kit.rand(0,n-1);rot+=360*5+(360-(ti*72+36))-(rot%360);$('dc').style.transform=`rotate(${rot}deg)`;for(let k=0;k<20;k++)setTimeout(()=>Kit.tick(),k*k*7);setTimeout(()=>{Kit.tada();make()},3100)};
+$('wr').onclick=()=>{const left=WORSE.filter(w=>!worse.includes(w));if(!left.length)return;worse.push(Kit.pick(left));Kit.tone(180,.3,'sawtooth',.15);draw()};
+$('nw').onclick=make;$('h').onchange=make;
+make();
+</script>
+</body></html>

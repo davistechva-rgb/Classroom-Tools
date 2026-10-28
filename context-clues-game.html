@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Context Clues Game</title>
+<style>
+main{max-width:1200px}
+.cc2-card{background:#FFFDF6;border:7px solid var(--ink);border-radius:28px;box-shadow:9px 9px 0 var(--ink);padding:clamp(16px,3vw,32px)}
+.cc2-s{font-size:clamp(1.4rem,3.4vw,2.3rem);font-weight:700;line-height:1.45}
+.cc2-s .w{background:var(--sun);border:3px solid var(--ink);border-radius:10px;padding:0 8px;font-weight:800}
+.cc2-s .clue{transition:background .4s}.cc2-s .clue.on{background:#C9F1D2;border-bottom:4px solid #1E8E3E}
+.cc2-q{font-weight:800;font-size:1.3rem;margin:14px 0 10px}
+.cc2-ch{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:640px){.cc2-ch{grid-template-columns:1fr}}
+.cc2-ch button{font:inherit;font-weight:800;font-size:1.25rem;border:5px solid var(--ink);border-radius:18px;padding:12px;background:#fff;cursor:pointer;box-shadow:0 5px 0 var(--ink);color:var(--ink)}
+.cc2-ch button.yes{background:var(--grass)}.cc2-ch button.no{background:#FFD9D4;opacity:.6}
+.cc2-type{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;font-weight:700}
+.cc2-type span{border:3px solid var(--ink);border-radius:99px;padding:2px 12px;background:#fff}
+.cc2-hud{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🔎", "Context Clues Game");
+const $=id=>document.getElementById(id);
+const DEF=`The puppy was so [famished] that it gobbled up its food in seconds. | very hungry | very sleepy | very happy | very wet | gobbled up its food | Example
+The desert is [arid], with almost no rain all year. | very dry | very cold | very windy | very green | almost no rain | Definition
+Unlike his brother, who is loud, Sam is very [timid]. | shy and quiet | angry | tall | funny | Unlike his brother, who is loud | Opposite
+The [enormous] elephant was as big as a school bus. | huge | tiny | gray | gentle | as big as a school bus | Example
+She was [elated], or very happy, when she won the prize. | thrilled | tired | scared | bored | or very happy | Definition
+The old bridge was [fragile], so only one person could cross at a time. | easy to break | very long | brand new | colorful | only one person could cross at a time | Cause
+After running five miles, Dad felt [weary] and needed to sit down. | tired | excited | hungry | cold | needed to sit down | Cause
+The [nocturnal] owl sleeps all day and hunts at night. | active at night | very loud | very small | lives in water | sleeps all day and hunts at night | Definition
+The room was [immaculate]; there wasn't a speck of dust anywhere. | perfectly clean | very messy | very dark | very big | there wasn't a speck of dust | Example
+Mia was [reluctant] to jump into the cold pool, so she waited on the side. | not wanting to | excited to | able to | afraid of heights | so she waited on the side | Cause`;
+const st=Kit.get('cc2-set',{text:DEF});let deck,i=0,sc=0,miss=false;
+document.querySelector('main').innerHTML=`<div class="cc2-hud"><span class="ln-pill" id="pr"></span><span class="ln-pill">⭐ <b id="sc">0</b></span><button class="btn white small" id="hn">🔦 Show the clue</button><button class="btn white small" id="ed">✏️ Sentences</button></div>
+<div class="cc2-card"><div class="cc2-s" id="s"></div><div class="cc2-q" id="q"></div><div class="cc2-ch" id="ch"></div><div class="cc2-type" id="ty"></div></div>
+<div class="row" style="justify-content:center;margin-top:14px"><button class="btn big green" id="nx">Next ➜</button></div>
+<div class="card stack" id="edc" hidden style="margin-top:14px"><b>✏️ Context clue sentences</b><span class="muted">One per line: sentence with the [tricky word] in brackets | right meaning | wrong | wrong | wrong | the clue words | kind of clue (Definition, Example, Opposite, Cause)</span><textarea id="ta" style="min-height:220px"></textarea><button class="btn green" id="sv">✓ Save</button></div>`;
+const rows=()=>Kit.lines(st.text).map(l=>l.split('|').map(s=>s.trim())).filter(r=>/\[.+\]/.test(r[0])&&r.length>=3);
+function load(){if(!deck||i>=deck.length){deck=Kit.shuffle(rows());i=0}const r=deck[i];miss=false;const w=r[0].match(/\[(.+?)\]/)[1];const clue=r[5]||'';
+ let s=Kit.esc(r[0]).replace(/\[(.+?)\]/,'<span class="w">$1</span>');if(clue){const ce=Kit.esc(clue);const k=s.indexOf(ce);if(k>=0)s=s.slice(0,k)+`<span class="clue">${ce}</span>`+s.slice(k+ce.length)}
+ $('s').innerHTML=s;$('q').textContent=`What does "${w}" mean?`;$('ch').innerHTML=Kit.shuffle(r.slice(1,5).filter(Boolean)).map(c=>`<button data-c="${Kit.esc(c)}">${Kit.esc(c)}</button>`).join('');$('ty').innerHTML='';$('nx').hidden=true;
+ $('pr').textContent=`${i+1} of ${deck.length}`;$('sc').textContent=sc;window.__t={answer:r[1]}}
+$('ch').onclick=e=>{const b=e.target.closest('button');if(!b||b.classList.contains('no')||!$('nx').hidden)return;const r=deck[i];
+ if(b.dataset.c===r[1]){b.classList.add('yes');if(!miss)sc++;$('sc').textContent=sc;document.querySelectorAll('.clue').forEach(c=>c.classList.add('on'));$('ty').innerHTML=r[5]?`<b>🔎 The clue:</b><span>“${Kit.esc(r[5])}”</span>${r[6]?`<span>Clue type: ${Kit.esc(r[6])}</span>`:''}`:'';Kit.tada();$('nx').hidden=false}
+ else{miss=true;b.classList.add('no');Learn.flash(b,false)}};
+$('hn').onclick=()=>{document.querySelectorAll('.clue').forEach(c=>c.classList.add('on'));miss=true};
+$('nx').onclick=()=>{i++;if(i>=deck.length){Learn.finish('🔎','Word detective!',`You got ${sc} of ${deck.length} on the first try.`);sc=0}load()};
+$('ed').onclick=()=>{$('edc').hidden=!$('edc').hidden;$('ta').value=st.text};$('sv').onclick=()=>{st.text=$('ta').value;Kit.set('cc2-set',st);deck=null;$('edc').hidden=true;load()};
+load();
+</script>
+</body></html>

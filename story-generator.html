@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Story Generator</title>
+<style>
+main{max-width:1400px}
+.sg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.sg-c{position:relative;background:#fff;border:6px solid var(--ink);border-radius:22px;box-shadow:6px 6px 0 var(--ink);padding:12px 14px;min-height:150px;display:flex;flex-direction:column;gap:6px}
+.sg-c h3{margin:0;font-size:.95rem;letter-spacing:.1em;color:var(--sc)}
+.sg-c .v{font-weight:800;font-size:clamp(1.15rem,2.2vw,1.45rem);line-height:1.2;flex:1}
+.sg-c .v.roll{animation:sgroll .35s}@keyframes sgroll{0%{transform:translateY(-14px);opacity:0}}
+.sg-c .e{font-size:2.2rem;line-height:1}
+.sg-c .b{display:flex;gap:6px}
+.sg-c .b button{border:3px solid var(--ink);border-radius:10px;background:#fff;cursor:pointer;font-size:1rem;padding:2px 8px;font-weight:700}
+.sg-c.lock{background:#FFF6C9}.sg-c.lock .lk{background:var(--sun)}
+.sg-story{margin-top:16px;background:#FFFDF6;border:6px solid var(--ink);border-radius:24px;box-shadow:6px 6px 0 var(--ink);padding:16px 20px;font-size:clamp(1.2rem,2.6vw,1.7rem);line-height:1.5;font-weight:600}
+.sg-story b{color:var(--grape)}
+.sg-saved{display:grid;gap:6px;margin-top:12px}.sg-saved div{background:#fff;border:3px solid var(--ink);border-radius:12px;padding:6px 10px;font-weight:600}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("📖", "Story Generator");
+const $=id=>document.getElementById(id);
+const PARTS={who:['🧑 THE HERO','#FF6B5B',['🦊 a clever fox who never tells the truth','🧒 a shy girl who can talk to plants','🤖 a robot who wants to learn to dance','🐉 a tiny dragon afraid of fire','👴 a grandpa who used to be a pirate','🦄 a unicorn who lost its horn','🧙 a wizard who keeps forgetting spells','🐢 the fastest turtle in the world','👩‍🚀 an astronaut on her first trip','🐕 a dog who thinks he is a cat','🧚 a fairy who is too big to fly','🦸 a kid who just got one tiny superpower']],
+ where:['🗺️ THE PLACE','#22C3E6',['🏰 a castle floating in the clouds','🌊 an underwater city','🏫 a school where the rules change every day','🌲 a forest where the trees can walk','🚀 a space station near Saturn','🏜️ a desert full of hidden caves','🎡 an abandoned amusement park','🍭 a town made of candy','🏝️ a tiny island that moves','❄️ a village at the North Pole']],
+ when:['⏰ THE TIME','#9B6BF2',['on the first day of summer','in the middle of a thunderstorm','one hundred years from now','at midnight on a full moon','during the big school play','on the coldest day of the year','long, long ago','on a birthday nobody remembered']],
+ problem:['⚡ THE PROBLEM','#FF9F43',['they find a map that leads somewhere impossible','all the colors in the world disappear','a mysterious egg starts to hatch','their best friend goes missing','a giant storm starts heading their way','someone steals the moon','gravity starts to turn off','a door appears that wasn\'t there before','a secret letter arrives with no name','the animals stop talking to them']],
+ twist:['🌀 THE TWIST','#5DC66E',['…but the villain turns out to be their twin','…but it was all happening inside a book','…but they only have one hour','…but nobody believes them','…but the helper is secretly the problem','…but they have to work with their enemy','…but it is all on the same day, over and over','…but the answer was in their pocket the whole time']]};
+const st=Kit.get('sg-state',{saved:[]});
+let cur={},lock={};
+document.querySelector('main').innerHTML=`<div class="sg-grid" id="g"></div><div class="sg-story" id="sto"></div>
+<div class="row" style="justify-content:center;margin-top:14px"><button class="btn big green" id="go">🎲 New story idea</button><button class="btn white" id="sv">⭐ Save this one</button><button class="btn white" id="say">🔈 Read it</button></div><div class="sg-saved" id="sd"></div>`;
+const split=t=>{const m=t.match(/^(\p{Extended_Pictographic}[\u{FE0F}\u{200D}\p{Extended_Pictographic}]*)\s*(.*)$/u);return m?[m[1],m[2]]:['',t]};
+function roll(k){cur[k]=Kit.pick(PARTS[k][2].filter(x=>x!==cur[k]))}
+function draw(anim){$('g').innerHTML=Object.entries(PARTS).map(([k,[lab,c]])=>{const [e,t]=split(cur[k]);return `<div class="sg-c ${lock[k]?'lock':''}" style="--sc:${c}"><h3>${lab}</h3>${e?`<span class="e">${e}</span>`:''}<div class="v ${anim&&!lock[k]?'roll':''}">${Kit.esc(t)}</div><div class="b"><button data-r="${k}">🎲 New</button><button class="lk" data-l="${k}">${lock[k]?'🔒 Kept':'🔓 Keep'}</button></div></div>`}).join('');
+ const w=split(cur.who)[1],p=split(cur.where)[1];$('sto').innerHTML=`📖 Once upon a time, ${Kit.esc(cur.when)}, there was <b>${Kit.esc(w)}</b>. They lived in <b>${Kit.esc(p)}</b>. One day, ${Kit.esc(cur.problem)}! <b>${Kit.esc(cur.twist)}</b> What happens next? ✏️`;
+ $('sd').innerHTML=st.saved.map((s,i)=>`<div>⭐ ${Kit.esc(s)} <button class="btn small white" data-del="${i}">✕</button></div>`).join('');window.__t={cur:{...cur}}}
+$('g').onclick=e=>{const r=e.target.closest('[data-r]');if(r){roll(r.dataset.r);Kit.tick();draw(true);return}const l=e.target.closest('[data-l]');if(l){lock[l.dataset.l]=!lock[l.dataset.l];draw()}};
+$('go').onclick=()=>{Object.keys(PARTS).forEach(k=>{if(!lock[k])roll(k)});Kit.tone(523,.1,'triangle',.2);Kit.tone(659,.1,'triangle',.2,.08);draw(true)};
+$('sv').onclick=()=>{st.saved.unshift($('sto').textContent.replace(/^📖 /,'').replace(/ ✏️$/,''));st.saved=st.saved.slice(0,20);Kit.set('sg-state',st);Kit.ding();draw()};
+$('sd').onclick=e=>{const b=e.target.closest('[data-del]');if(b){st.saved.splice(+b.dataset.del,1);Kit.set('sg-state',st);draw()}};
+$('say').onclick=()=>{try{const u=new SpeechSynthesisUtterance($('sto').textContent.replace(/\p{Extended_Pictographic}/gu,''));speechSynthesis.cancel();speechSynthesis.speak(u)}catch{}};
+Object.keys(PARTS).forEach(roll);draw(true);
+</script>
+</body></html>

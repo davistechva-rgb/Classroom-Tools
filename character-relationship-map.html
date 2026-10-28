@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Character Relationship Map</title>
+<style>
+main{max-width:none}
+.rm-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center;margin-bottom:10px}
+.rm-board{position:relative;height:calc(100vh - 230px);min-height:460px;border:6px solid var(--ink);border-radius:22px;box-shadow:7px 7px 0 var(--ink);background:#FFFDF6;overflow:hidden;touch-action:none}
+.rm-board svg{position:absolute;inset:0;width:100%;height:100%}
+.rm-n{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;cursor:grab;user-select:none;z-index:2}
+.rm-n .c{width:clamp(70px,9vw,100px);aspect-ratio:1;border-radius:50%;border:5px solid var(--ink);background:var(--nc);display:grid;place-items:center;font-size:clamp(2rem,4.4vw,3rem);box-shadow:0 5px 0 var(--ink)}
+.rm-n b{margin-top:4px;background:#fff;border:3px solid var(--ink);border-radius:99px;padding:1px 10px;font-size:1rem;white-space:nowrap}
+.rm-n.sel .c{outline:6px solid var(--grape);outline-offset:3px}
+.rm-lab{position:absolute;transform:translate(-50%,-50%);background:#fff;border:3px solid var(--lc);border-radius:99px;padding:1px 10px;font-weight:800;font-size:.9rem;z-index:1;cursor:pointer;white-space:nowrap}
+.rm-types{display:flex;gap:6px;flex-wrap:wrap}.rm-types button{font:inherit;font-weight:800;border:3px solid var(--lc);border-radius:99px;padding:3px 10px;background:#fff;cursor:pointer}.rm-types button.on{background:var(--lc);color:#fff}
+.rm-msg{text-align:center;font-weight:800;color:#fff;text-shadow:2px 2px 0 var(--ink);min-height:1.4em;margin-bottom:6px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🎭", "Character Relationship Map");
+const $=id=>document.getElementById(id);const NC=['#FFF1B8','#C9F1D2','#FDE7F3','#E3F2FF','#FFE3C4','#EAE0FF'];
+const TY=[['💛 Friends','#E0A800'],['❤️ Family','#E5533F'],['⚡ Enemies','#6B2FB8'],['🏁 Rivals','#FF7A1A'],['🤝 Helps','#1E8E3E'],['💬 Other','#1E7FD0']];
+const EX={nodes:[{id:1,e:'👸',n:'Cinderella',x:50,y:45,c:0},{id:2,e:'🧙‍♀️',n:'Fairy Godmother',x:22,y:20,c:5},{id:3,e:'🤴',n:'The Prince',x:80,y:22,c:3},{id:4,e:'👩',n:'Stepmother',x:20,y:75,c:2},{id:5,e:'👧',n:'Stepsisters',x:55,y:85,c:4},{id:6,e:'🐭',n:'Mice friends',x:84,y:70,c:1}],
+ links:[{a:2,b:1,t:4},{a:3,b:1,t:0,l:'Falls in love'},{a:4,b:1,t:2},{a:5,b:1,t:2},{a:4,b:5,t:1},{a:6,b:1,t:0}],next:7};
+const st=Kit.get('rm-state',JSON.parse(JSON.stringify(EX)));const save=()=>Kit.set('rm-state',st);
+let mode='move',type=0,first=null;
+document.querySelector('main').innerHTML=`<div class="rm-bar"><input type="text" id="nm" placeholder="Character name" style="width:180px"><input type="text" id="em" placeholder="🙂" maxlength="4" style="width:70px;text-align:center"><button class="btn small green" id="add">＋ Add character</button>
+<button class="btn small" id="lk">🔗 Connect two characters</button><div class="rm-types" id="ty">${TY.map((t,i)=>`<button data-t="${i}" style="--lc:${t[1]}" class="${i===0?'on':''}">${t[0]}</button>`).join('')}</div><button class="btn white small" id="ex">📕 Cinderella example</button><button class="btn white small" id="clr">🧽 Clear</button></div>
+<div class="rm-msg" id="msg">Drag characters to move them. Tap 🔗 Connect, then tap two characters to link them.</div><div class="rm-board" id="bd"><svg id="sv"></svg></div>`;
+const N=id=>st.nodes.find(n=>n.id===id);
+function draw(){const bd=$('bd'),W=bd.clientWidth,H=bd.clientHeight;bd.querySelectorAll('.rm-n,.rm-lab').forEach(e=>e.remove());let s='';
+ st.links.forEach((l,i)=>{const a=N(l.a),b=N(l.b);if(!a||!b)return;const [ax,ay,bx,by]=[a.x*W/100,a.y*H/100,b.x*W/100,b.y*H/100];const c=TY[l.t][1];s+=`<line x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}" stroke="${c}" stroke-width="7" stroke-linecap="round" ${l.t===2?'stroke-dasharray="14 10"':''}/>`;
+  bd.insertAdjacentHTML('beforeend',`<span class="rm-lab" data-l="${i}" style="left:${(a.x+b.x)/2}%;top:${(a.y+b.y)/2}%;--lc:${c}" title="Tap to change or remove">${Kit.esc(l.l||TY[l.t][0])}</span>`)});
+ $('sv').innerHTML=s;st.nodes.forEach(n=>bd.insertAdjacentHTML('beforeend',`<div class="rm-n ${first===n.id?'sel':''}" data-id="${n.id}" style="left:${n.x}%;top:${n.y}%;--nc:${NC[n.c%6]}"><span class="c">${Kit.esc(n.e)}</span><b>${Kit.esc(n.n)}</b></div>`));
+ window.__t={nodes:st.nodes.length,links:st.links.length}}
+$('add').onclick=()=>{const n=$('nm').value.trim();if(!n)return $('nm').focus();st.nodes.push({id:st.next++,e:$('em').value.trim()||Kit.pick(['🧒','👩','👨','🐶','🐱','🦊','🤖','👑']),n,x:Kit.rand(15,85),y:Kit.rand(15,80),c:st.nodes.length});$('nm').value='';$('em').value='';save();draw();Kit.tick()};
+$('nm').onkeydown=e=>{if(e.key==='Enter')$('add').click()};
+$('lk').onclick=()=>{mode=mode==='link'?'move':'link';first=null;$('lk').textContent=mode==='link'?'✓ Done connecting':'🔗 Connect two characters';$('msg').textContent=mode==='link'?'Tap the first character…':'Drag characters to move them.';draw()};
+$('ty').onclick=e=>{const b=e.target.closest('[data-t]');if(!b)return;type=+b.dataset.t;[...$('ty').children].forEach(x=>x.classList.toggle('on',x===b))};
+let dr=null;
+$('bd').addEventListener('pointerdown',e=>{const lb=e.target.closest('.rm-lab');if(lb){const l=st.links[+lb.dataset.l];const v=prompt('Change the label (leave empty to remove the link):',l.l||TY[l.t][0].slice(2));if(v===null)return;if(!v.trim())st.links.splice(+lb.dataset.l,1);else l.l=v.trim();save();draw();return}
+ const el=e.target.closest('.rm-n');if(!el)return;const id=+el.dataset.id;
+ if(mode==='link'){if(!first){first=id;$('msg').textContent='Now tap the second character…';draw()}else if(first!==id){if(!st.links.some(l=>(l.a===first&&l.b===id)||(l.a===id&&l.b===first)))st.links.push({a:first,b:id,t:type});first=null;save();Kit.ding();$('msg').textContent='Linked! Tap two more, or ✓ Done.';draw()}return}
+ e.preventDefault();dr={n:N(id),r:$('bd').getBoundingClientRect(),moved:false,sx:e.clientX,sy:e.clientY};el.setPointerCapture(e.pointerId)});
+$('bd').addEventListener('pointermove',e=>{if(!dr)return;if(Math.hypot(e.clientX-dr.sx,e.clientY-dr.sy)>5)dr.moved=true;dr.n.x=Math.max(5,Math.min(95,(e.clientX-dr.r.left)/dr.r.width*100));dr.n.y=Math.max(8,Math.min(92,(e.clientY-dr.r.top)/dr.r.height*100));draw()});
+$('bd').addEventListener('pointerup',()=>{if(!dr)return;if(!dr.moved){const n=dr.n;const v=prompt(`Rename ${n.n}, or type "delete" to remove:`,n.n);if(v&&v.toLowerCase()==='delete'){st.nodes=st.nodes.filter(x=>x!==n);st.links=st.links.filter(l=>l.a!==n.id&&l.b!==n.id)}else if(v)n.n=v}dr=null;save();draw()});
+$('ex').onclick=()=>{if(confirm('Load the Cinderella example? Your map will be replaced.')){Object.assign(st,JSON.parse(JSON.stringify(EX)));save();draw()}};
+$('clr').onclick=()=>{if(confirm('Clear the whole map?')){st.nodes=[];st.links=[];save();draw()}};
+addEventListener('resize',draw);draw();
+</script>
+</body></html>

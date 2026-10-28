@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Sentence Puzzle</title>
+<style>
+main{max-width:1300px}
+.sp-pic{text-align:center;font-size:clamp(3rem,8vw,5rem);line-height:1.1;min-height:1.1em}
+.sp-ans{min-height:96px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;padding:14px;background:#fff;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);margin:14px 0}
+.sp-ans:empty::before{content:"Tap the words in order to build the sentence";color:#9AA6C3;font-weight:700}
+.sp-pool{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;min-height:70px}
+.sp-w{font:inherit;font-weight:800;font-size:clamp(1.3rem,3vw,2rem);border:5px solid var(--ink);border-radius:16px;padding:6px 16px;cursor:pointer;background:var(--wc);color:var(--ink);box-shadow:0 5px 0 var(--ink)}
+.sp-w:active{transform:translateY(5px);box-shadow:none}
+.sp-w.p{background:#fff;min-width:1.6em}
+.sp-ans .sp-w{box-shadow:0 3px 0 var(--ink)}
+.sp-ans.good{background:#C9F1D2}.sp-ans.bad{animation:lnbad .45s}
+.sp-hud{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:10px}
+.sp-tip{text-align:center;font-weight:800;color:#fff;text-shadow:2px 2px 0 var(--ink);min-height:1.4em;font-size:1.2rem}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🧩", "Sentence Puzzle");
+const $=id=>document.getElementById(id);const WC=['#FFF1B8','#C9F1D2','#FDE7F3','#E3F2FF','#FFE3C4','#EAE0FF'];
+const DEF=`🐶 | The dog ran to the park.
+🌧️ | It rained all day long.
+🍎 | Mia ate a big red apple.
+🚀 | The rocket flew to the moon.
+🐸 | A green frog jumped into the pond.
+📚 | We read books in the library.
+⚽ | Leo kicked the ball very hard.
+🌻 | The sunflower grew taller than me.
+🎂 | My sister baked a chocolate cake.
+❄️ | We built a snowman in the yard.
+🐢 | The slow turtle won the race.
+🎨 | Can you paint a rainbow?
+🦁 | The lion roared at the zebra!
+🧸 | Where did you put my teddy bear?`;
+const st=Kit.get('sp-set',{text:DEF});let deck,idx,sc=0,streak=0,tries=0;
+document.querySelector('main').innerHTML=`<div class="sp-hud"><span class="ln-pill" id="pr"></span><span class="ln-pill">⭐ <b id="sc">0</b></span><span class="ln-pill">🔥 <b id="stk">0</b></span><button class="btn white small" id="say">🔈 Hear it</button><button class="btn white small" id="hn">💡 Hint</button><button class="btn white small" id="ed">✏️ Sentences</button></div>
+<div class="sp-pic" id="pic"></div><div class="sp-ans" id="ans"></div><div class="sp-pool" id="pool"></div><div class="sp-tip" id="tip"></div>
+<div class="row" style="justify-content:center;margin-top:12px"><button class="btn white" id="clr">↺ Clear</button><button class="btn big green" id="chk">✓ Check</button><button class="btn white" id="sk">Skip ➜</button></div>
+<div class="card stack" id="edc" hidden style="margin-top:14px"><b>✏️ Sentences</b><span class="muted">One per line: emoji | sentence (the emoji is optional).</span><textarea id="ta" style="min-height:180px"></textarea><button class="btn green" id="sv">✓ Save</button></div>`;
+const rows=()=>Kit.lines(st.text).map(l=>{const p=l.split('|').map(s=>s.trim());return p.length>1?{e:p[0],s:p[1]}:{e:'',s:p[0]}}).filter(r=>r.s);
+const toks=s=>s.match(/[A-Za-z0-9'’-]+|[.,!?;:]/g)||[];
+let target=[],placed=[];
+function load(){if(!deck||!deck.length){deck=Kit.shuffle(rows());idx=0}const r=deck[idx%deck.length];target=toks(r.s);placed=[];tries=0;$('pic').textContent=r.e;
+ let mixed;do{mixed=Kit.shuffle(target.map((w,i)=>({w,i})))}while(target.length>2&&mixed.every((m,k)=>m.i===k));
+ $('pool').innerHTML=mixed.map((m,k)=>`<button class="sp-w ${/[.,!?;:]/.test(m.w)?'p':''}" data-k="${m.i}" style="--wc:${WC[k%6]}">${Kit.esc(m.w)}</button>`).join('');$('ans').innerHTML='';$('ans').className='sp-ans';$('tip').textContent='';hud();window.__t={target:[...target]}}
+function hud(){$('pr').textContent=`Sentence ${idx%deck.length+1} of ${deck.length}`;$('sc').textContent=sc;$('stk').textContent=streak}
+$('pool').onclick=e=>{const b=e.target.closest('.sp-w');if(!b)return;$('ans').appendChild(b);Kit.tick();$('ans').className='sp-ans'};
+$('ans').onclick=e=>{const b=e.target.closest('.sp-w');if(!b)return;$('pool').appendChild(b);$('ans').className='sp-ans'};
+$('clr').onclick=()=>{[...$('ans').children].forEach(b=>$('pool').appendChild(b))};
+$('chk').onclick=()=>{const got=[...$('ans').children].map(b=>b.textContent);tries++;
+ if(got.join(' ')===target.join(' ')){$('ans').className='sp-ans good';sc+=tries===1?2:1;streak++;Kit.tada();if(streak%5===0)Kit.confetti(60);$('tip').textContent='🎉 Perfect sentence!';hud();setTimeout(()=>{idx++;load()},1500);return}
+ streak=0;$('ans').className='sp-ans';void $('ans').offsetWidth;$('ans').classList.add('bad');Kit.tone(200,.3,'triangle',.18);hud();
+ if(got.length<target.length)$('tip').textContent='Use all of the word cards!';else if(got[0]!==target[0])$('tip').textContent=`💡 Which word starts with a capital letter? That one goes first.`;else if(!/[.!?]/.test(got[got.length-1]))$('tip').textContent='💡 A sentence ends with punctuation.';else{const k=got.findIndex((w,i)=>w!==target[i]);$('tip').textContent=`💡 The first ${k} ${k===1?'word is':'words are'} right. Look again after that.`}};
+$('hn').onclick=()=>{const got=[...$('ans').children];let k=0;while(k<got.length&&got[k].textContent===target[k])k++;got.slice(k).forEach(b=>$('pool').appendChild(b));const nb=[...$('pool').children].find(b=>+b.dataset.k===k||b.textContent===target[k]);if(nb){$('ans').appendChild(nb);nb.animate([{transform:'scale(1.3)'},{transform:'scale(1)'}],{duration:400})}tries++};
+$('sk').onclick=()=>{streak=0;idx++;load()};
+$('say').onclick=()=>{try{const u=new SpeechSynthesisUtterance(target.join(' ').replace(/ ([.,!?])/g,'$1'));u.rate=.85;speechSynthesis.cancel();speechSynthesis.speak(u)}catch{}};
+$('ed').onclick=()=>{$('edc').hidden=!$('edc').hidden;$('ta').value=st.text};$('sv').onclick=()=>{st.text=$('ta').value;Kit.set('sp-set',st);deck=null;$('edc').hidden=true;load()};
+load();
+</script>
+</body></html>

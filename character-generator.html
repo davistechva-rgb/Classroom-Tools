@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Character Generator</title>
+<style>
+main{max-width:1300px}
+.cg-wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:20px;align-items:start}
+@media (max-width:860px){.cg-wrap{grid-template-columns:1fr}}
+.cg-card{background:linear-gradient(160deg,var(--c1),var(--c2));border:8px solid var(--ink);border-radius:30px;box-shadow:10px 10px 0 var(--ink);padding:16px;color:var(--ink);max-width:460px;margin:0 auto;width:100%}
+.cg-card.new{animation:cgn .6s cubic-bezier(.3,1.4,.5,1)}@keyframes cgn{from{transform:rotateY(90deg)}}
+.cg-top{display:flex;justify-content:space-between;align-items:center;font-weight:800}
+.cg-type{background:#fff;border:3px solid var(--ink);border-radius:99px;padding:1px 12px;font-size:.9rem}
+.cg-name{font-size:clamp(1.6rem,4vw,2.4rem);font-weight:800;line-height:1.05;margin:6px 0}
+.cg-pic{background:#fff;border:5px solid var(--ink);border-radius:20px;aspect-ratio:4/3;display:grid;place-items:center;font-size:clamp(5rem,14vw,8rem);position:relative}
+.cg-pic .acc{position:absolute;top:8%;right:12%;font-size:.4em;transform:rotate(15deg)}
+.cg-stats{display:grid;gap:4px;margin-top:10px;background:rgba(255,255,255,.75);border:3px solid var(--ink);border-radius:14px;padding:8px}
+.cg-stat{display:grid;grid-template-columns:6.5em 1fr;gap:8px;align-items:center;font-weight:800;font-size:.9rem}
+.cg-stat i{height:12px;border:2px solid var(--ink);border-radius:99px;background:#fff;overflow:hidden}.cg-stat i b{display:block;height:100%;background:var(--sc)}
+.cg-quote{margin-top:8px;font-style:italic;font-weight:700;text-align:center;background:#fff;border:3px solid var(--ink);border-radius:14px;padding:6px}
+.cg-f{display:grid;gap:8px}
+.cg-row{display:grid;grid-template-columns:7em 1fr auto;gap:8px;align-items:center;background:#fff;border:4px solid var(--ink);border-radius:16px;padding:8px 10px;font-weight:700}
+.cg-row b{color:#6B7695;font-size:.85rem;letter-spacing:.06em}
+.cg-row button{border:3px solid var(--ink);border-radius:10px;background:#fff;cursor:pointer;padding:2px 8px}
+@media print{.top,footer,.cg-f,.row{display:none!important}body{background:#fff}.cg-card{box-shadow:none}}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🧙", "Character Generator");
+const $=id=>document.getElementById(id);
+const L={type:['🦸 Hero','😈 Villain','🤝 Sidekick','🧭 Explorer','🃏 Trickster'],
+ pic:['🧒','👧','👦','🧑','👵','👴','🧙','🧛','🧜','🧝','🦸','🦹','🤖','👽','🐉','🦊','🐱','🐶','🦉','🐸','🐼','🦁','🐙','🦄'],
+ acc:['🎩','👑','🧢','🎀','🕶️','⚔️','🪄','🎒','🗝️','🌂','🎧','🔭',''],
+ first:['Zara','Milo','Pip','Luna','Rex','Ivy','Otto','Nova','Finn','Juno','Bram','Tilly','Kip','Sage','Rory','Wren','Dex','Poppy'],
+ last:['Thunderfoot','McGee','Sparkle','the Brave','Moonwhistle','Pickle','Shadow','Bumblesnout','Quickly','of the Hills','Stardust','Bottlecap'],
+ trait:['brave','shy','silly','grumpy','clever','kind','sneaky','curious','loud','forgetful','honest','bossy','gentle','stubborn','cheerful','nervous'],
+ want:['to find their lost family','to win the big race','to be famous','to protect their village','to make a true friend','to find a hidden treasure','to go home','to be taken seriously','to learn magic','to fix a big mistake'],
+ fear:['the dark','being alone','spiders','water','being laughed at','losing their best friend','loud noises','heights','failing a test','change'],
+ secret:['can secretly fly','is actually a prince or princess','broke something important','can\'t read yet','is scared of their own pet','used to be a villain','has a twin nobody knows about','talks to the moon at night'],
+ talent:['can talk to animals','never gets lost','is a great cook','can remember everything','is super fast','can fix any machine','tells amazing jokes','can see in the dark'],
+ say:['"Let\'s do this!"','"Hmm, interesting…"','"Not again!"','"Trust me."','"I knew it!"','"Easy peasy!"','"Wait for me!"','"No problem!"','"That\'s my snack!"']};
+const COL=[['#FFD86B','#FF9F43'],['#A7E8F5','#22C3E6'],['#C9F1D2','#5DC66E'],['#E3D3FF','#9B6BF2'],['#FFD3E8','#FF8FC7']];
+let c={};const st=Kit.get('cg-state',{saved:[]});
+const r=k=>Kit.pick(L[k]);
+function rollAll(){c={type:r('type'),pic:r('pic'),acc:r('acc'),name:`${r('first')} ${r('last')}`,t1:r('trait'),t2:r('trait'),want:r('want'),fear:r('fear'),secret:r('secret'),talent:r('talent'),say:r('say'),col:Kit.rand(0,4),stats:[0,0,0,0].map(()=>Kit.rand(2,10))};while(c.t2===c.t1)c.t2=r('trait')}
+const FIELDS=[['name','NAME',()=>`${r('first')} ${r('last')}`],['type','ROLE',()=>r('type')],['pic','LOOKS',()=>r('pic')],['t1','TRAIT',()=>r('trait')],['t2','TRAIT',()=>r('trait')],['want','WANTS',()=>r('want')],['fear','FEARS',()=>r('fear')],['talent','TALENT',()=>r('talent')],['secret','SECRET',()=>r('secret')],['say','SAYS',()=>r('say')]];
+document.querySelector('main').innerHTML=`<div class="cg-wrap"><div><div class="cg-card" id="cd"></div><div class="row" style="justify-content:center;margin-top:14px"><button class="btn big green" id="go">🎲 New character</button><button class="btn white" id="sv">⭐ Save</button><button class="btn white" onclick="print()">🖨️ Print card</button></div></div>
+<div class="cg-f" id="f"></div></div><div class="card" style="margin-top:16px" id="svd"></div>`;
+function draw(anim){const [c1,c2]=COL[c.col];const cd=$('cd');cd.style.setProperty('--c1',c1);cd.style.setProperty('--c2',c2);if(anim){cd.classList.remove('new');void cd.offsetWidth;cd.classList.add('new')}
+ const S=['💪 Bravery','💖 Kindness','🧠 Smarts','😂 Humor'];
+ cd.innerHTML=`<div class="cg-top"><span class="cg-type">${Kit.esc(c.type)}</span><span>⭐ ${c.stats.reduce((a,b)=>a+b,0)*10}</span></div><div class="cg-name">${Kit.esc(c.name)}</div><div class="cg-pic">${c.pic}<span class="acc">${c.acc}</span></div>
+ <div class="cg-stats">${S.map((s,i)=>`<div class="cg-stat" style="--sc:${['#FF6B5B','#FF8FC7','#22C3E6','#FFC93C'][i]}">${s}<i><b style="width:${c.stats[i]*10}%"></b></i></div>`).join('')}</div><div class="cg-quote">${Kit.esc(c.say)}</div>`;
+ $('f').innerHTML=FIELDS.map(([k,lab])=>`<div class="cg-row"><b>${lab}</b><span>${k==='t1'||k==='t2'?`Is <b style="color:var(--ink);font-size:1em">${Kit.esc(c[k])}</b>`:k==='want'?`Wants ${Kit.esc(c[k])}`:k==='fear'?`Is afraid of ${Kit.esc(c[k])}`:k==='secret'?`Secretly ${Kit.esc(c[k])}`:k==='talent'?`Is great at this: ${Kit.esc(c[k])}`:Kit.esc(c[k])}</span><button data-k="${k}">🎲</button></div>`).join('');
+ $('svd').innerHTML=st.saved.length?`<b>⭐ Saved characters</b><div class="row" style="margin-top:8px">${st.saved.map((s,i)=>`<button class="btn white small" data-load="${i}">${s.pic} ${Kit.esc(s.name)}</button>`).join('')}</div>`:'<span class="muted">Save characters you like to use them again.</span>';window.__t={name:c.name}}
+$('f').onclick=e=>{const b=e.target.closest('[data-k]');if(!b)return;const F=FIELDS.find(x=>x[0]===b.dataset.k);c[F[0]]=F[2]();Kit.tick();draw()};
+$('go').onclick=()=>{rollAll();Kit.tone(523,.1,'triangle',.2);Kit.tone(784,.15,'triangle',.2,.1);draw(true)};
+$('sv').onclick=()=>{st.saved.unshift({...c});st.saved=st.saved.slice(0,12);Kit.set('cg-state',st);Kit.ding();draw()};
+$('svd').onclick=e=>{const b=e.target.closest('[data-load]');if(b){c={...st.saved[+b.dataset.load]};draw(true)}};
+rollAll();draw(true);
+</script>
+</body></html>

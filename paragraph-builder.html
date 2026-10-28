@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Paragraph Builder</title>
+<style>
+main{max-width:1300px}
+.pb2-wrap{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:900px){.pb2-wrap{grid-template-columns:1fr}}
+.pb2-burger{display:grid;gap:6px}
+.pb2-l{position:relative;border:5px solid var(--ink);padding:12px 16px 12px 70px;min-height:74px;font-weight:700;font-size:clamp(1rem,2vw,1.25rem);background:var(--lc);display:flex;align-items:center}
+.pb2-l::before{content:attr(data-e);position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:2rem}
+.pb2-l .lab{position:absolute;top:-12px;left:60px;background:#fff;border:3px solid var(--ink);border-radius:99px;padding:0 10px;font-size:.75rem;font-weight:800;letter-spacing:.06em}
+.pb2-l.top{border-radius:60px 60px 14px 14px}.pb2-l.bot{border-radius:14px 14px 50px 50px}.pb2-l.mid{border-radius:14px}
+.pb2-l textarea{width:100%;border:0;background:rgba(255,255,255,.75);min-height:52px;font-size:1.1rem!important;resize:vertical}
+.pb2-l.dz-zone.hover{transform:scale(1.02)}
+.pb2-l.ok{outline:5px solid #1E8E3E}.pb2-l.off{outline:5px solid #D9432F}
+.pb2-tray{display:grid;gap:8px;min-height:120px;padding:12px;border:4px dashed rgba(29,43,83,.4);border-radius:20px;background:rgba(255,255,255,.45)}
+.pb2-s{background:#fff;border:4px solid var(--ink);border-radius:14px;padding:8px 12px;font-weight:700;box-shadow:0 4px 0 var(--ink)}
+.pb2-l .pb2-s{box-shadow:none;border-width:3px;width:100%}
+.pb2-out{margin-top:14px;background:#FFFDF6;border:5px solid var(--ink);border-radius:20px;padding:14px 18px;font-size:clamp(1.1rem,2.2vw,1.35rem);line-height:1.6;font-weight:600}
+.pb2-tabs{display:flex;gap:8px;justify-content:center;margin-bottom:14px}
+.pb2-tabs button{font:inherit;font-weight:800;border:4px solid var(--ink);border-radius:99px;padding:5px 16px;cursor:pointer;background:#fff;color:var(--ink)}.pb2-tabs button.on{background:var(--sun)}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("📝", "Paragraph Builder");
+const $=id=>document.getElementById(id);
+const LAY=[['top','🍞','TOPIC SENTENCE (top bun)','#F2C37A','Tell what the paragraph is about.'],['mid','🥬','DETAIL 1','#9BD877','Give a reason or fact.'],['mid','🍅','DETAIL 2','#FF8A7A','Give another reason or fact.'],['mid','🧀','DETAIL 3','#FFD34D','Give one more reason or fact.'],['bot','🍞','CLOSING SENTENCE (bottom bun)','#F2C37A','Sum it up in a new way.']];
+const SETS=[['Dogs make wonderful pets.','First, they are loyal and love their families.','Also, dogs help keep you active because they need walks.','Finally, many dogs can be trained to do amazing tricks.','That is why a dog is a great friend to have.'],
+ ['Recycling helps our planet in many ways.','It keeps trash out of landfills and oceans.','Recycling also saves trees, water, and energy.','Plus, old things can be turned into brand-new products.','When we recycle, we all help take care of the Earth.'],
+ ['Fall is my favorite season.','I love jumping into big piles of crunchy leaves.','The cool weather is perfect for wearing cozy sweaters.','Best of all, we get to carve pumpkins and drink apple cider.','Fall is the most fun time of the year!']];
+const TR=['First,','Next,','Also,','Another reason is','In addition,','Finally,','In conclusion,','That is why'];
+const st=Kit.get('pb2-state',{mode:'sort',write:['','','','',''],set:0});let checks=0;
+document.querySelector('main').innerHTML=`<div class="pb2-tabs" id="tabs"><button data-m="sort">🍔 Build the burger</button><button data-m="write">✍️ Write my own</button></div><div id="body"></div>`;
+const save=()=>Kit.set('pb2-state',st);
+function draw(){[...$('tabs').children].forEach(b=>b.classList.toggle('on',b.dataset.m===st.mode));
+ if(st.mode==='sort'){const S=SETS[st.set%SETS.length];checks=0;
+  $('body').innerHTML=`<div class="pb2-wrap"><div class="pb2-burger">${LAY.map((l,i)=>`<div class="pb2-l ${l[0]} dz-zone" data-e="${l[1]}" data-k="${i}" style="--lc:${l[3]}"><span class="lab">${l[2]}</span></div>`).join('')}</div>
+  <div><div class="pb2-tray dz-zone" id="tray" data-tray>${Kit.shuffle(S.map((s,i)=>({s,i}))).map(x=>`<div class="pb2-s dz-item" data-i="${x.i}">${Kit.esc(x.s)}</div>`).join('')}</div>
+  <div class="row" style="margin-top:12px"><button class="btn green" id="chk">✓ Check my burger</button><button class="btn white" id="nx">🍔 New paragraph</button></div><p id="res" style="font-weight:800;color:#fff;text-shadow:2px 2px 0 var(--ink)"></p></div></div>`;
+  if(!window._dg)window._dg=Learn.drag($('body'),{item:'.pb2-s',zone:'.dz-zone',drop(it,z){if(z.dataset.tray!=null){z.appendChild(it)}else{const old=z.querySelector('.pb2-s');if(old&&old!==it){const from=it.parentElement;(from&&from.classList.contains('pb2-l')?from:$('tray')).appendChild(old)}z.appendChild(it)}document.querySelectorAll('.pb2-l').forEach(l=>l.classList.remove('ok','off'));Kit.tick()}});
+  $('chk').onclick=()=>{checks++;let ok=0;document.querySelectorAll('.pb2-l').forEach(l=>{const s=l.querySelector('.pb2-s');const k=+l.dataset.k;const good=s&&(+s.dataset.i===k||(k>=1&&k<=3&&+s.dataset.i>=1&&+s.dataset.i<=3));l.classList.toggle('ok',!!good);l.classList.toggle('off',!good);ok+=!!good});
+   $('res').textContent=ok===5?(checks===1?'🍔 Delicious! Perfect paragraph on the first try!':'🍔 Delicious! You built it!'):`${ok} of 5 layers are right. The top bun tells the main idea, and the bottom bun wraps it up.`;if(ok===5){Kit.tada();Kit.confetti(80)}else Kit.tone(220,.25,'triangle',.18)};
+  $('nx').onclick=()=>{st.set++;save();draw()};window.__t={mode:'sort',set:st.set%SETS.length}}
+ else{$('body').innerHTML=`<div class="pb2-wrap"><div class="pb2-burger">${LAY.map((l,i)=>`<div class="pb2-l ${l[0]}" data-e="${l[1]}" style="--lc:${l[3]}"><span class="lab">${l[2]}</span><textarea data-w="${i}" placeholder="${l[4]}">${Kit.esc(st.write[i])}</textarea></div>`).join('')}</div>
+  <div class="card"><b>🔗 Linking words</b> <span class="muted">(tap to add one to the box you're in)</span><div class="row" style="margin-top:8px" id="tr">${TR.map(t=>`<button class="btn white small">${t}</button>`).join('')}</div><div class="row" style="margin-top:12px"><button class="btn white" id="say">🔈 Read it</button><button class="btn white small" id="clr">🧽 Clear</button></div></div></div><div class="pb2-out" id="out"></div>`;
+  let last=0;const out=()=>{$('out').innerHTML=`<b>📄 My paragraph:</b><br>${Kit.esc(st.write.filter(s=>s.trim()).join(' '))||'<i class="muted">Start typing in the burger!</i>'}`;window.__t={mode:'write',len:st.write.join(' ').length}};out();
+  $('body').querySelectorAll('[data-w]').forEach(t=>{t.oninput=()=>{st.write[+t.dataset.w]=t.value;save();out()};t.onfocus=()=>last=+t.dataset.w});
+  $('tr').onclick=e=>{const b=e.target.closest('button');if(!b)return;const t=$('body').querySelector(`[data-w="${last}"]`);t.value=(t.value.trim()?t.value.trim()+' ':'')+b.textContent+' ';st.write[last]=t.value;save();out();t.focus()};
+  $('say').onclick=()=>{try{const u=new SpeechSynthesisUtterance(st.write.join(' '));speechSynthesis.cancel();speechSynthesis.speak(u)}catch{}};$('clr').onclick=()=>{if(confirm('Clear your paragraph?')){st.write=['','','','',''];save();draw()}}}}
+$('tabs').onclick=e=>{const b=e.target.closest('[data-m]');if(b){st.mode=b.dataset.m;save();draw()}};
+draw();
+</script>
+</body></html>
