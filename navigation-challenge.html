@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Navigation Challenge</title>
+<style>
+main{max-width:1500px}
+.nv{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.nv{grid-template-columns:1fr}}
+.nv-sea{display:grid;grid-template-columns:repeat(var(--w),1fr);border:6px solid var(--ink);border-radius:20px;box-shadow:7px 7px 0 var(--ink);overflow:hidden;background:#3B8FD8;position:relative}
+.nv-c{aspect-ratio:1;border:1px solid rgba(255,255,255,.18);display:grid;place-items:center;font-size:clamp(1rem,3vw,2rem);position:relative}
+.nv-c.rock{background:#3B8FD8}.nv-c.land{background:#8BC56A;border-color:#6FA855}
+.nv-c.path{background:rgba(255,201,60,.35)}
+.nv-ship{position:absolute;transition:left .25s linear,top .25s linear;font-size:clamp(1.2rem,3.4vw,2.4rem);transform:translate(-50%,-50%);z-index:3;pointer-events:none}
+.nv-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:10px}
+.nv-rose{display:grid;grid-template-columns:repeat(3,64px);gap:6px;justify-content:center}
+.nv-rose button{font:inherit;font-weight:900;font-size:1.1rem;height:56px;border:4px solid var(--ink);border-radius:14px;background:#fff;cursor:pointer;color:var(--ink);box-shadow:0 4px 0 var(--ink)}
+.nv-rose .mid{background:#FFF6C9;font-size:1.6rem;display:grid;place-items:center;border:4px solid var(--ink);border-radius:50%}
+.nv-steps{display:flex;gap:4px;flex-wrap:wrap;min-height:44px;border:3px dashed #C3CBDB;border-radius:12px;padding:6px}
+.nv-steps span{background:var(--sun);border:3px solid var(--ink);border-radius:10px;padding:2px 8px;font-weight:900;cursor:pointer}
+.nv-steps span.run{background:var(--grass);color:#fff}
+.nv-msg{border:4px solid var(--ink);border-radius:16px;padding:8px 12px;background:#FFF6C9;font-weight:700;min-height:2.8em}
+.nv-n{display:flex;gap:6px;align-items:center;font-weight:800;justify-content:center}.nv-n button{font:inherit;font-weight:900;width:44px;height:44px;border:3px solid var(--ink);border-radius:12px;background:#fff;cursor:pointer}.nv-n b{font-size:1.6rem;min-width:2ch;text-align:center}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🧭", "Navigation Challenge");
+const $=id=>document.getElementById(id);
+const D={N:[0,-1],NE:[1,-1],E:[1,0],SE:[1,1],S:[0,1],SW:[-1,1],W:[-1,0],NW:[-1,-1]};
+const NAME={N:'North',NE:'Northeast',E:'East',SE:'Southeast',S:'South',SW:'Southwest',W:'West',NW:'Northwest'};
+let W=9,H=7,grid,ship,start,goal,prog=[],dist=1,lvl=Kit.get('nv-lvl',1),busy=false,diag=false;
+document.querySelector('main').innerHTML=`<div class="nv"><div><div class="nv-sea" id="sea"></div></div><div class="nv-p"><b id="lv"></b><div class="nv-msg" id="msg"></div>
+<div class="nv-n">Sail <button id="dm">−</button><b id="dn">1</b><button id="dp">+</button> spaces, heading:</div>
+<div class="nv-rose" id="rose"></div><b>🗺️ Your course</b><div class="nv-steps" id="st"></div>
+<div class="row"><button class="btn big green" id="go">⛵ Set sail!</button><button class="btn white" id="un">↩ Undo</button><button class="btn white small" id="nw">🔄 New map</button></div></div></div>`;
+function rose(){const L=diag?['NW','N','NE','W','','E','SW','S','SE']:['','N','','W','','E','','S',''];$('rose').innerHTML=L.map(k=>k?`<button data-d="${k}" title="${NAME[k]}">${k}</button>`:`<span class="${L[4]===k&&k===''?'':''}"></span>`).join('');$('rose').children[4].outerHTML='<div class="mid">🧭</div>'}
+// build a sea with islands that still has a path from the ship to the treasure
+function make(){W=Math.min(12,7+Math.floor(lvl/2));H=Math.min(9,5+Math.floor(lvl/2));diag=lvl>=4;let ok=false;
+ while(!ok){grid=Array.from({length:H},()=>Array(W).fill(0));const n=Math.floor(W*H*Math.min(.32,.12+lvl*.03));for(let i=0;i<n;i++)grid[Kit.rand(0,H-1)][Kit.rand(0,W-1)]=1;start=[0,Kit.rand(0,H-1)];goal=[W-1,Kit.rand(0,H-1)];grid[start[1]][start[0]]=0;grid[goal[1]][goal[0]]=0;
+  // check: can the ship get there?
+  const seen=new Set([start.join()]),q=[start];while(q.length){const [x,y]=q.shift();if(x===goal[0]&&y===goal[1]){ok=true;break}Object.entries(D).forEach(([k,[dx,dy]])=>{if(!diag&&k.length>1)return;const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=W||ny>=H||grid[ny][nx]||seen.has(nx+','+ny))return;seen.add(nx+','+ny);q.push([nx,ny])})}}
+ ship=[...start];prog=[];draw();$('lv').textContent=`🏴‍☠️ Level ${lvl}${diag?' · now with NE, SE, SW, NW!':''}`;$('msg').textContent='Plan a course to the treasure 💰. Don\'t sail onto an island!';rose();window.__t={grid,start,goal,W,H,diag}}
+function draw(){$('sea').style.setProperty('--w',W);let h='';for(let y=0;y<H;y++)for(let x=0;x<W;x++){const g=x===goal[0]&&y===goal[1];h+=`<div class="nv-c ${grid[y][x]?'land':''}">${grid[y][x]?Kit.pick(['🌴','🏝️','🌴','🪨']).replace('🏝️','🌴'):g?'💰':''}</div>`}
+ $('sea').innerHTML=h+`<span class="nv-ship" id="sh">⛵</span><span style="position:absolute;right:6px;top:2px;font-weight:900;color:#fff;text-shadow:1px 1px 0 var(--ink)">N ⬆</span>`;place();steps()}
+function place(){$('sh').style.left=((ship[0]+.5)/W*100)+'%';$('sh').style.top=((ship[1]+.5)/H*100)+'%'}
+function steps(r){$('st').innerHTML=prog.map((p,i)=>`<span class="${r===i?'run':''}" data-i="${i}" title="tap to remove">${p[0]} ${p[1]}</span>`).join('')||'<span style="background:none;border:0;color:#9AA6C3;font-weight:700">Tap a direction to add a step</span>';window.__t={...window.__t,prog:[...prog]}}
+$('rose').onclick=e=>{const b=e.target.closest('[data-d]');if(!b||busy)return;prog.push([b.dataset.d,dist]);Kit.tick();steps()};
+$('st').onclick=e=>{const s=e.target.closest('[data-i]');if(!s||busy)return;prog.splice(+s.dataset.i,1);steps()};
+$('dm').onclick=()=>{dist=Math.max(1,dist-1);$('dn').textContent=dist};$('dp').onclick=()=>{dist=Math.min(9,dist+1);$('dn').textContent=dist};
+$('un').onclick=()=>{if(!busy){prog.pop();steps()}};$('nw').onclick=make;
+$('go').onclick=async()=>{if(busy||!prog.length)return;busy=true;ship=[...start];place();await Kit.sleep(250);
+ for(let i=0;i<prog.length;i++){steps(i);const [d,n]=prog[i],[dx,dy]=D[d];for(let k=0;k<n;k++){const nx=ship[0]+dx,ny=ship[1]+dy;
+  if(nx<0||ny<0||nx>=W||ny>=H){$('msg').textContent=`🌊 Step ${i+1} (${NAME[d]} ${n}) sails off the edge of the map! Fix your course.`;Kit.tone(160,.4,'sawtooth',.15);busy=false;steps();return}
+  if(grid[ny][nx]){ship=[nx,ny];place();$('msg').textContent=`💥 Crash! Step ${i+1} (${NAME[d]} ${n}) runs into an island. Fix your course and try again.`;Kit.tone(120,.5,'sawtooth',.2);await Kit.sleep(500);busy=false;steps();return}
+  ship=[nx,ny];place();Kit.tone(500+k*40,.06,'triangle',.12);await Kit.sleep(260)}}
+ busy=false;steps();if(ship[0]===goal[0]&&ship[1]===goal[1]){Kit.tada();Kit.confetti(70);$('msg').innerHTML=`🎉 Treasure found in ${prog.length} step${prog.length>1?'s':''}! ${prog.length<=3?'⭐⭐⭐':prog.length<=5?'⭐⭐':'⭐'} <button class="btn green small" id="lu">Next level ➜</button>`;$('lu').onclick=()=>{lvl++;Kit.set('nv-lvl',lvl);make()}}
+ else $('msg').textContent='⚓ The ship stopped, but the treasure isn\'t here. Add more steps!'};
+make();
+</script>
+</body></html>

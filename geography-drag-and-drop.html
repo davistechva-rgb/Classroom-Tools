@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Geography Drag-and-Drop</title>
+<style>
+main{max-width:1600px}
+.gd-top{display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.gd-map{position:relative;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);overflow:hidden;touch-action:none}
+.gd-map svg{width:100%;aspect-ratio:2/1;display:block}
+.gd-dot{position:absolute;transform:translate(-50%,-50%);width:30px;height:30px;border-radius:50%;border:4px dashed #1D2B53;background:rgba(255,255,255,.75);display:grid;place-items:center;font-weight:900;font-size:.8rem;cursor:pointer}
+.gd-dot.done{width:auto;height:auto;border-style:solid;border-radius:99px;padding:2px 10px;background:var(--lc);color:#fff;text-shadow:1px 1px 0 rgba(0,0,0,.35);white-space:nowrap;font-size:clamp(.6rem,1.4vw,.95rem);cursor:default}
+.gd-dot.hot{background:var(--sun);transform:translate(-50%,-50%) scale(1.3)}
+.gd-tray{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:12px;min-height:50px;touch-action:none}
+.gd-l{font:inherit;font-weight:800;border:4px solid var(--ink);border-radius:99px;padding:6px 14px;background:var(--lc);color:#fff;text-shadow:1px 1px 0 rgba(0,0,0,.35);cursor:grab;user-select:none;touch-action:none;box-shadow:0 4px 0 var(--ink)}
+.gd-l.sel{outline:5px solid var(--sun)}
+.gd-ghost{position:fixed;pointer-events:none;z-index:60;transform:translate(-50%,-50%)}
+.gd-msg{text-align:center;font-weight:800;font-size:1.2rem;color:#fff;text-shadow:2px 2px 0 var(--ink);min-height:1.5em;margin-top:8px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script><script src="geo.js"></script>
+<script>
+Kit.mount("🌎", "Geography Drag-and-Drop");
+const $=id=>document.getElementById(id);
+// [label, kind, longitude, latitude]
+const SETS={cont:['🌍 Continents',[['North America','#FF6B5B',-100,47],['South America','#FF9F43',-60,-12],['Europe','#9B6BF2',15,52],['Africa','#E0A800',20,6],['Asia','#3FA34D',90,48],['Australia','#22C3E6',134,-24],['Antarctica','#6B7695',20,-78]]],
+ ocean:['🌊 Oceans',[['Pacific Ocean','#1E7FD0',-140,5],['Atlantic Ocean','#2BA0A0',-35,25],['Indian Ocean','#3B4E8C',75,-22],['Arctic Ocean','#5A8FC0',0,84],['Southern Ocean','#2F5D9C',-90,-62]]],
+ lines:['📏 Lines & poles',[['Equator','#E5533F',-25,0],['Prime Meridian','#9B6BF2',0,-38],['North Pole','#1D2B53',140,86],['South Pole','#1D2B53',140,-86],['Tropic of Cancer','#FF9F43',-40,23.4],['Tropic of Capricorn','#FF9F43',-110,-23.4]]],
+ mix:['🧩 All of them',null]};
+let set='cont',todo=[],done=[],sel=null,miss=0;
+const items=()=>set==='mix'?[...SETS.cont[1],...SETS.ocean[1],...SETS.lines[1]]:SETS[set][1];
+document.querySelector('main').innerHTML=`<div class="gd-top"><select id="st" style="width:auto">${Object.entries(SETS).map(([k,v])=>`<option value="${k}">${v[0]}</option>`).join('')}</select><span class="ln-pill">✅ <b id="ct"></b></span><span class="ln-pill">❌ <b id="ms">0</b></span><button class="btn white small" id="rs">🔄 Start over</button></div>
+<div class="gd-map" id="mb"><svg id="sv"></svg></div><div class="gd-msg" id="msg">Drag each label onto its circle (or tap a label, then tap a circle).</div><div class="gd-tray" id="tr"></div>`;
+function map(){const lines=set==='lines'||set==='mix';$('sv').setAttribute('viewBox','0 0 1000 500');
+ $('sv').innerHTML=`<rect width="1000" height="500" class="ocean"/>`+GEO.W.map(c=>`<path class="cty" d="${c.p}"/>`).join('')+(lines?[0,23.4,-23.4].map(l=>`<line x1="0" x2="1000" y1="${(90-l)/180*500}" y2="${(90-l)/180*500}" stroke="${l?'#FF9F43':'#E5533F'}" stroke-width="${l?2:3}" stroke-dasharray="${l?'8 6':'0'}"/>`).join('')+`<line x1="500" x2="500" y1="0" y2="500" stroke="#9B6BF2" stroke-width="3"/>`:'');
+ $('mb').querySelectorAll('.gd-dot').forEach(d=>d.remove());
+ items().forEach((it,i)=>{const [x,y]=GEO.xy(it[2],it[3]);const d=done.includes(it[0]);$('mb').insertAdjacentHTML('beforeend',`<div class="gd-dot ${d?'done':''}" data-i="${i}" style="left:${x/10}%;top:${y/5}%;--lc:${it[1]}">${d?it[0]:'?'}</div>`)})}
+function tray(){$('tr').innerHTML=todo.map(n=>{const it=items().find(x=>x[0]===n);return `<div class="gd-l ${sel===n?'sel':''}" data-n="${n}" style="--lc:${it[1]}">${n}</div>`}).join('')||'<b style="color:#fff;text-shadow:2px 2px 0 var(--ink)">🎉 Every label is on the map!</b>';$('ct').textContent=`${done.length} / ${items().length}`;$('ms').textContent=miss;window.__t={todo:[...todo],done:[...done],miss}}
+function start(){todo=Kit.shuffle(items().map(x=>x[0]));done=[];sel=null;miss=0;map();tray()}
+function drop(name,i){const it=items()[i];if(!it||done.includes(it[0]))return;
+ if(it[0]===name){done.push(name);todo=todo.filter(x=>x!==name);sel=null;Kit.ding();$('msg').textContent=`✅ ${name}!`;map();tray();if(!todo.length){Kit.tada();Kit.confetti(80);$('msg').textContent=`🎉 All done with ${miss} miss${miss===1?'':'es'}!`}}
+ else{miss++;Kit.tone(200,.2,'triangle',.15);$('msg').textContent=`That circle isn't ${name}. Try another one!`;tray()}}
+// drag (or tap a label, then tap a circle)
+$('tr').addEventListener('pointerdown',e=>{const l=e.target.closest('.gd-l');if(!l)return;e.preventDefault();const name=l.dataset.n,g=l.cloneNode(true);g.classList.add('gd-ghost');document.body.appendChild(g);let moved=false;const sx=e.clientX,sy=e.clientY;
+ const mv=ev=>{if(Math.hypot(ev.clientX-sx,ev.clientY-sy)>6)moved=true;g.style.left=ev.clientX+'px';g.style.top=ev.clientY+'px';$('mb').querySelectorAll('.gd-dot:not(.done)').forEach(d=>{const r=d.getBoundingClientRect();d.classList.toggle('hot',Math.hypot(ev.clientX-(r.left+r.width/2),ev.clientY-(r.top+r.height/2))<40)})};mv(e);
+ const up=ev=>{removeEventListener('pointermove',mv);removeEventListener('pointerup',up);g.remove();const hot=$('mb').querySelector('.gd-dot.hot');$('mb').querySelectorAll('.hot').forEach(d=>d.classList.remove('hot'));if(!moved){sel=sel===name?null:name;tray();return}if(hot)drop(name,+hot.dataset.i)};addEventListener('pointermove',mv);addEventListener('pointerup',up)});
+$('mb').addEventListener('click',e=>{const d=e.target.closest('.gd-dot');if(!d||!sel)return;drop(sel,+d.dataset.i)});
+$('st').onchange=()=>{set=$('st').value;start()};$('rs').onclick=start;
+window.__g={drop};
+start();
+</script>
+</body></html>

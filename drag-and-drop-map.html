@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Drag-and-Drop Map</title>
+<style>
+main{max-width:1600px}
+.dm-top{display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.dm{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:14px;align-items:start}
+@media (max-width:900px){.dm{grid-template-columns:1fr}}
+.dm-board{background:#BFE6FA;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);padding:8px;touch-action:none}
+.dm-board svg{width:100%;display:block}
+.dm-board .st{fill:#FFFDF6;stroke:#9FB2DA;stroke-width:1}
+.dm-board .st.hide{stroke:none}
+.dm-board .st.done{fill:var(--sc);stroke:#1D2B53;stroke-width:1.2}
+.dm-board .st.flash{fill:#FFC93C}
+.dm-board .nat{fill:none;stroke:#1D2B53;stroke-width:2.5}
+.dm-tray{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:8px;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-height:70vh;overflow:auto;touch-action:none}
+@media (max-width:900px){.dm-tray{grid-template-columns:repeat(5,1fr);max-height:none}}
+.dm-p{border:3px solid var(--ink);border-radius:12px;background:#F4FAFF;padding:4px;cursor:grab;text-align:center;font-weight:800;font-size:.72rem;user-select:none;touch-action:none}
+.dm-p svg{width:100%;height:46px;display:block}
+.dm-p.sel{outline:4px solid var(--sun)}
+.dm-ghost{position:fixed;pointer-events:none;z-index:50;opacity:.85;filter:drop-shadow(3px 4px 0 rgba(0,0,0,.3))}
+.dm-msg{text-align:center;font-weight:800;font-size:1.2rem;color:#fff;text-shadow:2px 2px 0 var(--ink);min-height:1.5em;margin:6px 0}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script><script src="geo.js"></script>
+<script>
+Kit.mount("🗺️", "Drag-and-Drop Map");
+const $=id=>document.getElementById(id);
+const REG={all:['🇺🇸 All 50 states',null],ne:['Northeast','ME NH VT MA RI CT NY NJ PA'],se:['Southeast','DE MD VA WV KY NC SC TN GA FL AL MS AR LA'],mw:['Midwest','OH IN IL MI WI MN IA MO ND SD NE KS'],sw:['Southwest','TX OK NM AZ'],w:['West','CO WY MT ID UT NV CA OR WA AK HI']};
+const COL=['#FF8FC7','#5DC66E','#FFC93C','#22C3E6','#9B6BF2','#FF9F43','#2BC4B0','#FF6B5B'];
+let reg=Kit.get('dm-reg','all'),outlines=true,todo=[],done=new Set(),t0=0,miss=0,tv=null;
+const ST=()=>GEO.S.filter(s=>!REG[reg][1]||REG[reg][1].split(' ').includes(s.id));
+document.querySelector('main').innerHTML=`<div class="dm-top"><select id="rg" style="width:auto">${Object.entries(REG).map(([k,v])=>`<option value="${k}">${v[0]}</option>`).join('')}</select><span class="ln-pill">✅ <b id="ct">0</b></span><span class="ln-pill">⏱️ <b id="tm">0:00</b></span><span class="ln-pill">❌ <b id="ms">0</b></span><label class="ln-pill"><input type="checkbox" id="ol" checked> Show borders</label><button class="btn white small" id="sh">🔀 New game</button></div>
+<div class="dm-msg" id="msg">Drag each state to where it belongs on the map.</div>
+<div class="dm"><div class="dm-board" id="bd"><svg id="sv" viewBox="0 0 975 610"></svg></div><div class="dm-tray" id="tr"></div></div>`;
+function board(){const ids=ST().map(s=>s.id);$('sv').innerHTML=GEO.S.map((s,i)=>`<path class="st ${outlines?'':'hide'} ${done.has(s.id)?'done':''}" data-s="${s.id}" d="${s.p}" style="--sc:${COL[i%8]};${ids.includes(s.id)?'':'opacity:.35'}"/>`).join('')+`<path class="nat" d="${GEO.S.map(s=>s.p).join('')}" style="stroke-width:1.2;opacity:${outlines?0:.6}"/>`+GEO.S.filter(s=>done.has(s.id)).map(s=>`<text x="${s.c[0]}" y="${s.c[1]}" text-anchor="middle" font-size="${s.b[2]-s.b[0]<40?9:13}" font-weight="800" fill="#1D2B53" pointer-events="none">${s.id}</text>`).join('')}
+function tray(){$('tr').innerHTML=todo.map(id=>{const s=GEO.S.find(x=>x.id===id),[x0,y0,x1,y1]=s.b;return `<div class="dm-p" data-s="${id}"><svg viewBox="${x0-2} ${y0-2} ${x1-x0+4} ${y1-y0+4}"><path d="${s.p}" fill="#FFC93C" stroke="#1D2B53" stroke-width="${Math.max(1,(x1-x0)/40)}"/></svg>${s.n}</div>`}).join('')||'<b style="grid-column:1/-1;text-align:center">🎉 All done!</b>'}
+function start(){todo=Kit.shuffle(ST().map(s=>s.id));done=new Set();miss=0;t0=Date.now();clearInterval(tv);tv=setInterval(()=>{const s=Math.floor((Date.now()-t0)/1000);$('tm').textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`},1000);upd();board();tray();$('msg').textContent='Drag each state to where it belongs on the map.'}
+function upd(){$('ct').textContent=`${ST().filter(s=>done.has(s.id)).length} / ${ST().length}`;$('ms').textContent=miss;window.__t={todo:[...todo],done:[...done],miss}}
+// drag a piece: it is shown at the same size it will be on the map
+let drag=null;
+$('tr').addEventListener('pointerdown',e=>{const p=e.target.closest('.dm-p');if(!p)return;e.preventDefault();const s=GEO.S.find(x=>x.id===p.dataset.s),[x0,y0,x1,y1]=s.b,k=$('sv').getBoundingClientRect().width/975;
+ const g=document.createElement('div');g.className='dm-ghost';g.innerHTML=`<svg width="${Math.max(24,(x1-x0)*k)}" height="${Math.max(24,(y1-y0)*k)}" viewBox="${x0} ${y0} ${x1-x0} ${y1-y0}"><path d="${s.p}" fill="#FFC93C" stroke="#1D2B53" stroke-width="2"/></svg>`;document.body.appendChild(g);drag={s,g,w:(x1-x0)*k,h:(y1-y0)*k};mv(e);
+ const up=ev=>{removeEventListener('pointermove',mv);removeEventListener('pointerup',up);drop(ev);g.remove();drag=null};addEventListener('pointermove',mv);addEventListener('pointerup',up)});
+function mv(e){if(!drag)return;drag.g.style.left=(e.clientX-Math.max(24,drag.w)/2)+'px';drag.g.style.top=(e.clientY-Math.max(24,drag.h)/2)+'px'}
+function drop(e){const r=$('sv').getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)return;const k=r.width/975,px=(e.clientX-r.left)/k,py=(e.clientY-r.top)/k;place(drag.s.id,px,py)}
+function place(id,px,py){const s=GEO.S.find(x=>x.id===id),[x0,y0,x1,y1]=s.b,cx=(x0+x1)/2,cy=(y0+y1)/2;const tol=Math.max(22,Math.min(45,(x1-x0)*.35));
+ if(Math.hypot(px-cx,py-cy)<tol){done.add(id);todo=todo.filter(x=>x!==id);Kit.ding();Learn.burst('✓',$('bd'));board();tray();upd();$('msg').textContent=`✅ ${s.n}! Capital: ${s.cap}`;
+  if(!todo.length){clearInterval(tv);Kit.tada();Kit.confetti(90);$('msg').textContent=`🎉 You placed all ${ST().length} states in ${$('tm').textContent} with ${miss} miss${miss===1?'':'es'}!`}}
+ else{miss++;upd();Kit.tone(200,.2,'triangle',.15);const hit=GEO.S.find(q=>Math.hypot(px-q.c[0],py-q.c[1])<25);$('msg').textContent=hit&&hit.id!==id?`That spot is ${hit.n}. Try again!`:'Not quite. Look at its shape and neighbors!'}}
+$('rg').value=reg;$('rg').onchange=()=>{reg=$('rg').value;Kit.set('dm-reg',reg);start()};$('ol').onchange=()=>{outlines=$('ol').checked;board()};$('sh').onclick=start;
+window.__d={place};
+start();
+</script>
+</body></html>

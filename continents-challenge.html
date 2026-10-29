@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Continents Challenge</title>
+<style>
+main{max-width:1600px}
+.cn-pal{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:10px}
+.cn-pal button{font:inherit;font-weight:800;border:4px solid var(--ink);border-radius:14px;padding:6px 12px;background:var(--cc);cursor:pointer;color:#fff;text-shadow:1px 1px 0 rgba(0,0,0,.4);box-shadow:0 4px 0 var(--ink)}
+.cn-pal button.on{outline:5px solid var(--sun);outline-offset:2px;transform:translateY(2px)}
+.cn-pal button small{display:block;font-size:.75rem}
+.cn-map{border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);overflow:hidden}
+.cn-map svg{width:100%;aspect-ratio:2/1;display:block;cursor:pointer}
+.cn-map .cty.bad{stroke:#E5533F;stroke-width:3}
+.cn-bar{display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;margin-top:12px}
+.cn-msg{text-align:center;font-weight:800;font-size:1.2rem;color:#fff;text-shadow:2px 2px 0 var(--ink);min-height:1.5em;margin-top:8px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script><script src="geo.js"></script>
+<script>
+Kit.mount("🌎", "Continents Challenge");
+const $=id=>document.getElementById(id);
+const CC={NA:['North America','#FF6B5B'],SA:['South America','#FF9F43'],EU:['Europe','#9B6BF2'],AF:['Africa','#FFB020'],AS:['Asia','#5DC66E'],OC:['Oceania','#22C3E6'],AN:['Antarctica','#9FB2DA']};
+const LIST=GEO.W.filter(c=>c.ct&&CC[c.ct]);
+let pen='NA',paint=Kit.get('ct-paint',{}),checked=false;
+document.querySelector('main').innerHTML=`<div class="cn-pal" id="pal">${Object.entries(CC).map(([k,v])=>`<button data-k="${k}" style="--cc:${v[1]}">${v[0]}<small id="n-${k}"></small></button>`).join('')}<button data-k="" style="--cc:#fff;color:var(--ink);text-shadow:none">🧽 Eraser</button></div>
+<div class="cn-map" id="mb"><svg id="sv"></svg></div>
+<div class="cn-bar"><span class="ln-pill">🎨 <b id="pc">0</b> / ${LIST.length} painted</span><button class="btn green" id="ck">✓ Check my map</button><button class="btn white" id="hl">💡 Paint one for me</button><button class="btn white small" id="cl">🧽 Start over</button></div><div class="cn-msg" id="msg">Pick a continent color, then tap every country that belongs to it.</div>`;
+const M=GEO.world($('sv'),{onTap:c=>{if(!c||!CC[c.ct])return;if(pen)paint[c.id]=pen;else delete paint[c.id];checked=false;Kit.set('ct-paint',paint);Kit.tick();color();$('msg').textContent=`${c.n}`}});GEO.zoomButtons($('mb'),M);
+function color(){LIST.forEach(c=>{const el=M.el(c.id);if(!el)return;el.style.fill=paint[c.id]?CC[paint[c.id]][1]:'';el.classList.toggle('bad',checked&&paint[c.id]&&paint[c.id]!==c.ct)});
+ Object.keys(CC).forEach(k=>$('n-'+k).textContent=`${LIST.filter(c=>paint[c.id]===k).length} countries`);$('pc').textContent=Object.keys(paint).length;
+ [...$('pal').children].forEach(b=>b.classList.toggle('on',b.dataset.k===pen));window.__t={painted:Object.keys(paint).length,right:LIST.filter(c=>paint[c.id]===c.ct).length}}
+$('pal').onclick=e=>{const b=e.target.closest('[data-k]');if(!b)return;pen=b.dataset.k;color()};
+$('ck').onclick=()=>{checked=true;color();const right=LIST.filter(c=>paint[c.id]===c.ct).length,bad=LIST.filter(c=>paint[c.id]&&paint[c.id]!==c.ct);
+ $('msg').textContent=right===LIST.length?'🎉 Perfect! Every country is on the right continent!':bad.length?`${right} right. ${bad.length} have a red outline: try a different color for ${bad.slice(0,3).map(c=>c.n).join(', ')}${bad.length>3?'…':''}.`:`${right} right so far. Keep painting!`;right===LIST.length?(Kit.tada(),Kit.confetti(90)):Kit.ding()};
+$('hl').onclick=()=>{const c=Kit.pick(LIST.filter(c=>paint[c.id]!==c.ct));if(!c)return;paint[c.id]=c.ct;Kit.set('ct-paint',paint);color();M.zoomTo(c.id,6);$('msg').textContent=`💡 ${c.n} is in ${CC[c.ct][0]}.`};
+$('cl').onclick=()=>{if(confirm('Erase the whole map?')){paint={};Kit.set('ct-paint',paint);checked=false;color()}};
+window.__p={paint:(id,k)=>{paint[id]=k;color()}};
+color();
+</script>
+</body></html>

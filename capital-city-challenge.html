@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Capital City Challenge</title>
+<style>
+main{max-width:1400px}
+.cc-top{display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.cc{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:860px){.cc{grid-template-columns:1fr}}
+.cc-card{background:#fff;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);padding:16px;text-align:center}
+.cc-card .flag{height:90px;border:4px solid var(--ink);border-radius:10px;margin:0 auto 6px;display:block}
+.cc-card small{font-weight:800;color:#6B7695;letter-spacing:.1em}
+.cc-card h2{margin:4px 0 10px;font-size:clamp(1.8rem,5vw,3rem);line-height:1.1}
+.cc-in{display:flex;gap:8px}.cc-in input{flex:1;font-size:1.5rem!important;text-align:center}
+.cc-ch{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cc-ch button{font:inherit;font-weight:800;font-size:1.2rem;border:4px solid var(--ink);border-radius:14px;padding:10px;background:#fff;cursor:pointer;color:var(--ink);box-shadow:0 4px 0 var(--ink)}
+.cc-ch button.yes{background:#8BE09A}.cc-ch button.no{background:#FFB3AA}
+.cc-map{border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);overflow:hidden;background:#9FD3F2}
+.cc-map svg{width:100%;display:block}
+.cc-map .cty.on,.cc-map .us.on{fill:#FFC93C}.cc-map .us{fill:#F4EBC8;stroke:#8C7A5A;stroke-width:1}
+.cc-res{font-weight:800;font-size:1.2rem;min-height:1.6em;margin-top:10px}
+.cc-time{height:16px;border:4px solid var(--ink);border-radius:99px;overflow:hidden;background:#fff;flex:1;min-width:140px;max-width:320px}.cc-time b{display:block;height:100%;background:var(--sun)}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script><script src="geo.js"></script>
+<script>
+Kit.mount("🏙️", "Capital City Challenge");
+const $=id=>document.getElementById(id);
+// places whose capital or status is disputed are left out of this quiz
+const OK=GEO.W.filter(c=>GEO.OK(c)&&!['IL','PS','TW','XK'].includes(c.id));
+const MODE={world:['🌍 World capitals',()=>OK],eu:['🇪🇺 Europe',()=>OK.filter(c=>c.ct==='EU')],am:['🌎 The Americas',()=>OK.filter(c=>c.ct==='NA'||c.ct==='SA')],afas:['🌏 Africa & Asia',()=>OK.filter(c=>c.ct==='AF'||c.ct==='AS')],us:['🇺🇸 US state capitals',()=>GEO.S]};
+let mode='us',how='choose',secs=60,left=0,tv=null,score=0,streak=0,cur=null,bag=[],run=false,miss=[];
+document.querySelector('main').innerHTML=`<div class="cc-top"><select id="md" style="width:auto">${Object.entries(MODE).map(([k,v])=>`<option value="${k}">${v[0]}</option>`).join('')}</select><select id="hw" style="width:auto"><option value="choose">👆 Pick from 4</option><option value="type">⌨️ Type it</option></select><select id="sx" style="width:auto"><option value="60">60 seconds</option><option value="120">2 minutes</option><option value="0">No timer</option></select><button class="btn green" id="go">▶ Start</button></div>
+<div class="cc-top"><span class="ln-pill">⭐ <b id="sc">0</b></span><span class="ln-pill">🔥 <b id="sk">0</b></span><div class="cc-time"><b id="tb"></b></div><span class="ln-pill">⏱️ <b id="tt">-</b></span></div>
+<div class="cc"><div class="cc-card"><img class="flag" id="fl" alt="" hidden><small>WHAT IS THE CAPITAL OF…</small><h2 id="nm">Press Start!</h2><div id="ans"></div><div class="cc-res" id="res"></div></div><div class="cc-map"><svg id="sv"></svg></div></div>`;
+// forgiving spelling: ignore accents, capitals, and one or two typos
+const norm=s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z]/g,'');
+const lev=(a,b)=>{const d=Array.from({length:a.length+1},(_,i)=>[i,...Array(b.length).fill(0)]);for(let j=1;j<=b.length;j++)d[0][j]=j;for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++)d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));return d[a.length][b.length]};
+const match=(g,c)=>{const a=norm(g),b=norm(c);return a===b||(b.length>5&&lev(a,b)<=Math.floor(b.length/6))};
+function mapDraw(){const sv=$('sv');if(mode==='us'){sv.setAttribute('viewBox','0 0 975 610');sv.innerHTML=GEO.S.map(s=>`<path class="us ${cur&&cur.id===s.id?'on':''}" d="${s.p}"/>`).join('')+(cur?`<circle cx="${cur.c[0]}" cy="${cur.c[1]}" r="6" fill="#E5533F" stroke="#fff" stroke-width="2"/>`:'')}
+ else{if(!window.M)window.M=GEO.world(sv);M.draw();if(cur){M.el(cur.id).classList.add('on');M.zoomTo(cur.id,5)}}}
+function ask(){if(!bag.length)bag=Kit.shuffle(MODE[mode][1]());cur=bag.pop();const isUS=mode==='us';$('fl').hidden=isUS;if(!isUS)$('fl').src=`img/flags/${cur.id.toLowerCase()}.svg`;$('nm').textContent=cur.n;$('res').textContent='';
+ if(how==='choose'){const others=Kit.shuffle(MODE[mode][1]().filter(c=>c.cap!==cur.cap)).slice(0,3).map(c=>c.cap);$('ans').innerHTML=`<div class="cc-ch">${Kit.shuffle([cur.cap,...others]).map(c=>`<button data-c="${Kit.esc(c)}">${Kit.esc(c)}</button>`).join('')}</div>`}
+ else{$('ans').innerHTML=`<div class="cc-in"><input type="text" id="ty" placeholder="Type the capital" autocomplete="off"><button class="btn green" id="ok">✓</button></div><button class="btn white small" id="pass" style="margin-top:8px">Skip</button>`;$('ty').focus();$('ty').onkeydown=e=>{if(e.key==='Enter')check($('ty').value)};$('ok').onclick=()=>check($('ty').value);$('pass').onclick=()=>check('')}
+ mapDraw();window.__t={cap:cur.cap,n:cur.n,score,streak}}
+function check(g,btn){if(!run)return;const ok=match(g,cur.cap);
+ if(ok){streak++;score+=1+Math.floor(streak/3);Kit.ding();btn&&btn.classList.add('yes');$('res').innerHTML=`✅ ${cur.cap}!${streak>=3?` 🔥 ${streak} in a row`:''}`}
+ else{streak=0;miss.push(`${cur.n}: ${cur.cap}`);Kit.tone(200,.25,'triangle',.15);btn&&btn.classList.add('no');$('ans').querySelectorAll('[data-c]').forEach(b=>{if(b.dataset.c===cur.cap)b.classList.add('yes')});$('res').innerHTML=`❌ The capital of ${cur.n} is <b>${cur.cap}</b>.`}
+ $('sc').textContent=score;$('sk').textContent=streak;$('ans').querySelectorAll('button,input').forEach(b=>b.disabled=true);setTimeout(()=>{if(run)ask()},ok?700:1800)}
+$('ans').onclick=e=>{const b=e.target.closest('[data-c]');if(b&&!b.disabled)check(b.dataset.c,b)};
+function start(){mode=$('md').value;how=$('hw').value;secs=+$('sx').value;score=0;streak=0;bag=[];miss=[];run=true;$('sc').textContent=0;$('sk').textContent=0;window.M=null;clearInterval(tv);left=secs;
+ if(secs){tv=setInterval(()=>{left-=.1;$('tb').style.width=Math.max(0,left/secs*100)+'%';$('tt').textContent=Math.ceil(Math.max(0,left));if(left<=0)stop()},100)}else{$('tt').textContent='∞';$('tb').style.width='100%'}ask()}
+function stop(){run=false;clearInterval(tv);Learn.finish('🏙️',`${score} points!`,miss.length?`Practice these:<br>${miss.slice(-8).join('<br>')}`:'Perfect run!',start)}
+$('go').onclick=start;$('md').onchange=()=>{mode=$('md').value;window.M=null;cur=null;mapDraw()};
+mapDraw();
+</script>
+</body></html>

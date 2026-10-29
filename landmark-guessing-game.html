@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Landmark Guessing Game</title>
+<style>
+main{max-width:1600px}
+.lm{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.3fr);gap:16px;align-items:start}
+@media (max-width:900px){.lm{grid-template-columns:1fr}}
+.lm-card{background:#FFFDF6;border:6px solid var(--ink);border-radius:20px;box-shadow:7px 7px 0 var(--ink);padding:14px;position:relative;transform:rotate(-1.2deg)}
+.lm-card::before{content:"POSTCARD";position:absolute;right:14px;top:10px;font-weight:900;letter-spacing:.2em;color:#C3CBDB;font-size:.8rem}
+.lm-stamp{position:absolute;right:14px;top:32px;width:70px;height:84px;border:3px dashed #E5533F;border-radius:6px;display:grid;place-items:center;font-size:2.2rem;background:#FFF1EE}
+.lm-card h2{margin:0 0 10px;font-size:clamp(1.3rem,3vw,1.8rem);padding-right:90px}
+.lm-clue{border-bottom:2px dashed #C3CBDB;padding:6px 2px;font-weight:700;font-size:1.08rem}
+.lm-clue.hid{color:#C3CBDB}
+.lm-clue:first-child{padding-right:80px}
+@media (max-width:600px){.lm-stamp{width:52px;height:62px;font-size:1.6rem;top:28px}.lm-clue:first-child{padding-right:60px}.lm-card h2{padding-right:64px}}
+.lm-map{border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);overflow:hidden}
+.lm-map svg{width:100%;aspect-ratio:2/1;display:block;cursor:crosshair}
+.lm-map .cty.ans{fill:#5DC66E}.lm-map .cty.no{fill:#FF9F8F}
+.lm-res{font-weight:800;font-size:1.15rem;margin-top:10px;min-height:1.5em}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script><script src="geo.js"></script>
+<script>
+Kit.mount("🏔️", "Landmark Guessing Game");
+const $=id=>document.getElementById(id);
+// [landmark, country code, longitude, latitude, stamp, clue 1, clue 2, clue 3, fun fact]
+const L=[['the Eiffel Tower','FR',2.29,48.86,'🗼','I am made of iron and stand 330 meters tall.','I was built for a world\'s fair in 1889.','I stand in a city on the Seine River.','People once thought it was ugly. Now it\'s one of the most visited places on Earth!'],
+ ['the Great Wall','CN',116.57,40.43,'🧱','I am thousands of kilometers long.','I was built over many centuries to protect against invaders.','I wind across mountains in East Asia.','It\'s a myth that you can see it from space with just your eyes.'],
+ ['the Pyramids of Giza','EG',31.13,29.98,'🔺','We were built about 4,500 years ago.','We are tombs for ancient kings called pharaohs.','We stand in the desert near a long river in Africa.','The Great Pyramid was the tallest building in the world for almost 4,000 years.'],
+ ['the Statue of Liberty','US',-74.04,40.69,'🗽','I was a gift from France in 1886.','I hold a torch high in my right hand.','I stand on an island in a big harbor.','My copper skin turned green over time!'],
+ ['Machu Picchu','PE',-72.55,-13.16,'⛰️','I am a stone city built by the Inca.','I sit high on a mountain ridge, above the clouds.','I am in the Andes Mountains of South America.','I was hidden from most of the world until 1911.'],
+ ['the Taj Mahal','IN',78.04,27.18,'🕌','I am made of shining white marble.','An emperor built me in memory of his wife.','I stand by a river in South Asia.','It took about 20,000 workers over 20 years to build me.'],
+ ['the Colosseum','IT',12.49,41.89,'🏟️','I could hold about 50,000 people.','Gladiators fought here almost 2,000 years ago.','I am in a capital city famous for ancient ruins.','Workers could flood my floor for pretend sea battles!'],
+ ['the Sydney Opera House','AU',151.21,-33.86,'🎭','My roof looks like giant white sails.','I opened in 1973 and hold concerts and shows.','I sit on a harbor in the Southern Hemisphere.','My roof is covered with over one million tiles.'],
+ ['Christ the Redeemer','BR',-43.21,-22.95,'🙌','I am a giant statue with my arms spread wide.','I stand on top of a mountain called Corcovado.','I look over a famous beach city in South America.','Lightning hits me a few times every year!'],
+ ['Mount Fuji','JP',138.73,35.36,'🗻','I am a volcano with snow on my top.','I am the tallest mountain in my island country.','You can see me from a huge capital city in East Asia.','Climbers often hike through the night to watch the sunrise from my top.'],
+ ['Stonehenge','GB',-1.83,51.18,'🪨','I am a ring of giant standing stones.','I was built about 5,000 years ago.','I stand in a grassy field in Europe, on an island country.','Some stones were dragged from about 240 kilometers away!'],
+ ['the Moai of Easter Island','CL',-109.35,-27.12,'🗿','We are almost 1,000 giant stone heads.','We were carved by the Rapa Nui people.','We live on a tiny island in the Pacific Ocean that belongs to a long, thin country.','We actually have bodies too, buried in the ground!'],
+ ['Angkor Wat','KH',103.87,13.41,'🛕','I am the largest religious building in the world.','I was built about 900 years ago.','I am in the jungle of Southeast Asia.','I am on my country\'s flag!'],
+ ['Chichén Itzá','MX',-88.57,20.68,'🔺','I am a stepped pyramid built by the Maya.','Twice a year, a shadow snake slithers down my steps.','I am on a peninsula in North America.','Clap at my base and the echo sounds like a bird chirping!'],
+ ['Mount Kilimanjaro','TZ',37.35,-3.07,'🏔️','I am the tallest mountain in Africa.','I have snow on top, even though I\'m near the Equator.','I am a giant sleeping volcano.','Climbers pass through five different climate zones on the way up!'],
+ ['the Grand Canyon','US',-112.11,36.11,'🏜️','I am a huge, deep canyon with colorful rock layers.','A river carved me over millions of years.','I am in the southwest of a big North American country.','My rocks show almost 2 billion years of Earth\'s history!'],
+ ['the Acropolis','GR',23.73,37.97,'🏛️','I am a hill with ancient temples on top.','My most famous temple, the Parthenon, is about 2,500 years old.','I look over the capital of a country famous for its myths.','Ancient people here invented democracy, where citizens vote.'],
+ ['Petra','JO',35.44,30.33,'🏜️','I am a city carved right into pink rock cliffs.','I was built more than 2,000 years ago by the Nabataeans.','I am in the desert of the Middle East.','I\'m called the Rose City because of my rosy stone.'],
+ ['the Burj Khalifa','AE',55.27,25.2,'🏙️','I am the tallest building in the world.','I am 828 meters tall and opened in 2010.','I stand in a desert city on the Persian Gulf.','On a clear day you can see me from about 95 kilometers away!'],
+ ['Niagara Falls','CA',-79.07,43.08,'💦','We are three waterfalls together.','We sit right on the border between two countries.','We are in North America, between two Great Lakes.','Enough water to fill a million bathtubs pours over every minute!']];
+let cur,clue=0,score=0,round=0,R=8,bag=[],lock=false;
+document.querySelector('main').innerHTML=`<div class="row" style="justify-content:center;margin-bottom:10px"><span class="ln-pill">Postcard <b id="rn">0</b>/${R}</span><span class="ln-pill">⭐ <b id="sc">0</b></span><button class="btn white small" id="ng">🔄 New game</button></div>
+<div class="lm"><div><div class="lm-card"><div class="lm-stamp" id="st">❓</div><h2 id="hd">Where am I?</h2><div id="cl"></div><button class="btn white small" id="mc" style="margin-top:10px">💡 Read another clue (fewer points)</button><div class="lm-res" id="res"></div></div><div class="row" style="justify-content:center;margin-top:12px"><button class="btn big green" id="nx" hidden>Next postcard ➜</button></div></div>
+<div><div class="lm-map" id="mb"><svg id="sv"></svg></div><p class="muted" style="color:#fff;font-weight:700;text-align:center">Tap the country where you think this landmark is.</p></div></div>`;
+const M=GEO.world($('sv'),{onTap:tap});GEO.zoomButtons($('mb'),M);
+function show(){$('cl').innerHTML=[5,6,7].map((k,i)=>`<div class="lm-clue ${i<=clue?'':'hid'}">${i<=clue?`${i+1}. ${cur[k]}`:`${i+1}. ?`}</div>`).join('');$('mc').disabled=clue>=2||lock}
+function next(){if(round>=R)return Learn.finish('🏔️',`${score} points!`,'You traveled the world without leaving the classroom.',start);if(!bag.length)bag=Kit.shuffle(L);cur=bag.pop();round++;clue=0;lock=false;$('rn').textContent=round;$('hd').textContent='Where am I?';$('st').textContent='❓';$('res').textContent='';$('nx').hidden=true;M.draw();M.reset();show();window.__t={ans:cur[1],round,score}}
+function tap(c){if(lock||!c)return;const ok=c.id===cur[1]||(cur[1]==='CA'&&c.id==='US');
+ if(ok){lock=true;const pts=3-clue;score+=pts;$('sc').textContent=score;M.el(cur[1]).classList.add('ans');$('hd').textContent=`It's ${cur[0]}!`;$('st').textContent=cur[4];$('res').innerHTML=`✅ +${pts}. ${cur[8]}`;Kit.tada();clue=2;show();
+  const [x,y]=GEO.xy(cur[2],cur[3]);M.ovl().innerHTML=`<circle cx="${x}" cy="${y}" r="5" fill="#E5533F" stroke="#fff" stroke-width="2" vector-effect="non-scaling-stroke"/>`;M.zoomTo(cur[1],4);$('nx').hidden=false}
+ else{M.el(c.id).classList.add('no');setTimeout(()=>M.el(c.id)&&M.el(c.id).classList.remove('no'),700);Kit.tone(200,.2,'triangle',.15);if(clue<2){clue++;show();$('res').textContent=`Not ${c.n}. Here's another clue!`}else{lock=true;M.el(cur[1]).classList.add('ans');M.zoomTo(cur[1],4);$('hd').textContent=`It's ${cur[0]}!`;$('st').textContent=cur[4];$('res').innerHTML=`It's in ${GEO.W.find(w=>w.id===cur[1]).n}. ${cur[8]}`;$('nx').hidden=false}}window.__t={...window.__t,score}}
+$('mc').onclick=()=>{if(clue<2&&!lock){clue++;show()}};$('nx').onclick=next;$('ng').onclick=start;
+function start(){round=0;score=0;bag=[];$('sc').textContent=0;next()}
+window.__l={tap:id=>tap(GEO.W.find(c=>c.id===id))};
+start();
+</script>
+</body></html>

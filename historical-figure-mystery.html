@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Historical Figure Mystery</title>
+<style>
+main{max-width:1400px}
+.hf-top{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.hf{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:860px){.hf{grid-template-columns:1fr}}
+.hf-box{background:#C99A63;border:6px solid var(--ink);border-radius:20px;box-shadow:7px 7px 0 var(--ink);padding:14px;background-image:repeating-linear-gradient(90deg,rgba(0,0,0,.06) 0 4px,transparent 4px 40px)}
+.hf-box h2{margin:0 0 10px;color:#fff;text-shadow:2px 2px 0 var(--ink);text-align:center}
+.hf-items{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.hf-it{background:#FFFDF6;border:4px solid var(--ink);border-radius:14px;padding:10px;min-height:120px;position:relative;display:grid;place-items:center;text-align:center;font-weight:700;cursor:pointer;transition:.2s}
+.hf-it .e{font-size:2.6rem;display:block}
+.hf-it.shut{background:#8B5A2B;color:#fff;cursor:pointer}
+.hf-it.shut::after{content:"🔒 Open evidence";font-weight:900}
+.hf-it.shut>*{display:none}
+.hf-it.open{animation:op .4s}@keyframes op{0%{transform:rotateY(90deg)}}
+.hf-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px}
+.hf-ch{display:grid;gap:8px;margin-top:8px}
+.hf-ch button{font:inherit;font-weight:800;font-size:1.05rem;border:4px solid var(--ink);border-radius:14px;padding:9px;background:#fff;cursor:pointer;color:var(--ink);text-align:left}
+.hf-ch button.yes{background:#8BE09A}.hf-ch button.no{background:#FFB3AA;opacity:.7}
+.hf-pts{font-size:1.4rem;font-weight:900;text-align:center}
+.hf-bio{border:4px solid var(--ink);border-radius:14px;padding:10px;background:#FFF6C9;font-weight:700;margin-top:10px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🕵️", "Historical Figure Mystery");
+const $=id=>document.getElementById(id);
+// [name, years, evidence items [emoji, note] x4, short bio]
+const F=[['Abraham Lincoln','1809–1865',[['🪓','A split wooden fence rail. People called me "the Rail Splitter."'],['🎩','A tall stovepipe hat. I sometimes kept letters inside it.'],['📜','A short speech given at a battlefield in Pennsylvania in 1863.'],['⛓️‍💥','A broken chain, for a proclamation that freed enslaved people.']],'The 16th president, who led the country through the Civil War.'],
+ ['Harriet Tubman','about 1822–1913',[['🌟','The North Star, which guided me at night.'],['🚂','A "railroad" with no tracks, only safe houses and secret routes.'],['🎶','A spiritual song used as a secret signal.'],['🩹','A nurse\'s bandage from my work during the Civil War.']],'She escaped slavery and then led many others to freedom on the Underground Railroad.'],
+ ['Benjamin Franklin','1706–1790',[['🪁','A kite with a metal key tied to the string.'],['👓','Bifocal glasses that let you see near and far.'],['📰','A printing shop and an almanac full of sayings.'],['✍️','My signature on the Declaration of Independence.']],'An inventor, writer, printer and one of the Founding Fathers.'],
+ ['Marie Curie','1867–1934',[['🧪','A glowing test tube. My work made things glow in the dark.'],['🏅','Two Nobel Prizes, in two different sciences.'],['🇵🇱','A map of Poland, where I was born.'],['☢️','A word I helped name: radioactivity.']],'A scientist who discovered the elements polonium and radium.'],
+ ['Leonardo da Vinci','1452–1519',[['🖼️','A painting of a woman with a mysterious smile.'],['🪽','Drawings of a flying machine with wings.'],['🪞','A notebook written backwards, readable in a mirror.'],['🦴','Detailed drawings of the bones inside the human body.']],'An Italian painter, inventor and scientist of the Renaissance.'],
+ ['Cleopatra','69–30 BC',[['👑','The crown of the last ruler of a famous kingdom by the Nile.'],['🗣️','A list of the many languages I could speak.'],['🏛️','A letter to Julius Caesar of Rome.'],['🐍','A snake from an old legend about me.']],'The last active pharaoh of ancient Egypt.'],
+ ['George Washington','1732–1799',[['🚣','A boat crossing an icy river on Christmas night.'],['🪖','A general\'s hat from the Revolutionary War.'],['🦷','False teeth (they were not made of wood!).'],['💵','A one-dollar bill with my face on it.']],'The army leader in the American Revolution and the first US president.'],
+ ['Martin Luther King Jr.','1929–1968',[['🎤','A microphone from a famous speech about a dream.'],['🚌','A bus from a protest in Montgomery, Alabama.'],['🕊️','A dove, because I believed in nonviolent protest.'],['🏅','A Nobel Peace Prize I won in 1964.']],'A civil rights leader who worked for equal rights for Black Americans.'],
+ ['Amelia Earhart','1897–disappeared 1937',[['✈️','A small red airplane.'],['🌊','A map of the Atlantic Ocean, which I flew across alone.'],['🧣','Leather flying goggles and a scarf.'],['❓','A mystery: I vanished over the Pacific Ocean.']],'The first woman to fly solo across the Atlantic Ocean.'],
+ ['Thomas Edison','1847–1931',[['💡','A light bulb that could glow for hours.'],['📀','A phonograph that recorded sound.'],['🔬','A big lab in Menlo Park, New Jersey.'],['📋','More than 1,000 patents for inventions.']],'An inventor whose company made electric light practical for homes.'],
+ ['Rosa Parks','1913–2005',[['🚌','A bus seat I would not give up in 1955.'],['🧵','A sewing kit from my job as a seamstress.'],['🏅','The Congressional Gold Medal.'],['🗓️','A boycott that lasted 381 days.']],'Her quiet protest on a bus helped start the Montgomery Bus Boycott.'],
+ ['Albert Einstein','1879–1955',[['📐','The equation E = mc².'],['🕰️','A clock, because I showed that time can stretch.'],['🎻','A violin that I loved to play.'],['🏅','A Nobel Prize in Physics.']],'A scientist whose ideas changed how we understand space, time and light.'],
+ ['Sacagawea','about 1788–1812',[['🧭','A compass from an expedition to the Pacific Ocean.'],['👶','A baby, carried on my back during the whole journey.'],['🗣️','The Shoshone language, which I translated.'],['🪙','A golden one-dollar coin with my picture.']],'A Shoshone woman who helped guide the Lewis and Clark expedition.'],
+ ['Neil Armstrong','1930–2012',[['🌕','A dusty boot print on the Moon.'],['🚀','A rocket named Saturn V.'],['🦅','A lunar lander called the Eagle.'],['💬','The words "one small step for man…"']],'The first person to walk on the Moon, in 1969.'],
+ ['the Wright brothers','Wilbur 1867–1912, Orville 1871–1948',[['🚲','A bicycle shop in Dayton, Ohio.'],['🏖️','Windy sand dunes at Kitty Hawk, North Carolina.'],['⏱️','A stopwatch that timed a 12-second flight.'],['🪁','Kites and gliders we tested first.']],'Two brothers who built and flew the first successful airplane in 1903.'],
+ ['Galileo Galilei','1564–1642',[['🔭','A telescope I improved and pointed at the sky.'],['🪐','Sketches of four moons circling Jupiter.'],['🗼','A leaning tower where a legend says I dropped balls.'],['☀️','A book saying Earth goes around the Sun.']],'An Italian scientist who used a telescope to study the planets.'],
+ ['Nelson Mandela','1918–2013',[['🔒','A prison cell where I spent 27 years.'],['🗳️','A ballot from the first election where everyone could vote.'],['🇿🇦','The flag of my country, at the southern tip of Africa.'],['🕊️','A Nobel Peace Prize.']],'He fought apartheid and became South Africa\'s first Black president.'],
+ ['Frida Kahlo','1907–1954',[['🎨','A paintbrush and many self-portraits.'],['🌺','Bright flowers I wore in my hair.'],['🏠','A bright blue house in Mexico City.'],['🐒','A pet monkey who appears in my paintings.']],'A Mexican painter famous for bold, colorful self-portraits.']];
+let cur,opened=0,score=0,round=0,R=6,bag=[],done=false,teams=null,wrong=0;
+document.querySelector('main').innerHTML=`<div class="hf-top"><span class="ln-pill">Case <b id="rn">0</b>/${R}</span><span class="ln-pill">⭐ <b id="sc">0</b></span>${Learn.teamPicker('tp',0)}<button class="btn white small" id="ng">🔄 New game</button></div><div id="tm"></div>
+<div class="hf"><div class="hf-box"><h2>🗃️ Evidence box: who owned these things?</h2><div class="hf-items" id="it"></div></div>
+<div class="hf-p"><div class="hf-pts" id="pt"></div><div class="muted" style="text-align:center;font-weight:700">Open fewer clues to earn more points.</div><div class="hf-ch" id="ch"></div><div id="bio"></div><div class="row" style="justify-content:center;margin-top:10px"><button class="btn big green" id="nx" hidden>Next case ➜</button></div></div></div>`;
+const pts=()=>Math.max(1,5-opened-wrong);
+function next(){if(round>=R)return Learn.finish('🕵️',teams?teams.winner():`${score} points!`,'You solved every history mystery.',start);if(!bag.length)bag=Kit.shuffle(F);cur=bag.pop();round++;opened=1;wrong=0;done=false;$('rn').textContent=round;
+ const opts=Kit.shuffle([cur,...Kit.shuffle(F.filter(f=>f!==cur)).slice(0,3)]);
+ $('ch').innerHTML=opts.map(f=>`<button data-n="${Kit.esc(f[0])}">${f[0][0].toUpperCase()+f[0].slice(1)}</button>`).join('');$('bio').innerHTML='';$('nx').hidden=true;draw();window.__t={ans:cur[0],round,score}}
+function draw(){$('it').innerHTML=cur[2].map((c,i)=>`<div class="hf-it ${i<opened?'open':'shut'}" data-i="${i}"><div><span class="e">${c[0]}</span>${c[1]}</div></div>`).join('');$('pt').textContent=done?'':`🔎 Worth ${pts()} points`}
+$('it').onclick=e=>{const d=e.target.closest('.shut');if(!d||done)return;opened=Math.max(opened,+d.dataset.i+1);Kit.tick();draw()};
+$('ch').onclick=e=>{const b=e.target.closest('[data-n]');if(!b||done||b.classList.contains('no'))return;
+ if(b.dataset.n===cur[0]){done=true;b.classList.add('yes');const p=pts();score+=p;$('sc').textContent=score;if(teams)teams.add(p);Kit.tada();opened=4;draw();$('pt').textContent=`✅ +${p} points`;
+  $('bio').innerHTML=`<div class="hf-bio"><b>${cur[0][0].toUpperCase()+cur[0].slice(1)}</b> (${cur[1]})<br>${cur[3]}</div>`;$('nx').hidden=false;if(teams)teams.next()}
+ else{b.classList.add('no');wrong++;Kit.tone(200,.2,'triangle',.15);if(opened<4)opened++;draw()}window.__t={...window.__t,score}};
+$('nx').onclick=next;$('ng').onclick=start;
+function start(){round=0;score=0;bag=[];$('sc').textContent=0;const n=+$('tp').value;teams=n?Learn.teams($('tm'),n,{turns:true}):($('tm').innerHTML='',null);next()}
+$('tp').onchange=start;
+start();
+</script>
+</body></html>

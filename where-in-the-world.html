@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Where in the World?</title>
+<style>
+main{max-width:1600px}
+.ww-top{display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.ww-q{text-align:center;background:#fff;border:6px solid var(--ink);border-radius:22px;box-shadow:6px 6px 0 var(--ink);padding:8px 16px;margin:0 auto 12px;max-width:760px}
+.ww-q small{font-weight:800;color:#6B7695;letter-spacing:.1em}
+.ww-q b{display:block;font-size:clamp(1.8rem,5vw,3rem);line-height:1.1}
+.ww-map{border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);overflow:hidden;background:#9FD3F2}
+.ww-map svg{width:100%;aspect-ratio:2/1;display:block;cursor:crosshair}
+.ww-map .cty.ans{fill:#5DC66E}.ww-map .cty.wrong{fill:#FF9F8F}
+.ww-res{text-align:center;font-weight:800;font-size:1.3rem;color:#fff;text-shadow:2px 2px 0 var(--ink);min-height:1.6em;margin:10px 0}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script><script src="geo.js"></script>
+<script>
+Kit.mount("📍", "Where in the World?");
+const $=id=>document.getElementById(id);
+const OK=GEO.W.filter(GEO.OK);
+// bigger countries are easier to find: size from the map outline
+const size=c=>{const n=c.p.match(/-?\d+(\.\d+)?/g).map(Number);let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;for(let i=0;i<n.length;i+=2){x0=Math.min(x0,n[i]);x1=Math.max(x1,n[i]);y0=Math.min(y0,n[i+1]);y1=Math.max(y1,n[i+1])}return (x1-x0)*(y1-y0)};
+const BY=OK.map(c=>[c,size(c)]).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
+const LV={easy:['🟢 Easy (big countries)',BY.slice(0,45)],med:['🟡 Medium',BY.slice(0,100)],hard:['🔴 Hard (all countries)',BY],eu:['🇪🇺 Europe',OK.filter(c=>c.ct==='EU')],af:['🌍 Africa',OK.filter(c=>c.ct==='AF')],as:['🌏 Asia',OK.filter(c=>c.ct==='AS')],am:['🌎 The Americas',OK.filter(c=>c.ct==='NA'||c.ct==='SA')]};
+let lv='easy',R=10,round=0,score=0,cur=null,busy=false,bag=[],hist=[];
+document.querySelector('main').innerHTML=`<div class="ww-top"><select id="lv" style="width:auto">${Object.entries(LV).map(([k,v])=>`<option value="${k}">${v[0]}</option>`).join('')}</select><span class="ln-pill">Round <b id="rn">0</b>/${R}</span><span class="ln-pill">⭐ <b id="sc">0</b></span><button class="btn white small" id="ng">🔄 New game</button></div>
+<div class="ww-q"><small>TAP ON THE MAP: WHERE IS…</small><b id="q">?</b></div><div class="ww-map" id="mb"><svg id="sv"></svg></div><div class="ww-res" id="res">Scroll or pinch to zoom, drag to move the map.</div>
+<div class="row" style="justify-content:center"><button class="btn big green" id="nx" hidden>Next ➜</button></div>`;
+const M=GEO.world($('sv'),{onTap:tap});GEO.zoomButtons($('mb'),M);
+function next(){if(round>=R)return end();if(!bag.length)bag=Kit.shuffle(LV[lv][1]);cur=bag.pop();round++;busy=false;M.draw();M.reset();$('q').textContent=cur.n;$('rn').textContent=round;$('nx').hidden=true;$('res').textContent='Tap where you think it is.';window.__t={ans:cur.id,c:cur.c,round,score}}
+function tap(c,lon,lat,x,y){if(busy||!cur)return;busy=true;const right=c&&c.id===cur.id;const km=right?0:GEO.km([lon,lat],cur.c);const pts=right?1000:Math.max(0,Math.round(1000-km/4));score+=pts;$('sc').textContent=score;
+ M.el(cur.id).classList.add('ans');if(c&&!right)M.el(c.id).classList.add('wrong');
+ const [ax,ay]=GEO.xy(...cur.c);M.ovl().innerHTML=`${right?'':`<line x1="${x}" y1="${y}" x2="${ax}" y2="${ay}" stroke="#1D2B53" stroke-width="2" stroke-dasharray="6 4" vector-effect="non-scaling-stroke"/>`}<circle cx="${x}" cy="${y}" r="4" fill="#E5533F" stroke="#fff" stroke-width="1.5"/><circle cx="${ax}" cy="${ay}" r="4" fill="#5DC66E" stroke="#fff" stroke-width="1.5"/>`;
+ hist.push([cur.n,km]);
+ $('res').textContent=right?`🎯 Bullseye! That's ${cur.n}! +1000`:`${c?`You picked ${c.n}. `:''}${cur.n} is ${km.toLocaleString()} km away. +${pts}`;right?Kit.tada():pts>600?Kit.ding():Kit.tone(240,.2,'triangle',.15);
+ if(!right)M.zoomTo(cur.id,6);$('nx').hidden=false;window.__t={...window.__t,score,last:km}}
+function end(){Learn.finish('🌍','Trip complete!',`You scored ${score.toLocaleString()} out of ${(R*1000).toLocaleString()} points.<br>${hist.map(h=>`${h[0]}: ${h[1]?h[1].toLocaleString()+' km':'🎯'}`).join(' · ')}`,start)}
+function start(){round=0;score=0;hist=[];bag=[];$('sc').textContent=0;next()}
+$('nx').onclick=next;$('ng').onclick=start;$('lv').onchange=()=>{lv=$('lv').value;start()};
+window.__w={tapAt:(lon,lat)=>{const [x,y]=GEO.xy(lon,lat);tap(M.hit(x,y),lon,lat,x,y)}};
+start();
+</script>
+</body></html>

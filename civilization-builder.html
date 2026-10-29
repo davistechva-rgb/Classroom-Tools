@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Civilization Builder</title>
+<style>
+main{max-width:1600px}
+.cb{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.cb{grid-template-columns:1fr}}
+.cb-res{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin-bottom:10px}
+@media (max-width:600px){.cb-res{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.cb-res div{background:#fff;border:4px solid var(--ink);border-radius:14px;padding:4px 6px;text-align:center;font-weight:800;line-height:1.1}
+.cb-res b{display:block;font-size:1.3rem}.cb-res small{font-size:.72rem;color:#55607E}
+.cb-res .up{color:#2E9E47}.cb-res .dn{color:#E5533F}
+.cb-map{display:grid;grid-template-columns:repeat(12,1fr);border:6px solid var(--ink);border-radius:20px;overflow:hidden;box-shadow:7px 7px 0 var(--ink);user-select:none}
+.cb-t{aspect-ratio:1;display:grid;place-items:center;font-size:clamp(.9rem,2.6vw,1.9rem);cursor:pointer;position:relative;border:1px solid rgba(0,0,0,.08)}
+.cb-t.plain{background:#C9E58A}.cb-t.fert{background:#7BC86C}.cb-t.forest{background:#4FA65A}.cb-t.hill{background:#C4A57A}.cb-t.river{background:#4FA7E6;cursor:default}.cb-t.desert{background:#F1D99B}
+.cb-t.fert::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(45deg,rgba(255,255,255,.12) 0 3px,transparent 3px 8px);pointer-events:none}
+.cb-t:hover:not(.river){outline:3px solid #fff;outline-offset:-3px;z-index:1}
+.cb-t.ok{box-shadow:inset 0 0 0 4px #FFD84D}
+.cb-t.idle{filter:grayscale(.8) brightness(.9)}
+.cb-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:10px}
+.cb-bld{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.cb-bld button{font:inherit;font-weight:800;border:3px solid var(--ink);border-radius:12px;padding:5px 7px;background:#fff;cursor:pointer;text-align:left;color:var(--ink);line-height:1.15}
+.cb-bld button small{display:block;font-weight:600;font-size:.72rem;color:#55607E}
+.cb-bld button.on{background:var(--sun)}.cb-bld button:disabled{opacity:.45;cursor:not-allowed}
+.cb-goal{display:grid;gap:4px}.cb-goal div{font-weight:700}.cb-goal .done{color:#2E9E47;text-decoration:line-through}
+.cb-log{max-height:170px;overflow:auto;display:grid;gap:4px;font-weight:700;font-size:.92rem}
+.cb-log div{border-left:6px solid var(--lc,#C3CBDB);padding:2px 8px;background:#F4FAFF;border-radius:6px}
+.cb-season{font-size:1.25rem;font-weight:900;text-align:center}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🏛️", "Civilization Builder");
+const $=id=>document.getElementById(id);
+const GW=12,GH=8;
+// building: [emoji, name, cost {w,s}, workers, allowed tiles, what it does]
+const B={farm:['🌾','Farm',{w:2},2,['fert','plain'],'Grows food. Twice as much on rich river soil.'],house:['🛖','House',{w:3},0,['plain','fert','desert'],'Room for 5 more people.'],lumber:['🪓','Woodcutter',{},2,['forest'],'+3 wood every season.'],quarry:['⛏️','Quarry',{w:2},2,['hill'],'+2 stone every season.'],canal:['🚰','Canal',{s:2},0,['plain','desert'],'Carries river water. Makes dry land rich and protects from drought.'],granary:['🏚️','Granary',{w:4,s:3},1,['plain','fert','desert'],'Stores 40 more food. Saves food in a drought.'],market:['🏪','Market',{w:5,s:4},2,['plain','fert','desert'],'Traders bring +1 wood, +1 stone and +2 food.'],school:['📜','Scribe school',{w:4,s:6},2,['plain','fert','desert'],'Scribes add 1 idea each season. 6 ideas = writing!'],wall:['🧱','Wall',{s:3},0,['plain','fert','desert','forest','hill'],'Each wall makes raiders less likely to steal food.'],temple:['🛕','Temple',{w:6,s:12},3,['plain','fert','desert'],'A grand building the whole city is proud of.']};
+const SEASON=['🌊 Flood season','🌱 Growing season','🌾 Harvest season'];
+let map,res,turn,sel='farm',log,won;
+function newMap(){map=[];const rx=[];let x=Kit.rand(4,7);for(let y=0;y<GH;y++){rx.push(x);x=Math.max(2,Math.min(GW-3,x+Kit.pick([-1,0,0,1])))}
+ for(let y=0;y<GH;y++)for(let c=0;c<GW;c++){const d=Math.abs(c-rx[y]);let t=d===0?'river':d===1?'fert':'plain';if(d>=4&&Math.random()<.35)t='desert';if(t==='plain'&&Math.random()<.18)t='forest';if(t==='plain'&&d>=3&&Math.random()<.12)t='hill';map.push({t,b:null})}
+ // make sure there are forests and hills to use
+ ['forest','forest','forest','hill','hill'].forEach(k=>{const free=map.filter(m=>m.t==='plain');if(free.length)Kit.pick(free).t=k});
+ // start with a little village
+ const f=map.filter(m=>m.t==='fert');Kit.pick(f).b='farm';const p=map.filter(m=>m.t==='plain'&&!m.b);Kit.pick(p).b='house';Kit.pick(p.filter(m=>!m.b)).b='house'}
+function start(){newMap();res={food:20,wood:8,stone:2,pop:8,idea:0};turn=0;log=[];won=false;add('🏕️ A small group of families settles by the river. Build farms on the rich soil!','#5DC66E');draw()}
+const cnt=k=>map.filter(m=>m.b===k).length;
+const cap=()=>4+cnt('house')*5,store=()=>40+cnt('granary')*40;
+function jobs(){// give workers to buildings in order of importance
+ let free=res.pop;const staffed=new Set();['farm','lumber','quarry','granary','market','school','temple'].forEach(k=>map.forEach((m,i)=>{if(m.b===k&&free>=B[k][3]){free-=B[k][3];staffed.add(i)}}));map.forEach((m,i)=>{if(m.b&&!B[m.b][3])staffed.add(i)});return {staffed,free}}
+function yields(){const {staffed}=jobs();let f=0,w=0,s=0,id=0;map.forEach((m,i)=>{if(!staffed.has(i))return;if(m.b==='farm')f+=m.t==='fert'?5:2;if(m.b==='lumber')w+=3;if(m.b==='quarry')s+=2;if(m.b==='market'){w++;s++;f+=2}if(m.b==='school')id++});
+ if(turn%3===0)f=Math.round(f*1.2);return {f,w,s,id,eat:res.pop}}
+function goals(){return [['👥 Grow to 40 people',res.pop>=40],['🛕 Build a temple',cnt('temple')>0],['📜 Invent writing (6 ideas)',res.idea>=6],['🧱 Build 3 walls',cnt('wall')>=3],['🏪 Open a market',cnt('market')>0]]}
+function add(t,c){log.unshift([`Year ${Math.floor(turn/3)+1}`,t,c]);log=log.slice(0,30)}
+function canBuild(i,k){const m=map[i];if(m.b||m.t==='river'||!B[k][4].includes(m.t))return false;if(k==='canal'){const x=i%GW,y=Math.floor(i/GW);return [[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy])=>{const X=x+dx,Y=y+dy;if(X<0||Y<0||X>=GW||Y>=GH)return false;const n=map[Y*GW+X];return n.t==='river'||n.t==='fert'||n.b==='canal'})}return true}
+const afford=k=>(B[k][2].w||0)<=res.wood&&(B[k][2].s||0)<=res.stone;
+function build(i){const k=sel;if(won)return;if(!canBuild(i,k)){Kit.tone(200,.15,'triangle',.12);return}if(!afford(k)){add(`Not enough materials for a ${B[k][1].toLowerCase()}.`,'#E5533F');draw();Kit.tone(200,.15,'triangle',.12);return}
+ res.wood-=B[k][2].w||0;res.stone-=B[k][2].s||0;map[i].b=k;if(k==='canal')map[i].t='fert';Kit.ding();if(k==='temple')Kit.confetti(50);draw()}
+function season(){if(won)return;const y=yields();let msg=[];res.food+=y.f-y.eat;res.wood+=y.w;res.stone+=y.s;res.idea+=y.id;
+ if(res.idea>=6&&res.idea-y.id<6){add('📜 Your scribes invented writing! Now laws and stories can be written down.','#9B6BF2');Kit.tada()}
+ // events
+ const r=Math.random();
+ if(turn%3===0&&r<.3){const farms=map.filter(m=>m.b==='farm'&&m.t==='fert').length;res.food+=farms*3;add(`🌊 A great flood left rich mud on the fields. +${farms*3} food!`,'#22C3E6')}
+ else if(r<.12){if(cnt('canal')>=2||cnt('granary')){add('☀️ A drought! Your canals and granary kept everyone fed.','#FF9F43')}else{const l=Math.round(res.food*.4);res.food-=l;add(`☀️ A drought dried up the crops. −${l} food. (Canals and granaries help!)`,'#E5533F')}}
+ else if(r<.22){const walls=cnt('wall');if(Math.random()<walls*.3){add(`🧱 Raiders came, but your walls kept them out!`,'#5DC66E')}else{const l=Math.round(res.food*.3);res.food-=l;add(`⚔️ Raiders stole ${l} food! Walls would help.`,'#E5533F')}}
+ else if(r<.32){res.stone+=4;res.wood+=2;add('🐪 A trade caravan arrived. +4 stone, +2 wood.','#FFB020')}
+ else if(r<.38){res.idea++;add('💡 A clever villager had a new idea. +1 idea.','#9B6BF2')}
+ // people
+ if(res.food<0){const lost=Math.min(res.pop-2,Math.ceil(-res.food/2));res.pop-=lost;res.food=0;add(`😟 Not enough food. ${lost} people left to find food elsewhere.`,'#E5533F')}
+ else{const room=cap()-res.pop;if(room>0&&res.food>res.pop/2){const g=Math.min(room,Math.max(1,Math.round(res.pop*.15)));res.pop+=g;msg.push(`+${g} people`)}else if(room<=0)msg.push('the houses are full')}
+ res.food=Math.min(res.food,store());turn++;add(`${SEASON[(turn-1)%3]}: +${y.f} food, −${y.eat} eaten${msg.length?', '+msg.join(', '):''}.`);
+ if(goals().every(g=>g[1])){won=true;Kit.tada();Kit.confetti(120);add(`🎉 Your village became a great civilization in ${Math.ceil(turn/3)} years!`,'#FFD84D')}
+ Kit.tick();draw()}
+function draw(){const {staffed,free}=jobs(),y=yields();
+ $('rs').innerHTML=[['🌾',res.food,`/${store()} food`,y.f-y.eat],['🪵',res.wood,'wood',y.w],['🪨',res.stone,'stone',y.s],['👥',res.pop,`/${cap()} people`,null],['🙋',free,'free workers',null],['📜',res.idea,'ideas',y.id]].map(([e,v,l,d])=>`<div>${e}<b>${v}</b><small>${l}${d!=null?` <span class="${d>=0?'up':'dn'}">${d>=0?'+':''}${d}</span>`:''}</small></div>`).join('');
+ $('mp').innerHTML=map.map((m,i)=>`<div class="cb-t ${m.t} ${!won&&canBuild(i,sel)&&afford(sel)?'ok':''} ${m.b&&!staffed.has(i)?'idle':''}" data-i="${i}" title="${m.b?B[m.b][1]+(staffed.has(i)?'':' (needs workers)'):m.t==='fert'?'Rich river soil':m.t}">${m.b?B[m.b][0]:m.t==='forest'?'🌲':m.t==='hill'?'⛰️':m.t==='river'&&i%3===0?'〰️':''}</div>`).join('');
+ $('bl').innerHTML=Object.entries(B).map(([k,b])=>`<button data-k="${k}" class="${k===sel?'on':''}" ${afford(k)?'':'disabled'}>${b[0]} ${b[1]}<small>${[b[2].w&&`${b[2].w}🪵`,b[2].s&&`${b[2].s}🪨`].filter(Boolean).join(' ')||'Free'}${b[3]?` · ${b[3]}🙋`:''}</small></button>`).join('');
+ $('ds').textContent=`${B[sel][0]} ${B[sel][5]}`;$('sn').textContent=`${SEASON[turn%3]} · Year ${Math.floor(turn/3)+1}`;
+ $('gl').innerHTML=goals().map(g=>`<div class="${g[1]?'done':''}">${g[1]?'✅':'⬜'} ${g[0]}</div>`).join('');
+ $('lg').innerHTML=log.map(l=>`<div style="--lc:${l[2]||'#C3CBDB'}"><small class="muted">${l[0]}</small> ${l[1]}</div>`).join('');
+ window.__t={...res,turn,won,cap:cap(),free}}
+document.querySelector('main').innerHTML=`<div class="cb-res" id="rs"></div><div class="cb"><div><div class="cb-map" id="mp"></div><div class="row" style="justify-content:center;margin-top:12px"><button class="btn big green" id="nx">⏭️ Next season</button><button class="btn white small" id="ng">🔄 New land</button></div></div>
+<div class="cb-p"><div class="cb-season" id="sn"></div><b>🔨 Pick something to build, then tap the map</b><div class="cb-bld" id="bl"></div><div class="muted" style="font-weight:700" id="ds"></div><b>🎯 Goals</b><div class="cb-goal" id="gl"></div><b>📖 What happened</b><div class="cb-log" id="lg"></div></div></div>`;
+$('bl').onclick=e=>{const b=e.target.closest('[data-k]');if(b){sel=b.dataset.k;draw()}};$('mp').onclick=e=>{const t=e.target.closest('[data-i]');if(t)build(+t.dataset.i)};
+$('nx').onclick=season;$('ng').onclick=()=>{if(turn===0||confirm('Start over with new land?'))start()};
+window.__c={season,build:(i,k)=>{sel=k;build(i)},map:()=>map,res:()=>res,give:(w,s)=>{res.wood+=w;res.stone+=s;draw()}};
+start();
+</script>
+</body></html>

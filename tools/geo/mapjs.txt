@@ -1,0 +1,27 @@
+// GEO.world(svg, {onTap, cls, grid}) draws the world map into an <svg>, with zoom (wheel, pinch, + − buttons) and drag to pan.
+// onTap(country or null, lon, lat, x, y) is called on a tap (not a drag).
+GEO.world=function(svg,o={}){
+ const NS='http://www.w3.org/2000/svg';let vb=[0,0,1000,500];svg.setAttribute('viewBox',vb.join(' '));svg.style.touchAction='none';
+ const draw=()=>{const g=o.grid?Array.from({length:11},(_,i)=>{const lat=75-i*15,y=(90-lat)/180*500;return `<line x1="0" x2="1000" y1="${y}" y2="${y}" class="gg ${lat===0?'eq':''}"/>`}).join('')+Array.from({length:23},(_,i)=>{const lon=-165+i*15,x=(lon+180)/360*1000;return `<line y1="0" y2="500" x1="${x}" x2="${x}" class="gg ${lon===0?'pm':''}"/>`}).join(''):'';
+  svg.innerHTML=`<rect class="ocean" x="-500" y="-250" width="2000" height="1000"/>${g}`+GEO.W.map(c=>`<path class="cty ${o.cls?o.cls(c)||'':''}" data-id="${c.id}" d="${c.p}"/>`).join('')+'<g class="ovl"></g>'};
+ draw();const set=()=>svg.setAttribute('viewBox',vb.join(' '));
+ const pt=e=>{const r=svg.getBoundingClientRect(),s=Math.max(vb[2]/r.width,vb[3]/r.height),ox=(r.width*s-vb[2])/2,oy=(r.height*s-vb[3])/2;return [vb[0]-ox+(e.clientX-r.left)*s,vb[1]-oy+(e.clientY-r.top)*s]};
+ const zoom=(f,cx,cy)=>{const nw=Math.max(60,Math.min(1000,vb[2]*f)),nh=nw/2;cx=cx??vb[0]+vb[2]/2;cy=cy??vb[1]+vb[3]/2;vb=[cx-(cx-vb[0])*nw/vb[2],cy-(cy-vb[1])*nh/vb[3],nw,nh];vb[0]=Math.max(-100,Math.min(1100-nw,vb[0]));vb[1]=Math.max(-50,Math.min(550-nh,vb[1]));set()};
+ svg.addEventListener('wheel',e=>{e.preventDefault();const [x,y]=pt(e);zoom(e.deltaY>0?1.2:1/1.2,x,y)},{passive:false});
+ const P=new Map();let start=null,moved=false;
+ svg.addEventListener('pointerdown',e=>{svg.setPointerCapture(e.pointerId);P.set(e.pointerId,e);if(P.size===1){start={x:e.clientX,y:e.clientY,vb:[...vb]};moved=false}});
+ svg.addEventListener('pointermove',e=>{if(!P.has(e.pointerId))return;const prev=P.get(e.pointerId);P.set(e.pointerId,e);
+  if(P.size===2){const [a,b]=[...P.values()],d=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY),pa=e.pointerId===a.pointerId?prev:a,pb=e.pointerId===b.pointerId?prev:b,d0=Math.hypot(pa.clientX-pb.clientX,pa.clientY-pb.clientY);if(d0)zoom(d0/d,...pt({clientX:(a.clientX+b.clientX)/2,clientY:(a.clientY+b.clientY)/2}));moved=true;return}
+  if(!start)return;const r=svg.getBoundingClientRect(),s=Math.max(vb[2]/r.width,vb[3]/r.height),dx=e.clientX-start.x,dy=e.clientY-start.y;if(Math.hypot(dx,dy)>6)moved=true;if(moved&&vb[2]<1000){vb[0]=Math.max(-100,Math.min(1100-vb[2],start.vb[0]-dx*s));vb[1]=Math.max(-50,Math.min(550-vb[3],start.vb[1]-dy*s));set()}});
+ const end=e=>{const was=P.size;P.delete(e.pointerId);if(was===1&&!moved&&o.onTap&&e.type==='pointerup'){const [x,y]=pt(e),c=hit(x,y);o.onTap(c,x/1000*360-180,90-y/500*180,x,y)}if(!P.size)start=null};
+ svg.addEventListener('pointerup',end);svg.addEventListener('pointercancel',end);
+ const hit=(x,y)=>{const p=new DOMPoint(x,y);return GEO.W.find(c=>{const el=svg.querySelector(`[data-id="${c.id}"]`);return el&&el.isPointInFill(p)})||null};
+ const bbox=id=>{const el=svg.querySelector(`[data-id="${id}"]`);return el?el.getBBox():null};
+ return {draw,hit,bbox,el:id=>svg.querySelector(`[data-id="${id}"]`),ovl:()=>svg.querySelector('.ovl'),zoom,reset(){vb=[0,0,1000,500];set()},
+  zoomTo(id,pad=3){const b=bbox(id);if(!b)return;const w=Math.min(1000,Math.max(80,b.width*pad,b.height*pad*2));vb=[b.x+b.width/2-w/2,b.y+b.height/2-w/4,w,w/2];set()},get vb(){return vb}}};
+// distance in km between two places
+GEO.km=(a,b)=>{const R=6371,t=Math.PI/180,dl=(b[1]-a[1])*t,dn=(b[0]-a[0])*t,h=Math.sin(dl/2)**2+Math.cos(a[1]*t)*Math.cos(b[1]*t)*Math.sin(dn/2)**2;return Math.round(2*R*Math.asin(Math.sqrt(h)))};
+// shared look for maps
+(()=>{const s=document.createElement('style');s.textContent=`.ocean{fill:#9FD3F2}.cty{fill:#F4EBC8;stroke:#8C7A5A;stroke-width:.5;vector-effect:non-scaling-stroke}.cty:hover{fill:#FFE38A}.gg{stroke:rgba(255,255,255,.55);stroke-width:1;vector-effect:non-scaling-stroke}.gg.eq{stroke:#E5533F;stroke-width:2}.gg.pm{stroke:#9B6BF2;stroke-width:2}
+.zbtn{position:absolute;right:10px;top:10px;display:grid;gap:6px;z-index:2}.zbtn button{font:inherit;font-weight:900;font-size:1.3rem;width:40px;height:40px;border:3px solid var(--ink,#1D2B53);border-radius:12px;background:#fff;cursor:pointer;color:var(--ink,#1D2B53)}`;document.head.appendChild(s)})();
+GEO.zoomButtons=(box,m)=>{box.style.position='relative';box.insertAdjacentHTML('beforeend','<div class="zbtn"><button data-z="in" title="Zoom in">+</button><button data-z="out" title="Zoom out">−</button><button data-z="home" title="Whole world">🌍</button></div>');box.querySelector('.zbtn').onclick=e=>{const b=e.target.closest('[data-z]');if(!b)return;b.dataset.z==='in'?m.zoom(1/1.5):b.dataset.z==='out'?m.zoom(1.5):m.reset()}};

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Flag Matching</title>
+<style>
+main{max-width:1400px}
+.fm-top{display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.fm-grid{display:grid;grid-template-columns:repeat(var(--c),minmax(0,1fr));gap:10px;perspective:900px;max-width:min(100%,105vh);margin:0 auto}
+.fm-c{aspect-ratio:4/3;position:relative;cursor:pointer;transform-style:preserve-3d;transition:transform .45s}
+.fm-c.up,.fm-c.got{transform:rotateY(180deg)}
+.fm-c>div{position:absolute;inset:0;backface-visibility:hidden;border:5px solid var(--ink);border-radius:16px;display:grid;place-items:center;overflow:hidden}
+.fm-c .bk{background:repeating-linear-gradient(45deg,#2F7FD1 0 12px,#3B8FE0 12px 24px);color:#fff;font-size:2rem}
+.fm-c .fr{transform:rotateY(180deg);background:#fff;font-weight:800;text-align:center;padding:6px;font-size:clamp(.8rem,1.8vw,1.15rem);line-height:1.15}
+.fm-c .fr img{width:100%;height:100%;object-fit:cover}
+.fm-c.got .fr{outline:6px solid var(--grass);outline-offset:-6px}
+.fm-c.got .fr::after{content:"✓";position:absolute;right:6px;bottom:4px;background:var(--grass);color:#fff;border:3px solid var(--ink);border-radius:50%;width:26px;height:26px;display:grid;place-items:center;font-size:.9rem}
+.fm-msg{text-align:center;font-weight:800;font-size:1.2rem;color:#fff;text-shadow:2px 2px 0 var(--ink);min-height:1.5em;margin:10px 0}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script><script src="geo.js"></script>
+<script>
+Kit.mount("🏳️", "Flag Matching");
+const $=id=>document.getElementById(id);
+const OK=GEO.W.filter(GEO.OK);
+const SETS={world:['🌍 Famous flags','US CA MX BR AR GB FR DE IT ES JP CN IN KR AU ZA EG NG KE RU SE NO GR TR CH SA IE JM PT NL'],eu:['🇪🇺 Europe',null,'EU'],af:['🌍 Africa',null,'AF'],as:['🌏 Asia',null,'AS'],am:['🌎 The Americas',null,'NA SA'],all:['🌐 Any country',null,null]};
+let set='world',pairs=6,cards=[],open=[],got=0,moves=0,lock=false,teams=null,t0=0;
+document.querySelector('main').innerHTML=`<div class="fm-top"><select id="st" style="width:auto">${Object.entries(SETS).map(([k,v])=>`<option value="${k}">${v[0]}</option>`).join('')}</select><select id="pr" style="width:auto"><option value="4">4 pairs</option><option value="6" selected>6 pairs</option><option value="8">8 pairs</option><option value="10">10 pairs</option></select>${Learn.teamPicker('tp',0)}<button class="btn green" id="go">🔄 Deal</button><span class="ln-pill">👆 <b id="mv">0</b> moves</span></div>
+<div id="tm"></div><div class="fm-msg" id="msg">Flip two cards. Match each flag with its country!</div><div class="fm-grid" id="g"></div>`;
+const pool=()=>{const s=SETS[set];if(s[1])return s[1].split(' ').map(id=>OK.find(c=>c.id===id)).filter(Boolean);return OK.filter(c=>!s[2]||s[2].split(' ').includes(c.ct))};
+function deal(){const ps=Kit.shuffle(pool()).slice(0,pairs);cards=Kit.shuffle(ps.flatMap(c=>[{c,k:'f'},{c,k:'n'}]));open=[];got=0;moves=0;lock=false;t0=Date.now();
+ const n=+$('tp').value;teams=n?Learn.teams($('tm'),n,{turns:true}):($('tm').innerHTML='',null);
+ $('g').style.setProperty('--c',pairs<=4?4:pairs<=6?4:5);$('g').innerHTML=cards.map((x,i)=>`<div class="fm-c" data-i="${i}"><div class="bk">🌐</div><div class="fr">${x.k==='f'?`<img src="img/flags/${x.c.id.toLowerCase()}.svg" alt="flag" draggable="false">`:x.c.n}</div></div>`).join('');$('mv').textContent=0;$('msg').textContent='Flip two cards. Match each flag with its country!';
+ window.__t={cards:cards.map(x=>x.c.id+x.k)}}
+$('g').onclick=async e=>{const el=e.target.closest('.fm-c');if(!el||lock||el.classList.contains('up')||el.classList.contains('got'))return;el.classList.add('up');open.push(el);Kit.tick();
+ if(open.length<2)return;moves++;$('mv').textContent=moves;const [a,b]=open.map(o=>cards[+o.dataset.i]);lock=true;
+ if(a.c.id===b.c.id&&a.k!==b.k){open.forEach(o=>{o.classList.remove('up');o.classList.add('got')});got++;Kit.ding();$('msg').textContent=`✅ ${a.c.n}! Capital: ${a.c.cap}`;if(teams)teams.add(1);open=[];lock=false;
+  if(got===pairs){Kit.tada();Kit.confetti(80);const s=Math.round((Date.now()-t0)/1000);$("msg").textContent=teams?`🎉 ${teams.winner()}`:`🎉 All ${pairs} pairs in ${moves} moves and ${s} seconds!`}}
+ else{$('msg').textContent='Not a match. Remember where they are!';await Kit.sleep(1100);open.forEach(o=>o.classList.remove('up'));open=[];lock=false;if(teams)teams.next()}};
+$('go').onclick=deal;$('st').onchange=()=>{set=$('st').value;deal()};$('pr').onchange=()=>{pairs=+$('pr').value;deal()};$('tp').onchange=deal;
+deal();
+</script>
+</body></html>

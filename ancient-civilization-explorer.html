@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Ancient Civilization Explorer</title>
+<style>
+main{max-width:1600px}
+.ac-tabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
+.ac{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.ac{grid-template-columns:1fr}}
+.ac-map{border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);overflow:hidden;position:relative}
+.ac-map svg{width:100%;aspect-ratio:2/1;display:block}
+.ac-time{position:relative;background:#fff;border:5px solid var(--ink);border-radius:16px;margin-top:12px;padding:8px 8px 26px}
+.ac-row{position:relative;height:22px;margin:3px 0}
+.ac-row i{position:absolute;top:0;bottom:0;border-radius:6px;background:var(--cc);border:2px solid var(--ink);cursor:pointer;font-style:normal;font-size:.72rem;font-weight:800;color:#1D2B53;white-space:nowrap;padding-left:4px;overflow:visible;line-height:18px}
+.ac-row i.on{outline:3px solid var(--ink)}
+.ac-ax{position:absolute;bottom:4px;font-size:.72rem;font-weight:800;color:#55607E;transform:translateX(-50%)}
+.ac-card{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;border-top:16px solid var(--cc)}
+.ac-card h2{margin:0}
+.ac-facts{display:grid;gap:6px;margin-top:8px}
+.ac-facts div{border:3px solid var(--ink);border-radius:12px;padding:6px 10px;background:#F4FAFF;font-weight:700}
+.ac-facts b{display:block;font-size:.8rem;color:#55607E;text-transform:uppercase;letter-spacing:.05em}
+.ac-cmp{overflow-x:auto}.ac-cmp table{width:100%;border-collapse:separate;border-spacing:0 6px;font-weight:700;min-width:420px}
+.ac-cmp th{text-align:left;padding:6px;color:#fff;text-shadow:1px 1px 0 var(--ink)}.ac-cmp td{background:#fff;border:3px solid var(--ink);padding:6px 8px;vertical-align:top}
+.ac-cmp td:first-child{background:var(--sun);border-radius:10px 0 0 10px;white-space:nowrap}.ac-cmp td:last-child{border-radius:0 10px 10px 0}
+.ac-q{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:14px;text-align:center;max-width:720px;margin:0 auto}
+.ac-q .big{font-size:3rem}.ac-q .ch{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:10px}
+.ac-q .ch button{font:inherit;font-weight:800;border:4px solid var(--ink);border-radius:14px;padding:10px;background:var(--cc);cursor:pointer;color:#1D2B53}
+.ac-q .ch button.yes{outline:5px solid #2E9E47}.ac-q .ch button.no{opacity:.35}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script><script src="geo.js"></script>
+<script>
+Kit.mount("🏺", "Ancient Civilization Explorer");
+const $=id=>document.getElementById(id);
+// [name, emoji, color, start year, end year (negative = BC), lon, lat, where, river/geography, writing, buildings, inventions, food, leaders, fun fact]
+const C=[['Mesopotamia','🏺','#FFC98B',-3500,-539,44.4,32.5,'Today\'s Iraq','Between the Tigris and Euphrates rivers','Cuneiform: wedge marks pressed into clay','Ziggurats (stepped temple towers)','The wheel, the first writing, laws written down (Hammurabi\'s Code)','Barley, wheat, dates','Kings like Hammurabi and Sargon','It\'s called "the land between the rivers."'],
+ ['Ancient Egypt','🔺','#FFD84D',-3100,-30,31.2,29.9,'Northeast Africa','Along the Nile River','Hieroglyphs: picture symbols','Pyramids, the Sphinx, huge temples','Papyrus paper, a 365-day calendar, mummies','Bread, beer made from barley, figs','Pharaohs like Khufu, Hatshepsut, Ramses II and Cleopatra','The Nile flooded every year and left rich soil for farming.'],
+ ['Indus Valley','🧱','#8BE09A',-3300,-1300,68.1,27.3,'Today\'s Pakistan and northwest India','Along the Indus River','Indus script, which no one can read yet','Planned cities like Mohenjo-daro with grid streets','Indoor plumbing, drains and standard weights','Wheat, barley, peas, sesame','No famous rulers are known','Many homes had their own bathrooms 4,500 years ago!'],
+ ['Ancient China','🐉','#FFB3AA',-1600,220,113.5,35.5,'East Asia','Along the Yellow River (Huang He)','Chinese characters, first carved on oracle bones','The Great Wall, the Terracotta Army','Paper, silk, the compass, kites','Millet, rice, soybeans','Dynasties of emperors, like Qin Shi Huang','Silk was such a secret that sharing how to make it was a crime.'],
+ ['Ancient Greece','🏛️','#9FD8FF',-800,-146,23.7,38,'Southeast Europe','Mountains, islands and the sea','The Greek alphabet','The Parthenon, open-air theaters','Democracy, the Olympic Games, early science and math','Olives, grapes, fish, bread','Leaders like Pericles and Alexander the Great','The word "democracy" means "rule by the people" in Greek.'],
+ ['Ancient Rome','🏟️','#D6C2FF',-753,476,12.5,41.9,'Italy, later most of Europe','Along the Tiber River, around the Mediterranean Sea','The Latin alphabet (the one English uses)','The Colosseum, aqueducts, roads','Concrete, aqueducts that carried water, a republic with a senate','Bread, olive oil, fish sauce','Julius Caesar and emperors like Augustus','Romans built more than 80,000 km of stone roads.'],
+ ['The Maya','🌽','#5DC66E',-2000,1500,-89.6,17.2,'Southern Mexico and Central America','Rainforests and the Yucatán Peninsula','Maya glyphs, a full writing system','Stepped pyramids like Chichén Itzá','A very accurate calendar, the number zero','Corn (maize), beans, squash, chocolate','Kings like Pakal the Great','The Maya made a drink from cacao beans, an early hot chocolate!'],
+ ['The Aztecs','🦅','#FF9F8F',1345,1521,-99.1,19.4,'Central Mexico','On an island in Lake Texcoco','Picture writing in books called codices','Tenochtitlan, a city built on a lake, and the Great Temple','Floating gardens called chinampas','Corn, beans, chili peppers, tomatoes','Emperors like Moctezuma II','Mexico City is built on top of their capital, Tenochtitlan.'],
+ ['The Inca','🦙','#FFE7A3',1438,1533,-72,-13.5,'Western South America','High in the Andes Mountains','Quipu: knotted strings used to keep records','Machu Picchu, stone walls that fit without mortar','A road system about 40,000 km long, rope bridges, terrace farms','Potatoes, corn, quinoa','Emperors like Pachacuti','Inca runners carried messages along the roads in relays.'],
+ ['Mali Empire','🐪','#E8C38A',1235,1600,-4,13.5,'West Africa','Along the Niger River, near the Sahara','Arabic writing; famous libraries in Timbuktu','The Great Mosque of Djenné, made of mud brick','Trade across the Sahara in gold and salt','Millet, rice, sorghum','Sundiata Keita and Mansa Musa','Mansa Musa may have been one of the richest people who ever lived.']];
+// where each map label sits next to its pin [dx, dy, anchor]
+const LB=[[0,-24,'middle'],[0,28,'middle'],[0,28,'middle'],[0,28,'middle'],[8,-24,'start'],[-8,-24,'end'],[18,4,'start'],[-18,4,'end'],[0,28,'middle'],[0,28,'middle']];
+const ROWS=[['📍 Where','7'],['🌊 Land and water','8'],['✍️ Writing','9'],['🏛️ Buildings','10'],['💡 Inventions','11'],['🍞 Food','12'],['👑 Leaders','13']];
+const fmt=y=>y<0?`${-y} BC`:`AD ${y}`;
+let sel=1,cmp=[1,0],mode='explore',qs=0,qn=0,cur=null;
+document.querySelector('main').innerHTML=`<div class="ac-tabs"><button class="btn" data-m="explore">🔎 Explore</button><button class="btn white" data-m="compare">⚖️ Compare two</button><button class="btn white" data-m="quiz">🤔 Who did it?</button></div><div id="bd"></div>`;
+const MP=`<div class="ac-map" id="mb"><svg id="sv"></svg></div><div class="ac-time" id="tl"></div>`;
+let M=null;
+function pins(){const g=M.ovl();g.innerHTML=C.map((c,i)=>{const [x,y]=GEO.xy(c[5],c[6]),on=mode==='explore'?i===sel:cmp.includes(i);return `<g data-c="${i}" style="cursor:pointer"><circle cx="${x}" cy="${y}" r="${on?17:13}" fill="${c[2]}" stroke="#1D2B53" stroke-width="${on?4:2.5}" vector-effect="non-scaling-stroke"/><text x="${x}" y="${y+1}" font-size="${on?17:13}" text-anchor="middle" dominant-baseline="middle">${c[1]}</text><text x="${x+LB[i][0]}" y="${y+LB[i][1]}" font-size="14" font-weight="800" text-anchor="${LB[i][2]}" dominant-baseline="middle" fill="#1D2B53" stroke="#fff" stroke-width="4" paint-order="stroke">${c[0].replace(/^(The|Ancient) /,'')}</text></g>`}).join('')}
+function timeline(){const lo=-3600,hi=1700,X=y=>(y-lo)/(hi-lo)*100;$('tl').innerHTML=C.map((c,i)=>`<div class="ac-row"><i data-c="${i}" class="${(mode==='explore'?i===sel:cmp.includes(i))?'on':''}" style="--cc:${c[2]};left:${X(c[3])}%;width:${Math.max(1.5,X(c[4])-X(c[3]))}%">${c[1]} ${c[0]}</i></div>`).join('')+[-3000,-2000,-1000,0,1000].map(y=>`<span class="ac-ax" style="left:${X(y)}%">${y===0?'AD 1':fmt(y)}</span>`).join('');
+ // keep labels inside the box
+ [...$('tl').querySelectorAll('i')].forEach(i=>{if(parseFloat(i.style.left)>70){i.style.textAlign='right';i.style.direction='rtl';i.style.paddingRight='4px'}})}
+function card(i){const c=C[i];return `<div class="ac-card" style="--cc:${c[2]}"><h2>${c[1]} ${c[0]}</h2><div class="muted" style="font-weight:800">${fmt(c[3])} to ${fmt(c[4])} · about ${(c[4]-c[3]).toLocaleString()} years</div><div class="ac-facts">${ROWS.map(r=>`<div><b>${r[0]}</b>${c[r[1]]}</div>`).join('')}<div style="background:#FFF6C9"><b>⭐ Fun fact</b>${c[14]}</div></div></div>`}
+function render(){document.querySelectorAll('[data-m]').forEach(b=>b.className='btn '+(b.dataset.m===mode?'':'white'));
+ if(mode==='quiz')return quiz();
+ if(mode==='explore')$('bd').innerHTML=`<div class="ac"><div>${MP}</div><div id="cd">${card(sel)}</div></div>`;
+ else $('bd').innerHTML=`<div class="ac"><div>${MP}<p style="color:#fff;font-weight:800;text-align:center;text-shadow:1px 1px 0 var(--ink)">Tap two civilizations to compare them.</p></div><div class="ac-cmp"><table><tr><th></th>${cmp.map(i=>`<th>${C[i][1]} ${C[i][0]}</th>`).join('')}</tr><tr><td>📅 When</td>${cmp.map(i=>`<td>${fmt(C[i][3])} to ${fmt(C[i][4])}</td>`).join('')}</tr>${ROWS.map(r=>`<tr><td>${r[0]}</td>${cmp.map(i=>`<td>${C[i][r[1]]}</td>`).join('')}</tr>`).join('')}</table></div></div>`;
+ M=GEO.world($('sv'),{onTap:(c,lo,la,x,y)=>{const z=(typeof M.vb==='function'?M.vb():M.vb||[0,0,1000])[2]/1000;let b=-1,bd=1e9;C.forEach((k,i)=>{const [px,py]=GEO.xy(k[5],k[6]),d=Math.hypot(px-x,py-y);if(d<bd){bd=d;b=i}});if(bd<40*z)choose(b)}});GEO.zoomButtons($('mb'),M);pins();timeline();$('tl').onclick=e=>{const g=e.target.closest('[data-c]');if(g)choose(+g.dataset.c)};window.__t={mode,sel,cmp:[...cmp]}}
+function choose(i){Kit.tick();if(mode==='explore'){sel=i;$('cd').innerHTML=card(i);pins();timeline()}else{if(!cmp.includes(i))cmp=[cmp[1],i];render()}window.__t={mode,sel,cmp:[...cmp]}}
+function quiz(){const k=Kit.pick(['10','11','9','12']),c=Kit.pick(C),opts=Kit.shuffle([c,...Kit.shuffle(C.filter(x=>x!==c)).slice(0,3)]),lab={9:'used this writing',10:'built these',11:'invented or created these',12:'ate these foods'}[k];cur=c;
+ $('bd').innerHTML=`<div class="ac-q"><div class="ln-pill">✅ ${qs} / ${qn}</div><div class="big">🤔</div><h2 style="margin:4px 0">Which civilization ${lab}?</h2><p style="font-size:1.25rem;font-weight:800">${c[+k]}</p><div class="ch" id="qc">${opts.map(o=>`<button data-n="${o[0]}" style="--cc:${o[2]}">${o[1]} ${o[0]}</button>`).join('')}</div><div id="qr" style="font-weight:800;margin-top:10px;min-height:1.4em"></div></div>`;window.__t={mode,ans:c[0]};
+ $('qc').onclick=e=>{const b=e.target.closest('[data-n]');if(!b||!cur)return;qn++;if(b.dataset.n===cur[0]){qs++;b.classList.add('yes');Kit.ding();$('qr').textContent=`✅ Yes! ${cur[14]}`}else{b.classList.add('no');[...$('qc').children].find(x=>x.dataset.n===cur[0]).classList.add('yes');Kit.tone(200,.2,'triangle',.15);$('qr').textContent=`It was ${cur[0]}.`}cur=null;setTimeout(quiz,2200)}}
+document.querySelector('.ac-tabs').onclick=e=>{const b=e.target.closest('[data-m]');if(b){mode=b.dataset.m;render()}};
+window.__a={choose};
+render();
+</script>
+</body></html>

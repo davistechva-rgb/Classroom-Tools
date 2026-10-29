@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Map Change Simulator</title>
+<style>
+main{max-width:1500px}
+.mc{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.mc{grid-template-columns:1fr}}
+.mc-cv{width:100%;aspect-ratio:3/2;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);display:block;image-rendering:auto}
+.mc-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:10px}
+.mc-p input[type=range]{width:100%}
+.mc-sea{font-size:clamp(1.6rem,4vw,2.4rem);font-weight:900;text-align:center}
+.mc-pre{display:grid;gap:6px}.mc-pre button{font:inherit;font-weight:800;border:3px solid var(--ink);border-radius:12px;padding:6px 10px;background:#fff;cursor:pointer;text-align:left;color:var(--ink)}.mc-pre button.on{background:var(--sun)}
+.mc-pre small{display:block;font-weight:600;color:#55607E}
+.mc-st{display:grid;grid-template-columns:1fr 1fr;gap:6px}.mc-st div{border:3px solid var(--ink);border-radius:12px;padding:5px 8px;font-weight:700;background:#F4FAFF}.mc-st b{display:block;font-size:1.3rem}
+.mc-msg{border:4px solid var(--ink);border-radius:14px;padding:8px 10px;background:#FFF6C9;font-weight:700}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🗺️", "Map Change Simulator");
+const $=id=>document.getElementById(id);
+const W=300,H=200;
+// presets: how far the sea has been above or below today's level
+const PRE=[[-120,'🧊 The last Ice Age','About 20,000 years ago, so much water was frozen into ice sheets that the sea was about 120 m lower. Land bridges joined islands, like the Bering land bridge between Asia and North America.'],[-60,'🦣 Ice melting','About 12,000 years ago the ice was melting and the sea was rising fast. Land bridges started to disappear.'],[0,'🏙️ Today','Sea level today. Coastal towns are built right by the water.'],[1,'🌡️ About 2100 (a possible future)','Scientists expect the sea to keep rising, possibly up to about 1 m by 2100 depending on how fast the planet warms.'],[7,'🏔️ If Greenland\'s ice all melted','Greenland\'s ice sheet holds enough water to raise the sea about 7 m.'],[70,'🌊 If all the ice on Earth melted','If every glacier and ice sheet melted, the sea would rise about 70 m. This would take thousands of years.']];
+let sea=0,seed=Kit.rand(1,9999),hgt,img;
+document.querySelector('main').innerHTML=`<div class="mc"><div><canvas class="mc-cv" id="cv" width="${W}" height="${H}"></canvas><div class="row" style="justify-content:center;margin-top:10px"><button class="btn white small" id="nw">🏝️ New land</button></div></div>
+<div class="mc-p"><div class="mc-sea" id="sl2"></div><input type="range" id="sl" min="-130" max="80" value="0"><div class="mc-st" id="st"></div><div class="mc-msg" id="msg"></div><b>⏳ Jump to…</b><div class="mc-pre" id="pr">${PRE.map((p,i)=>`<button data-i="${i}">${p[1]} <small>${p[0]>0?'+':''}${p[0]} m</small></button>`).join('')}</div></div></div>`;
+// make a pretend landscape: smooth random hills, mountains in the middle, shallow sea around the edges
+function rnd(i){const x=Math.sin(i*12.9898+seed*78.233)*43758.5453;return x-Math.floor(x)}
+function noise(x,y){const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi,s=t=>t*t*(3-2*t),v=(a,b)=>rnd(a*57+b*131);const a=v(xi,yi),b=v(xi+1,yi),c=v(xi,yi+1),d=v(xi+1,yi+1);return a+(b-a)*s(xf)+(c-a)*s(yf)+(a-b-c+d)*s(xf)*s(yf)}
+function build(){hgt=new Float32Array(W*H);for(let y=0;y<H;y++)for(let x=0;x<W;x++){let h=0,f=1/40,a=1;for(let o=0;o<5;o++){h+=noise(x*f,y*f)*a;f*=2;a*=.5}const dx=(x-W/2)/(W/2),dy=(y-H/2)/(H/2),edge=1-Math.min(1,Math.hypot(dx*.9,dy));hgt[y*W+x]=(h/1.94)*700*(.35+edge*.65)+edge*160-330}
+ // a town on the coast
+ img=$('cv').getContext('2d').createImageData(W,H);draw()}
+function col(h){if(h<sea){const d=Math.min(1,(sea-h)/150);return [60-30*d,150-60*d,220-70*d]}const a=h-sea;if(a<4)return [235,215,160];if(a<60)return [110,190-a*.6,90];if(a<160)return [150-a*.2,160-a*.3,90];if(a<260)return [140,125,110];return [245,245,250]}
+function draw(){let land=0,flood=0,ice=0;for(let i=0;i<W*H;i++){const h=hgt[i],c=col(h);img.data[i*4]=c[0];img.data[i*4+1]=c[1];img.data[i*4+2]=c[2];img.data[i*4+3]=255;if(h>=sea)land++;if(h>=0&&h<sea)flood++}
+ const x=$('cv').getContext('2d');x.putImageData(img,0,0);
+ // ice sheets in the Ice Age
+ if(sea<-40){x.fillStyle=`rgba(240,248,255,${Math.min(.85,(-sea-40)/90)})`;x.beginPath();x.ellipse(W/2,0,W*.6,H*.22,0,0,7);x.fill()}
+ // today's coastline as a dotted line
+ x.strokeStyle='rgba(29,43,83,.55)';x.lineWidth=.8;x.setLineDash([2,2]);x.beginPath();for(let y=1;y<H-1;y+=1)for(let xx=1;xx<W-1;xx+=1){const h=hgt[y*W+xx],r=hgt[y*W+xx+1];if((h>=0)!==(r>=0)){x.moveTo(xx+.5,y);x.lineTo(xx+.5,y+1)}}x.stroke();x.setLineDash([]);
+ const today=hgt.filter(h=>h>=0).length;$('sl2').textContent=`🌊 Sea level: ${sea>0?'+':''}${sea} m`;
+ $('st').innerHTML=`<div>🟩 Land now<b>${Math.round(land/today*100)}%</b><small>of today's land</small></div><div>${sea>=0?'🏠 Flooded':'🏖️ New land'}<b>${sea>=0?Math.round(flood/today*100):Math.round((land-today)/today*100)}%</b></div>`;
+ const p=PRE.reduce((a,b)=>Math.abs(b[0]-sea)<Math.abs(a[0]-sea)?b:a);$('msg').textContent=Math.abs(p[0]-sea)<=3?p[2]:sea<0?'The sea is lower than today, so more land is showing. Islands may join together!':'The sea is higher than today, so low land near the coast is under water.';
+ [...$('pr').children].forEach((b,i)=>b.classList.toggle('on',PRE[i][0]===sea));$('sl').value=sea;window.__t={sea,land,today}}
+$('sl').oninput=()=>{sea=+$('sl').value;draw()};$('pr').onclick=e=>{const b=e.target.closest('[data-i]');if(!b)return;const to=PRE[+b.dataset.i][0],from=sea;let t=0;const iv=setInterval(()=>{t+=.08;sea=Math.round(from+(to-from)*Math.min(1,t));draw();if(t>=1)clearInterval(iv)},30)};
+$('nw').onclick=()=>{seed=Kit.rand(1,9999);build()};
+build();
+</script>
+</body></html>

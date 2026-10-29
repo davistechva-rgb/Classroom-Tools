@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Coordinate Challenge</title>
+<style>
+main{max-width:1600px}
+.co-top{display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.co-tabs button{font:inherit;font-weight:800;border:4px solid var(--ink);border-radius:99px;padding:6px 14px;background:#fff;cursor:pointer;color:var(--ink)}.co-tabs button.on{background:var(--sun)}
+.co-q{text-align:center;background:#fff;border:6px solid var(--ink);border-radius:22px;box-shadow:6px 6px 0 var(--ink);padding:8px 16px;margin:0 auto 12px;max-width:820px}
+.co-q small{font-weight:800;color:#6B7695;letter-spacing:.1em}.co-q b{display:block;font-size:clamp(1.6rem,4.4vw,2.8rem)}
+.co-wrap{display:grid;grid-template-columns:44px minmax(0,1fr);gap:4px}
+.co-lat{display:grid;grid-template-rows:repeat(11,1fr);font-weight:800;font-size:.75rem;color:#fff;text-shadow:1px 1px 0 var(--ink);text-align:right;padding:2% 0}
+.co-lon{grid-column:2;display:flex;justify-content:space-between;font-weight:800;font-size:.7rem;color:#fff;text-shadow:1px 1px 0 var(--ink);padding:0 2%}
+.co-map{border:6px solid var(--ink);border-radius:20px;box-shadow:7px 7px 0 var(--ink);overflow:hidden}
+.co-map svg{width:100%;aspect-ratio:2/1;display:block;cursor:crosshair}
+.co-read{text-align:center;font-weight:800;color:#fff;text-shadow:2px 2px 0 var(--ink);min-height:1.5em;margin:8px 0;font-size:1.15rem}
+.co-ch{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:8px}
+.co-ch button{font:inherit;font-weight:800;font-size:1.1rem;border:4px solid var(--ink);border-radius:14px;padding:8px 14px;background:#fff;cursor:pointer;color:var(--ink)}
+.co-ch button.yes{background:#8BE09A}.co-ch button.no{background:#FFB3AA}
+.co-help{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:10px}.co-help span{background:#fff;border:3px solid var(--ink);border-radius:99px;padding:3px 12px;font-weight:700;font-size:.9rem}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script><script src="geo.js"></script>
+<script>
+Kit.mount("🧭", "Coordinate Challenge");
+const $=id=>document.getElementById(id);
+const fmt=(lat,lon)=>`${Math.abs(Math.round(lat))}°${lat>=0?'N':'S'}, ${Math.abs(Math.round(lon))}°${lon>=0?'E':'W'}`;
+let mode='go',cur=null,score=0,round=0,lock=false;
+document.querySelector('main').innerHTML=`<div class="co-top co-tabs" id="tabs"><button data-m="go" class="on">📍 Go to the spot</button><button data-m="read">🔎 Read the spot</button><span class="ln-pill">Round <b id="rn">0</b></span><span class="ln-pill">⭐ <b id="sc">0</b></span></div>
+<div class="co-q"><small id="qs"></small><b id="q"></b></div>
+<div class="co-wrap"><div class="co-lat">${Array.from({length:11},(_,i)=>{const l=75-i*15;return `<span>${Math.abs(l)}°${l>0?'N':l<0?'S':''}</span>`}).join('')}</div><div class="co-map" id="mb"><svg id="sv"></svg></div><div class="co-lon">${Array.from({length:9},(_,i)=>{const l=-180+i*45;return `<span>${Math.abs(l)}°${l>0?'E':l<0?'W':''}</span>`}).join('')}</div></div>
+<div class="co-read" id="rd">Move over the map to see the coordinates.</div><div class="co-ch" id="ch"></div><div class="row" style="justify-content:center;margin-top:10px"><button class="btn big green" id="nx" hidden>Next ➜</button></div>
+<div class="co-help"><span>↕️ Latitude: how far north or south of the <b style="color:#E5533F">Equator</b></span><span>↔️ Longitude: how far east or west of the <b style="color:#9B6BF2">Prime Meridian</b></span><span>Say latitude first!</span></div>`;
+const M=GEO.world($('sv'),{grid:true,onTap:tap});
+$('sv').addEventListener('pointermove',e=>{const r=$('sv').getBoundingClientRect();if(M.vb[2]<1000)return;const lon=(e.clientX-r.left)/r.width*360-180,lat=90-(e.clientY-r.top)/r.height*180;$('rd').textContent=`🧭 ${fmt(lat,lon)}`});
+const place=(lon,lat)=>{const [x,y]=GEO.xy(lon,lat),c=M.hit(x,y);return c?c.n:'the ocean'};
+function next(){lock=false;round++;$('rn').textContent=round;$('nx').hidden=true;$('ch').innerHTML='';M.draw();
+ if(mode==='go'){// a random spot on land, rounded to a 5° grid so it is easy to read
+  let lat,lon,c;do{lat=Kit.rand(-11,14)*5;lon=Kit.rand(-34,35)*5;const [x,y]=GEO.xy(lon,lat);c=M.hit(x,y)}while(!c&&Math.random()<.85);cur={lat,lon};$('qs').textContent='TAP THIS SPOT ON THE MAP';$('q').textContent=fmt(lat,lon)}
+ else{const lat=Kit.rand(-4,4)*15,lon=Kit.rand(-11,11)*15;cur={lat,lon};const [x,y]=GEO.xy(lon,lat);M.ovl().innerHTML=`<circle cx="${x}" cy="${y}" r="9" fill="#FFC93C" stroke="#1D2B53" stroke-width="2.5"><animate attributeName="r" values="7;12;7" dur="1.2s" repeatCount="indefinite"/></circle>`;
+  $('qs').textContent='WHAT ARE THE COORDINATES OF THE STAR?';$('q').textContent='⭐ ?';const wrong=[[lat,-lon],[-lat,lon],[lat+15,lon],[lat,lon+15],[lon,lat]].filter(([a,b])=>Math.abs(a)<=75&&Math.abs(b)<=180&&!(a===lat&&b===lon)&&(a||b));
+  const opts=Kit.shuffle([[lat,lon],...Kit.shuffle(wrong).slice(0,3)]);$('ch').innerHTML=opts.map(([a,b])=>`<button data-a="${a},${b}">${fmt(a,b)}</button>`).join('')}
+ window.__t={...cur,mode,score}}
+function tap(c,lon,lat,x,y){if(mode!=='go'||lock||!cur)return;lock=true;const km=GEO.km([lon,lat],[cur.lon,cur.lat]),pts=Math.max(0,Math.round(100-km/50));score+=pts;$('sc').textContent=score;const [tx,ty]=GEO.xy(cur.lon,cur.lat);
+ M.ovl().innerHTML=`<line x1="${x}" y1="${y}" x2="${tx}" y2="${ty}" stroke="#1D2B53" stroke-width="2" stroke-dasharray="5 4" vector-effect="non-scaling-stroke"/><circle cx="${x}" cy="${y}" r="5" fill="#E5533F" stroke="#fff"/><circle cx="${tx}" cy="${ty}" r="6" fill="#5DC66E" stroke="#fff" stroke-width="2"/>`;
+ $('rd').textContent=`You tapped ${fmt(lat,lon)}. The spot (${fmt(cur.lat,cur.lon)}) is in ${place(cur.lon,cur.lat)}. ${km<300?'🎯 Spot on!':km.toLocaleString()+' km away.'} +${pts}`;km<300?Kit.tada():Kit.ding();$('nx').hidden=false}
+$('ch').onclick=e=>{const b=e.target.closest('[data-a]');if(!b||lock||b.classList.contains('no'))return;const [a,o]=b.dataset.a.split(',').map(Number);
+ if(a===cur.lat&&o===cur.lon){lock=true;b.classList.add('yes');score+=b.parentNode.querySelector('.no')?50:100;$('sc').textContent=score;Kit.tada();$('q').textContent=fmt(a,o);$('rd').textContent=`✅ That star is in ${place(o,a)}.`;$('nx').hidden=false}
+ else{b.classList.add('no');Learn.flash(b,false);$('rd').textContent=`Not quite. Check: is it north or south of the red Equator? East or west of the purple Prime Meridian?`}};
+$('nx').onclick=next;$('tabs').onclick=e=>{const b=e.target.closest('[data-m]');if(!b)return;mode=b.dataset.m;[...$('tabs').querySelectorAll('[data-m]')].forEach(z=>z.classList.toggle('on',z===b));M.ovl().innerHTML='';next()};
+window.__c={tapAt:(lon,lat)=>{const [x,y]=GEO.xy(lon,lat);tap(M.hit(x,y),lon,lat,x,y)}};
+next();
+</script>
+</body></html>

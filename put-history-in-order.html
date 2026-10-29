@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Put History in Order</title>
+<style>
+main{max-width:1500px}
+.po-top{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.po-hand{display:flex;justify-content:center;margin-bottom:14px}
+.po-card{background:#FFFDF6;border:5px solid var(--ink);border-radius:18px;box-shadow:5px 5px 0 var(--ink);padding:10px 12px;width:170px;text-align:center;font-weight:800;line-height:1.25}
+.po-card .e{font-size:2.2rem;display:block}
+.po-card .y{display:block;margin-top:6px;font-size:1.3rem;color:#E5533F}
+.po-hand .po-card{width:min(320px,90vw);font-size:1.25rem;transform:rotate(-1.5deg);background:#FFF6C9}
+.po-hand .po-card .y{color:#C3CBDB}
+.po-line{display:flex;align-items:stretch;gap:0;overflow-x:auto;padding:10px 4px 18px;justify-content:safe center}
+.po-gap{flex:0 0 46px;display:grid;place-items:center;cursor:pointer}
+.po-gap span{width:38px;height:100%;min-height:90px;border:4px dashed #fff;border-radius:14px;display:grid;place-items:center;color:#fff;font-weight:900;font-size:1.4rem;transition:.15s}
+.po-gap:hover span{background:rgba(255,255,255,.3);transform:scale(1.08)}
+.po-line .po-card{flex:0 0 150px;font-size:.95rem}
+.po-line .po-card.new{animation:pop .5s}
+.po-line .po-card.bad{background:#FFB3AA}
+@keyframes pop{0%{transform:scale(.6)}70%{transform:scale(1.08)}}
+.po-msg{text-align:center;font-weight:800;font-size:1.2rem;color:#fff;text-shadow:2px 2px 0 var(--ink);min-height:1.6em}
+.po-arrow{text-align:center;color:#fff;font-weight:900;letter-spacing:.1em}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("📜", "Put History in Order");
+const $=id=>document.getElementById(id);
+// [year (negative for BC), event, emoji]
+const SETS0={'🇺🇸 American history':`1492 | Columbus reaches the Americas | ⛵
+1607 | Jamestown is founded in Virginia | 🏘️
+1620 | The Mayflower lands at Plymouth | 🚢
+1776 | The Declaration of Independence is signed | 📜
+1787 | The US Constitution is written | 🖋️
+1789 | George Washington becomes the first president | 🎩
+1803 | The Louisiana Purchase | 🗺️
+1804 | Lewis and Clark set out west | 🧭
+1849 | The California Gold Rush | ⛏️
+1861 | The Civil War begins | ⚔️
+1863 | Lincoln gives the Gettysburg Address | 🎤
+1869 | The first railroad across the country is finished | 🚂
+1903 | The Wright brothers' first airplane flight | ✈️
+1920 | Women win the right to vote (19th Amendment) | 🗳️
+1955 | Rosa Parks refuses to give up her bus seat | 🚌
+1963 | Dr. King gives his "I Have a Dream" speech | ✊
+1969 | Astronauts walk on the Moon | 🌕`,
+'🏛️ Ancient world':`-3200 | Writing is invented in Mesopotamia | ✍️
+-2560 | The Great Pyramid of Giza is built | 🔺
+-1754 | Hammurabi's Code of laws | ⚖️
+-776 | The first Olympic Games in Greece | 🏅
+-753 | The legendary founding of Rome | 🐺
+-500 | Democracy begins in Athens | 🗳️
+-221 | China is united under its first emperor | 🐉
+-210 | The Terracotta Army is buried | 🗿
+-44 | Julius Caesar is killed | 🗡️
+80 | The Colosseum opens in Rome | 🏟️
+476 | The Western Roman Empire falls | 🏚️`,
+'💡 Inventions':`-3500 | The wheel | 🛞
+105 | Paper is invented in China | 📄
+1440 | The printing press | 📖
+1608 | The telescope | 🔭
+1752 | Franklin's kite experiment with electricity | ⚡
+1876 | The telephone | ☎️
+1879 | A long-lasting light bulb | 💡
+1903 | The airplane | ✈️
+1927 | Television | 📺
+1946 | One of the first electronic computers | 🖥️
+1983 | The first cell phone goes on sale | 📱
+1991 | The World Wide Web | 🌐`,
+'🌎 World history':`1215 | The Magna Carta is signed in England | 📜
+1271 | Marco Polo sets off for China | 🐫
+1347 | The Black Death reaches Europe | 🐀
+1492 | Columbus sails across the Atlantic | ⛵
+1503 | Leonardo da Vinci starts painting the Mona Lisa | 🖼️
+1522 | Magellan's crew finishes the first trip around the world | 🌍
+1769 | James Watt's improved steam engine | 🚂
+1912 | The Titanic sinks | 🧊
+1914 | World War I begins | 🪖
+1939 | World War II begins | ✈️
+1989 | The Berlin Wall falls | 🧱`};
+let SETS={},set,deck=[],line=[],hand=null,score=0,miss=0,teams=null;
+const fmt=y=>y<0?`${-y} BC`:y<1000?`AD ${y}`:`${y}`;
+function parse(t){SETS={...SETS0};const extra=Kit.lines(t).map(l=>l.split('|').map(s=>s.trim())).filter(p=>p.length>=2&&/^-?\d+$/.test(p[0].replace(/\s*bc$/i,'')));
+ if(extra.length>=4)SETS['✏️ My events']=extra.map(p=>`${/bc$/i.test(p[0])?'-'+parseInt(p[0]):p[0]} | ${p[1]} | ${p[2]||'📌'}`).join('\n');sets()}
+const ED=Kit.editable({key:'history-order',title:'My history events',help:'(one per line: year | event | emoji. Write BC years like "500 BC" or "-500". At least 4 events.)',def:`1776 | The Declaration of Independence | 📜
+1969 | People walk on the Moon | 🌕
+1492 | Columbus reaches the Americas | ⛵
+1903 | The first airplane flight | ✈️`,onSave:t=>{parse(t);set='✏️ My events';$('st').value=set;deal()}});
+document.querySelector('main').innerHTML=`<div class="po-top"><select id="st" style="width:auto"></select><select id="ln" style="width:auto"><option value="6">6 cards</option><option value="8" selected>8 cards</option><option value="10">10 cards</option></select>${Learn.teamPicker('tp',0)}<button class="btn green" id="go">🔄 Deal</button><span class="ln-pill">✅ <b id="sc">0</b></span><span class="ln-pill">❌ <b id="ms">0</b></span></div><div id="tm"></div>
+<div class="po-hand" id="hd"></div><div class="po-msg" id="msg"></div><div class="po-arrow">⬅ EARLIER &nbsp;·&nbsp; LATER ➡</div><div class="po-line" id="ln2"></div>`;
+function sets(){const s=$('st');if(!s)return;const v=s.value;s.innerHTML=Object.keys(SETS).map(k=>`<option>${k}</option>`).join('');if(SETS[v])s.value=v}
+const card=(c,cls='',yr=true)=>`<div class="po-card ${cls}"><span class="e">${c[2]}</span>${Kit.esc(c[1])}<span class="y">${yr?fmt(c[0]):'?'}</span></div>`;
+function deal(){set=$('st').value;const all=SETS[set].split('\n').map(l=>l.split('|').map(s=>s.trim())).map(p=>[+p[0],p[1],p[2]]);
+ deck=Kit.shuffle(all).slice(0,+$('ln').value);line=[deck.pop()];score=0;miss=0;$('sc').textContent=0;$('ms').textContent=0;
+ const n=+$('tp').value;teams=n?Learn.teams($('tm'),n,{turns:true}):($('tm').innerHTML='',null);draw();nextCard()}
+function draw(nw=-1,bad=-1){$('ln2').innerHTML=`<div class="po-gap" data-g="0"><span>+</span></div>`+line.map((c,i)=>card(c,i===nw?(i===bad?'new bad':'new'):'')+`<div class="po-gap" data-g="${i+1}"><span>+</span></div>`).join('');window.__t={line:line.map(c=>c[0]),hand:hand&&hand[0],score,miss,left:deck.length}}
+function nextCard(){hand=deck.pop();if(!hand){$('hd').innerHTML='';$('ln2').querySelectorAll('.po-gap').forEach(g=>g.style.visibility='hidden');Kit.tada();Kit.confetti(70);$('msg').textContent=teams?`🎉 ${teams.winner()}`:`🎉 Timeline finished! ${score} right on the first try.`;window.__t.done=true;return}
+ $('hd').innerHTML=card(hand,'',false);$('msg').textContent=teams?'':'Where does this card go? Tap a + spot.';window.__t.hand=hand[0]}
+function place(g){if(!hand)return;const ok=(g===0||line[g-1][0]<=hand[0])&&(g===line.length||line[g][0]>=hand[0]);
+ let at=g;if(!ok){at=line.findIndex(c=>c[0]>hand[0]);if(at<0)at=line.length}
+ line.splice(at,0,hand);if(ok){score++;Kit.ding();$('msg').textContent=`✅ Yes! ${fmt(hand[0])}`;if(teams)teams.add(1)}else{miss++;Kit.tone(200,.25,'triangle',.15);$('msg').textContent=`❌ It was ${fmt(hand[0])}, so it moved to the right spot.`}
+ $('sc').textContent=score;$('ms').textContent=miss;draw(at,ok?-1:at);if(teams)teams.next();const h=hand;hand=null;setTimeout(nextCard,ok?700:1500);
+ const el=$('ln2').children[at*2+1];el&&el.scrollIntoView({block:'nearest',inline:'center',behavior:'smooth'})}
+$('ln2').onclick=e=>{const g=e.target.closest('[data-g]');if(g)place(+g.dataset.g)};$('go').onclick=deal;$('st').onchange=deal;
+window.__p={place};
+parse(ED);deal();
+</script>
+</body></html>

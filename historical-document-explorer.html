@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Historical Document Explorer</title>
+<style>
+main{max-width:1400px}
+.dx-tabs{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:12px}
+.dx-tabs button{font:inherit;font-weight:800;border:4px solid var(--ink);border-radius:14px;padding:6px 12px;background:#fff;cursor:pointer;color:var(--ink);box-shadow:0 4px 0 var(--ink)}
+.dx-tabs button.on{background:var(--sun);transform:translateY(2px);box-shadow:0 2px 0 var(--ink)}
+.dx{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:860px){.dx{grid-template-columns:1fr}}
+.dx-paper{background:#F6E7C1;border:6px solid var(--ink);border-radius:8px;box-shadow:7px 7px 0 var(--ink);padding:18px 20px;font-family:Georgia,'Times New Roman',serif;position:relative;background-image:radial-gradient(circle at 20% 10%,rgba(139,90,43,.12),transparent 40%),radial-gradient(circle at 90% 90%,rgba(139,90,43,.15),transparent 40%)}
+.dx-paper h2{font-family:Georgia,serif;margin:0 0 4px;text-align:center}
+.dx-paper .who{text-align:center;font-style:italic;margin-bottom:12px;color:#5B4426}
+.dx-s{font-size:clamp(1.05rem,2vw,1.3rem);line-height:1.7;padding:4px 8px;border-radius:8px;cursor:pointer;margin:2px 0;border-left:6px solid transparent}
+.dx-s:hover{background:rgba(255,255,255,.4)}
+.dx-s.on{background:#FFFDF6;border-left-color:#E5533F}
+.dx-w{border-bottom:3px dotted #E5533F;font-weight:700;cursor:help}
+.dx-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:10px;position:sticky;top:10px}
+.dx-plain{border:4px solid var(--ink);border-radius:14px;padding:10px;background:#E8F7FF;font-weight:700;font-size:1.1rem}
+.dx-voc{border:4px solid var(--ink);border-radius:14px;padding:10px;background:#FFF6C9;font-weight:700}
+.dx-voc b{color:#E5533F;font-size:1.15rem}
+.dx-q .ch{display:grid;gap:6px;margin-top:6px}.dx-q button{font:inherit;font-weight:700;border:3px solid var(--ink);border-radius:12px;padding:7px;background:#fff;cursor:pointer;text-align:left;color:var(--ink)}
+.dx-q button.yes{background:#8BE09A}.dx-q button.no{background:#FFB3AA}
+.dx-prog{display:flex;gap:4px}.dx-prog i{flex:1;height:10px;border-radius:5px;background:#E3E8F2;border:2px solid var(--ink)}.dx-prog i.on{background:#5DC66E}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("📜", "Historical Document Explorer");
+const $=id=>document.getElementById(id);
+// each document: title, author/date, context, sections [original text, plain English], vocabulary {word: meaning}, questions [q, right, wrong, wrong]
+const D=[{t:'The Declaration of Independence',w:'Thomas Jefferson and the Continental Congress, July 4, 1776',c:'The 13 American colonies explain why they are breaking away from Great Britain.',
+ s:[['When in the Course of human events, it becomes necessary for one people to dissolve the political bands which have connected them with another, and to assume among the powers of the earth, the separate and equal station to which the Laws of Nature and of Nature\'s God entitle them, a decent respect to the opinions of mankind requires that they should declare the causes which impel them to the separation.','Sometimes a group of people needs to break away from another country. When they do, it is polite to explain to the world why.'],
+  ['We hold these truths to be self-evident, that all men are created equal, that they are endowed by their Creator with certain unalienable Rights, that among these are Life, Liberty and the pursuit of Happiness.','We believe some things are so true they don\'t need proof: all people are created equal, and everyone is born with rights that can\'t be taken away, like the right to live, to be free and to try to be happy.'],
+  ['That to secure these rights, Governments are instituted among Men, deriving their just powers from the consent of the governed,','People create governments to protect these rights. A government only gets its power because the people agree to it.'],
+  ['That whenever any Form of Government becomes destructive of these ends, it is the Right of the People to alter or to abolish it, and to institute new Government,','If a government stops protecting people\'s rights, the people have the right to change it or replace it with a new one.']],
+ v:{dissolve:'to end or break apart',bands:'ties or connections',station:'a place or position',impel:'to push someone to do something','self-evident':'so clearly true it needs no proof',endowed:'given',unalienable:'cannot be taken away',pursuit:'chasing or trying to get',secure:'to protect or make safe',instituted:'set up or created',consent:'permission or agreement',governed:'the people a government rules',alter:'to change',abolish:'to get rid of completely'},
+ q:[['What does "unalienable" mean?','Cannot be taken away','Very old','Written down'],['Where does a government get its power, according to the Declaration?','From the people agreeing to it','From the king','From the army'],['Which right is NOT named in the famous sentence?','The right to drive a car','Life','Liberty']]},
+ {t:'The Preamble to the Constitution',w:'The Constitutional Convention, 1787',c:'The opening sentence of the US Constitution explains the goals of the new government.',
+ s:[['We the People of the United States,','We, the people of the United States,'],['in Order to form a more perfect Union, establish Justice, insure domestic Tranquility,','want to make the states work together better, make sure things are fair, and keep peace at home,'],['provide for the common defence, promote the general Welfare,','protect the country from enemies, and help everyone live good lives,'],['and secure the Blessings of Liberty to ourselves and our Posterity, do ordain and establish this Constitution for the United States of America.','and keep freedom safe for ourselves and for our children and grandchildren. So we make this Constitution the plan for our country.']],
+ v:{union:'a group joined together, here the states',establish:'to set up',justice:'fairness under the law',insure:'to make sure',domestic:'at home, inside the country',tranquility:'peace and calm',defence:'protection (old spelling of defense)',promote:'to help or support',welfare:'health, happiness and well-being',blessings:'good things',liberty:'freedom',posterity:'future generations, like your children and grandchildren',ordain:'to officially order or set up'},
+ q:[['Who does the Preamble say is making the Constitution?','We the People','The king','The army generals'],['What does "domestic tranquility" mean?','Peace at home','A strong army','Fair taxes'],['Who is "our Posterity"?','Future generations','Other countries','The Founding Fathers']]},
+ {t:'The First Amendment',w:'Part of the Bill of Rights, 1791',c:'The first change added to the Constitution protects five important freedoms.',
+ s:[['Congress shall make no law respecting an establishment of religion, or prohibiting the free exercise thereof;','The government can\'t pick an official religion, and it can\'t stop people from practicing their religion.'],['or abridging the freedom of speech, or of the press;','It can\'t take away your freedom to say what you think, or newspapers\' freedom to report the news.'],['or the right of the people peaceably to assemble, and to petition the Government for a redress of grievances.','People can gather together peacefully, and they can ask the government to fix problems.']],
+ v:{congress:'the part of government that makes laws',respecting:'about',establishment:'setting up an official one',prohibiting:'forbidding or stopping',exercise:'practice',thereof:'of it',abridging:'cutting down or limiting',press:'newspapers and news reporters',peaceably:'peacefully',assemble:'to gather in a group',petition:'to make a formal request',redress:'fixing a wrong',grievances:'complaints'},
+ q:[['How many freedoms does the First Amendment protect?','Five','Two','Ten'],['What does "assemble" mean?','To gather in a group','To build furniture','To vote'],['What is "the press"?','Newspapers and reporters','A gym machine','The president']]},
+ {t:'The Gettysburg Address',w:'President Abraham Lincoln, November 19, 1863',c:'A short speech at a cemetery for soldiers who died at the Battle of Gettysburg during the Civil War.',
+ s:[['Four score and seven years ago our fathers brought forth on this continent, a new nation, conceived in Liberty, and dedicated to the proposition that all men are created equal.','87 years ago, our founders started a new country here, based on freedom and on the idea that all people are created equal.'],
+  ['Now we are engaged in a great civil war, testing whether that nation, or any nation so conceived and so dedicated, can long endure.','Now we are fighting a big war among ourselves, which is testing whether a country like ours can last.'],
+  ['We are met on a great battle-field of that war. We have come to dedicate a portion of that field, as a final resting place for those who here gave their lives that that nation might live. It is altogether fitting and proper that we should do this.','We are standing on a battlefield. We are here to set aside part of it as a cemetery for the soldiers who died so the country could survive. It is right to do this.'],
+  ['But, in a larger sense, we can not dedicate — we can not consecrate — we can not hallow — this ground. The brave men, living and dead, who struggled here, have consecrated it, far above our poor power to add or detract.','But really, we can\'t make this ground special. The brave soldiers who fought here already made it special, much more than our words can.'],
+  ['The world will little note, nor long remember what we say here, but it can never forget what they did here.','People won\'t remember our speeches for long, but they will never forget what the soldiers did.'],
+  ['It is for us the living, rather, to be dedicated here to the unfinished work which they who fought here have thus far so nobly advanced.','Instead, we who are alive should finish the work the soldiers started.'],
+  ['It is rather for us to be here dedicated to the great task remaining before us — that from these honored dead we take increased devotion to that cause for which they gave the last full measure of devotion — that we here highly resolve that these dead shall not have died in vain — that this nation, under God, shall have a new birth of freedom — and that government of the people, by the people, for the people, shall not perish from the earth.','We should care even more about the cause they died for. We promise their deaths will mean something: the country will have a new beginning of freedom, and a government run by the people and for the people will not disappear.']],
+ v:{score:'twenty (so "four score and seven" = 87)','brought forth':'created',conceived:'started or imagined',dedicated:'fully committed to',proposition:'an idea or statement',engaged:'busy with or taking part in',endure:'to last',portion:'a part',consecrate:'to make holy or special',hallow:'to make holy',detract:'to take away',note:'to notice',nobly:'bravely and honorably',devotion:'deep love and loyalty',resolve:'to decide firmly','in vain':'for nothing',perish:'to die or disappear'},
+ q:[['How many years is "four score and seven"?','87','47','74'],['Why did Lincoln give this speech?','To dedicate a cemetery for soldiers','To start a war','To become president'],['What does "perish" mean?','To die or disappear','To grow','To vote']]},
+ {t:'The Magna Carta (Clause 39)',w:'King John of England, 1215 (translated from Latin)',c:'English barons forced King John to agree that even the king must follow the law.',
+ s:[['No free man shall be seized or imprisoned, or stripped of his rights or possessions, or outlawed or exiled, or deprived of his standing in any other way,','The king can\'t arrest someone, put them in jail, take their things, or send them away…'],['nor will we proceed with force against him, or send others to do so,','…and the king won\'t use force against them or send soldiers to do it…'],['except by the lawful judgement of his equals or by the law of the land.','…unless a fair trial or the law says so.']],
+ v:{seized:'grabbed or arrested',imprisoned:'put in jail',stripped:'had something taken away',possessions:'things you own',outlawed:'treated as a criminal outside the law\'s protection',exiled:'forced to leave your country',deprived:'had something taken away',standing:'position in society',proceed:'to go ahead',lawful:'allowed by the law',judgement:'a decision, like in a trial',equals:'people of the same rank; today we\'d say a jury of peers'},
+ q:[['What big idea does this clause teach?','Even the king must follow the law','The king can do anything','Only barons have rights'],['What does "exiled" mean?','Forced to leave your country','Given a prize','Made king'],['What does "the lawful judgement of his equals" remind us of today?','A trial by jury','A school test','An election']]}];
+let di=0,si=0,qi=0,seen=new Set();
+document.querySelector('main').innerHTML=`<div class="dx-tabs" id="tb">${D.map((d,i)=>`<button data-d="${i}">${d.t.replace(/^The /,'')}</button>`).join('')}</div>
+<div class="dx"><div class="dx-paper" id="pp"></div><div class="dx-p"><div class="dx-prog" id="pg"></div><div><b>🗣️ In plain English</b><div class="dx-plain" id="pl"></div></div><div class="dx-voc" id="vc">👆 Tap a <span class="dx-w">dotted word</span> to see what it means.</div><div class="row" style="gap:6px"><button class="btn white small" id="pv">⬅ Back</button><button class="btn green small" id="nx">Next part ➜</button><button class="btn white small" id="rd">🔊 Read aloud</button></div><div class="dx-q" id="qz"></div></div></div>`;
+const ESC=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+function mark(text,v){const keys=Object.keys(v).sort((a,b)=>b.length-a.length),re=new RegExp(`\\b(${keys.map(ESC).join('|')})\\b`,'gi');return Kit.esc(text).replace(re,m=>`<span class="dx-w" data-w="${m.toLowerCase()}">${m}</span>`)}
+function show(){const d=D[di];$('pp').innerHTML=`<h2>${d.t}</h2><div class="who">${d.w}</div><p style="font-family:inherit;font-weight:700;margin:0 0 10px">📌 ${d.c}</p>`+d.s.map((s,i)=>`<div class="dx-s ${i===si?'on':''}" data-s="${i}">${mark(s[0],d.v)}</div>`).join('');
+ seen.add(di+':'+si);$('pl').textContent=d.s[si][1];$('pg').innerHTML=d.s.map((s,i)=>`<i class="${seen.has(di+':'+i)?'on':''}"></i>`).join('');[...$('tb').children].forEach((b,i)=>b.classList.toggle('on',i===di));
+ $('pv').disabled=si===0;$('nx').textContent=si<d.s.length-1?'Next part ➜':'✅ Check what I learned';window.__t={di,si,q:qi}}
+function quiz(){const d=D[di];if(qi>=d.q.length){$('qz').innerHTML=`<b>🎉 You explored ${d.t}!</b>`;Kit.tada();return}const q=d.q[qi];
+ $('qz').innerHTML=`<b>🤔 ${q[0]}</b><div class="ch">${Kit.shuffle(q.slice(1)).map(a=>`<button data-a="${Kit.esc(a)}">${a}</button>`).join('')}</div>`;window.__q=q[1]}
+$('qz').onclick=e=>{const b=e.target.closest('[data-a]');if(!b)return;const q=D[di].q[qi];if(b.dataset.a===q[1]){b.classList.add('yes');Kit.ding();qi++;setTimeout(quiz,900)}else{b.classList.add('no');Kit.tone(200,.2,'triangle',.15)}};
+$('pp').onclick=e=>{const w=e.target.closest('[data-w]');if(w){$('vc').innerHTML=`<b>${w.textContent}</b>: ${D[di].v[w.dataset.w]}`;Kit.tick()}const s=e.target.closest('[data-s]');if(s){si=+s.dataset.s;show()}};
+$('nx').onclick=()=>{if(si<D[di].s.length-1){si++;show()}else{qi=0;quiz()}};$('pv').onclick=()=>{if(si>0){si--;show()}};
+$('tb').onclick=e=>{const b=e.target.closest('[data-d]');if(b){di=+b.dataset.d;si=0;qi=0;$('qz').innerHTML='';$('vc').innerHTML='👆 Tap a <span class="dx-w">dotted word</span> to see what it means.';show()}};
+$('rd').onclick=()=>{try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(D[di].s[si][0]);u.rate=.9;speechSynthesis.speak(u)}catch(e){}};
+show();
+</script>
+</body></html>

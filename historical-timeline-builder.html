@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Historical Timeline Builder</title>
+<style>
+main{max-width:1600px}
+.tb-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:10px}
+.tb-wrap{background:#fff;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);overflow-x:auto;overflow-y:hidden;position:relative;touch-action:pan-x}
+.tb-in{position:relative;height:520px}
+.tb-axis{position:absolute;left:0;right:0;top:250px;height:8px;background:var(--ink);border-radius:4px}
+.tb-tick{position:absolute;top:262px;font-weight:800;font-size:.8rem;color:#55607E;transform:translateX(-50%);white-space:nowrap}
+.tb-tick::before{content:"";position:absolute;left:50%;top:-12px;width:2px;height:10px;background:var(--ink)}
+.tb-ev{position:absolute;width:0;cursor:pointer}
+.tb-ev .c{background:var(--ec);border:4px solid var(--ink);border-radius:14px;padding:6px 8px;font-weight:800;text-align:center;line-height:1.2;box-shadow:3px 3px 0 var(--ink);font-size:.92rem;position:relative;z-index:1}
+.tb-ev .c .e{font-size:1.6rem;display:block}.tb-ev .c small{display:block;color:#1D2B53;opacity:.75}
+.tb-ev .st{position:absolute;left:0;z-index:0;width:3px;background:var(--ink);transform:translateX(-50%)}
+.tb-ev .dot{position:absolute;left:0;width:18px;height:18px;border-radius:50%;background:var(--ec);border:4px solid var(--ink);transform:translate(-50%,-50%)}
+.tb-ev.sel .c{outline:5px solid var(--sun);outline-offset:2px}
+.tb-form{display:grid;grid-template-columns:110px 130px minmax(0,1fr) 80px auto;gap:8px;align-items:end;background:#fff;border:5px solid var(--ink);border-radius:18px;padding:10px;margin-top:14px}
+@media (max-width:760px){.tb-form{grid-template-columns:1fr 1fr}.tb-form .wide{grid-column:1/-1}}
+.tb-form label{font-weight:800;font-size:.85rem;display:grid;gap:3px}
+.tb-cols{display:flex;gap:4px;flex-wrap:wrap}.tb-cols button{width:30px;height:30px;border-radius:50%;border:3px solid var(--ink);background:var(--c);cursor:pointer}.tb-cols button.on{outline:3px solid var(--ink);outline-offset:2px}
+.tb-empty{position:absolute;inset:0;display:grid;place-items:center;font-weight:800;color:#55607E;font-size:1.2rem;text-align:center;padding:20px}
+@media print{header,.tb-top,.tb-form{display:none!important}.tb-wrap{box-shadow:none;overflow:visible}}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("📅", "Historical Timeline Builder");
+const $=id=>document.getElementById(id);
+const COLS=['#FFD84D','#8BE09A','#9FD8FF','#FFB3AA','#D6C2FF','#FFC98B','#FFFFFF'];
+const PRE={'🇺🇸 Road to independence':[[1754,'French and Indian War begins','⚔️',0],[1765,'Stamp Act taxes the colonies','📮',3],[1770,'Boston Massacre','🔔',3],[1773,'Boston Tea Party','🫖',5],[1775,'Battles of Lexington and Concord','🔫',3],[1776,'Declaration of Independence','📜',0],[1777,'Victory at Saratoga','🏳️',1],[1781,'British surrender at Yorktown','🎖️',1],[1783,'Treaty of Paris ends the war','🤝',2],[1787,'Constitution is written','🖋️',4],[1789,'Washington becomes president','🎩',2]],
+ '🏛️ Ancient Egypt':[[-3100,'Upper and Lower Egypt unite','👑',0],[-2560,'Great Pyramid is built','🔺',5],[-2500,'The Great Sphinx is carved','🦁',5],[-1479,'Hatshepsut becomes pharaoh','👸',4],[-1332,'Tutankhamun becomes pharaoh','🪦',0],[-1279,'Ramses II begins his reign','🏛️',2],[-332,'Alexander the Great conquers Egypt','🐎',3],[-30,'Cleopatra dies; Rome takes Egypt','🐍',3]],
+ '🚀 Space race':[[1957,'Sputnik, the first satellite','🛰️',2],[1961,'Yuri Gagarin, first person in space','👨‍🚀',3],[1962,'John Glenn orbits Earth','🌍',1],[1963,'Valentina Tereshkova, first woman in space','👩‍🚀',4],[1965,'First spacewalk','🧑‍🚀',2],[1969,'Apollo 11 lands on the Moon','🌕',0],[1981,'First space shuttle launch','🚀',5],[1998,'Building the International Space Station begins','🛰️',1]]};
+let ev=Kit.get('tl-events',null),title=Kit.get('tl-title','My Timeline'),zoom=1,sel=-1,col=0;
+if(!ev)ev=PRE['🇺🇸 Road to independence'].map(e=>[...e]);
+const fmt=y=>y<0?`${-y} BC`:y<1000?`AD ${y}`:`${y}`;
+document.querySelector('main').innerHTML=`<div class="tb-top"><input id="tt" value="${Kit.esc(title)}" style="width:min(340px,90vw);font-weight:900;font-size:1.2rem;text-align:center"><select id="pre" style="width:auto"><option value="">📚 Load an example…</option>${Object.keys(PRE).map(k=>`<option>${k}</option>`).join('')}</select><button class="btn white small" id="zo">➖</button><span class="ln-pill">🔍 <b id="zl">1×</b></span><button class="btn white small" id="zi">➕</button><button class="btn white small" id="pr">🖨️ Print</button><button class="btn white small" id="clr">🧽 Clear</button></div>
+<div class="tb-wrap" id="wr"><div class="tb-in" id="in"></div></div>
+<div class="tb-form"><label>Year<input id="fy" type="number" value="1800"></label><label>Era<select id="fe"><option value="1">AD / CE</option><option value="-1">BC / BCE</option></select></label><label class="wide">What happened?<input id="ft" placeholder="Something important happened…"></label><label>Emoji<input id="fm" value="⭐" maxlength="4"></label><div class="wide"><div class="tb-cols" id="fc">${COLS.map((c,i)=>`<button data-c="${i}" style="--c:${c}" title="Color"></button>`).join('')}</div><div class="row" style="margin-top:6px;gap:6px"><button class="btn green" id="add">➕ Add</button><button class="btn white small" id="del" hidden>🗑️ Remove</button></div></div></div>`;
+function save(){Kit.set('tl-events',ev);Kit.set('tl-title',title)}
+function draw(){const box=$('in'),W=Math.max($('wr').clientWidth-12,600)*zoom;box.style.width=W+'px';
+ if(!ev.length){box.innerHTML=`<div class="tb-axis"></div><div class="tb-empty">Add your first event below ⬇</div>`;window.__t={n:0};return}
+ const ys=ev.map(e=>e[0]);let a=Math.min(...ys),b=Math.max(...ys);if(a===b){a-=5;b+=5}const pad=(b-a)*.06,lo=a-pad,hi=b+pad,X=y=>90+(y-lo)/(hi-lo)*(W-180);
+ // tick spacing
+ const span=hi-lo,st=[1,2,5,10,20,25,50,100,200,250,500,1000,2000].find(s=>span/s<=W/110)||5000;let h='<div class="tb-axis"></div>';
+ for(let t=Math.ceil(lo/st)*st;t<=hi;t+=st)if(t!==0||lo<0)h+=`<div class="tb-tick" style="left:${X(t)}px">${fmt(t)}</div>`;
+ // place cards in rows above and below so they don't overlap
+ const order=ev.map((e,i)=>i).sort((i,j)=>ev[i][0]-ev[j][0]),rows=[[],[],[],[]],LV=[110,0,250,360];
+ order.forEach((i,k)=>{const x=X(ev[i][0]);let r=[0,2,1,3].find(r=>rows[r].every(px=>Math.abs(px-x)>160));if(r==null)r=k%4;rows[r].push(x);const up=r<2,top=up?(r===0?124:4):(r===2?282:400),c=COLS[ev[i][3]]||COLS[0];
+  const stTop=up?top+60:258,stH=up?250-stTop:top-258;
+  h+=`<div class="tb-ev ${i===sel?'sel':''}" data-i="${i}" style="left:${x}px;top:0;--ec:${c}"><div class="dot" style="top:254px"></div><div class="st" style="top:${stTop}px;height:${Math.max(0,stH)}px"></div><div class="c" style="position:absolute;z-index:1;top:${top}px;width:150px;left:-75px"><span class="e">${Kit.esc(ev[i][2]||'⭐')}</span>${Kit.esc(ev[i][1])}<small>${fmt(ev[i][0])}</small></div></div>`});
+ box.innerHTML=h;$('zl').textContent=zoom+'×';window.__t={n:ev.length,sel}}
+function form(i){sel=i;const e=ev[i];if(e){$('fy').value=Math.abs(e[0]);$('fe').value=e[0]<0?-1:1;$('ft').value=e[1];$('fm').value=e[2];col=e[3];$('add').textContent='💾 Save changes';$('del').hidden=false}else{$('ft').value='';$('add').textContent='➕ Add';$('del').hidden=true}
+ [...$('fc').children].forEach((b,k)=>b.classList.toggle('on',k===col));draw()}
+$('add').onclick=()=>{const t=$('ft').value.trim();if(!t){$('ft').focus();return}const y=Math.abs(parseInt($('fy').value)||0)*(+$('fe').value),e=[y,t,$('fm').value.trim()||'⭐',col];if(ev[sel])ev[sel]=e;else ev.push(e);save();Kit.ding();form(-1)};
+$('del').onclick=()=>{ev.splice(sel,1);save();form(-1)};
+$('in').onclick=e=>{const d=e.target.closest('[data-i]');form(d&&+d.dataset.i!==sel?+d.dataset.i:-1)};
+$('fc').onclick=e=>{const b=e.target.closest('[data-c]');if(b){col=+b.dataset.c;[...$('fc').children].forEach((x,k)=>x.classList.toggle('on',k===col))}};
+$('tt').oninput=()=>{title=$('tt').value;save()};
+$('pre').onchange=()=>{const k=$('pre').value;if(!k)return;if(!ev.length||confirm('Replace your timeline with this example?')){ev=PRE[k].map(e=>[...e]);title=k.replace(/^\S+\s/,'');$('tt').value=title;save();zoom=1;form(-1)}$('pre').value=''};
+$('zi').onclick=()=>{zoom=Math.min(8,zoom*2);draw()};$('zo').onclick=()=>{zoom=Math.max(1,zoom/2);draw()};
+$('pr').onclick=()=>print();$('clr').onclick=()=>{if(confirm('Remove every event?')){ev=[];save();form(-1)}};
+addEventListener('resize',draw);
+window.__b={add:(y,t)=>{$('fy').value=Math.abs(y);$('fe').value=y<0?-1:1;$('ft').value=t;$('add').click()}};
+form(-1);
+</script>
+</body></html>

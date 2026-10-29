@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Country Shape Guessing</title>
+<style>
+main{max-width:1400px}
+.cs-top{display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.cs{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:860px){.cs{grid-template-columns:1fr}}
+.cs-shape{background:radial-gradient(circle,#FFFDF6,#EAF2FB);border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);aspect-ratio:1;position:relative;overflow:hidden}
+.cs-shape svg{width:100%;height:100%;display:block;transition:transform .6s}
+.cs-shape path{fill:#1D2B53;transition:fill .5s}
+.cs-shape.show path{fill:#5DC66E;stroke:#1D2B53;stroke-width:2}
+.cs-mini{position:absolute;right:10px;bottom:10px;width:38%;border:4px solid var(--ink);border-radius:12px;background:#9FD3F2;opacity:0;transition:opacity .5s}
+.cs-mini.on{opacity:1}
+.cs-mini svg{width:100%;display:block}
+.cs-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:14px;display:grid;gap:10px}
+.cs-clues div{border:3px solid var(--ink);border-radius:12px;padding:6px 10px;margin-bottom:6px;font-weight:700;background:#F4FAFF;display:flex;gap:8px;align-items:center}
+.cs-clues img{height:28px;border:2px solid var(--ink);border-radius:4px}
+.cs-ch{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cs-ch button{font:inherit;font-weight:800;font-size:1.1rem;border:4px solid var(--ink);border-radius:14px;padding:10px;background:#fff;cursor:pointer;color:var(--ink);box-shadow:0 4px 0 var(--ink)}
+.cs-ch button.yes{background:#8BE09A}.cs-ch button.no{background:#FFB3AA}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script><script src="geo.js"></script>
+<script>
+Kit.mount("🌎", "Country Shape Guessing");
+const $=id=>document.getElementById(id);
+const IDS=Object.keys(GEO.SH).filter(id=>GEO.W.find(c=>c.id===id));
+const C=id=>GEO.W.find(c=>c.id===id);
+let cur,clues=0,score=0,round=0,R=10,bag=[],lock=false,teams=null,spin=true;
+document.querySelector('main').innerHTML=`<div class="cs-top"><span class="ln-pill">Round <b id="rn">0</b>/${R}</span><span class="ln-pill">⭐ <b id="sc">0</b></span>${Learn.teamPicker('tp',0)}<label class="ln-pill"><input type="checkbox" id="sp" checked> 🔄 Tilt the shape</label><button class="btn white small" id="ng">🔄 New game</button></div><div id="tm"></div>
+<div class="cs"><div class="cs-shape" id="sh"><svg id="sv" viewBox="0 0 200 200"></svg><div class="cs-mini" id="mini"><svg viewBox="0 0 1000 500"></svg></div></div>
+<div class="cs-p"><b>🔎 Which country has this shape?</b><div class="cs-ch" id="ch"></div><button class="btn white" id="cl">💡 Show a clue (fewer points)</button><div class="cs-clues" id="cls"></div><div id="res" style="font-weight:800;font-size:1.2rem;min-height:1.5em"></div><button class="btn big green" id="nx" hidden>Next ➜</button></div></div>`;
+const CT=k=>GEO.CT[k]||k;
+function next(){if(round>=R)return Learn.finish('🌎',teams?teams.winner():`${score} points!`,`You named ${score>0?'lots of':'some'} countries by their shape.`,start);
+ if(!bag.length)bag=Kit.shuffle(IDS);cur=C(bag.pop());round++;clues=0;lock=false;$('rn').textContent=round;$('res').textContent='';$('nx').hidden=true;$('cls').innerHTML='';
+ $('sh').classList.remove('show');$('mini').classList.remove('on');$('sv').innerHTML=`<path d="${GEO.SH[cur.id]}"/>`;$('sv').style.transform=spin?`rotate(${Kit.pick([-40,-25,25,40,90,-90])}deg)`:'';
+ const opts=Kit.shuffle([cur,...Kit.shuffle(IDS.filter(i=>i!==cur.id).map(C)).slice(0,3)]);$('ch').innerHTML=opts.map(c=>`<button data-c="${c.id}">${c.n}</button>`).join('');window.__t={ans:cur.id,round,score}}
+const CL=[c=>`🌍 It's in ${CT(c.ct)}.`,c=>`🏙️ Its capital is ${c.cap}.`,c=>`<img src="img/flags/${c.id.toLowerCase()}.svg" alt=""> Here is its flag.`];
+$('cl').onclick=()=>{if(lock||clues>=CL.length)return;$('cls').insertAdjacentHTML('beforeend',`<div>${CL[clues](cur)}</div>`);clues++;if(clues===1){$('sv').style.transform=''}Kit.tick()};
+$('ch').onclick=e=>{const b=e.target.closest('[data-c]');if(!b||lock||b.classList.contains('no'))return;
+ if(b.dataset.c===cur.id){lock=true;b.classList.add('yes');const pts=Math.max(1,4-clues);score+=pts;$('sc').textContent=score;if(teams){teams.add(pts);teams.next()}$('res').textContent=`🎉 ${cur.n}! +${pts}`;Kit.tada();reveal()}
+ else{b.classList.add('no');Learn.flash(b,false);clues=Math.min(3,clues+1);if($('ch').querySelectorAll('.no').length>=2){lock=true;$('ch').querySelector(`[data-c="${cur.id}"]`).classList.add('yes');$('res').textContent=`It was ${cur.n}.`;if(teams)teams.next();reveal()}}};
+function reveal(){$('sh').classList.add('show');$('sv').style.transform='';$('mini').classList.add('on');$('mini').querySelector('svg').innerHTML=`<rect width="1000" height="500" fill="#9FD3F2"/>`+GEO.W.map(c=>`<path d="${c.p}" fill="${c.id===cur.id?'#E5533F':'#F4EBC8'}" stroke="${c.id===cur.id?'#1D2B53':'none'}" stroke-width="2"/>`).join('');$('nx').hidden=false}
+function start(){round=0;score=0;bag=[];$('sc').textContent=0;const n=+$('tp').value;teams=n?Learn.teams($('tm'),n,{turns:true}):($('tm').innerHTML='',null);next()}
+$('nx').onclick=next;$('ng').onclick=start;$('tp').onchange=start;$('sp').onchange=()=>{spin=$('sp').checked;if(!spin)$('sv').style.transform=''};
+start();
+</script>
+</body></html>

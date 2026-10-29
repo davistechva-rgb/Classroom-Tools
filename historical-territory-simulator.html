@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Historical Territory Simulator</title>
+<style>
+main{max-width:1600px}
+.ht2{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.ht2{grid-template-columns:1fr}}
+.ht2-map{background:#BFE6FA;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);padding:8px;position:relative}
+.ht2-map svg{width:100%;display:block}
+.ht2-map path{stroke:#fff;stroke-width:1.2;transition:fill .5s}
+.ht2-yr{position:absolute;left:18px;bottom:14px;font-size:clamp(2rem,6vw,4rem);font-weight:900;color:#1D2B53;text-shadow:3px 3px 0 #fff}
+.ht2-flag{position:absolute;right:18px;bottom:14px;background:#fff;border:4px solid var(--ink);border-radius:14px;padding:6px 10px;font-weight:900;text-align:center}
+.ht2-flag b{display:block;font-size:1.6rem}
+@media (max-width:600px){.ht2-flag{right:8px;bottom:8px;padding:2px 6px;font-size:.7rem;border-width:3px}.ht2-flag b{font-size:1rem}.ht2-yr{left:10px;bottom:6px}}
+.ht2-ctl{display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap}
+.ht2-ctl input{flex:1;min-width:200px}
+.ht2-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:8px}
+.ht2-ev{display:grid;gap:6px;max-height:46vh;overflow:auto}
+.ht2-ev div{border:3px solid var(--ink);border-radius:12px;padding:5px 10px;font-weight:700;background:#F4FAFF;cursor:pointer;opacity:.45}
+.ht2-ev div.on{opacity:1;background:#FFF6C9}
+.ht2-ev b{color:#E5533F}
+.ht2-leg{display:flex;gap:6px;flex-wrap:wrap;font-weight:800;font-size:.85rem}.ht2-leg span{border:3px solid var(--ink);border-radius:99px;padding:1px 8px;background:var(--lc);color:#fff;text-shadow:1px 1px 0 rgba(0,0,0,.35)}
+.ht2-q{border-top:3px dashed #C3CBDB;padding-top:8px}
+.ht2-q .ch{display:flex;gap:8px;margin-top:6px}.ht2-q .ch button{flex:1;font:inherit;font-weight:800;border:4px solid var(--ink);border-radius:14px;padding:8px;background:#fff;cursor:pointer;color:var(--ink)}
+.ht2-q .ch button.yes{background:#8BE09A}.ht2-q .ch button.no{background:#FFB3AA}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script><script src="geo.js"></script>
+<script>
+Kit.mount("🗺️", "Historical Territory Simulator");
+const $=id=>document.getElementById(id);
+// the year each state joined the United States
+const JOIN={DE:1787,PA:1787,NJ:1787,GA:1788,CT:1788,MA:1788,MD:1788,SC:1788,NH:1788,VA:1788,NY:1788,NC:1789,RI:1790,VT:1791,KY:1792,TN:1796,OH:1803,LA:1812,IN:1816,MS:1817,IL:1818,AL:1819,ME:1820,MO:1821,AR:1836,MI:1837,FL:1845,TX:1845,IA:1846,WI:1848,CA:1850,MN:1858,OR:1859,KS:1861,WV:1863,NV:1864,NE:1867,CO:1876,ND:1889,SD:1889,MT:1889,WA:1889,ID:1890,WY:1890,UT:1896,OK:1907,NM:1912,AZ:1912,AK:1959,HI:1959};
+const EV=[[1776,'The Declaration of Independence is signed.'],[1787,'Delaware becomes the first state under the new Constitution.'],[1803,'The Louisiana Purchase doubles the size of the country.'],[1819,'Spain gives Florida to the United States.'],[1845,'Texas joins the United States.'],[1846,'The Oregon Treaty with Britain sets the northwest border.'],[1848,'After the Mexican-American War, a huge area of the Southwest becomes part of the US.'],[1853,'The Gadsden Purchase adds land in southern Arizona and New Mexico.'],[1861,'The Civil War begins. West Virginia splits from Virginia in 1863.'],[1867,'The US buys Alaska from Russia.'],[1898,'Hawaii is annexed by the United States.'],[1912,'Arizona becomes the 48th state.'],[1959,'Alaska and Hawaii become the 49th and 50th states.']];
+const ERA=[[1787,1799,'#E5533F','The first 16'],[1800,1849,'#FF9F43','1800s to 1840s'],[1850,1899,'#9B6BF2','1850s to 1890s'],[1900,1959,'#22C3E6','1900s']];
+let yr=1787,play=false,last=0,q=null,qs=0;
+document.querySelector('main').innerHTML=`<div class="ht2"><div><div class="ht2-map"><svg id="sv" viewBox="0 0 975 610"></svg><div class="ht2-yr" id="yr"></div><div class="ht2-flag" id="fl"></div></div>
+<div class="ht2-ctl"><button class="btn green" id="pp">▶ Play</button><input type="range" id="sl" min="1776" max="1960" value="1787"><span class="ln-pill" id="nm"></span></div><div class="ht2-leg">${ERA.map(e=>`<span style="--lc:${e[2]}">${e[3]}</span>`).join('')}</div></div>
+<div class="ht2-p"><b>📜 What happened</b><div class="ht2-ev" id="ev"></div><div class="ht2-q" id="qz"></div></div></div>`;
+const col=y=>(ERA.find(e=>y>=e[0]&&y<=e[1])||ERA[0])[2];
+function draw(){const n=Object.values(JOIN).filter(y=>y<=yr).length;
+ $('sv').innerHTML=GEO.S.map(s=>{const j=JOIN[s.id],in_=j<=yr;return `<path d="${s.p}" style="fill:${in_?col(j):'#E3E8F2'}" data-s="${s.id}"><title>${s.n}: ${j}</title></path>`}).join('')+GEO.S.filter(s=>JOIN[s.id]===Math.floor(yr)).map(s=>`<circle cx="${s.c[0]}" cy="${s.c[1]}" r="14" fill="none" stroke="#FFC93C" stroke-width="4"><animate attributeName="r" values="8;22;8" dur="1s" repeatCount="indefinite"/></circle>`).join('');
+ $('yr').textContent=Math.floor(yr);$('fl').innerHTML=`🇺🇸<b>${n}</b>stars on the flag`;$('nm').textContent=GEO.S.filter(s=>JOIN[s.id]===Math.floor(yr)).map(s=>'⭐ '+s.n).join(' ')||'';
+ $('ev').innerHTML=EV.map(e=>`<div class="${e[0]<=yr?'on':''}" data-y="${e[0]}"><b>${e[0]}</b> ${e[1]}</div>`).join('');$('sl').value=Math.floor(yr);window.__t={yr:Math.floor(yr),n}}
+function quiz(){const [a,b]=Kit.shuffle(Object.keys(JOIN)).slice(0,2);if(JOIN[a]===JOIN[b])return quiz();const S=id=>GEO.S.find(s=>s.id===id);q={a,b};
+ $('qz').innerHTML=`<b>🤔 Which became a state first?</b> <span class="muted">Score: ${qs}</span><div class="ch"><button data-s="${a}">${S(a).n}</button><button data-s="${b}">${S(b).n}</button></div><div id="qr" style="font-weight:700;margin-top:6px"></div>`;window.__q=JOIN[a]<JOIN[b]?a:b}
+$('qz').onclick=e=>{const b=e.target.closest('[data-s]');if(!b||!q)return;const first=JOIN[q.a]<JOIN[q.b]?q.a:q.b,S=id=>GEO.S.find(s=>s.id===id);if(b.dataset.s===first){b.classList.add('yes');qs++;Kit.ding()}else{b.classList.add('no');Kit.tone(200,.2,'triangle',.15)}
+ $('qr').textContent=`${S(q.a).n}: ${JOIN[q.a]} · ${S(q.b).n}: ${JOIN[q.b]}`;q=null;setTimeout(quiz,1800)};
+function loop(ts){const dt=Math.min(.05,(ts-(last||ts))/1000);last=ts;if(play){const before=Math.floor(yr);yr=Math.min(1960,yr+dt*8);if(Math.floor(yr)!==before){if(Object.values(JOIN).includes(Math.floor(yr)))Kit.tone(660,.08,'triangle',.15);draw()}if(yr>=1960){play=false;$('pp').textContent='▶ Play';Kit.tada()}}requestAnimationFrame(loop)}
+$('pp').onclick=()=>{if(yr>=1960)yr=1776;play=!play;$('pp').textContent=play?'⏸ Pause':'▶ Play'};
+$('sl').oninput=()=>{yr=+$('sl').value;play=false;$('pp').textContent='▶ Play';draw()};
+$('ev').onclick=e=>{const d=e.target.closest('[data-y]');if(d){yr=+d.dataset.y;draw()}};
+$('sv').onclick=e=>{const p=e.target.closest('[data-s]');if(p){const s=GEO.S.find(x=>x.id===p.dataset.s);$('nm').textContent=`${s.n} became a state in ${JOIN[s.id]}.`}};
+window.__h={set:y=>{yr=y;draw()}};
+draw();quiz();requestAnimationFrame(loop);
+</script>
+</body></html>

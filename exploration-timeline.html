@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Exploration Timeline</title>
+<style>
+main{max-width:1600px}
+.ex{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.ex{grid-template-columns:1fr}}
+.ex-map{border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);overflow:hidden;position:relative}
+.ex-map svg{width:100%;aspect-ratio:2/1;display:block}
+.ex-yr{position:absolute;left:14px;bottom:10px;font-size:clamp(1.6rem,4vw,3rem);font-weight:900;color:#1D2B53;text-shadow:3px 3px 0 #fff;pointer-events:none}
+.ex-tl{position:relative;height:64px;margin-top:12px;background:#fff;border:5px solid var(--ink);border-radius:16px}
+.ex-tl i{position:absolute;top:8px;bottom:8px;border-radius:8px;background:var(--vc);opacity:.85;cursor:pointer;min-width:6px;border:2px solid var(--ink)}
+.ex-tl .now{position:absolute;top:0;bottom:0;width:4px;background:#E5533F;pointer-events:none}
+.ex-tl .lb{position:absolute;bottom:-22px;font-weight:800;font-size:.75rem;color:#fff;text-shadow:1px 1px 0 var(--ink)}
+.ex-ctl{display:flex;gap:10px;align-items:center;margin-top:30px;flex-wrap:wrap}.ex-ctl input{flex:1;min-width:200px}
+.ex-list{display:grid;gap:8px}
+.ex-v{background:#fff;border:4px solid var(--ink);border-radius:16px;padding:8px 12px;cursor:pointer;border-left:14px solid var(--vc)}
+.ex-v.on{background:#FFF6C9}
+.ex-v b{display:block}.ex-v small{font-weight:700;color:#55607E}
+.ex-v p{margin:4px 0 0;font-weight:600;display:none}.ex-v.on p{display:block}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script><script src="geo.js"></script>
+<script>
+Kit.mount("🚢", "Exploration Timeline");
+const $=id=>document.getElementById(id);
+// [explorer, start year, end year, color, from, story, route as [longitude, latitude] stops]
+const V=[['Leif Erikson',1000,1001,'#8B5A2B','Norway','Viking sailor who reached North America about 500 years before Columbus. He called it Vinland.',[[5,60],[-20,64],[-45,61],[-55,51.5]]],
+ ['Marco Polo',1271,1295,'#9B6BF2','Italy (Venice)','Traveled overland along the Silk Road to China, lived at the court of Kublai Khan, and came home by sea.',[[12,45],[35,33],[56,27],[76,39],[116,40],[118,25],[100,2],[80,7],[56,27],[35,33],[12,45]]],
+ ['Zheng He',1405,1433,'#E5533F','China','Led huge Chinese treasure fleets across the Indian Ocean all the way to East Africa.',[[118,32],[108,12],[104,1],[80,7],[75,11],[56,27],[45,2],[40,-3]]],
+ ['Christopher Columbus',1492,1493,'#FF9F43','Spain','Sailed west from Spain hoping to reach Asia and landed in the Caribbean instead.',[[-7,37],[-15,28],[-50,26],[-74.5,24],[-77,21],[-72,19.5]]],
+ ['Vasco da Gama',1497,1498,'#2BC4B0','Portugal','First European to sail around the southern tip of Africa all the way to India.',[[-9,39],[-23,15],[-15,-20],[18,-34.5],[40,-15],[40,-3],[75,11]]],
+ ['Magellan and Elcano',1519,1522,'#1E7FD0','Spain','The first voyage all the way around the world. Magellan died on the way; Juan Sebastián Elcano finished the trip.',[[-6,37],[-43,-23],[-68,-50],[-70,-53.5],[-80,-40],[-100,-15],[-150,-5],[145,13],[124,10],[127,1],[100,-10],[18,-34.5],[-15,10],[-6,37]]],
+ ['James Cook',1768,1771,'#5DC66E','Britain','Mapped New Zealand and the east coast of Australia on his first Pacific voyage.',[[-4,50],[-43,-23],[-67,-56],[-110,-30],[-149,-17],[174,-41],[151,-34],[145,-15],[107,-6],[18,-34.5],[-4,50]]],
+ ['Lewis and Clark',1804,1806,'#FF6B5B','United States','Explored the new Louisiana Purchase and found a route to the Pacific Ocean, helped by Sacagawea.',[[-90.2,38.6],[-101,47.3],[-111,47.5],[-113.4,45],[-116,46.4],[-123.9,46.1]]]];
+let yr=995,play=true,last=0,sel=null;
+document.querySelector('main').innerHTML=`<div class="ex"><div><div class="ex-map"><svg id="sv"></svg><div class="ex-yr" id="yr"></div></div>
+<div class="ex-tl" id="tl">${V.map((v,i)=>`<i data-v="${i}" style="--vc:${v[3]};left:${(v[1]-990)/830*100}%;width:${Math.max(.8,(v[2]-v[1])/830*100)}%" title="${v[0]}"></i>`).join('')}${[1000,1200,1400,1600,1800].map(y=>`<span class="lb" style="left:${(y-990)/830*100}%">${y}</span>`).join('')}<span class="now" id="nw"></span></div>
+<div class="ex-ctl"><button class="btn green" id="pp">⏸ Pause</button><input type="range" id="sl" min="990" max="1820" value="995"></div></div>
+<div class="ex-list" id="ls">${V.map((v,i)=>`<div class="ex-v" data-v="${i}" style="--vc:${v[3]}"><b>⛵ ${v[0]}</b><small>${v[1]}${v[2]>v[1]?'–'+v[2]:''} · from ${v[4]}</small><p>${v[5]}</p></div>`).join('')}</div></div>`;
+const M=GEO.world($('sv'));
+// split a line where it crosses the edge of the map (the Pacific)
+function seg(a,b){const [x1,y1]=GEO.xy(...a),[x2,y2]=GEO.xy(...b);if(Math.abs(a[0]-b[0])<=180)return [[x1,y1,x2,y2]];const w=a[0]>0?1000:0,m=(y1+y2)/2;return [[x1,y1,w,m],[1000-w,m,x2,y2]]}
+function draw(){const g=M.ovl();let h='';V.forEach((v,i)=>{if(yr<v[1])return;const f=Math.min(1,(yr-v[1])/Math.max(.6,v[2]-v[1]+.6)),R=v[6],n=R.length-1,upto=f*n;
+ for(let k=0;k<Math.ceil(upto);k++){const t=Math.min(1,upto-k),a=R[k],b=[R[k][0]+(R[k+1][0]-R[k][0]+(Math.abs(R[k+1][0]-R[k][0])>180?(R[k+1][0]>R[k][0]?-360:360):0))*t,R[k][1]+(R[k+1][1]-R[k][1])*t];const bb=[((b[0]+540)%360)-180,b[1]];
+  seg(a,bb).forEach(([x1,y1,x2,y2])=>h+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${v[3]}" stroke-width="${sel===i?5:3}" stroke-linecap="round" vector-effect="non-scaling-stroke" opacity="${sel==null||sel===i?1:.35}"/>`)}
+ const k=Math.min(n-1,Math.floor(upto)),t=upto-k,a=R[k],b=R[k+1];let lon=a[0]+((b[0]-a[0]+(Math.abs(b[0]-a[0])>180?(b[0]>a[0]?-360:360):0))*t),lat=a[1]+(b[1]-a[1])*t;lon=((lon+540)%360)-180;const [x,y]=GEO.xy(lon,lat);
+ const [sx,sy]=GEO.xy(...R[0]);h+=`<circle cx="${sx}" cy="${sy}" r="5" fill="${v[3]}" stroke="#fff" stroke-width="2" vector-effect="non-scaling-stroke"/>`;if(f<1||sel===i)h+=`<text x="${x}" y="${y}" font-size="22" text-anchor="middle" dominant-baseline="middle">${v[0]==='Lewis and Clark'||v[0]==='Marco Polo'&&k<4?'🚶':'⛵'}</text><text x="${x}" y="${y-16}" font-size="11" font-weight="800" text-anchor="middle" fill="#1D2B53" stroke="#fff" stroke-width="3" paint-order="stroke">${v[0]}</text>`});
+ g.innerHTML=h;$('yr').textContent=Math.floor(yr);$('nw').style.left=((yr-990)/830*100)+'%';$('sl').value=Math.floor(yr);
+ [...$('ls').children].forEach((d,i)=>d.classList.toggle('on',sel===i||sel==null&&yr>=V[i][1]&&yr<=V[i][2]+1));window.__t={yr:Math.floor(yr),sel}}
+function loop(ts){const dt=Math.min(.05,(ts-(last||ts))/1000);last=ts;if(play){// slow down while a voyage is happening, speed up through the quiet years
+ const busy=V.some(v=>yr>=v[1]-1&&yr<=v[2]+1);yr+=dt*(busy?1.2:28);if(yr>=1820){yr=1820;play=false;$('pp').textContent='▶ Play'}draw()}requestAnimationFrame(loop)}
+$('pp').onclick=()=>{if(yr>=1820)yr=990;play=!play;$('pp').textContent=play?'⏸ Pause':'▶ Play'};
+$('sl').oninput=()=>{yr=+$('sl').value;play=false;$('pp').textContent='▶ Play';draw()};
+const pick=i=>{sel=sel===i?null:i;if(sel!=null){yr=V[i][2]+1;play=false;$('pp').textContent='▶ Play';M.reset()}Kit.tick();draw()};
+$('ls').onclick=e=>{const d=e.target.closest('[data-v]');if(d)pick(+d.dataset.v)};$('tl').onclick=e=>{const d=e.target.closest('[data-v]');if(d)pick(+d.dataset.v)};
+window.__x={set:y=>{yr=y;play=false;draw()},pick};
+draw();requestAnimationFrame(loop);
+</script>
+</body></html>
