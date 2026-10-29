@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Magnet Simulator</title>
+<style>
+main{max-width:1500px}
+.mg{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.mg{grid-template-columns:1fr}}
+.mg-cv{width:100%;aspect-ratio:16/10;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);background:#FFFDF6;display:block;touch-action:none;cursor:grab}
+.mg-bar{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:10px}
+.mg-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:10px}
+.mg-msg{font-weight:800;font-size:1.3rem;text-align:center;min-height:1.6em}
+.mg-tray{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.mg-o{font:inherit;font-weight:700;font-size:.85rem;border:3px solid var(--ink);border-radius:14px;padding:6px 4px;background:#F4FAFF;cursor:grab;text-align:center;touch-action:none;color:var(--ink)}
+.mg-o span{display:block;font-size:2rem;line-height:1.1}
+.mg-o.yes{background:#C9F1D2}.mg-o.no{background:#FFE3DF}
+.mg-tab{width:100%;border-collapse:collapse;font-weight:700}.mg-tab td{border-bottom:2px solid #E3E8F2;padding:4px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🧲", "Magnet Simulator");
+const $=id=>document.getElementById(id);
+const W=1000,H=625,L=200,T=56;
+// things to test: only iron and steel (and nickel) are pulled by a magnet
+const OBJ=[['📎','Paper clip',1,'steel'],['🔩','Steel bolt',1,'steel'],['🪙','Coin',0,'copper and zinc'],['🔑','Brass key',0,'brass'],['🥫','Food can',1,'steel'],['🥤','Soda can',0,'aluminum'],['✏️','Pencil',0,'wood'],['🧽','Sponge',0,'foam'],['🥄','Steel spoon',1,'steel'],['🧷','Safety pin',1,'steel'],['🪵','Wood block',0,'wood'],['🧸','Teddy bear',0,'cloth']];
+let M=[{x:330,y:310,a:0},{x:700,y:310,a:Math.PI}],dragM=-1,off=[0,0],objs=[],dragO=null,lines=true,found={};
+document.querySelector('main').innerHTML=`<div class="mg"><div><canvas class="mg-cv" id="cv" width="${W}" height="${H}"></canvas>
+<div class="mg-bar"><button class="btn white" id="f0">🔄 Flip magnet 1</button><button class="btn white" id="f1">🔄 Flip magnet 2</button><button class="btn white" id="ln">〰️ Field lines: on</button><button class="btn white small" id="rs">↺ Reset</button></div>
+<div class="mg-msg" id="msg">Drag the magnets close together. Tap a magnet to spin it.</div></div>
+<div class="mg-p"><b>🧪 Will a magnet pick it up?</b><span class="muted">Drag a thing onto the table, close to a magnet.</span><div class="mg-tray" id="tray">${OBJ.map((o,i)=>`<button class="mg-o" data-o="${i}"><span>${o[0]}</span>${o[1]}</button>`).join('')}</div>
+<table class="mg-tab" id="tab"></table></div></div>`;
+const cv=$('cv'),x=cv.getContext('2d');
+const poles=m=>[{x:m.x+Math.cos(m.a)*L/2,y:m.y+Math.sin(m.a)*L/2,q:1},{x:m.x-Math.cos(m.a)*L/2,y:m.y-Math.sin(m.a)*L/2,q:-1}];// first = North
+function field(px,py){let bx=0,by=0;M.forEach(m=>poles(m).forEach(p=>{const dx=px-p.x,dy=py-p.y,r2=dx*dx+dy*dy+80,r3=r2*Math.sqrt(r2);bx+=p.q*dx/r3;by+=p.q*dy/r3}));return [bx,by]}
+function drawLines(){x.lineWidth=2;M.forEach(m=>{const N=poles(m)[0];for(let k=0;k<18;k++){const ang=k/18*Math.PI*2;let px=N.x+Math.cos(ang)*14,py=N.y+Math.sin(ang)*14;x.beginPath();x.moveTo(px,py);x.strokeStyle='rgba(155,107,242,.45)';
+ for(let s=0;s<600;s++){const [bx,by]=field(px,py),b=Math.hypot(bx,by);if(!b)break;px+=bx/b*4;py+=by/b*4;x.lineTo(px,py);if(px<-20||py<-20||px>W+20||py>H+20)break;if(M.some(mm=>poles(mm).some(p=>p.q<0&&Math.hypot(px-p.x,py-p.y)<10)))break}x.stroke()}})}
+function drawMagnet(m,i){x.save();x.translate(m.x,m.y);x.rotate(m.a);x.fillStyle='#E5533F';x.fillRect(0,-T/2,L/2,T);x.fillStyle='#2F7FD1';x.fillRect(-L/2,-T/2,L/2,T);x.strokeStyle='#1D2B53';x.lineWidth=5;x.strokeRect(-L/2,-T/2,L,T);
+ x.fillStyle='#fff';x.font='800 34px Fredoka,system-ui';x.textAlign='center';x.textBaseline='middle';x.save();x.translate(L/4,0);x.rotate(-m.a);x.fillText('N',0,2);x.restore();x.save();x.translate(-L/4,0);x.rotate(-m.a);x.fillText('S',0,2);x.restore();
+ x.rotate(-m.a);x.fillStyle='#1D2B53';x.font='700 16px system-ui';x.fillText(`Magnet ${i+1}`,0,-T/2-14-Math.abs(Math.sin(m.a))*L/2);x.restore()}
+function force(){// force on magnet 2 from magnet 1, along the line between them
+ const [a,b]=M;let fx=0,fy=0;poles(b).forEach(p=>poles(a).forEach(q=>{const dx=p.x-q.x,dy=p.y-q.y,r2=dx*dx+dy*dy+400,r3=r2*Math.sqrt(r2);fx+=p.q*q.q*dx/r3;fy+=p.q*q.q*dy/r3}));
+ const ux=b.x-a.x,uy=b.y-a.y,d=Math.hypot(ux,uy)||1;return {along:(fx*ux+fy*uy)/d,fx,fy,d}}
+function draw(){x.clearRect(0,0,W,H);x.fillStyle='#FFFDF6';x.fillRect(0,0,W,H);
+ if(lines)drawLines();M.forEach(drawMagnet);
+ objs.forEach(o=>{const im=window.E3D&&E3D.img(o.e);if(im)x.drawImage(im,o.x-28,o.y-28,56,56);else{x.font='50px serif';x.textAlign='center';x.textBaseline='middle';x.fillText(o.e,o.x,o.y)}});
+ const f=force(),near=f.d<L*2.2;let m='Drag the magnets close together. Tap a magnet to spin it.';
+ if(near){const att=f.along<0;m=att?'🧲 They ATTRACT! Different poles pull together.':'↔️ They REPEL! The same poles push apart.';x.strokeStyle=att?'#1E8E3E':'#E5533F';x.fillStyle=x.strokeStyle;x.lineWidth=6;const [a,b]=M,mx=(a.x+b.x)/2,my=(a.y+b.y)/2-80;x.font='800 26px Fredoka,system-ui';x.textAlign='center';x.fillText(att?'➡ PULL ⬅':'⬅ PUSH ➡',mx,my)}
+ $('msg').textContent=m;window.__t={along:f.along,d:f.d,found:{...found}}}
+function step(){// the magnet you are not holding slides a little when it's pushed or pulled
+ const f=force();if(f.d<L*2.2&&dragM!==1){const b=M[1],k=6e5;let vx=f.fx*k,vy=f.fy*k;const sp=Math.hypot(vx,vy);if(sp>6){vx*=6/sp;vy*=6/sp}const nx=b.x+vx,ny=b.y+vy;if(Math.hypot(nx-M[0].x,ny-M[0].y)>L*.98||f.along>0){b.x=Math.max(L/2,Math.min(W-L/2,nx));b.y=Math.max(T,Math.min(H-T,ny))}}
+ objs.forEach(o=>{if(!o.mag||o===dragO)return;let best=null;M.forEach(m=>poles(m).forEach(p=>{const d=Math.hypot(o.x-p.x,o.y-p.y);if(d<170&&(!best||d<best.d))best={p,d}}));if(best&&best.d>34){o.x+=(best.p.x-o.x)*.12;o.y+=(best.p.y-o.y)*.12}});
+ draw();requestAnimationFrame(step)}
+const pt=e=>{const r=cv.getBoundingClientRect();return [(e.clientX-r.left)/r.width*W,(e.clientY-r.top)/r.height*H]};
+const hitM=([px,py])=>M.findIndex(m=>{const dx=px-m.x,dy=py-m.y,c=Math.cos(-m.a),s=Math.sin(-m.a),lx=dx*c-dy*s,ly=dx*s+dy*c;return Math.abs(lx)<L/2+6&&Math.abs(ly)<T/2+6});
+let downAt=null;
+cv.addEventListener('pointerdown',e=>{const p=pt(e);const oi=objs.findIndex(o=>Math.hypot(o.x-p[0],o.y-p[1])<32);if(oi>=0){dragO=objs[oi];cv.setPointerCapture(e.pointerId);return}
+ const i=hitM(p);if(i<0)return;dragM=i;off=[M[i].x-p[0],M[i].y-p[1]];downAt={t:Date.now(),p};cv.setPointerCapture(e.pointerId)});
+cv.addEventListener('pointermove',e=>{const p=pt(e);if(dragO){dragO.x=p[0];dragO.y=p[1];return}if(dragM<0)return;M[dragM].x=Math.max(L/2,Math.min(W-L/2,p[0]+off[0]));M[dragM].y=Math.max(T,Math.min(H-T,p[1]+off[1]))});
+cv.addEventListener('pointerup',e=>{if(dragO){test(dragO);dragO=null;return}if(dragM>=0&&downAt&&Date.now()-downAt.t<250&&Math.hypot(pt(e)[0]-downAt.p[0],pt(e)[1]-downAt.p[1])<6){M[dragM].a+=Math.PI/2;Kit.tick()}dragM=-1;downAt=null});
+function test(o){const d=Math.min(...M.flatMap(m=>poles(m).map(p=>Math.hypot(o.x-p.x,o.y-p.y))));if(d>200)return;if(!(o.n in found)){found[o.n]=o.mag;tab()}o.mag?Kit.ding():Kit.tone(220,.2,'triangle',.15);const b=$('tray').querySelector(`[data-o="${o.i}"]`);b.classList.add(o.mag?'yes':'no')}
+function tab(){$('tab').innerHTML=Object.entries(found).map(([n,m])=>{const o=OBJ.find(z=>z[1]===n);return `<tr><td>${o[0]} ${n}</td><td>${m?'🧲 Magnetic':'🚫 Not magnetic'}</td><td class="muted">${o[3]}</td></tr>`}).join('');if(Object.keys(found).length===OBJ.length){Kit.tada();Kit.confetti(60)}}
+// drag things from the tray onto the table
+$('tray').addEventListener('pointerdown',e=>{const b=e.target.closest('[data-o]');if(!b)return;e.preventDefault();const i=+b.dataset.o,o=OBJ[i];const r=cv.getBoundingClientRect();
+ const obj={i,e:o[0],n:o[1],mag:o[2],x:W/2,y:H-50};const mv=ev=>{obj.x=(ev.clientX-r.left)/r.width*W;obj.y=(ev.clientY-r.top)/r.height*H};mv(e);objs=objs.filter(z=>z.i!==i);objs.push(obj);dragO=obj;
+ const up=ev=>{removeEventListener('pointermove',mv);removeEventListener('pointerup',up);dragO=null;if(obj.x<0||obj.y<0||obj.x>W||obj.y>H){objs=objs.filter(z=>z!==obj);return}test(obj)};addEventListener('pointermove',mv);addEventListener('pointerup',up)});
+$('f0').onclick=()=>{M[0].a+=Math.PI;Kit.tick()};$('f1').onclick=()=>{M[1].a+=Math.PI;Kit.tick()};
+$('ln').onclick=()=>{lines=!lines;$('ln').textContent=`〰️ Field lines: ${lines?'on':'off'}`};
+$('rs').onclick=()=>{M=[{x:330,y:310,a:0},{x:700,y:310,a:Math.PI}];objs=[];found={};tab();$('tray').querySelectorAll('.mg-o').forEach(b=>b.classList.remove('yes','no'))};
+window.__m={M:()=>M,set:(i,v)=>Object.assign(M[i],v),drop:(i,px,py)=>{const o=OBJ[i];const obj={i,e:o[0],n:o[1],mag:o[2],x:px,y:py};objs.push(obj);test(obj)}};
+step();
+</script>
+</body></html>

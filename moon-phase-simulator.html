@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Moon Phase Simulator</title>
+<style>
+main{max-width:1500px}
+.mp{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.mp{grid-template-columns:1fr}}
+.mp-box{background:#0B1033;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);padding:10px;position:relative}
+.mp-box h3{margin:0 0 6px;color:#fff;text-align:center}
+.mp-box canvas{width:100%;display:block;touch-action:none}
+.mp-name{text-align:center;font-weight:800;font-size:clamp(1.4rem,3vw,2.2rem);color:#FFE38A;margin-top:4px}
+.mp-sub{text-align:center;color:#C9D3F0;font-weight:700}
+.mp-day{display:flex;gap:10px;align-items:center;margin-top:12px;font-weight:800;color:#fff;text-shadow:2px 2px 0 var(--ink)}
+.mp-day input{flex:1}
+.mp-strip{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px;margin-top:12px}
+@media (max-width:640px){.mp-strip{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.mp-strip button{font:inherit;font-weight:700;font-size:.72rem;border:3px solid var(--ink);border-radius:12px;background:#1D2B53;color:#fff;cursor:pointer;padding:4px 2px}
+.mp-strip button canvas{width:100%;display:block}
+.mp-strip button.on{outline:4px solid var(--sun)}
+.mp-q{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;margin-top:12px}
+.mp-q .ch{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.mp-q .ch button{font:inherit;font-weight:800;border:3px solid var(--ink);border-radius:12px;padding:6px;background:#fff;cursor:pointer;color:var(--ink)}
+.mp-q .ch button.yes{background:#8BE09A}.mp-q .ch button.no{background:#FFB3AA}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🌙", "Moon Phase Simulator");
+const $=id=>document.getElementById(id);
+const CYC=29.53;// days from one new moon to the next
+const PH=[['New moon',0],['Waxing crescent',45],['First quarter',90],['Waxing gibbous',135],['Full moon',180],['Waning gibbous',225],['Third quarter',270],['Waning crescent',315]];
+const phaseName=a=>{a=((a%360)+360)%360;return PH[Math.round(a/45)%8][0]};
+let ang=60,q=null,score=0;
+document.querySelector('main').innerHTML=`<div class="mp"><div><div class="mp-box"><h3>🔭 Looking down from space</h3><canvas id="top" width="700" height="560"></canvas></div>
+<div class="mp-day">📅 Day <span id="dn"></span><input type="range" id="dy" min="0" max="2953" value="0"></div><div class="mp-strip" id="st"></div></div>
+<div><div class="mp-box"><h3>👀 What we see from Earth</h3><canvas id="view" width="500" height="420"></canvas><div class="mp-name" id="nm"></div><div class="mp-sub" id="sb"></div></div>
+<div class="mp-q" id="qz"><b>🎯 Quick quiz</b> <span class="muted">Score: <b id="qs">0</b></span><div id="qq"></div></div></div></div>`;
+// draw the moon as seen from Earth: a = angle around Earth (0 = between Earth and Sun = new moon)
+function moon(c,cx,cy,r,a){a=((a%360)+360)%360;const t=a*Math.PI/180,wax=a<=180;c.fillStyle='#2A2F4A';c.beginPath();c.arc(cx,cy,r,0,7);c.fill();
+ c.fillStyle='#F4EBC8';c.beginPath();c.arc(cx,cy,r,-Math.PI/2,Math.PI/2,!wax);for(let k=0;k<=40;k++){const ph=Math.PI/2-k/40*Math.PI,xx=cx+(wax?1:-1)*r*Math.cos(ph)*Math.cos(t),yy=cy+r*Math.sin(ph);c.lineTo(xx,yy)}c.closePath();c.fill();
+ c.fillStyle='rgba(0,0,0,.08)';[[.3,-.2,.18],[-.25,.25,.14],[.1,.45,.1]].forEach(([dx,dy,s])=>{c.beginPath();c.arc(cx+dx*r,cy+dy*r,s*r,0,7);c.fill()})}
+function drawTop(){const c=$('top').getContext('2d'),W=700,H=560,ex=320,ey=280,R=190;c.fillStyle='#0B1033';c.fillRect(0,0,W,H);
+ // sunlight from the right
+ for(let y=30;y<H;y+=46){c.strokeStyle='rgba(255,210,90,.35)';c.lineWidth=3;c.beginPath();c.moveTo(W,y);c.lineTo(W-120,y);c.stroke();c.fillStyle='rgba(255,210,90,.5)';c.beginPath();c.moveTo(W-128,y);c.lineTo(W-114,y-6);c.lineTo(W-114,y+6);c.fill()}
+ c.fillStyle='#FFE38A';c.font='800 20px Fredoka,system-ui';c.textAlign='right';c.fillText('☀️ Sunlight →',W-14,22);
+ c.strokeStyle='rgba(255,255,255,.25)';c.setLineDash([8,8]);c.lineWidth=2;c.beginPath();c.arc(ex,ey,R,0,7);c.stroke();c.setLineDash([]);
+ // Earth: day side faces the sun
+ c.fillStyle='#2F7FD1';c.beginPath();c.arc(ex,ey,46,0,7);c.fill();c.fillStyle='#5DC66E';c.beginPath();c.arc(ex-10,ey-8,18,0,7);c.arc(ex+16,ey+14,12,0,7);c.fill();c.fillStyle='rgba(5,8,30,.55)';c.beginPath();c.arc(ex,ey,46,Math.PI/2,Math.PI*1.5);c.fill();
+ c.fillStyle='#fff';c.textAlign='center';c.font='800 18px Fredoka,system-ui';c.fillText('Earth',ex,ey+70);
+ // Moon: the half facing the sun is always lit
+ const t=ang*Math.PI/180,mx=ex+Math.cos(t)*R,my=ey-Math.sin(t)*R;c.fillStyle='#2A2F4A';c.beginPath();c.arc(mx,my,30,0,7);c.fill();c.fillStyle='#F4EBC8';c.beginPath();c.arc(mx,my,30,-Math.PI/2,Math.PI/2);c.fill();
+ c.strokeStyle='#FFC93C';c.lineWidth=4;c.beginPath();c.arc(mx,my,36,0,7);c.stroke();c.fillStyle='#fff';c.fillText('Moon (drag me)',mx,my-46);
+ c.strokeStyle='rgba(255,255,255,.5)';c.lineWidth=2;c.setLineDash([4,6]);c.beginPath();c.moveTo(ex,ey);c.lineTo(mx,my);c.stroke();c.setLineDash([])}
+function draw(){drawTop();const v=$('view').getContext('2d');v.fillStyle='#0B1033';v.fillRect(0,0,500,420);for(let i=0;i<40;i++){v.fillStyle='rgba(255,255,255,.5)';v.fillRect((i*137)%500,(i*71)%420,2,2)}moon(v,250,210,160,ang);
+ const n=phaseName(ang),day=ang/360*CYC,lit=Math.round((1-Math.cos(ang*Math.PI/180))/2*100);$('nm').textContent=n;$('sb').textContent=`${lit}% of the side we see is lit · ${ang%360<=180?'growing (waxing) ➡ more light each night':'shrinking (waning) ⬅ less light each night'}`;
+ $('dn').textContent=`${day.toFixed(1)} of ${CYC}`;$('dy').value=Math.round(day*100);
+ [...$('st').children].forEach((b,i)=>b.classList.toggle('on',phaseName(ang)===PH[i][0]));window.__t={ang,name:n,lit}}
+$('st').innerHTML=PH.map(p=>`<button data-a="${p[1]}"><canvas width="80" height="80"></canvas>${p[0]}</button>`).join('');[...$('st').querySelectorAll('canvas')].forEach((c,i)=>{const x=c.getContext('2d');x.fillStyle='#0B1033';x.fillRect(0,0,80,80);moon(x,40,40,32,PH[i][1])});
+$('st').onclick=e=>{const b=e.target.closest('[data-a]');if(b){ang=+b.dataset.a;Kit.tick();draw()}};
+$('dy').oninput=()=>{ang=$('dy').value/100/CYC*360;draw()};
+let drag=false;const tv=$('top');const setFrom=e=>{const r=tv.getBoundingClientRect(),px=(e.clientX-r.left)/r.width*700-320,py=(e.clientY-r.top)/r.height*560-280;ang=(Math.atan2(-py,px)*180/Math.PI+360)%360;draw()};
+tv.addEventListener('pointerdown',e=>{drag=true;tv.setPointerCapture(e.pointerId);setFrom(e)});tv.addEventListener('pointermove',e=>{if(drag)setFrom(e)});tv.addEventListener('pointerup',()=>drag=false);
+function quiz(){const p=Kit.pick(PH);q={a:p[0],o:Kit.shuffle([p[0],...Kit.shuffle(PH.filter(x=>x!==p).map(x=>x[0])).slice(0,3)]),miss:false};
+ $('qq').innerHTML=`<p style="margin:6px 0">Which phase is this?</p><canvas id="qc" width="120" height="120" style="width:120px;display:block;margin:0 auto;border-radius:16px"></canvas><div class="ch">${q.o.map(o=>`<button data-o="${o}">${o}</button>`).join('')}</div>`;const x=$('qc').getContext('2d');x.fillStyle='#0B1033';x.fillRect(0,0,120,120);moon(x,60,60,50,p[1]);window.__q=q.a}
+$('qq').onclick=e=>{const b=e.target.closest('[data-o]');if(!b||!q||b.classList.contains('no'))return;if(b.dataset.o===q.a){b.classList.add('yes');if(!q.miss){score++;$('qs').textContent=score}Kit.ding();q=null;setTimeout(quiz,1200)}else{q.miss=true;b.classList.add('no');Learn.flash(b,false)}};
+draw();quiz();
+</script>
+</body></html>

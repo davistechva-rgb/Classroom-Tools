@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Cloud Formation Simulator</title>
+<style>
+main{max-width:1500px}
+.cf2{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.cf2{grid-template-columns:1fr}}
+.cf2-sky{position:relative;aspect-ratio:4/3;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);overflow:hidden;background:linear-gradient(#2F6FC0,#7EC3F2 60%,#CDEBFF);touch-action:none;container-type:inline-size}
+.cf2-ground{position:absolute;left:0;right:0;bottom:0;height:12%;background:linear-gradient(#7CCB5E,#5BAE45)}
+.cf2-alt{position:absolute;left:0;right:0;border-top:2px dashed rgba(255,255,255,.55);font-weight:800;font-size:clamp(.65rem,1.8cqw,.95rem);color:#fff;text-shadow:1px 1px 0 rgba(0,0,0,.35);padding-left:6px}
+.cf2-base{position:absolute;left:0;right:0;border-top:4px solid #fff;box-shadow:0 0 12px #fff;transition:bottom .3s}
+.cf2-base span{position:absolute;right:8px;top:-1.6em;background:#fff;border:3px solid var(--ink);border-radius:99px;padding:0 10px;font-weight:800;font-size:clamp(.7rem,1.8cqw,1rem)}
+.cf2-cloud{position:absolute;left:50%;transform:translateX(-50%);width:62%;transition:opacity .3s;pointer-events:none}
+.cf2-cloud i{position:absolute;border-radius:50%;background:radial-gradient(circle at 40% 35%,#fff,#E3E9F2 70%)}
+.cf2-parcel{position:absolute;left:50%;width:15%;aspect-ratio:1;transform:translate(-50%,50%);cursor:grab;z-index:3;display:grid;place-items:center}
+.cf2-parcel .b{position:absolute;inset:0;border-radius:50%;border:4px solid var(--ink);background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.9),rgba(255,200,120,.65));transition:background .3s}
+.cf2-parcel.wet .b{background:radial-gradient(circle at 35% 30%,#fff,#C9D6E8)}
+.cf2-parcel b{position:relative;font-size:clamp(.6rem,1.8cqw,1rem);text-align:center;line-height:1.1}
+.cf2-drops i{position:absolute;width:1cqw;height:1cqw;border-radius:50%;background:#fff;opacity:.9}
+.cf2-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:14px;display:grid;gap:10px}
+.cf2-p label{font-weight:800}.cf2-p input[type=range]{width:100%}
+.cf2-read{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cf2-read div{border:3px solid var(--ink);border-radius:14px;padding:6px 10px;background:#F4FAFF;font-weight:700}
+.cf2-read b{display:block;font-size:1.6rem}
+.cf2-msg{border:4px solid var(--ink);border-radius:16px;padding:10px 12px;font-weight:700;background:#FFF6C9;min-height:4.5em}
+.cf2-ch{display:flex;gap:8px;flex-wrap:wrap}.cf2-ch button{font:inherit;font-weight:700;border:3px solid var(--ink);border-radius:12px;padding:4px 10px;background:#fff;cursor:pointer;color:var(--ink)}.cf2-ch button.done{background:#C9F1D2}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script><script src="scene.js"></script>
+<script>
+Kit.mount("☁️", "Cloud Formation Simulator");
+const $=id=>document.getElementById(id);
+// Rising air cools about 10°C per km while dry. The dew point drops about 2°C per km.
+// When the air's temperature reaches its dew point, water vapor condenses: that height is the cloud base.
+// Inside the cloud the air cools more slowly (about 6°C per km) because condensing water gives off heat.
+const MAXKM=4,DRY=10,DEW=2,WET=6;
+const CH=[{t:'Make a cloud whose base is lower than 1 km',ok:s=>s.base<1},{t:'Make a cloud whose base is higher than 2.5 km',ok:s=>s.base>2.5&&s.base<MAXKM},{t:'Make a day with no cloud at all (base above 4 km)',ok:s=>s.base>=MAXKM},{t:'Lift a parcel into a cloud on a 35°C day',ok:s=>s.T0>=35&&s.alt>=s.base&&s.base<MAXKM}];
+let T0=25,TD=15,alt=0,done=new Set();
+document.querySelector('main').innerHTML=`<div class="cf2"><div><div class="cf2-sky" id="sky"><div class="cf2-ground"></div>${[1,2,3].map(k=>`<div class="cf2-alt" style="bottom:${12+k/MAXKM*86}%">${k} km</div>`).join('')}
+<div class="cf2-cloud" id="cl"></div><div class="cf2-base" id="bs"><span id="bl"></span></div><div class="cf2-drops" id="dr"></div>
+<div class="cf2-parcel" id="pc"><div class="b"></div><b id="pt"></b></div></div>
+<p class="muted" style="text-align:center;color:#fff;font-weight:700">Drag the bubble of air up and down, or use the buttons.</p></div>
+<div class="cf2-p"><label>☀️ Temperature at the ground: <span id="t0v"></span></label><input type="range" id="t0" min="5" max="40" value="25">
+<label>💧 How humid the air is (dew point): <span id="tdv"></span></label><input type="range" id="td" min="-10" max="30" value="15"><span class="muted">The dew point is how cold the air must get before its water vapor turns into droplets. Humid air has a dew point close to the temperature.</span>
+<div class="row"><button class="btn green" id="up">⬆️ Lift the air</button><button class="btn white" id="dn">⬇️ Down</button><button class="btn white small" id="rs">↺ Ground</button></div>
+<div class="cf2-read"><div>📏 Height<b id="ra"></b></div><div>🌡️ Air temperature<b id="rt"></b></div><div>💧 Dew point<b id="rd"></b></div><div>☁️ Cloud base<b id="rb"></b></div></div>
+<div class="cf2-msg" id="msg"></div>
+<b>🎯 Challenges</b><div class="cf2-ch" id="ch"></div></div></div>`;
+function model(){const gap=T0-TD,base=Math.max(0,gap/(DRY-DEW));const t=a=>a<=base?T0-DRY*a:T0-DRY*base-WET*(a-base);const d=a=>a<=base?TD-DEW*a:t(a);return {base,T:t(alt),D:d(alt),inCloud:alt>=base}}
+function draw(){const m=model(),y=a=>12+Math.min(a,MAXKM)/MAXKM*86;
+ $('t0v').textContent=T0+'°C';$('tdv').textContent=TD+'°C';$('pc').style.bottom=y(alt)+'%';$('pc').classList.toggle('wet',m.inCloud&&m.base<MAXKM);$('pt').innerHTML=`${Math.round(m.T)}°C${m.inCloud&&m.base<MAXKM?'<br>💧':''}`;
+ const vis=m.base<MAXKM;$('bs').style.bottom=y(m.base)+'%';$('bs').style.display=vis?'':'none';$('bl').textContent=`Cloud base ≈ ${(m.base*1000).toFixed(0)} m`;
+ // cloud grows from its base up to how high the air has been lifted (at least a puffy start)
+ const top=Math.max(alt,m.base+.4);const h=vis?(Math.min(top,MAXKM)-m.base)/MAXKM*86:0;$('cl').style.bottom=y(m.base)+'%';$('cl').style.height=h+'%';$('cl').style.opacity=vis&&alt>=m.base?1:vis?.25:0;
+ if(!$('cl').children.length)$('cl').innerHTML=Array.from({length:14},(_,i)=>`<i style="left:${8+Math.random()*64}%;bottom:${Math.random()*60}%;width:${22+Math.random()*20}%;aspect-ratio:1"></i>`).join('');
+ $('ra').textContent=`${(alt*1000).toFixed(0)} m`;$('rt').textContent=`${m.T.toFixed(1)}°C`;$('rd').textContent=`${m.D.toFixed(1)}°C`;$('rb').textContent=vis?`${(m.base*1000).toFixed(0)} m`:'none';
+ $('msg').innerHTML=!vis?'☀️ The air is so dry it would have to rise more than 4 km before reaching its dew point. <b>No clouds today!</b>':alt<m.base?`⬆️ The air cools as it rises. It is ${(m.T-m.D).toFixed(1)}°C warmer than its dew point. Keep lifting!`:`☁️ <b>The air reached its dew point!</b> Water vapor is condensing into tiny droplets. That's a cloud!`;
+ const S={base:m.base,alt,T0};CH.forEach((c,i)=>{if(!done.has(i)&&c.ok(S)){done.add(i);Kit.tada();Kit.confetti(40)}});
+ $('ch').innerHTML=CH.map((c,i)=>`<button class="${done.has(i)?'done':''}">${done.has(i)?'✅':'⬜'} ${c.t}</button>`).join('');
+ window.__t={base:+m.base.toFixed(3),T:+m.T.toFixed(2),D:+m.D.toFixed(2),alt,inCloud:m.inCloud,done:done.size}}
+const move=d=>{alt=Math.max(0,Math.min(MAXKM,+(alt+d).toFixed(2)));draw()};
+$('up').onclick=()=>move(.25);$('dn').onclick=()=>move(-.25);$('rs').onclick=()=>{alt=0;draw()};
+$('t0').oninput=()=>{T0=+$('t0').value;if(TD>T0){TD=T0;$('td').value=TD}draw()};$('td').oninput=()=>{TD=Math.min(+$('td').value,T0);$('td').value=TD;draw()};
+let drag=false;$('pc').addEventListener('pointerdown',e=>{drag=true;$('pc').setPointerCapture(e.pointerId);e.preventDefault()});
+$('pc').addEventListener('pointermove',e=>{if(!drag)return;const r=$('sky').getBoundingClientRect();const f=(r.bottom-e.clientY)/r.height;alt=Math.max(0,Math.min(MAXKM,(f-.12)/.86*MAXKM));draw()});
+$('pc').addEventListener('pointerup',()=>drag=false);
+draw();
+</script>
+</body></html>

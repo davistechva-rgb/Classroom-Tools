@@ -47,6 +47,8 @@ const L={type:['🦸 Hero','😈 Villain','🤝 Sidekick','🧭 Explorer','🃏 
  talent:['can talk to animals','never gets lost','is a great cook','can remember everything','is super fast','can fix any machine','tells amazing jokes','can see in the dark'],
  say:['"Let\'s do this!"','"Hmm, interesting…"','"Not again!"','"Trust me."','"I knew it!"','"Easy peasy!"','"Wait for me!"','"No problem!"','"That\'s my snack!"']};
 const COL=[['#FFD86B','#FF9F43'],['#A7E8F5','#22C3E6'],['#C9F1D2','#5DC66E'],['#E3D3FF','#9B6BF2'],['#FFD3E8','#FF8FC7']];
+// ✏️ every word list can be changed by the teacher
+[['first','First names'],['last','Last names'],['type','Roles'],['trait','Personality traits'],['want','What they want (finish "wants…")'],['fear','Fears (finish "is afraid of…")'],['talent','Talents (finish "is great at this:…")'],['secret','Secrets (finish "secretly…")'],['say','Catchphrases']].forEach(([k,t])=>{const d=L[k].join('\n');const set=x=>{const v=Kit.lines(x);if(v.length)L[k]=v};set(Kit.editable({key:'chargen-'+k,title:t,help:'(one per line)',def:d,rows:120,onSave:set}))});
 let c={};const st=Kit.get('cg-state',{saved:[]});
 const r=k=>Kit.pick(L[k]);
 function rollAll(){c={type:r('type'),pic:r('pic'),acc:r('acc'),name:`${r('first')} ${r('last')}`,t1:r('trait'),t2:r('trait'),want:r('want'),fear:r('fear'),secret:r('secret'),talent:r('talent'),say:r('say'),col:Kit.rand(0,4),stats:[0,0,0,0].map(()=>Kit.rand(2,10))};while(c.t2===c.t1)c.t2=r('trait')}

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Plant Growth Simulator</title>
+<style>
+main{max-width:1500px}
+.pg-pots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.pg-pot{background:#fff;border:6px solid var(--ink);border-radius:24px;box-shadow:6px 6px 0 var(--ink);padding:12px;display:grid;gap:8px}
+.pg-pot h3{margin:0;text-align:center}
+.pg-scene{height:260px;border:4px solid var(--ink);border-radius:16px;position:relative;overflow:hidden;background:var(--sky)}
+.pg-scene svg{position:absolute;inset:0;width:100%;height:100%}
+.pg-c{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center;font-weight:700}
+.pg-c .seg{display:flex;gap:4px;flex-wrap:wrap}.pg-c .seg button{font:inherit;font-weight:700;border:3px solid var(--ink);border-radius:99px;padding:2px 10px;background:#fff;cursor:pointer;color:var(--ink)}.pg-c .seg button.on{background:var(--sun)}
+.pg-c .seg button.diff{box-shadow:0 0 0 3px #E5533F}
+.pg-st{text-align:center;font-weight:800;min-height:1.4em}
+.pg-ctl{display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;margin:14px 0}
+.pg-day{font-weight:800;font-size:1.6rem;color:#fff;text-shadow:2px 2px 0 var(--ink)}
+.pg-fair{text-align:center;font-weight:800;padding:8px 12px;border-radius:14px;border:4px solid var(--ink);background:#fff;margin-bottom:12px}
+.pg-chart{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:10px}
+.pg-chart canvas{width:100%;height:220px;display:block}
+@media (max-width:700px){.pg-pots{grid-template-columns:1fr}}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🌱", "Plant Growth Simulator");
+const $=id=>document.getElementById(id);
+const OPT={water:[['None',0],['A little',1],['Just right',2],['Too much',3]],light:[['Dark closet',0],['Shade',1],['Sunny window',2]],soil:[['Sand',0],['Potting soil',1]]};
+const LAB={water:'💧 Water',light:'☀️ Light',soil:'🪴 Soil'};
+const FW=[0,.55,1,.35],FL=[.12,.6,1],FS=[.55,1];
+let pots=[{water:2,light:2,soil:1},{water:2,light:0,soil:1}],day=0,hist=[[0],[0]],tm=null,health=[1,1];
+document.querySelector('main').innerHTML=`<div class="pg-fair" id="fair"></div><div class="pg-pots" id="pots"></div><div class="pg-ctl"><span class="pg-day" id="dy">Day 0</span><button class="btn big green" id="go">▶ Grow for 14 days</button><button class="btn white" id="one">+1 day</button><button class="btn white small" id="rs">🔄 Plant new seeds</button></div><div class="pg-chart"><b>📈 Plant height (cm)</b><canvas id="ch" width="900" height="220"></canvas></div>`;
+function fair(){const d=Object.keys(OPT).filter(k=>pots[0][k]!==pots[1][k]);$('fair').innerHTML=d.length===1?`✅ Fair test! You are only changing the <u>${LAB[d[0]].slice(3)}</u>. Everything else is the same.`:d.length===0?'🤔 Both pots are the same. Change ONE thing in Pot B to test it.':`⚠️ You changed ${d.length} things (${d.map(k=>LAB[k].slice(3)).join(', ')}). Change only ONE so you know what made the difference.`;$('fair').style.background=d.length===1?'#C9F1D2':d.length?'#FFE3C4':'#fff';return d}
+function plantSVG(i){const p=pots[i],h=hist[i][hist[i].length-1],hp=health[i];const H=Math.min(190,h*6.5);const leaf=hp>.7?'#3FA34D':hp>.4?'#9BC53D':'#D6B23A';const pale=p.light===0?'#C8D68A':leaf;const droop=p.water===0&&day>3?25:p.water===3&&day>5?12:0;
+ const n=Math.floor(H/28);let lv='';for(let k=0;k<n;k++){const y=230-24-k*28-14,s=k%2?1:-1;lv+=`<ellipse cx="${100+s*16}" cy="${y+droop*.3}" rx="${10+Math.min(8,h/3)}" ry="7" fill="${p.light===0?pale:leaf}" stroke="#1D2B53" stroke-width="2" transform="rotate(${s*(-25-droop)} ${100} ${y})"/>`}
+ const flower=h>18&&hp>.75?`<circle cx="100" cy="${230-24-H}" r="12" fill="#FF8FC7" stroke="#1D2B53" stroke-width="2"/><circle cx="100" cy="${230-24-H}" r="5" fill="#FFC93C"/>`:'';
+ const sun=p.light===2?'<circle cx="170" cy="30" r="20" fill="#FFC93C" stroke="#1D2B53" stroke-width="2"/>':p.light===1?'<circle cx="170" cy="30" r="16" fill="#FFE9A8" opacity=".7"/>':'';
+ return `<svg viewBox="0 0 200 230" preserveAspectRatio="xMidYMax meet">${sun}${p.water===3&&day?'<rect x="58" y="196" width="84" height="8" fill="#5AB4F0" opacity=".7"/>':''}<path d="M100 ${230-24} Q ${100+droop} ${230-24-H/2} 100 ${230-24-H}" stroke="${p.light===0?'#B5C46A':'#2E8B3A'}" stroke-width="5" fill="none"/>${lv}${flower}<path d="M60 200 L140 200 L132 230 L68 230 Z" fill="#C8734A" stroke="#1D2B53" stroke-width="3"/><rect x="56" y="194" width="88" height="10" rx="3" fill="#B5603A" stroke="#1D2B53" stroke-width="3"/><rect x="62" y="204" width="76" height="6" fill="${p.soil?'#5A3E2B':'#E8D19A'}"/></svg>`}
+function status(i){const p=pots[i],h=hist[i][hist[i].length-1];if(!day)return '🌰 A seed is planted.';if(h<.3)return p.water===0?'🏜️ Too dry. The seed can\'t sprout.':'😴 Nothing yet…';if(p.water===0)return '🥀 Wilting! It needs water.';if(p.water===3)return '🟡 Leaves turning yellow. Roots are too soggy.';if(p.light===0)return '🫥 Pale and weak. It needs light to make food.';if(p.soil===0)return '🙂 Growing, but sand has few nutrients.';return h>15?'🌸 Healthy and strong!':'🌿 Growing well!'}
+function draw(){const d=fair();$('pots').innerHTML=pots.map((p,i)=>`<div class="pg-pot"><h3>${['🅰️ Pot A (control)','🅱️ Pot B (test)'][i]}</h3><div class="pg-scene" style="--sky:${['#3A3F5C','#D6E8F2','#BFE6FA'][p.light]}">${plantSVG(i)}</div><div class="pg-st">${status(i)} · <b>${hist[i][hist[i].length-1].toFixed(1)} cm</b></div>
+ <div class="pg-c">${Object.entries(OPT).map(([k,o])=>`<span>${LAB[k]}</span><div class="seg">${o.map(([n,v])=>`<button data-p="${i}" data-k="${k}" data-v="${v}" class="${p[k]===v?'on':''} ${i===1&&d.includes(k)&&p[k]===v?'diff':''}" ${day?'disabled':''}>${n}</button>`).join('')}</div>`).join('')}</div></div>`).join('');
+ $('dy').textContent=`Day ${day}`;chart();window.__t={day,h:hist.map(h=>+h[h.length-1].toFixed(2)),fair:d.length===1}}
+function chart(){const c=$('ch'),x=c.getContext('2d'),W=900,H=220;x.clearRect(0,0,W,H);const mx=Math.max(10,...hist.flat());x.strokeStyle='#E3E8F2';x.lineWidth=1;x.font='14px system-ui';x.fillStyle='#6B7695';
+ for(let k=0;k<=4;k++){const y=H-24-(H-40)*k/4;x.beginPath();x.moveTo(40,y);x.lineTo(W,y);x.stroke();x.fillText(Math.round(mx*k/4),6,y+4)}for(let d=0;d<=14;d+=2)x.fillText('D'+d,40+(W-60)*d/14-8,H-4);
+ ['#E5533F','#1E7FD0'].forEach((col,i)=>{x.strokeStyle=col;x.lineWidth=5;x.beginPath();hist[i].forEach((v,d)=>{const px=40+(W-60)*d/14,py=H-24-(H-40)*v/mx;d?x.lineTo(px,py):x.moveTo(px,py)});x.stroke();x.fillStyle=col;x.font='800 16px system-ui';x.fillText(['Pot A','Pot B'][i],W-60,20+i*20)})}
+function grow(){if(day>=14)return false;day++;pots.forEach((p,i)=>{const r=FW[p.water]*FL[p.light]*FS[p.soil];const h=hist[i][hist[i].length-1];const sprout=day<3?.25:1;health[i]=r;hist[i].push(h+(p.water===0&&day>2?0:1.6*r*sprout)*(p.light===0?.9:1))});draw();Kit.tone(400+day*30,.06,'triangle',.12);return true}
+$('pots').onclick=e=>{const b=e.target.closest('[data-k]');if(!b||day)return;pots[+b.dataset.p][b.dataset.k]=+b.dataset.v;Kit.tick();draw()};
+$('go').onclick=()=>{clearInterval(tm);if(day>=14)return;tm=setInterval(()=>{if(!grow()){clearInterval(tm);const a=hist[0][14],b=hist[1][14];$('fair').innerHTML=`🔬 Results: Pot A grew <b>${a.toFixed(1)} cm</b>, Pot B grew <b>${b.toFixed(1)} cm</b>. ${Math.abs(a-b)<.5?'About the same!':(a>b?'Pot A':'Pot B')+' grew more.'} What does that tell you?`;Kit.tada()}},350)};
+$('one').onclick=()=>grow();
+$('rs').onclick=()=>{clearInterval(tm);day=0;hist=[[0],[0]];health=[1,1];draw()};
+draw();
+</script>
+</body></html>

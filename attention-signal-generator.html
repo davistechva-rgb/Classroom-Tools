@@ -44,6 +44,7 @@ const SIG=[
  ['train','🚂','Train whistle','All aboard: line up!','#1D2B53',()=>{[392,466,587].forEach(f=>{n(f,0,1.2,'sawtooth',.05,.1);n(f,1.4,1.4,'sawtooth',.05,.1)})}],
  ['sparkle','✨','Magic sparkle','Show me you\'re ready','#7B5CE6',()=>{for(let i=0;i<14;i++)n(1800+i*180+Math.random()*200,i*.06,.4,'sine',.12)}],
 ];
+{const MS0=SIG.map(s=>`${s[2]} | ${s[3]}`).join('\n');const t=Kit.editable({key:'signal-words',title:'What each signal says',help:'(one per line, in order: sound name | what students should do)',def:MS0,rows:240,onSave:()=>location.reload()});Kit.lines(t).forEach((l,i)=>{const p=l.split('|').map(x=>x.trim());if(SIG[i]&&p[1])SIG[i][3]=p[1]})}
 const st=Kit.get('as-set',{count:5,flash:true,vol:1});
 document.querySelector('main').innerHTML=`<div class="as-ctl"><button class="btn big green" id="rand">🎲 Surprise me</button><label class="ln-pill">Countdown <select id="cnt" style="width:auto;border-width:2px;padding:2px 8px"><option value="0">None</option><option value="3">3</option><option value="5">5</option><option value="10">10</option></select></label><label class="ln-pill"><input type="checkbox" id="fl"> Flash the screen</label></div>
 <div class="as-grid" id="g">${SIG.map((s,i)=>`<button class="as-b" data-i="${i}" style="--bc:${s[4]}"><span>${s[1]}</span>${s[2]}<small>“${Kit.esc(s[3])}”</small></button>`).join('')}</div>

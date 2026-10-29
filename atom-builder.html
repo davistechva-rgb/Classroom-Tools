@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Atom Builder</title>
+<style>
+main{max-width:1500px}
+.ab{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.ab{grid-template-columns:1fr}}
+.ab-view{background:radial-gradient(circle,#24306A,#121A3F);border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);aspect-ratio:1;max-height:72vh;margin:0 auto;width:100%}
+.ab-view svg{width:100%;height:100%;display:block}
+.ab-p{display:grid;gap:12px}
+.ab-c{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.ab-k{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:10px;text-align:center}
+.ab-k .n{font-size:2.4rem;font-weight:800;line-height:1}
+.ab-k .row{justify-content:center;gap:6px;margin-top:6px}
+.ab-k button{font:inherit;font-weight:900;font-size:1.4rem;width:46px;height:46px;border:4px solid var(--ink);border-radius:14px;cursor:pointer;background:var(--kc);color:#fff;box-shadow:0 4px 0 var(--ink)}
+.ab-k button:active{transform:translateY(4px);box-shadow:none}
+.ab-card{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px 16px;display:grid;grid-template-columns:auto 1fr;gap:6px 14px;align-items:center}
+.ab-sym{grid-row:span 3;width:100px;height:110px;border:5px solid var(--ink);border-radius:14px;background:#FFF6C9;display:grid;place-items:center;text-align:center;font-weight:800;line-height:1}
+.ab-sym b{font-size:2.6rem}.ab-sym small{font-size:.8rem}
+.ab-card h2{margin:0}
+.ab-tags{display:flex;gap:6px;flex-wrap:wrap}.ab-tags span{border:3px solid var(--ink);border-radius:99px;padding:2px 10px;font-weight:800;font-size:.9rem;background:var(--tc,#F4FAFF)}
+.ab-pt{display:grid;grid-template-columns:repeat(18,1fr);gap:2px}
+.ab-pt i{aspect-ratio:1;border-radius:4px;background:#E3E8F2;font-style:normal;font-size:clamp(.45rem,1vw,.7rem);font-weight:800;display:grid;place-items:center;color:#55607E}
+.ab-pt i.on{background:var(--sun);color:var(--ink);outline:3px solid var(--ink)}
+.ab-ch div{display:flex;gap:8px;align-items:center;border:3px solid var(--ink);border-radius:12px;padding:5px 10px;margin-bottom:6px;font-weight:700;background:#F4FAFF}.ab-ch div.ok{background:#C9F1D2}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("⚛️", "Atom Builder");
+const $=id=>document.getElementById(id);
+const EL=['','Hydrogen','Helium','Lithium','Beryllium','Boron','Carbon','Nitrogen','Oxygen','Fluorine','Neon','Sodium','Magnesium','Aluminum','Silicon','Phosphorus','Sulfur','Chlorine','Argon','Potassium','Calcium'];
+const SY=['','H','He','Li','Be','B','C','N','O','F','Ne','Na','Mg','Al','Si','P','S','Cl','Ar','K','Ca'];
+// stable neutron counts for each element (from real stable isotopes)
+const ST={1:[0,1],2:[1,2],3:[3,4],4:[5],5:[5,6],6:[6,7],7:[7,8],8:[8,9,10],9:[10],10:[10,11,12],11:[12],12:[12,13,14],13:[14],14:[14,15,16],15:[16],16:[16,17,18,20],17:[18,20],18:[18,20,22],19:[20,22],20:[20,22,23,24,26,28]};
+// where each element sits on the periodic table (row, column) for the first 20
+const POS={1:[1,1],2:[1,18],3:[2,1],4:[2,2],5:[2,13],6:[2,14],7:[2,15],8:[2,16],9:[2,17],10:[2,18],11:[3,1],12:[3,2],13:[3,13],14:[3,14],15:[3,15],16:[3,16],17:[3,17],18:[3,18],19:[4,1],20:[4,2]};
+const SHELL=[2,8,8,8];
+const CH=[['Build hydrogen (1 proton, 1 electron)',a=>a.p===1&&a.e===1&&a.n===0],['Build carbon-12 (the atom in all living things)',a=>a.p===6&&a.n===6&&a.e===6],['Build a neutral oxygen atom',a=>a.p===8&&a.e===8&&ST[8].includes(a.n)],['Make an ion with a +1 charge',a=>a.p&&a.p-a.e===1],['Build neon, with a full outer shell',a=>a.p===10&&a.e===10&&ST[10].includes(a.n)],['Build calcium-40 (it\'s in your bones)',a=>a.p===20&&a.n===20&&a.e===20]];
+let A={p:1,n:0,e:1},t=0,done=new Set();
+document.querySelector('main').innerHTML=`<div class="ab"><div class="ab-view"><svg id="sv" viewBox="-300 -300 600 600"></svg></div>
+<div class="ab-p"><div class="ab-c">${[['p','Protons','#E5533F','➕ positive'],['n','Neutrons','#8892A8','no charge'],['e','Electrons','#2F7FD1','➖ negative']].map(([k,n,c,d])=>`<div class="ab-k" style="--kc:${c}"><b>${n}</b><div class="n" id="c-${k}">0</div><span class="muted" style="font-size:.85rem">${d}</span><div class="row"><button data-k="${k}" data-d="-1">−</button><button data-k="${k}" data-d="1">+</button></div></div>`).join('')}</div>
+<div class="ab-card" id="card"></div><div class="ab-pt" id="pt"></div><b>🎯 Challenges</b><div class="ab-ch" id="ch"></div></div></div>`;
+function draw(){const {p,n,e}=A;$('c-p').textContent=p;$('c-n').textContent=n;$('c-e').textContent=e;
+ const name=EL[p]||'',mass=p+n,ch=p-e,stable=p&&ST[p]&&ST[p].includes(n);
+ $('card').innerHTML=`<div class="ab-sym"><div><small>${p||''}</small><br><b>${SY[p]||'?'}</b><br><small>${p?mass:''}</small></div></div><h2>${p?`${name}-${mass}`:'No protons yet'}${ch?` ion`:''}</h2>
+ <div class="ab-tags"><span>⚖️ Mass number ${mass}</span><span style="--tc:${ch>0?'#FFD9D4':ch<0?'#DCEBFF':'#C9F1D2'}">⚡ Charge ${ch>0?'+'+ch:ch}</span><span style="--tc:${!p?'#F4FAFF':stable?'#C9F1D2':'#FFE3C4'}">${!p?'—':stable?'✅ Stable':'☢️ Unstable'}</span></div>
+ <span class="muted" style="font-weight:600">${!p?'Add a proton. The number of protons decides which element it is!':!stable?`${name} is stable with ${ST[p].join(' or ')} neutrons.`:ch?`It has ${Math.abs(ch)} ${ch>0?'fewer':'more'} electron${Math.abs(ch)>1?'s':''} than protons, so it is charged.`:'Protons and electrons are equal, so the atom is neutral.'}</span>`;
+ $('pt').innerHTML=Array.from({length:4*18},(_,i)=>{const r=Math.floor(i/18)+1,c=i%18+1,z=+Object.keys(POS).find(k=>POS[k][0]===r&&POS[k][1]===c)||0;return z?`<i class="${z===p?'on':''}">${SY[z]}</i>`:'<i style="visibility:hidden"></i>'}).join('');
+ CH.forEach((c,i)=>{if(!done.has(i)&&c[1](A)){done.add(i);Kit.tada();Kit.confetti(50)}});$('ch').innerHTML=CH.map((c,i)=>`<div class="${done.has(i)?'ok':''}">${done.has(i)?'✅':'⬜'} ${c[0]}</div>`).join('');
+ window.__t={...A,name,mass,ch,stable,done:done.size}}
+function nucleus(){const {p,n}=A,tot=p+n,balls=[];let k=0;// pack protons and neutrons in a spiral
+ const order=Array.from({length:tot},(_,i)=>i%2===0?(i/2<p?'p':'n'):((i-1)/2<n?'n':'p'));for(let i=0;i<tot;i++){const r=9*Math.sqrt(i),a=i*2.4;balls.push(`<circle cx="${Math.cos(a)*r}" cy="${Math.sin(a)*r}" r="11" fill="${order[i]==='p'?'#E5533F':'#9AA3B8'}" stroke="#1D2B53" stroke-width="2.5"/>`)}
+ return balls.join('')+(A.p?`<text x="0" y="${12*Math.sqrt(tot)+30}" fill="#fff" font-size="18" font-weight="800" text-anchor="middle">nucleus</text>`:'')}
+function frame(){t+=.01;let s=nucleus(),left=A.e;SHELL.forEach((cap,si)=>{const R=90+si*58;s+=`<circle r="${R}" fill="none" stroke="rgba(159,178,218,.45)" stroke-width="2" stroke-dasharray="6 6"/>`;const k=Math.min(cap,left);left-=k;
+ for(let j=0;j<k;j++){const a=t*(1.4-si*.25)+j/k*Math.PI*2;s+=`<circle cx="${Math.cos(a)*R}" cy="${Math.sin(a)*R}" r="9" fill="#3FA9F5" stroke="#fff" stroke-width="2"/>`}
+ if(k===cap&&cap)s+=`<text x="${R*.72}" y="${-R*.72}" fill="#7CFFB2" font-size="16" font-weight="800">full</text>`});
+ $('sv').innerHTML=s;requestAnimationFrame(frame)}
+document.querySelector('.ab-c').onclick=e=>{const b=e.target.closest('[data-k]');if(!b)return;const k=b.dataset.k,d=+b.dataset.d,max={p:20,n:30,e:20}[k];A[k]=Math.max(0,Math.min(max,A[k]+d));Kit.tone(k==='p'?520:k==='n'?400:700,.08,'triangle',.18);draw()};
+window.__a={set:o=>{Object.assign(A,o);draw()}};
+draw();frame();
+</script>
+</body></html>

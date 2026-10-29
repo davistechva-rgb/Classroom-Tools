@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Plate Tectonics Simulator</title>
+<style>
+main{max-width:1500px}
+.pt-tabs{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:12px}
+.pt-tabs button{font:inherit;font-weight:800;border:4px solid var(--ink);border-radius:16px;padding:6px 14px;background:#fff;cursor:pointer;color:var(--ink);box-shadow:0 4px 0 var(--ink)}
+.pt-tabs button.on{background:var(--sun)}
+.pt-cv{width:100%;aspect-ratio:2/1;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);display:block;background:#BFE6FA}
+.pt-ctl{display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;margin:12px 0}
+.pt-ctl input{width:min(420px,70vw)}
+.pt-info{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+@media (max-width:760px){.pt-info{grid-template-columns:1fr}}
+.pt-card{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px 16px}
+.pt-card h3{margin:0 0 6px}
+.pt-feat{display:flex;flex-wrap:wrap;gap:6px}.pt-feat span{border:3px solid var(--ink);border-radius:99px;padding:2px 10px;font-weight:700;background:#F2F5FA;opacity:.35;transition:.3s}.pt-feat span.on{opacity:1;background:#C9F1D2}
+.pt-quiz button{font:inherit;font-weight:800;border:4px solid var(--ink);border-radius:14px;padding:6px 12px;background:#fff;cursor:pointer;margin:4px;color:var(--ink)}
+.pt-quiz button.yes{background:#8BE09A}.pt-quiz button.no{background:#FFB3AA}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🌎", "Plate Tectonics Simulator");
+const $=id=>document.getElementById(id);
+const B=[{k:'div',n:'↔️ Pulling apart',full:'Divergent boundary',d:'Two plates move AWAY from each other. Magma rises up to fill the gap and makes new sea floor. Example: the Mid-Atlantic Ridge.',f:[['Rift valley',.15],['Magma rises',.3],['New sea floor',.5],['Mid-ocean ridge',.7],['Small earthquakes',.4]]},
+ {k:'sub',n:'➡️⬅️ Ocean meets land',full:'Convergent boundary (subduction)',d:'A heavy ocean plate pushes UNDER a lighter continent and melts. That melted rock rises to make volcanoes. Example: the Andes in South America.',f:[['Deep ocean trench',.2],['Plate sinks (subduction)',.35],['Rock melts',.55],['Volcanoes',.7],['Big earthquakes',.45]]},
+ {k:'col',n:'🏔️ Land meets land',full:'Convergent boundary (collision)',d:'Two continents crash together. Neither sinks, so the rock crumples and pushes UP into tall mountains. Example: the Himalayas.',f:[['Rock folds',.2],['Crust gets thicker',.4],['Tall mountains',.65],['Earthquakes',.45]]},
+ {k:'tra',n:'⇅ Sliding past',full:'Transform boundary',d:'Two plates grind SIDEWAYS past each other. They get stuck, then slip suddenly, causing earthquakes. Example: the San Andreas Fault in California.',f:[['Fault line',.1],['Plates get stuck',.3],['Earthquakes',.5],['Roads and fences shift',.65]]}];
+let bi=0,t=0,play=false,qz=null,quakes=[];
+document.querySelector('main').innerHTML=`<div class="pt-tabs" id="tabs">${B.map((b,i)=>`<button data-i="${i}">${b.n}</button>`).join('')}<button data-q style="background:#EAE0FF">❓ Mystery boundary</button></div>
+<canvas class="pt-cv" id="cv" width="1000" height="500"></canvas><div class="pt-ctl"><button class="btn green" id="pl">▶ Play</button><span style="font-weight:800;color:#fff;text-shadow:2px 2px 0 var(--ink)">⏳ Millions of years</span><input type="range" id="tm" min="0" max="1000" value="0"><button class="btn white small" id="rs">⏮ Start over</button></div>
+<div class="pt-info"><div class="pt-card" id="ab"></div><div class="pt-card" id="fe"></div></div>`;
+const cv=$('cv'),x=cv.getContext('2d'),W=1000,H=500,SEA=170;
+function poly(pts,fill,stroke){x.beginPath();pts.forEach((p,i)=>i?x.lineTo(p[0],p[1]):x.moveTo(p[0],p[1]));x.closePath();x.fillStyle=fill;x.fill();if(stroke!==0){x.strokeStyle='#1D2B53';x.lineWidth=3;x.stroke()}}
+function arrow(x0,y,dir,col){x.save();x.strokeStyle=col||'#fff';x.fillStyle=col||'#fff';x.lineWidth=7;x.beginPath();x.moveTo(x0,y);x.lineTo(x0+dir*60,y);x.stroke();x.beginPath();x.moveTo(x0+dir*78,y);x.lineTo(x0+dir*56,y-14);x.lineTo(x0+dir*56,y+14);x.fill();x.restore()}
+function volcano(cx0,base,h,erupt){poly([[cx0-60,base],[cx0-8,base-h],[cx0+8,base-h],[cx0+60,base]],'#7A5C44');if(erupt){x.fillStyle='#FF6B1A';for(let k=0;k<6;k++){x.beginPath();x.arc(cx0+Math.sin(t*90+k)*14,base-h-10-k*9,6-k*.6,0,7);x.fill()}x.fillStyle='rgba(90,90,100,.5)';x.beginPath();x.arc(cx0+10,base-h-70,26,0,7);x.fill()}}
+function draw(){const b=B[bi].k,T=t;x.clearRect(0,0,W,H);x.fillStyle='#BFE6FA';x.fillRect(0,0,W,H);
+ // mantle
+ const g=x.createLinearGradient(0,280,0,H);g.addColorStop(0,'#F29A4A');g.addColorStop(1,'#C2410C');x.fillStyle=g;x.fillRect(0,280,W,H-280);
+ x.fillStyle='rgba(255,255,255,.75)';x.font='800 20px Fredoka,system-ui';x.fillText('MANTLE (hot, slowly flowing rock)',20,H-18);
+ if(b==='div'){const gap=20+T*240;x.fillStyle='#3B7FC4';x.fillRect(0,SEA,W,110);
+  poly([[0,250],[500-gap/2,250],[500-gap/2,300],[0,300]],'#6E6E7A');poly([[500+gap/2,250],[W,250],[W,300],[500+gap/2,300]],'#6E6E7A');
+  // new crust stripes in the gap
+  const n=Math.floor(gap/24);for(let k=0;k<n;k++){const c=k%2?'#8B8B97':'#5A5A66';const off=12+k*12;x.fillStyle=c;x.fillRect(500-off-12,250-Math.max(0,(40*T-k*4))*(1-k/n),12,50+Math.max(0,(40*T-k*4))*(1-k/n));x.fillRect(500+off,250-Math.max(0,(40*T-k*4))*(1-k/n),12,50+Math.max(0,(40*T-k*4))*(1-k/n))}
+  x.fillStyle='#FF6B1A';x.beginPath();x.moveTo(500-14,H);x.quadraticCurveTo(500,300,500+14,H);x.fill();if(T>.25){x.beginPath();x.arc(500,250-T*30,10,0,7);x.fill()}
+  arrow(300,330,-1);arrow(700,330,1);label('Ocean plate',120,280);label('Ocean plate',800,280)}
+ if(b==='sub'){x.fillStyle='#3B7FC4';x.fillRect(0,SEA,560,110);const dip=T*180;
+  poly([[0,250],[560-T*120,250],[560-T*120+dip*.9,250+dip],[560-T*120+dip*.9,300+dip],[560-T*120,300],[0,300]],'#5A5A66');
+  const trench=40+T*60;poly([[520,SEA],[560,SEA+trench],[600,SEA],[600,SEA+120],[520,SEA+120]],'#2C5E99',0);
+  poly([[560,140],[W,120],[W,320],[560,300]],'#9A7B4F');
+  if(T>.45){x.fillStyle='#FF6B1A';x.globalAlpha=.85;x.beginPath();x.ellipse(720,300+dip*.3,40,22,0,0,7);x.fill();x.fillRect(712,140,16,170);x.globalAlpha=1}
+  if(T>.6)volcano(720,140,40+(T-.6)*200,T>.7);arrow(250,330,1);arrow(870,350,-1);label('Ocean plate (heavy)',60,240);label('Continent (light)',780,210);if(T>.2)label('Trench',520,SEA+trench+40)}
+ if(b==='col'){const push=T*120,up=T*200;x.fillStyle='#3B7FC4';x.fillRect(0,SEA,W,30*(1-T));
+  const L=[[0,160],[380+push,160],[500,160-up],[500,300+up*.4],[0,300]],R=[[500,160-up],[620-push,160],[W,160],[W,300],[500,300+up*.4]];
+  poly(L,'#9A7B4F');poly(R,'#B08D5C');
+  x.strokeStyle='rgba(29,43,83,.4)';x.lineWidth=3;for(let k=1;k<4;k++){x.beginPath();x.moveTo(0,160+k*35);x.quadraticCurveTo(440,160+k*35-up*(1-k*.2),500,160+k*35-up*(1-k*.22));x.quadraticCurveTo(560,160+k*35-up*(1-k*.2),W,160+k*35);x.stroke()}
+  if(T>.6){x.fillStyle='#fff';x.beginPath();x.moveTo(470,160-up+30);x.lineTo(500,160-up);x.lineTo(530,160-up+30);x.fill()}
+  arrow(200,330,1);arrow(800,330,-1);label('Continent',60,240);label('Continent',820,240)}
+ if(b==='tra'){x.fillStyle='#9BC25B';x.fillRect(0,0,W,H);const slip=Math.floor(T*4)*35+(T*4%1>.9?35*(T*40%1):0);
+  x.fillStyle='#86AE4A';x.fillRect(0,0,W,H/2);x.strokeStyle='#5A3E2B';x.lineWidth=6;x.setLineDash([16,10]);x.beginPath();x.moveTo(0,H/2);x.lineTo(W,H/2);x.stroke();x.setLineDash([]);
+  x.fillStyle='#555';x.fillRect(470+slip,0,60,H/2);x.fillRect(470-slip,H/2,60,H/2);x.fillStyle='#FFC93C';for(let y=10;y<H/2;y+=40)x.fillRect(497+slip,y,6,22);for(let y=H/2+10;y<H;y+=40)x.fillRect(497-slip,y,6,22);
+  x.strokeStyle='#8B5A2B';x.lineWidth=5;x.beginPath();x.moveTo(150+slip,60);x.lineTo(150+slip,H/2);x.moveTo(150-slip,H/2);x.lineTo(150-slip,H-60);x.stroke();
+  arrow(760,120,1,'#1D2B53');arrow(240,380,-1,'#1D2B53');label('Plate moves this way',700,80,'#1D2B53');label('Plate moves this way',120,440,'#1D2B53');label('🔭 Looking down from above',20,30,'#1D2B53')}
+ quakes=quakes.filter(q=>q.l>0);quakes.forEach(q=>{x.strokeStyle=`rgba(229,83,63,${q.l})`;x.lineWidth=4;x.beginPath();x.arc(q.x,q.y,(1-q.l)*60+6,0,7);x.stroke();q.l-=.02});
+ [...$('fe').querySelectorAll('[data-a]')].forEach(s=>s.classList.toggle('on',T>=+s.dataset.a))}
+function label(s,px,py,c){x.font='800 20px Fredoka,system-ui';x.fillStyle=c||'#fff';x.strokeStyle='rgba(29,43,83,.6)';x.lineWidth=4;if(!c)x.strokeText(s,px,py);x.fillText(s,px,py)}
+function info(){const b=B[bi];[...$('tabs').children].forEach((e,i)=>e.classList.toggle('on',!qz&&i===bi));
+ $('ab').innerHTML=qz?`<h3>❓ Mystery boundary</h3><p>Watch what happens. Which kind of boundary is it?</p><div class="pt-quiz" id="qa">${B.map((c,i)=>`<button data-a="${i}">${c.n}</button>`).join('')}</div>`:`<h3>${b.n} · ${b.full}</h3><p style="margin:0;font-weight:600;line-height:1.45">${b.d}</p>`;
+ $('fe').innerHTML=qz?'<h3>🔎 Clues</h3><p class="muted">Look for trenches, volcanoes, mountains, and how the plates move.</p>':`<h3>👀 Watch for…</h3><div class="pt-feat">${b.f.map(f=>`<span data-a="${f[1]}">${f[0]}</span>`).join('')}</div>`;
+ if(qz)$('qa').onclick=e=>{const k=e.target.closest('[data-a]');if(!k||k.classList.contains('no'))return;if(+k.dataset.a===bi){k.classList.add('yes');Kit.tada();qz=null;setTimeout(info,1600)}else{k.classList.add('no');Learn.flash(k,false)}};window.__t={b:B[bi].k,t,quiz:!!qz}}
+function tick(){if(play){t=Math.min(1,t+.0025);$('tm').value=t*1000;if(Math.random()<.02&&t>.3){const q=B[bi].k==='tra'?{x:500,y:H/2}:B[bi].k==='div'?{x:500,y:270}:B[bi].k==='col'?{x:500,y:260}:{x:560+Kit.rand(0,120),y:260+Kit.rand(0,80)};quakes.push({...q,l:1});Kit.tone(60,.2,'sawtooth',.08)}if(t>=1){play=false;$('pl').textContent='▶ Play'}}draw();requestAnimationFrame(tick)}
+$('tabs').onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.q!=null){qz=1;bi=Kit.rand(0,3);t=0;play=true;$('pl').textContent='⏸ Pause'}else{qz=null;bi=+b.dataset.i;t=0;play=false;$('pl').textContent='▶ Play'}$('tm').value=0;info()};
+$('pl').onclick=()=>{if(t>=1)t=0;play=!play;$('pl').textContent=play?'⏸ Pause':'▶ Play'};
+$('tm').oninput=()=>{t=$('tm').value/1000;play=false;$('pl').textContent='▶ Play'};$('rs').onclick=()=>{t=0;$('tm').value=0};
+info();tick();
+</script>
+</body></html>

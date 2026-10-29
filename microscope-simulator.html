@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Microscope Simulator</title>
+<style>
+main{max-width:1500px}
+.ms{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.ms{grid-template-columns:1fr}}
+.ms-eye{position:relative;width:min(100%,70vh);aspect-ratio:1;margin:0 auto;border-radius:50%;border:14px solid #1D2B53;box-shadow:0 0 0 6px #3B4E8C,8px 10px 0 6px var(--ink);overflow:hidden;background:#111;touch-action:none;cursor:grab}
+.ms-eye canvas{width:100%;height:100%;display:block}
+.ms-ptr{position:absolute;left:50%;top:50%;width:30%;height:3px;background:#1D2B53;transform-origin:0 50%;pointer-events:none;opacity:.7}
+.ms-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:10px}
+.ms-p label{font-weight:800}.ms-p input[type=range]{width:100%}
+.ms-seg{display:flex;gap:6px;flex-wrap:wrap}.ms-seg button{font:inherit;font-weight:800;border:3px solid var(--ink);border-radius:12px;padding:5px 10px;background:#fff;cursor:pointer;color:var(--ink)}.ms-seg button.on{background:var(--sun)}
+.ms-find{display:grid;gap:6px}.ms-find div{border:3px solid var(--ink);border-radius:12px;padding:5px 10px;font-weight:700;background:#F4FAFF}.ms-find div.ok{background:#C9F1D2}
+.ms-msg{font-weight:800;text-align:center;min-height:1.4em;color:#fff;text-shadow:2px 2px 0 var(--ink);margin-top:8px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🔬", "Microscope Simulator");
+const $=id=>document.getElementById(id);
+const S=1600;// the slide is drawn once on a big hidden canvas; the eyepiece shows part of it
+const SL={onion:{n:'🧅 Onion skin',bg:'#F7EEF5',find:[['nucleus','a nucleus (the dark dot that controls the cell)'],['wall','a cell wall (the stiff outline around a plant cell)']]},
+ cheek:{n:'👄 Cheek cells',bg:'#EEF4FA',find:[['nucleus','a nucleus'],['membrane','a cell membrane (the thin, bendy edge of an animal cell)']]},
+ leaf:{n:'🍃 Leaf',bg:'#EEF7E8',find:[['chloro','a chloroplast (the green part that makes food from sunlight)'],['stoma','a stoma (a tiny mouth the leaf breathes through)']]},
+ pond:{n:'💧 Pond water',bg:'#EAF4F2',find:[['para','a paramecium (it swims with tiny hairs)'],['algae','a chain of green algae']]},
+ blood:{n:'🩸 Blood',bg:'#FCEFEF',find:[['red','a red blood cell (it carries oxygen)'],['white','a white blood cell (it fights germs)']]}};
+const OBJ=[[4,1,'Low (4×)'],[10,2.5,'Medium (10×)'],[40,10,'High (40×)']];
+let slide='onion',obj=0,focus=.3,light=.75,pan=[S/2,S/2],spots=[],found=new Set(),swim=[];
+const off=document.createElement('canvas');off.width=off.height=S;const o=off.getContext('2d');
+const R=(a,b)=>a+Math.random()*(b-a);
+function makeSlide(){spots=[];swim=[];const s=SL[slide];o.fillStyle=s.bg;o.fillRect(0,0,S,S);o.lineJoin='round';
+ if(slide==='onion'){for(let y=-40;y<S;y+=70){const sh=(y/70%2)*80;for(let x=-160+sh;x<S;x+=160){const w=R(150,170),h=R(64,72);o.fillStyle='rgba(214,170,214,.35)';o.strokeStyle='#9C5B9C';o.lineWidth=4;o.beginPath();o.rect(x+R(-3,3),y,w,h);o.fill();o.stroke();spots.push(['wall',x+w/2,y]);const nx=x+R(30,w-30),ny=y+R(18,h-18);o.fillStyle='#6B2A7A';o.beginPath();o.ellipse(nx,ny,11,8,0,0,7);o.fill();spots.push(['nucleus',nx,ny])}}}
+ if(slide==='cheek'){for(let k=0;k<70;k++){const cx=R(0,S),cy=R(0,S),r=R(40,60);o.fillStyle='rgba(120,160,220,.22)';o.strokeStyle='#5A7FC0';o.lineWidth=3;o.beginPath();for(let a=0;a<=12;a++){const ang=a/12*Math.PI*2,rr=r*R(.8,1.15);a?o.lineTo(cx+Math.cos(ang)*rr,cy+Math.sin(ang)*rr):o.moveTo(cx+Math.cos(ang)*rr,cy+Math.sin(ang)*rr)}o.closePath();o.fill();o.stroke();spots.push(['membrane',cx+r,cy]);o.fillStyle='#2F4F9C';o.beginPath();o.arc(cx+R(-8,8),cy+R(-8,8),9,0,7);o.fill();spots.push(['nucleus',cx,cy])}}
+ if(slide==='leaf'){for(let y=0;y<S;y+=60)for(let x=0;x<S;x+=60){o.strokeStyle='#5E9B4A';o.lineWidth=3;o.fillStyle='rgba(180,225,150,.35)';o.beginPath();o.moveTo(x+R(-6,6),y);o.lineTo(x+60+R(-6,6),y+R(-4,4));o.lineTo(x+60,y+60);o.lineTo(x,y+60+R(-4,4));o.closePath();o.fill();o.stroke();for(let c=0;c<5;c++){const px=x+R(12,48),py=y+R(12,48);o.fillStyle='#2E8B3A';o.beginPath();o.ellipse(px,py,7,4.5,R(0,3),0,7);o.fill();spots.push(['chloro',px,py])}}
+  for(let k=0;k<26;k++){const px=R(60,S-60),py=R(60,S-60);o.fillStyle='#EEF7E8';o.beginPath();o.ellipse(px,py,26,34,0,0,7);o.fill();o.fillStyle='#4E8F3C';o.beginPath();o.ellipse(px-11,py,11,30,0,0,7);o.ellipse(px+11,py,11,30,0,0,7);o.fill();o.fillStyle='#2A4A20';o.beginPath();o.ellipse(px,py,3,18,0,0,7);o.fill();spots.push(['stoma',px,py])}}
+ if(slide==='pond'){for(let k=0;k<30;k++){let px=R(0,S),py=R(0,S),a=R(0,6.28);o.fillStyle='#3FA34D';for(let c=0;c<R(5,10);c++){o.beginPath();o.ellipse(px,py,14,10,a,0,7);o.fill();o.strokeStyle='#2A6B32';o.lineWidth=2;o.stroke();spots.push(['algae',px,py]);px+=Math.cos(a)*26;py+=Math.sin(a)*26;a+=R(-.3,.3)}}
+  for(let k=0;k<40;k++){o.fillStyle='rgba(140,110,80,.35)';o.beginPath();o.arc(R(0,S),R(0,S),R(3,9),0,7);o.fill()}
+  for(let k=0;k<14;k++)swim.push({x:R(0,S),y:R(0,S),a:R(0,6.28),v:R(.6,1.4)})}
+ if(slide==='blood'){for(let k=0;k<900;k++){const px=R(0,S),py=R(0,S);o.fillStyle='#E25555';o.beginPath();o.arc(px,py,16,0,7);o.fill();o.fillStyle='#F28C8C';o.beginPath();o.arc(px,py,7,0,7);o.fill();if(k%20===0)spots.push(['red',px,py])}
+  for(let k=0;k<12;k++){const px=R(40,S-40),py=R(40,S-40);o.fillStyle='#EDE6F7';o.beginPath();o.arc(px,py,26,0,7);o.fill();o.fillStyle='#7A4FB8';for(let l=0;l<3;l++){o.beginPath();o.arc(px+R(-10,10),py+R(-10,10),8,0,7);o.fill()}spots.push(['white',px,py])}}}
+// the right focus is different for each lens, like a real microscope
+const best=()=>[.3,.55,.72][obj];
+document.querySelector('main').innerHTML=`<div class="ms"><div><div class="ms-eye" id="eye"><canvas id="cv" width="700" height="700"></canvas><div class="ms-ptr" id="ptr"></div></div><div class="ms-msg" id="msg"></div></div>
+<div class="ms-p"><label>🧫 Slide</label><div class="ms-seg" id="sl">${Object.entries(SL).map(([k,v])=>`<button data-s="${k}" class="${k===slide?'on':''}">${v.n}</button>`).join('')}</div>
+<label>🔭 Lens (magnification)</label><div class="ms-seg" id="ob">${OBJ.map((q,i)=>`<button data-o="${i}" class="${i===obj?'on':''}">${q[2]}</button>`).join('')}</div>
+<label>🎯 Coarse focus</label><input type="range" id="fc" min="0" max="1000" value="300"><label>🔍 Fine focus</label><input type="range" id="ff" min="-50" max="50" value="0">
+<label>💡 Light</label><input type="range" id="lt" min="5" max="100" value="75">
+<b>🔎 Can you find…</b><div class="ms-find" id="fd"></div><span class="muted">Drag to move the slide. Tap a part when you find it. Hint: zoom in with the high lens, then focus.</span></div></div>`;
+const cv=$('cv'),x=cv.getContext('2d');
+function blur(){const f=+$('fc').value/1000+(+$('ff').value)/1000;return Math.abs(f-best())*[30,60,140][obj]}
+function draw(){const z=OBJ[obj][1],vw=S/z*.55;x.save();x.clearRect(0,0,700,700);
+ const b=blur();x.filter=`blur(${Math.min(14,b).toFixed(1)}px) brightness(${(.25+light*1.1).toFixed(2)})`;
+ x.drawImage(off,pan[0]-vw/2,pan[1]-vw/2,vw,vw,0,0,700,700);
+ // swimming paramecia (pond water)
+ swim.forEach(p=>{p.a+=R(-.05,.05);p.x=(p.x+Math.cos(p.a)*p.v+S)%S;p.y=(p.y+Math.sin(p.a)*p.v+S)%S;const sx=(p.x-pan[0]+vw/2)/vw*700,sy=(p.y-pan[1]+vw/2)/vw*700,k=700/vw;if(sx<-60||sy<-60||sx>760||sy>760)return;
+  x.save();x.translate(sx,sy);x.rotate(p.a);x.fillStyle='rgba(200,170,120,.85)';x.strokeStyle='#8C6A3A';x.lineWidth=2*k;x.beginPath();x.ellipse(0,0,34*k,13*k,0,0,7);x.fill();x.stroke();x.strokeStyle='rgba(140,106,58,.6)';x.lineWidth=1*k;for(let h=0;h<14;h++){const a=h/14*Math.PI*2;x.beginPath();x.moveTo(Math.cos(a)*34*k,Math.sin(a)*13*k);x.lineTo(Math.cos(a)*40*k,Math.sin(a)*18*k);x.stroke()}x.fillStyle='#6B4A2A';x.beginPath();x.arc(4*k,0,5*k,0,7);x.fill();x.restore()});
+ x.restore();
+ const ok=b<2.5;$('msg').textContent=light<.12?'🌑 Too dark! Turn up the light.':b>6?'😵 Blurry… turn the focus knobs.':ok?`✨ In focus at ${OBJ[obj][0]}×`:'🙂 Almost! Use the fine focus.';
+ window.__t={blur:+b.toFixed(2),obj,slide,found:[...found],pan:[...pan]};requestAnimationFrame(draw)}
+function findList(){$('fd').innerHTML=SL[slide].find.map(([k,t])=>`<div class="${found.has(slide+k)?'ok':''}">${found.has(slide+k)?'✅':'⬜'} ${t}</div>`).join('')}
+function tap(cx,cy){if(blur()>4||obj<1){$('msg').textContent=obj<1?'🔍 Use a stronger lens to see the tiny parts.':'😵 Focus first!';return}
+ const z=OBJ[obj][1],vw=S/z*.55,sx=pan[0]-vw/2+cx*vw,sy=pan[1]-vw/2+cy*vw;
+ const cand=[...spots,...swim.map(p=>['para',p.x,p.y])].map(s=>({k:s[0],d:Math.hypot(s[1]-sx,s[2]-sy)})).sort((a,b)=>a.d-b.d)[0];
+ const tol=vw/700*40;if(cand&&cand.d<Math.max(tol,18)&&SL[slide].find.some(f=>f[0]===cand.k)){if(!found.has(slide+cand.k)){found.add(slide+cand.k);Kit.tada();findList()}else Kit.ding()}else Kit.tone(220,.15,'triangle',.12)}
+let dr=null;
+$('eye').addEventListener('pointerdown',e=>{dr={x:e.clientX,y:e.clientY,p:[...pan],m:false};$('eye').setPointerCapture(e.pointerId)});
+$('eye').addEventListener('pointermove',e=>{if(!dr)return;const r=$('eye').getBoundingClientRect(),z=OBJ[obj][1],vw=S/z*.55,dx=(e.clientX-dr.x)/r.width*vw,dy=(e.clientY-dr.y)/r.height*vw;if(Math.hypot(e.clientX-dr.x,e.clientY-dr.y)>5)dr.m=true;pan=[Math.max(0,Math.min(S,dr.p[0]-dx)),Math.max(0,Math.min(S,dr.p[1]-dy))]});
+$('eye').addEventListener('pointerup',e=>{if(dr&&!dr.m){const r=$('eye').getBoundingClientRect();tap((e.clientX-r.left)/r.width,(e.clientY-r.top)/r.height)}dr=null});
+$('sl').onclick=e=>{const b=e.target.closest('[data-s]');if(!b)return;slide=b.dataset.s;[...$('sl').children].forEach(z=>z.classList.toggle('on',z===b));makeSlide();findList();Kit.tick()};
+$('ob').onclick=e=>{const b=e.target.closest('[data-o]');if(!b)return;obj=+b.dataset.o;[...$('ob').children].forEach(z=>z.classList.toggle('on',z===b));Kit.tone(300+obj*200,.1,'triangle',.15)};
+$('lt').oninput=()=>light=$('lt').value/100;
+window.__ms={best,spots:()=>spots,setPan:p=>pan=p,tap};
+makeSlide();findList();draw();
+</script>
+</body></html>

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Temperature Experiment</title>
+<style>
+main{max-width:1500px}
+.te{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:16px;align-items:start}
+@media (max-width:900px){.te{grid-template-columns:1fr}}
+.te-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:14px;display:grid;gap:10px}
+.te-mats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.te-m{font:inherit;font-weight:800;border:3px solid var(--ink);border-radius:14px;padding:6px 8px;background:#F4FAFF;cursor:pointer;display:flex;gap:8px;align-items:center;color:var(--ink);text-align:left}
+.te-m span{font-size:1.6rem}.te-m.on{background:var(--mc);color:#fff;text-shadow:1px 1px 0 rgba(0,0,0,.3)}
+.te-seg{display:flex;gap:6px;flex-wrap:wrap}.te-seg button{font:inherit;font-weight:800;border:3px solid var(--ink);border-radius:12px;padding:4px 10px;background:#fff;cursor:pointer;color:var(--ink)}.te-seg button.on{background:var(--sun)}
+.te-cups{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.te-cup{background:#fff;border:5px solid var(--ink);border-radius:18px;padding:8px;text-align:center;font-weight:800}
+.te-cup svg{width:100%;max-width:120px}
+.te-cup .tv{font-size:1.4rem;font-variant-numeric:tabular-nums}
+.te-graph{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:10px}
+.te-graph canvas{width:100%;display:block}
+.te-tab{width:100%;border-collapse:collapse;font-weight:700;font-size:.95rem;margin-top:8px}.te-tab td,.te-tab th{border-bottom:2px solid #E3E8F2;padding:3px 6px;text-align:center}
+.te-msg{border:4px solid var(--ink);border-radius:16px;padding:10px 12px;background:#FFF6C9;font-weight:700}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🌡️", "Temperature Experiment");
+const $=id=>document.getElementById(id);
+// how fast heat escapes each cup (bigger = cools faster). Wrappings that trap air are the best insulators.
+const MAT={none:['☕','Nothing (control)',.060,'#8892A8'],foil:['🥈','Aluminum foil',.048,'#9AA3B8'],paper:['🧻','Paper towel',.046,'#C9A27A'],news:['📰','Newspaper',.036,'#6B7695'],bubble:['🫧','Bubble wrap',.026,'#22C3E6'],wool:['🧦','Wool sock',.021,'#E5533F'],foam:['🥤','Foam cup',.016,'#9B6BF2']};
+let sel=['none','foil','wool','foam'],room=20,lid=false,run=false,min=0,last=0,data=[],pred=null,cups=[];
+document.querySelector('main').innerHTML=`<div class="te"><div class="te-p"><b>1️⃣ Pick 4 cups to test</b><div class="te-mats" id="mats"></div>
+<b>2️⃣ Keep everything else the same</b><div class="row"><span style="font-weight:700">Room:</span><div class="te-seg" id="rm"><button data-r="10">❄️ Cold 10°C</button><button data-r="20" class="on">🙂 Normal 20°C</button><button data-r="30">☀️ Hot 30°C</button></div></div><label style="font-weight:700"><input type="checkbox" id="lid"> 🧢 Put a lid on every cup</label>
+<b>3️⃣ Predict: which cup stays hottest?</b><div class="te-seg" id="pr"></div>
+<div class="row"><button class="btn big green" id="go">▶ Start the experiment</button><button class="btn white" id="rs">↺ Reset</button></div><div class="te-msg" id="msg">All cups start with 80°C water. The experiment lasts 30 minutes (sped up).</div></div>
+<div><div class="te-cups" id="cups"></div><div class="te-graph"><b>📈 Temperature over time</b><canvas id="gc" width="760" height="380"></canvas><table class="te-tab" id="tab"></table></div></div></div>`;
+function setup(){cups=sel.map(k=>({k,T:80}));data=[[0,...cups.map(c=>c.T)]];min=0;run=false;$('go').textContent='▶ Start the experiment';ui()}
+function ui(){$('mats').innerHTML=Object.entries(MAT).map(([k,m])=>`<button class="te-m ${sel.includes(k)?'on':''}" data-k="${k}" style="--mc:${m[3]}"><span>${m[0]}</span>${m[1]}</button>`).join('');
+ $('pr').innerHTML=sel.map(k=>`<button data-p="${k}" class="${pred===k?'on':''}">${MAT[k][0]} ${MAT[k][1].split(' (')[0]}</button>`).join('');draw()}
+function draw(){$('cups').innerHTML=cups.map(c=>{const m=MAT[c.k],f=(c.T-room)/(80-room);return `<div class="te-cup"><svg viewBox="0 0 100 110">${[0,1,2].map(i=>`<path d="M${30+i*18} 28 q-6 -10 0 -18 q6 -8 0 -16" fill="none" stroke="rgba(150,160,180,${Math.max(0,f-.3)})" stroke-width="4"/>`).join('')}<rect x="18" y="32" width="64" height="70" rx="10" fill="${m[3]}" stroke="#1D2B53" stroke-width="4"/>${lid?'<rect x="14" y="26" width="72" height="10" rx="4" fill="#1D2B53"/>':''}<text x="50" y="76" font-size="30" text-anchor="middle">${m[0]}</text></svg><div class="tv" style="color:${c.T>50?'#E5533F':c.T>35?'#FF9F43':'#2F7FD1'}">${c.T.toFixed(1)}°C</div><div style="font-size:.8rem">${m[1]}</div></div>`}).join('');
+ const g=$('gc').getContext('2d'),W=760,H=380,X=m=>60+m/30*680,Y=T=>330-(T-0)/90*300;g.fillStyle='#fff';g.fillRect(0,0,W,H);g.font='700 14px system-ui';g.fillStyle='#6B7695';g.strokeStyle='#E3E8F2';
+ for(let T=0;T<=90;T+=10){g.beginPath();g.moveTo(60,Y(T));g.lineTo(740,Y(T));g.stroke();g.fillText(T+'°',20,Y(T)+5)}for(let m=0;m<=30;m+=5){g.fillText(m+' min',X(m)-18,H-12)}
+ g.setLineDash([6,6]);g.strokeStyle='#8892A8';g.beginPath();g.moveTo(60,Y(room));g.lineTo(740,Y(room));g.stroke();g.setLineDash([]);g.fillStyle='#8892A8';g.fillText(`room ${room}°C`,660,Y(room)-6);
+ cups.forEach((c,i)=>{g.strokeStyle=MAT[c.k][3];g.lineWidth=4;g.beginPath();data.forEach((d,j)=>{j?g.lineTo(X(d[0]),Y(d[i+1])):g.moveTo(X(d[0]),Y(d[i+1]))});g.stroke()});
+ const rows=data.filter(d=>d[0]%5===0);$('tab').innerHTML=`<tr><th>Minute</th>${cups.map(c=>`<th>${MAT[c.k][0]}</th>`).join('')}</tr>`+rows.map(d=>`<tr><td>${d[0]}</td>${d.slice(1).map(v=>`<td>${v.toFixed(0)}°</td>`).join('')}</tr>`).join('');
+ window.__t={min,cups:cups.map(c=>[c.k,+c.T.toFixed(2)])}}
+function loop(ts){const dt=Math.min(.05,(ts-(last||ts))/1000);last=ts;if(run&&min<30){const step=dt*2;// 2 experiment minutes each real second
+ const before=Math.floor(min);min=Math.min(30,min+step);cups.forEach(c=>{const k=MAT[c.k][2]*(lid?.7:1);c.T=room+(c.T-room)*Math.exp(-k*step)});if(Math.floor(min)>before)data.push([Math.floor(min),...cups.map(c=>c.T)]);draw();
+ if(min>=30){run=false;$('go').textContent='▶ Start the experiment';const best=cups.reduce((a,c)=>c.T>a.T?c:a);$('msg').innerHTML=`🏆 <b>${MAT[best.k][1]}</b> kept its water the hottest (${best.T.toFixed(1)}°C). ${pred?(pred===best.k?'✅ Your prediction was right!':'🤔 Not what you predicted.'):''} Materials that trap lots of tiny pockets of air, like foam, wool, and bubble wrap, are good <b>insulators</b>.`;Kit.tada()}}requestAnimationFrame(loop)}
+$('mats').onclick=e=>{const b=e.target.closest('[data-k]');if(!b||run)return;const k=b.dataset.k;if(sel.includes(k)){if(sel.length>1)sel=sel.filter(z=>z!==k)}else{if(sel.length>=4)sel.shift();sel.push(k)}if(!sel.includes(pred))pred=null;setup()};
+$('pr').onclick=e=>{const b=e.target.closest('[data-p]');if(!b||run)return;pred=b.dataset.p;ui()};
+$('rm').onclick=e=>{const b=e.target.closest('[data-r]');if(!b||run)return;room=+b.dataset.r;[...$('rm').children].forEach(z=>z.classList.toggle('on',z===b));setup()};
+$('lid').onchange=()=>{lid=$('lid').checked;setup()};
+$('go').onclick=()=>{if(min>=30)setup();run=!run;$('go').textContent=run?'⏸ Pause':'▶ Keep going'};$('rs').onclick=setup;
+setup();requestAnimationFrame(loop);
+</script>
+</body></html>

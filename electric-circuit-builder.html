@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Electric Circuit Builder</title>
+<style>
+main{max-width:1500px}
+.ec{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.ec{grid-template-columns:1fr}}
+.ec-cv{width:100%;aspect-ratio:7/5;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);background:#F4F8EC;display:block;touch-action:none;cursor:pointer}
+.ec-pal{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:10px}
+.ec-pal button{font:inherit;font-weight:800;border:4px solid var(--ink);border-radius:14px;padding:5px 10px;background:#fff;cursor:pointer;color:var(--ink);box-shadow:0 4px 0 var(--ink)}
+.ec-pal button.on{background:var(--sun);transform:translateY(2px);box-shadow:0 2px 0 var(--ink)}
+.ec-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:10px}
+.ec-msg{border:4px solid var(--ink);border-radius:16px;padding:10px 12px;font-weight:700;background:#FFF6C9;min-height:3em}
+.ec-msg.bad{background:#FFD9D4}
+.ec-ch div{display:flex;gap:8px;align-items:center;border:3px solid var(--ink);border-radius:12px;padding:5px 10px;margin-bottom:6px;font-weight:700;background:#F4FAFF}.ec-ch div.ok{background:#C9F1D2}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("⚡", "Electric Circuit Builder");
+const $=id=>document.getElementById(id);
+const C=7,R=5,SP=140,OX=70,OY=70,W=980,H=700;
+// edges between neighboring dots: key "a-b" (a<b, dot index = row*C+col). Parts: wire, bulb, battery, switch, buzzer, motor
+const PARTS={wire:['〰️','Wire'],bulb:['💡','Bulb'],battery:['🔋','Battery'],switch:['🔘','Switch'],buzzer:['🔔','Buzzer'],motor:['🌀','Motor']};
+const CH=[['Light up one bulb',r=>r.lit.length>=1],['Light two bulbs in a line (series)',r=>r.lit.length>=2&&r.lit.every(b=>b<.5)],['Light two bulbs side by side so both are bright (parallel)',r=>r.lit.filter(b=>b>.8).length>=2],['Use a switch to turn a bulb off',r=>r.switchOff],['Make the buzzer buzz',r=>r.buzz],['Spin the motor and light a bulb at the same time',r=>r.spin&&r.lit.length>=1]];
+let E={},tool='wire',done=new Set(),res={lit:[]},wasLit=false,t=0;
+const st=Kit.get('ec-circuit',null);if(st)E=st;else{E={'0-1':{p:'wire'},'1-2':{p:'bulb'},'2-3':{p:'wire'}}}
+document.querySelector('main').innerHTML=`<div class="ec-pal" id="pal">${Object.entries(PARTS).map(([k,[e,n]])=>`<button data-t="${k}" class="${k===tool?'on':''}">${e} ${n}</button>`).join('')}<button data-t="hand">✋ Flip switches</button><button data-t="erase">🧽 Erase</button><button data-t="clear">🗑️ Clear all</button></div>
+<div class="ec"><canvas class="ec-cv" id="cv" width="${W}" height="${H}"></canvas><div class="ec-p"><div class="ec-msg" id="msg"></div><b>🎯 Challenges</b><div class="ec-ch" id="ch"></div><span class="muted">Tap the line between two dots to place the part you picked. Tap a battery again to flip it around. Electricity needs a full loop from one end of the battery back to the other!</span></div></div>`;
+const cv=$('cv'),x=cv.getContext('2d');
+const dot=i=>[OX+(i%C)*SP,OY+Math.floor(i/C)*SP];
+const save=()=>Kit.set('ec-circuit',E);
+// --- solve the circuit (nodal analysis). Battery = 3 volts with a little inside resistance; bulbs, buzzers, motors = 1 ohm each
+function solve(){const keys=Object.keys(E).filter(k=>E[k].p!=='switch'||E[k].on);const bat=keys.find(k=>E[k].p==='battery');const out={lit:[],cur:{},short:false,open:true};
+ if(!bat)return out;const N=C*R,G=Array.from({length:N},()=>new Float64Array(N)),I=new Float64Array(N);const rin=.05,V=3;
+ const add=(a,b,g)=>{G[a][a]+=g;G[b][b]+=g;G[a][b]-=g;G[b][a]-=g};
+ keys.forEach(k=>{const [a,b]=k.split('-').map(Number),e=E[k];if(e.p==='battery'){const [n,p]=e.flip?[b,a]:[a,b];add(n,p,1/rin);I[p]+=V/rin;I[n]-=V/rin}else add(a,b,e.p==='wire'||e.p==='switch'?1000:1)});
+ for(let i=0;i<N;i++)G[i][i]+=1e-6;const g0=+(E[bat].flip?bat.split('-')[1]:bat.split('-')[0]);G[g0][g0]+=1e6;
+ // Gaussian elimination
+ const A=G.map((r,i)=>[...r,I[i]]);for(let c=0;c<N;c++){let p=c;for(let r=c+1;r<N;r++)if(Math.abs(A[r][c])>Math.abs(A[p][c]))p=r;[A[c],A[p]]=[A[p],A[c]];const d=A[c][c];if(Math.abs(d)<1e-12)continue;for(let r=0;r<N;r++){if(r===c)continue;const f=A[r][c]/d;if(f)for(let k=c;k<=N;k++)A[r][k]-=f*A[c][k]}}
+ const v=A.map((r,i)=>Math.abs(r[i])<1e-12?0:r[N]/r[i]);
+ keys.forEach(k=>{const [a,b]=k.split('-').map(Number),e=E[k];if(e.p==='battery'){const [n,p]=e.flip?[b,a]:[a,b];out.cur[k]=(V-(v[p]-v[n]))/rin;return}out.cur[k]=Math.abs(v[a]-v[b])*(e.p==='wire'||e.p==='switch'?1000:1)});
+ const bi=out.cur[bat];out.short=bi>25;out.open=bi<.05;
+ // brightness compared with one bulb straight across the battery
+ const P1=Math.pow(V/(1+rin),2);Object.keys(E).forEach(k=>{if(E[k].p==='bulb'){const i=out.cur[k]||0,b=Math.min(1.2,i*i/P1);if(b>.04&&!out.short)out.lit.push(b)}});
+ out.buzz=!out.short&&Object.keys(E).some(k=>E[k].p==='buzzer'&&(out.cur[k]||0)>.4);out.spin=!out.short&&Object.keys(E).some(k=>E[k].p==='motor'&&(out.cur[k]||0)>.4);
+ out.switchOff=Object.values(E).some(e=>e.p==='switch'&&!e.on)&&!!Object.keys(E).find(k=>E[k].p==='bulb')&&!out.lit.length&&wasLit;return out}
+function update(){const prev=res.lit.length;res=solve();if(res.lit.length)wasLit=true;
+ const m=$('msg');m.classList.toggle('bad',res.short);
+ m.innerHTML=!Object.values(E).some(e=>e.p==='battery')?'🔋 Add a battery to power your circuit.':res.short?'⚠️ <b>Short circuit!</b> Electricity is rushing straight from one end of the battery to the other through just wires. That makes the battery hot! Put a bulb in the path.':res.open?'⭕ The loop isn\'t complete. Electricity needs a closed path from one end of the battery back to the other.':res.lit.length?`💡 ${res.lit.length} bulb${res.lit.length>1?'s are':' is'} lit! ${res.lit.length>1&&res.lit.every(b=>b<.5)?'They share the battery in a line (series), so each one is dimmer.':res.lit.length>1&&res.lit.every(b=>b>.8)?'Each bulb has its own path (parallel), so they all shine brightly.':''}`:res.buzz||res.spin?'⚡ Electricity is flowing!':'⚡ Current is flowing, but no bulb is in the loop.';
+ CH.forEach((c,i)=>{if(!done.has(i)&&c[1](res)){done.add(i);Kit.tada();Kit.confetti(50)}});
+ $('ch').innerHTML=CH.map((c,i)=>`<div class="${done.has(i)?'ok':''}">${done.has(i)?'✅':'⬜'} ${c[0]}</div>`).join('');
+ if(res.lit.length>prev)Kit.tone(880,.12,'sine',.15);window.__t={lit:res.lit.map(b=>+b.toFixed(2)),short:res.short,open:res.open,buzz:res.buzz,spin:res.spin,done:[...done]}}
+function draw(){t++;x.clearRect(0,0,W,H);x.fillStyle='#F4F8EC';x.fillRect(0,0,W,H);
+ // breadboard dots
+ for(let i=0;i<C*R;i++){const [px,py]=dot(i);x.fillStyle='#C3CCB5';x.beginPath();x.arc(px,py,9,0,7);x.fill()}
+ Object.entries(E).forEach(([k,e])=>{const [a,b]=k.split('-').map(Number),[x1,y1]=dot(a),[x2,y2]=dot(b),mx=(x1+x2)/2,my=(y1+y2)/2,vert=x1===x2,i=res.cur[k]||0,flow=!res.short&&i>.04;
+  x.lineCap='round';x.strokeStyle='#1D2B53';x.lineWidth=10;x.beginPath();x.moveTo(x1,y1);x.lineTo(x2,y2);x.stroke();x.strokeStyle=flow?'#FF9F43':'#7A8496';x.lineWidth=5;x.beginPath();x.moveTo(x1,y1);x.lineTo(x2,y2);x.stroke();
+  if(flow&&e.p==='wire'){x.fillStyle='#FFC93C';for(let s=0;s<3;s++){const f=((t*Math.min(3,i)*.01)+s/3)%1;x.beginPath();x.arc(x1+(x2-x1)*f,y1+(y2-y1)*f,5,0,7);x.fill()}}
+  x.save();x.translate(mx,my);if(vert)x.rotate(Math.PI/2);
+  if(e.p==='bulb'){const b=res.short?0:Math.min(1.2,i*i/Math.pow(3/1.05,2));x.rotate(vert?-Math.PI/2:0);if(b>.04){const g=x.createRadialGradient(0,-10,4,0,-10,30+70*b);g.addColorStop(0,`rgba(255,230,120,${.9*Math.min(1,b)})`);g.addColorStop(1,'rgba(255,230,120,0)');x.fillStyle=g;x.beginPath();x.arc(0,-10,30+70*b,0,7);x.fill()}
+   x.fillStyle=b>.04?`rgb(255,${200+40*Math.min(1,b)},${60+80*(1-Math.min(1,b))})`:'#EEF2F7';x.strokeStyle='#1D2B53';x.lineWidth=5;x.beginPath();x.arc(0,-12,26,0,7);x.fill();x.stroke();x.fillStyle='#8892A8';x.fillRect(-14,12,28,16);x.strokeRect(-14,12,28,16)}
+  if(e.p==='battery'){x.fillStyle='#1D2B53';x.fillRect(-46,-22,92,44);x.fillStyle='#FFC93C';x.fillRect(-42,-18,50,36);x.fillStyle='#5A6577';x.fillRect(8,-18,34,36);const pr=e.flip?-1:1;x.fillStyle='#1D2B53';x.fillRect(pr>0?46:-54,-8,8,16);
+   x.fillStyle='#fff';x.font='800 26px system-ui';x.textAlign='center';x.textBaseline='middle';x.save();x.rotate(vert?-Math.PI/2:0);x.fillText(pr>0?'+':'−',vert?0:28,vert?28:0);x.fillText(pr>0?'−':'+',vert?0:-28,vert?-28:0);x.restore()}
+  if(e.p==='switch'){x.fillStyle='#fff';x.strokeStyle='#1D2B53';x.lineWidth=5;x.fillRect(-36,-14,72,28);x.strokeRect(-36,-14,72,28);x.lineWidth=7;x.strokeStyle=e.on?'#1E8E3E':'#E5533F';x.beginPath();x.moveTo(-26,4);x.lineTo(26,e.on?4:-26);x.stroke();x.fillStyle='#1D2B53';x.beginPath();x.arc(-26,4,6,0,7);x.arc(26,4,6,0,7);x.fill()}
+  if(e.p==='buzzer'){x.fillStyle=flow&&i>.4?'#FFC93C':'#fff';x.strokeStyle='#1D2B53';x.lineWidth=5;x.beginPath();x.arc(0,0,26,0,7);x.fill();x.stroke();if(flow&&i>.4){x.strokeStyle='#FF6B5B';x.lineWidth=3;for(let r=34;r<60;r+=10){x.beginPath();x.arc(0,0,r+(t%10),-.6,.6);x.stroke()}}x.fillStyle='#1D2B53';x.beginPath();x.arc(0,0,8,0,7);x.fill()}
+  if(e.p==='motor'){x.fillStyle='#fff';x.strokeStyle='#1D2B53';x.lineWidth=5;x.beginPath();x.arc(0,0,28,0,7);x.fill();x.stroke();x.save();x.rotate(flow&&i>.4?t*.02*i:0);x.fillStyle='#22C3E6';for(let k=0;k<3;k++){x.rotate(Math.PI*2/3);x.beginPath();x.ellipse(0,-14,7,14,0,0,7);x.fill()}x.restore()}
+  x.restore()});
+ if(res.buzz&&t%20===0)Kit.tone(440,.08,'square',.05);requestAnimationFrame(draw)}
+const edgeAt=(px,py)=>{let best=null;for(let r=0;r<R;r++)for(let c=0;c<C;c++){const i=r*C+c;[[c+1<C,i+1],[r+1<R,i+C]].forEach(([ok,j])=>{if(!ok)return;const [x1,y1]=dot(i),[x2,y2]=dot(j),mx=(x1+x2)/2,my=(y1+y2)/2,d=Math.hypot(px-mx,py-my);if(d<SP*.45&&(!best||d<best.d))best={k:`${i}-${j}`,d}})}return best&&best.k};
+cv.addEventListener('pointerdown',e=>{const r=cv.getBoundingClientRect(),k=edgeAt((e.clientX-r.left)/r.width*W,(e.clientY-r.top)/r.height*H);if(!k)return;place(k)});
+function place(k){const e=E[k];
+ if(tool==='hand'){if(e&&e.p==='switch'){e.on=!e.on;Kit.tick()}else if(e&&e.p==='battery'){e.flip=!e.flip}}
+ else if(tool==='erase'){delete E[k]}
+ else if(e&&e.p===tool){if(tool==='switch')e.on=!e.on;else if(tool==='battery')e.flip=!e.flip;else delete E[k]}
+ else{if(tool==='battery')Object.keys(E).forEach(q=>{if(E[q].p==='battery')delete E[q]});E[k]={p:tool,on:tool==='switch'?true:undefined};}
+ Kit.tick();save();update()}
+$('pal').onclick=e=>{const b=e.target.closest('[data-t]');if(!b)return;if(b.dataset.t==='clear'){if(confirm('Clear the whole circuit?')){E={};wasLit=false;save();update()}return}tool=b.dataset.t;[...$('pal').children].forEach(z=>z.classList.toggle('on',z===b))};
+window.__c={set:o=>{E=o;wasLit=false;update()},place:(k,p)=>{tool=p;place(k)}};
+update();draw();
+</script>
+</body></html>

@@ -30,7 +30,9 @@ main{max-width:1300px}
 <script>
 Kit.mount("🧩", "Compound Word Game");
 const $=id=>document.getElementById(id);
-const P=[['sun','flower','🌻'],['rain','bow','🌈'],['star','fish','⭐'],['butter','fly','🦋'],['snow','man','⛄'],['foot','ball','🏈'],['pan','cake','🥞'],['cup','cake','🧁'],['pop','corn','🍿'],['tooth','brush','🪥'],['fire','truck','🚒'],['bee','hive','🐝'],['sea','shell','🐚'],['lady','bug','🐞'],['rail','road','🛤️'],['air','plane','✈️'],['moon','light','🌙'],['tree','house','🏡'],['back','pack','🎒'],['water','melon','🍉'],['jelly','fish','🪼'],['snow','flake','❄️'],['gold','fish','🐠'],['basket','ball','🏀'],['sun','glasses','🕶️'],['light','house','🗼'],['hot','dog','🌭'],['book','worm','🐛'],['bed','room','🛏️'],['tea','pot','🫖'],['eye','ball','👁️'],['skate','board','🛹']];
+const P0=[['sun','flower','🌻'],['rain','bow','🌈'],['star','fish','⭐'],['butter','fly','🦋'],['snow','man','⛄'],['foot','ball','🏈'],['pan','cake','🥞'],['cup','cake','🧁'],['pop','corn','🍿'],['tooth','brush','🪥'],['fire','truck','🚒'],['bee','hive','🐝'],['sea','shell','🐚'],['lady','bug','🐞'],['rail','road','🛤️'],['air','plane','✈️'],['moon','light','🌙'],['tree','house','🏡'],['back','pack','🎒'],['water','melon','🍉'],['jelly','fish','🪼'],['snow','flake','❄️'],['gold','fish','🐠'],['basket','ball','🏀'],['sun','glasses','🕶️'],['light','house','🗼'],['hot','dog','🌭'],['book','worm','🐛'],['bed','room','🛏️'],['tea','pot','🫖'],['eye','ball','👁️'],['skate','board','🛹']];
+let P=[];const parseP=t=>{const L=Kit.lines(t).map(l=>{const m=l.split('|').map(x=>x.trim());const [a,b]=(m[0]||'').split('+').map(x=>x.trim().toLowerCase());return a&&b?[a,b,m[1]||'✨']:null}).filter(Boolean);P=L.length>=3?L:P0};
+parseP(Kit.editable({key:'compounds',title:'Compound words',help:'(one per line: first + second | picture emoji. At least 3.)',def:P0.map(p=>`${p[0]} + ${p[1]} | ${p[2]}`).join('\n'),onSave:t=>{parseP(t);deal()}}));
 const SIZE=6;let round=[],A=[],B=[],sa=null,sc=0,miss=0,rn=0,t0=0;
 document.querySelector('main').innerHTML=`<div class="cw-hud"><span class="ln-pill">Round <b id="rn">1</b></span><span class="ln-pill">⭐ <b id="sc">0</b></span><span class="ln-pill">❌ <b id="ms">0</b></span></div>
 <div class="cw-msg" id="msg">Tap a word on the left, then the word on the right that sticks to it!</div>
@@ -47,7 +49,7 @@ document.querySelector('.cw-board').onclick=e=>{const b=e.target.closest('.cw-w'
  if(!sa){$('msg').textContent='👈 Pick a first half first.';return}
  const a=sa.dataset.a,w=b.dataset.b,p=round.find(r=>r[0]===a&&r[1]===w);
  if(p){sa.classList.add('done');b.classList.add('done');sa.classList.remove('sel');sa=null;sc++;Kit.ding();$('made').insertAdjacentHTML('beforeend',`<span class="cw-chip"><span>${p[2]}</span>${a}<b style="color:#9B6BF2">${w}</b></span>`);$('msg').textContent=`✨ ${a} + ${w} = ${a+w}!`;
-  if(!document.querySelector('[data-a]:not(.done)')){const s=Math.round((Date.now()-t0)/1000);$('msg').textContent=`🎉 All ${SIZE} built in ${s} seconds!`;Kit.tada();Kit.confetti(60);setTimeout(deal,2600)}}
+  if(!document.querySelector('[data-a]:not(.done)')){const s=Math.round((Date.now()-t0)/1000);$("msg").textContent=`🎉 All ${round.length} built in ${s} seconds!`;Kit.tada();Kit.confetti(60);setTimeout(deal,2600)}}
  else{miss++;Learn.flash(b,false);$('msg').textContent=`🤔 "${a+w}" isn't a word. Try again!`}
  $('sc').textContent=sc;$('ms').textContent=miss};
 deal();

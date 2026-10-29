@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>DNA Builder</title>
+<style>
+main{max-width:1400px}
+.dn-tabs{display:flex;gap:8px;justify-content:center;margin-bottom:12px;flex-wrap:wrap}
+.dn-tabs button{font:inherit;font-weight:800;border:4px solid var(--ink);border-radius:99px;padding:6px 16px;background:#fff;cursor:pointer;color:var(--ink)}.dn-tabs button.on{background:var(--sun)}
+.dn{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:860px){.dn{grid-template-columns:1fr}}
+.dn-lad{background:#1D2B53;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);padding:14px 10px;display:grid;gap:6px;position:relative;overflow:hidden}
+.dn-row{display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:0;position:relative;transition:transform .5s}
+.dn-row::before,.dn-row::after{content:"";position:absolute;top:50%;width:14px;height:14px;border-radius:50%;background:#9FB2DA;transform:translateY(-50%)}
+.dn-row::before{left:2%}.dn-row::after{right:2%}
+.dn-b{height:clamp(30px,5vh,44px);display:flex;align-items:center;font-weight:900;font-size:clamp(1rem,2.4vw,1.4rem);color:#fff;border:4px solid var(--ink);text-shadow:1px 1px 0 rgba(0,0,0,.35);cursor:pointer;background:var(--c);user-select:none}
+.dn-b{clip-path:var(--sh,none)}
+.dn-b.l{border-radius:12px 0 0 12px;margin-left:5%;margin-right:-5.4%;padding-left:12px;justify-content:flex-start;position:relative;z-index:1}
+.dn-b.r{border-radius:0 12px 12px 0;margin-right:5%;padding-right:12px;justify-content:flex-end}
+.dn-b.empty{background:rgba(255,255,255,.12);border-style:dashed;border-color:#9FB2DA;color:#9FB2DA}
+.dn-b.next{outline:4px solid var(--sun);outline-offset:2px;animation:dnp 1s infinite}@keyframes dnp{50%{outline-color:transparent}}
+.dn-b.bad{background:#FF3B30!important;animation:dns .4s}@keyframes dns{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.dn-b.flag{outline:5px solid var(--sun)}
+.dn-lad.unzip .dn-row{transform:translateX(var(--u))}
+.dn-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:14px;display:grid;gap:10px}
+.dn-pick{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.dn-pick button{font:inherit;font-weight:900;font-size:1.8rem;border:5px solid var(--ink);border-radius:16px;padding:10px 0;color:#fff;cursor:pointer;background:var(--c);box-shadow:0 5px 0 var(--ink);text-shadow:1px 1px 0 rgba(0,0,0,.35)}
+.dn-pick button small{display:block;font-size:.7rem;font-weight:700}
+.dn-pick button:active{transform:translateY(5px);box-shadow:none}
+.dn-rule{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;font-weight:800}
+.dn-rule span{border:3px solid var(--ink);border-radius:99px;padding:3px 12px;background:#F4FAFF}
+.dn-msg{font-weight:800;font-size:1.15rem;min-height:2.6em}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🧬", "DNA Builder");
+const $=id=>document.getElementById(id);
+// A pairs with T, C pairs with G. Each pair has matching puzzle shapes.
+const B={A:['Adenine','#FF6B5B','polygon(0 0,100% 0,100% 30%,88% 50%,100% 70%,100% 100%,0 100%)'],T:['Thymine','#FFB020','polygon(0 0,100% 0,100% 100%,0 100%,0 70%,12% 50%,0 30%)'],C:['Cytosine','#22C3E6','polygon(0 0,100% 0,100% 25%,90% 25%,90% 75%,100% 75%,100% 100%,0 100%)'],G:['Guanine','#5DC66E','polygon(0 0,100% 0,100% 100%,0 100%,0 75%,10% 75%,10% 25%,0 25%)']};
+const PAIR={A:'T',T:'A',C:'G',G:'C'};
+// A–T pairs fit with a pointy piece, C–G pairs with a square piece (left side has the tab, right side has the matching slot)
+const SH={l:{V:'polygon(0 0,88% 0,88% 30%,100% 50%,88% 70%,88% 100%,0 100%)',S:'polygon(0 0,88% 0,88% 25%,100% 25%,100% 75%,88% 75%,88% 100%,0 100%)'},r:{V:'polygon(0 0,100% 0,100% 100%,0 100%,0 70%,12% 50%,0 30%)',S:'polygon(0 0,100% 0,100% 100%,0 100%,0 75%,12% 75%,12% 25%,0 25%)'}};
+const kind=b=>'AT'.includes(b)?'V':'S';
+let mode='build',N=10,left=[],right=[],cur=0,miss=0,bad=[],score=Kit.get('dn-best',0);
+document.querySelector('main').innerHTML=`<div class="dn-tabs" id="tabs"><button data-m="build" class="on">🧩 Build the other side</button><button data-m="fix">🔎 Find the mistakes</button></div>
+<div class="dn"><div class="dn-lad" id="lad"></div><div class="dn-p"><div class="dn-rule"><span>🔴 A ↔ T 🟠</span><span>🔵 C ↔ G 🟢</span></div>
+<div class="dn-msg" id="msg"></div><div class="dn-pick" id="pick">${Object.entries(B).map(([k,v])=>`<button data-b="${k}" style="--c:${v[1]}">${k}<small>${v[0]}</small></button>`).join('')}</div>
+<div class="row"><button class="btn green" id="nw">🧬 New DNA</button><select id="len" style="width:auto"><option value="6">6 pairs</option><option value="10" selected>10 pairs</option><option value="14">14 pairs</option></select><button class="btn white" id="cp" hidden>✂️ Unzip and copy!</button></div>
+<span class="muted">DNA is a twisted ladder. Each rung is two bases that fit together like puzzle pieces. Because A always pairs with T and C always pairs with G, one side tells you exactly what the other side must be.</span></div></div>`;
+function seq(n){return Array.from({length:n},()=>Kit.pick('ATCG'))}
+function cell(b,side,i){if(!b)return `<div class="dn-b ${side} empty ${mode==='build'&&i===cur?'next':''}" data-i="${i}">?</div>`;return `<div class="dn-b ${side}" data-i="${i}" data-s="${side}" style="--c:${B[b][1]};--sh:${SH[side][kind(b)]}">${b}</div>`}
+function draw(){$('lad').innerHTML=left.map((b,i)=>`<div class="dn-row" style="--u:${(i%2?1:-1)*0}px">${cell(b,'l',i)}${cell(right[i],'r',i)}</div>`).join('');
+ $('pick').style.display=mode==='build'?'':'none';window.__t={left:left.join(''),right:right.map(x=>x||'-').join(''),cur,bad:[...bad]}}
+function newDNA(){N=+$('len').value;left=seq(N);cur=0;miss=0;$('lad').classList.remove('unzip');$('cp').hidden=true;
+ if(mode==='build'){right=Array(N).fill(null);$('msg').textContent='Tap the base that pairs with the glowing one.'}
+ else{right=left.map(b=>PAIR[b]);const k=Math.min(3,Math.max(1,Math.round(N/5)));bad=Kit.shuffle([...Array(N).keys()]).slice(0,k);bad.forEach(i=>{right[i]=Kit.pick(Object.keys(B).filter(b=>b!==PAIR[left[i]]))});$('msg').textContent=`A copying mistake snuck in! Tap the ${k} wrong rung${k>1?'s':''} on the right side.`}
+ draw()}
+$('pick').onclick=e=>{const b=e.target.closest('[data-b]');if(!b||mode!=='build'||cur>=N)return;const want=PAIR[left[cur]];
+ if(b.dataset.b===want){right[cur]=want;cur++;Kit.tone(400+cur*40,.1,'triangle',.2);draw();if(cur>=N){$('msg').textContent=miss?`🧬 Done! ${miss} mix-up${miss>1?'s':''} on the way.`:'🌟 Perfect DNA! Every pair fits.';Kit.tada();Kit.confetti(50);$('cp').hidden=false}else $('msg').textContent=`✅ ${left[cur-1]} pairs with ${want}! Keep going.`}
+ else{miss++;const n=$('lad').querySelector(`.dn-b.r[data-i="${cur}"]`);n.classList.add('bad');Kit.tone(180,.25,'sawtooth',.15);$('msg').textContent=`❌ ${b.dataset.b} doesn't fit with ${left[cur]}. ${left[cur]} always pairs with ${want==='T'||want==='A'?'the A/T partner':'the C/G partner'}.`;setTimeout(()=>n.classList.remove('bad'),400)}};
+$('lad').onclick=e=>{if(mode!=='fix')return;const c=e.target.closest('.dn-b.r');if(!c)return;const i=+c.dataset.i;
+ if(bad.includes(i)){right[i]=PAIR[left[i]];bad=bad.filter(x=>x!==i);Kit.ding();draw();$('msg').textContent=bad.length?`✅ Fixed! ${left[i]} pairs with ${right[i]}. ${bad.length} more to find.`:'🎉 All fixed! Cells have "proofreading" helpers that fix mistakes like these.';if(!bad.length){Kit.tada();Kit.confetti(50)}}
+ else{c.classList.add('bad');miss++;Kit.tone(180,.25,'sawtooth',.15);setTimeout(()=>c.classList.remove('bad'),400);$('msg').textContent=`That one is right: ${left[i]} pairs with ${right[i]}.`}};
+$('cp').onclick=()=>{// unzip: the two sides split, then each side gets a new partner = two identical copies
+ const L=left.slice(),Rr=right.slice();$('lad').innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">${[0,1].map(s=>`<div style="display:grid;gap:6px">${L.map((b,i)=>`<div class="dn-row">${s===0?cell(b,'l',i)+cell(PAIR[b],'r',i):cell(PAIR[Rr[i]],'l',i)+cell(Rr[i],'r',i)}</div>`).join('')}</div>`).join('')}</div>`;
+ $('msg').innerHTML='✂️ The ladder <b>unzipped</b> down the middle, and each half built a new partner side. Now there are <b>two identical copies</b>. That\'s how a cell copies its DNA before it divides!';Kit.tada()};
+$('tabs').onclick=e=>{const b=e.target.closest('[data-m]');if(!b)return;mode=b.dataset.m;[...$('tabs').children].forEach(z=>z.classList.toggle('on',z===b));newDNA()};
+$('nw').onclick=newDNA;$('len').onchange=newDNA;
+addEventListener('keydown',e=>{const k=e.key.toUpperCase();if(mode==='build'&&B[k]){const b=$('pick').querySelector(`[data-b="${k}"]`);b&&b.click()}});
+newDNA();
+</script>
+</body></html>

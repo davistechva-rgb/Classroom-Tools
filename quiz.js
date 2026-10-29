@@ -3,7 +3,14 @@
 const Quiz = {
   init(cfg) {
     const main = document.querySelector('main');
-    const lv = cfg.levels || [];
+    // ✏️ every quiz also has a "My own questions" choice the teacher can edit
+    const slug = location.pathname.split('/').pop().replace('.html', '');
+    const ownDef = 'What color do you get when you mix blue and yellow? | Green | Purple | Orange | Brown\nHow many days are in a week? | 7 | 5 | 10 | 12';
+    let own = [];
+    const parseOwn = t => { own = Kit.lines(t).map(l => l.split('|').map(x => x.trim())).filter(p => p.length >= 3 && p[0] && p[1]); };
+    if (Kit.editable) parseOwn(Kit.editable({ key: 'quiz-' + slug, title: 'My own questions', help: '(one per line: question | right answer | wrong answer | wrong answer | wrong answer). Then pick "My own questions" in the menu.', def: ownDef, onSave: t => { parseOwn(t); } }));
+    const lv = [...(cfg.levels || ['All questions']), '✏️ My own questions'];
+    const OWN = lv.length - 1;
     main.insertAdjacentHTML('beforeend', `
     <div class="card row noprint" id="qzSet" style="margin-bottom:20px">
       ${lv.length ? `<label>${cfg.levelLabel || 'Level'} <select id="qzLevel" style="width:auto">${lv.map((l, i) => `<option value="${i}">${l}</option>`).join('')}</select></label>` : ''}
@@ -21,7 +28,7 @@ const Quiz = {
     const level = () => $('qzLevel') ? +$('qzLevel').value : 0;
     function next() {
       if (total && n >= total) return finish();
-      let tries = 0; do { cur = cfg.makeQ(level()); tries++; } while (recent.includes(cur.q + (cur.vis || '')) && tries < 20);
+      let tries = 0; do { if (level() === OWN) { const p = own.length ? Kit.pick(own) : ['Add your own questions with the ✏️ button at the top.', 'OK']; cur = { q: p[0], answer: p[1], options: [...new Set(p.slice(1).filter(Boolean))] }; } else cur = cfg.makeQ(level()); tries++; } while (recent.includes(cur.q + (cur.vis || '')) && tries < (level() === OWN ? Math.min(20, own.length) : 20));
       recent.push(cur.q + (cur.vis || '')); if (recent.length > 8) recent.shift();
       n++; busy = false;
       $('qzProg').textContent = total ? `Question ${n} of ${total}` : `Question ${n}`;

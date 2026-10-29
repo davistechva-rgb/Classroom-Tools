@@ -61,8 +61,9 @@ nav button.favbtn{--c:#FFC93C}
 </style></head>
 <body>
 <header class="head">
- <h1><span>Classroom</span> Tools</h1>
+ <div><h1><span>Classroom</span> Tools</h1><div class="ct-brand" data-ct-brand></div></div>
  <div class="search"><input type="text" id="q" placeholder="🔍 Find a tool" aria-label="Find a tool"></div>
+ <button class="btn white small" id="custBtn" title="Customize: class name, logo, colors, text size, sounds">⚙️ Customize</button>
  <button class="btn white small" id="bkBtn" title="Back up or restore your saved lists, favorites, and settings">💾 Backup</button>
 </header>
 <div class="app">
@@ -145,6 +146,7 @@ $('tiles').addEventListener('click',e=>{const b=e.target.closest('[data-fav]');i
 addEventListener('pageshow',show);
 // 💾 Backup and restore: everything the tools save lives in this browser under keys that start with "ct:".
 function ctData(){const d={};try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('ct:'))d[k]=localStorage.getItem(k)}}catch{}return d}
+$('custBtn').onclick=()=>Kit.customize();document.querySelectorAll('[data-ct-brand]').forEach(e=>e.innerHTML=Kit.brand());
 $('bkBtn').onclick=()=>{const n=Object.keys(ctData()).length;
  Kit.modal(`<div style="font-size:3rem">💾</div><h2 style="margin:4px 0">Backup &amp; restore</h2><p style="margin:0">Your favorites, lists, class names, settings, and boards are saved in this browser. Save a backup file to keep them safe or move them to another computer.</p>
  <div class="bk-row"><button class="btn green" id="bkSave">⬇️ Save a backup file</button><label class="btn white" style="text-align:center">⬆️ Restore from a backup file<input type="file" id="bkLoad" accept=".json,application/json" hidden></label></div>

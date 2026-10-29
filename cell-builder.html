@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Cell Builder</title>
+<style>
+main{max-width:1500px}
+.cb-tabs{display:flex;gap:8px;justify-content:center;margin-bottom:12px;flex-wrap:wrap}
+.cb-tabs button{font:inherit;font-weight:800;border:4px solid var(--ink);border-radius:99px;padding:6px 16px;background:#fff;cursor:pointer;color:var(--ink)}.cb-tabs button.on{background:var(--sun)}
+.cb{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.cb{grid-template-columns:1fr}}
+.cb-cell{background:#fff;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);padding:8px}
+.cb-cell svg{width:100%;display:block}
+.cb-cell svg .part{cursor:pointer;transition:opacity .4s}
+.cb-cell svg .part.new{animation:cbIn .6s}@keyframes cbIn{from{opacity:0;transform:scale(.6)}}
+.cb-cell svg .part:hover{filter:brightness(1.1)}
+.cb-tray{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.cb-t{font:inherit;font-weight:800;border:4px solid var(--ink);border-radius:14px;padding:6px;background:#fff;cursor:pointer;display:flex;gap:8px;align-items:center;text-align:left;color:var(--ink)}
+.cb-t svg{width:40px;height:40px;flex:none}
+.cb-t.in{background:#C9F1D2}.cb-t.no{background:#FFE3DF}
+.cb-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:10px}
+.cb-info{border:4px solid var(--ink);border-radius:16px;padding:10px 12px;background:#FFF6C9;font-weight:600;min-height:4.5em}
+.cb-info b{font-size:1.15rem}
+.cb-prog{height:16px;border:3px solid var(--ink);border-radius:99px;overflow:hidden;background:#EEF3FB}.cb-prog b{display:block;height:100%;background:var(--grass);transition:width .4s}
+.cb-venn{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center}
+.cb-venn div{border:4px solid var(--ink);border-radius:16px;padding:8px;font-weight:700;background:var(--vc)}
+.cb-venn b{display:block;margin-bottom:4px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🧫", "Cell Builder");
+const $=id=>document.getElementById(id);
+// [id, name, job, in animal?, in plant?]
+const P=[['membrane','Cell membrane','A thin, bendy skin that controls what goes in and out of the cell.',1,1],
+ ['cyto','Cytoplasm','The jelly that fills the cell. All the other parts float in it.',1,1],
+ ['nucleus','Nucleus','The control center. It holds the DNA, the instructions for the whole cell.',1,1],
+ ['mito','Mitochondria','The power plants. They turn food into energy the cell can use.',1,1],
+ ['ribo','Ribosomes','Tiny factories that build proteins.',1,1],
+ ['vac','Vacuole','A storage bag for water and food. Plant cells have one giant vacuole; animal cells have small ones.',1,1],
+ ['wall','Cell wall','A stiff, strong outer layer that gives plant cells their box shape. Animal cells don\'t have one.',0,1],
+ ['chloro','Chloroplasts','The green parts that use sunlight to make food (photosynthesis). Only plants have them!',0,1]];
+const ICON={membrane:'<rect x="4" y="8" width="32" height="24" rx="12" fill="none" stroke="#E5533F" stroke-width="3"/>',cyto:'<rect x="4" y="8" width="32" height="24" rx="10" fill="#FFF1C9"/>',nucleus:'<circle cx="20" cy="20" r="13" fill="#B497E8" stroke="#6B4FB8" stroke-width="3"/><circle cx="23" cy="17" r="4" fill="#6B4FB8"/>',
+ mito:'<ellipse cx="20" cy="20" rx="16" ry="9" fill="#FF9F68" stroke="#C2410C" stroke-width="2.5"/><path d="M8 20 q4 -6 6 0 t6 0 t6 0 t6 0" fill="none" stroke="#C2410C" stroke-width="2"/>',ribo:'<g fill="#3B4E8C"><circle cx="10" cy="12" r="3"/><circle cx="22" cy="10" r="3"/><circle cx="30" cy="22" r="3"/><circle cx="14" cy="27" r="3"/><circle cx="24" cy="30" r="3"/></g>',
+ vac:'<ellipse cx="20" cy="20" rx="15" ry="12" fill="#BFE6FA" stroke="#2F7FD1" stroke-width="3"/>',wall:'<rect x="3" y="5" width="34" height="30" rx="4" fill="none" stroke="#3FA34D" stroke-width="6"/>',chloro:'<ellipse cx="20" cy="20" rx="15" ry="9" fill="#5DC66E" stroke="#2E7D32" stroke-width="2.5"/><g stroke="#2E7D32" stroke-width="3"><line x1="12" y1="15" x2="12" y2="25"/><line x1="18" y1="14" x2="18" y2="26"/><line x1="24" y1="14" x2="24" y2="26"/><line x1="30" y1="16" x2="30" y2="24"/></g>'};
+let kind='animal',have={animal:new Set(),plant:new Set()},sel=null;
+document.querySelector('main').innerHTML=`<div class="cb-tabs" id="tabs"><button data-k="animal" class="on">🐶 Animal cell</button><button data-k="plant">🌿 Plant cell</button><button data-k="compare">⚖️ Compare</button></div>
+<div class="cb"><div class="cb-cell" id="cell"></div><div class="cb-p"><b id="hd"></b><div class="cb-prog"><b id="pg"></b></div><div class="cb-tray" id="tray"></div><div class="cb-info" id="info">Tap a part to add it to the cell. Watch out: not every part belongs in every cell!</div></div></div>`;
+const isIn=(id,k)=>P.find(p=>p[0]===id)[k==='animal'?3:4];
+function svg(k){const H=have[k],pl=k==='plant';const r=(id)=>H.has(id);let s=`<svg viewBox="0 0 600 420">`;
+ const shape=pl?'<rect x="60" y="45" width="480" height="330" rx="22"/>':'<path d="M300 40 C450 30 560 120 545 220 C535 330 430 390 300 385 C170 395 60 330 55 220 C50 110 150 50 300 40Z"/>';
+ if(r('wall')&&pl)s+=`<g class="part" data-p="wall"><rect x="44" y="29" width="512" height="362" rx="30" fill="#C9F1D2" stroke="#3FA34D" stroke-width="14"/></g>`;
+ s+=`<g class="part" data-p="cyto" ${r('cyto')?'':'opacity=".0"'}>${shape.replace('/>',' fill="#FFF1C9"/>')}</g>`;
+ s+=`<g fill="none" stroke="${r('membrane')?'#E5533F':'#C3CBDB'}" stroke-width="${r('membrane')?6:3}" stroke-dasharray="${r('membrane')?'0':'10 10'}" class="part" data-p="membrane">${shape}</g>`;
+ if(r('vac'))s+=pl?`<g class="part" data-p="vac"><rect x="250" y="80" width="250" height="240" rx="70" fill="#BFE6FA" stroke="#2F7FD1" stroke-width="5"/></g>`:`<g class="part" data-p="vac">${[[180,300,26],[420,300,22],[430,150,18]].map(([x,y,rr])=>`<circle cx="${x}" cy="${y}" r="${rr}" fill="#BFE6FA" stroke="#2F7FD1" stroke-width="4"/>`).join('')}</g>`;
+ if(r('nucleus'))s+=`<g class="part" data-p="nucleus"><circle cx="${pl?165:300}" cy="${pl?200:200}" r="62" fill="#B497E8" stroke="#6B4FB8" stroke-width="6"/><circle cx="${pl?180:315}" cy="188" r="18" fill="#6B4FB8"/></g>`;
+ if(r('mito'))s+=`<g class="part" data-p="mito">${(pl?[[150,320,0],[450,345,20],[120,100,-20]]:[[150,150,-25],[440,240,15],[260,320,0],[380,110,30]]).map(([x,y,a])=>`<g transform="translate(${x} ${y}) rotate(${a})"><ellipse rx="40" ry="20" fill="#FF9F68" stroke="#C2410C" stroke-width="4"/><path d="M-30 0 q7 -12 14 0 t14 0 t14 0 t14 0" fill="none" stroke="#C2410C" stroke-width="3"/></g>`).join('')}</g>`;
+ if(r('chloro')&&pl)s+=`<g class="part" data-p="chloro">${[[110,110],[240,350],[520,200],[380,355],[90,280],[520,90]].map(([x,y])=>`<g transform="translate(${x} ${y})"><ellipse rx="34" ry="19" fill="#5DC66E" stroke="#2E7D32" stroke-width="4"/>${[-18,-6,6,18].map(d=>`<line x1="${d}" y1="-10" x2="${d}" y2="10" stroke="#2E7D32" stroke-width="5"/>`).join('')}</g>`).join('')}</g>`;
+ if(r('ribo'))s+=`<g class="part" data-p="ribo" fill="#3B4E8C">${Array.from({length:26},(_,i)=>{const a=i*2.4,rr=120+(i*37%90);return `<circle cx="${300+Math.cos(a)*rr*1.4}" cy="${210+Math.sin(a)*rr*.8}" r="6"/>`}).join('')}</g>`;
+ return s+'</svg>'}
+function draw(fresh){if(kind==='compare')return compare();const need=P.filter(p=>isIn(p[0],kind));
+ $('cell').innerHTML=svg(kind);if(fresh)$('cell').querySelector(`[data-p="${fresh}"]`)?.classList.add('new');
+ $('hd').textContent=`${kind==='plant'?'🌿 Plant':'🐶 Animal'} cell: ${have[kind].size} of ${need.length} parts`;$('pg').style.width=have[kind].size/need.length*100+'%';
+ $('tray').innerHTML=P.map(p=>`<button class="cb-t ${have[kind].has(p[0])?'in':''}" data-p="${p[0]}"><svg viewBox="0 0 40 40">${ICON[p[0]]}</svg>${p[1]}</button>`).join('');
+ window.__t={kind,have:[...have[kind]],need:need.length}}
+$('tray').onclick=e=>{const b=e.target.closest('[data-p]');if(!b)return;const id=b.dataset.p,p=P.find(q=>q[0]===id);
+ if(have[kind].has(id)){$('info').innerHTML=`<b>${p[1]}</b><br>${p[2]}`;return}
+ if(!isIn(id,kind)){b.classList.add('no');Learn.flash(b,false);$('info').innerHTML=`🚫 <b>${kind==='animal'?'Animal':'Plant'} cells don't have ${p[1].toLowerCase()}.</b><br>${p[2]}`;Kit.tone(200,.25,'triangle',.15);return}
+ have[kind].add(id);Kit.ding();$('info').innerHTML=`✅ <b>${p[1]}</b><br>${p[2]}`;draw(id);
+ if(have[kind].size===P.filter(q=>isIn(q[0],kind)).length){Kit.tada();Kit.confetti(70);$('info').innerHTML+=`<br><br>🎉 <b>Your ${kind} cell is complete!</b> ${(o=>have[o].size===P.filter(q=>isIn(q[0],o)).length?'Now tap ⚖️ Compare to see how they differ.':'Now build the '+o+' cell.')(kind==='animal'?'plant':'animal')}`}};
+$('cell').onclick=e=>{const g=e.target.closest('[data-p]');if(!g||!have[kind].has(g.dataset.p))return;const p=P.find(q=>q[0]===g.dataset.p);$('info').innerHTML=`<b>${p[1]}</b><br>${p[2]}`;Kit.tick()};
+function compare(){const both=P.filter(p=>p[3]&&p[4]),pl=P.filter(p=>!p[3]&&p[4]);
+ $('cell').innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">${['animal','plant'].map(k=>`<div><b style="display:block;text-align:center">${k==='plant'?'🌿 Plant':'🐶 Animal'}</b>${svg(k)}</div>`).join('')}</div>`;
+ $('hd').textContent='⚖️ How are they the same and different?';$('pg').style.width='100%';$('tray').innerHTML=`<div class="cb-venn" style="grid-column:1/-1"><div style="--vc:#FFE3C4"><b>🐶 Only animal</b>small vacuoles<br>round, bendy shape</div><div style="--vc:#EAE0FF"><b>Both</b>${both.map(p=>p[1]).join('<br>')}</div><div style="--vc:#C9F1D2"><b>🌿 Only plant</b>${pl.map(p=>p[1]).join('<br>')}<br>one big vacuole</div></div>`;
+ $('info').innerHTML='Plants make their own food with chloroplasts and stand tall thanks to stiff cell walls. Animals eat food instead, so their cells don\'t need either one.'}
+$('tabs').onclick=e=>{const b=e.target.closest('[data-k]');if(!b)return;kind=b.dataset.k;[...$('tabs').children].forEach(z=>z.classList.toggle('on',z===b));draw()};
+draw();
+</script>
+</body></html>

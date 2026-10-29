@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Solar System Simulator</title>
+<style>
+main{max-width:1600px}
+.so{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.so{grid-template-columns:1fr}}
+.so-cv{width:100%;aspect-ratio:1;max-height:76vh;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);background:#070B24;display:block;cursor:pointer;margin:0 auto}
+.so-ctl{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;margin-top:10px;font-weight:800;color:#fff;text-shadow:2px 2px 0 var(--ink)}
+.so-ctl input{width:min(260px,60vw)}
+.so-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:14px;display:grid;gap:10px}
+.so-pl{display:flex;gap:6px;flex-wrap:wrap}.so-pl button{font:inherit;font-weight:800;border:3px solid var(--ink);border-radius:99px;padding:3px 10px;background:#fff;cursor:pointer;color:var(--ink);display:flex;align-items:center;gap:6px}
+.so-pl button i{width:14px;height:14px;border-radius:50%;background:var(--pc);border:2px solid var(--ink)}.so-pl button.on{background:var(--sun)}
+.so-card h2{margin:0}.so-facts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.so-facts div{border:3px solid var(--ink);border-radius:12px;padding:6px 10px;background:#F4FAFF;font-weight:700;font-size:.95rem}.so-facts b{display:block;font-size:1.15rem}
+.so-age{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-weight:700}
+.so-date{font-weight:800;font-size:1.1rem;text-align:center}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🪐", "Solar System Simulator");
+const $=id=>document.getElementById(id);
+// [name, distance from the Sun (AU), year in Earth days, color, size, moons, day length, fun fact]
+const PL=[['Mercury',.39,88,'#A9A9B0',5,'0','176 Earth days (sunrise to sunrise)','The smallest planet. It has almost no air, so nights get very cold.'],
+ ['Venus',.72,225,'#E8C27A',8,'0','117 Earth days (sunrise to sunrise)','The hottest planet, because its thick clouds trap heat. It spins backwards!'],
+ ['Earth',1,365.25,'#3B82C4',8,'1','24 hours','The only planet we know of with life and liquid water on the surface.'],
+ ['Mars',1.52,687,'#D2603C',6,'2','24 hours 40 minutes','The red planet. Its red color comes from rusty dust.'],
+ ['Jupiter',5.2,4333,'#D9A066',18,'95+','10 hours','The biggest planet. Its Great Red Spot is a storm bigger than Earth.'],
+ ['Saturn',9.58,10759,'#E6CF8A',15,'140+','10.7 hours','Its rings are made of ice and rock. It would float in a giant bathtub!'],
+ ['Uranus',19.2,30687,'#8FD6E0',11,'28','17 hours','It spins tipped on its side, like a rolling ball.'],
+ ['Neptune',30.05,60190,'#3E5BD6',11,'16','16 hours','The windiest planet, with winds faster than a jet plane.']];
+let days=0,speed=20,run=true,sel=2,scale='fit',start=PL.map(()=>Math.random()*Math.PI*2),last=0;
+const W=900;const stars=Array.from({length:180},()=>[Math.random()*W,Math.random()*W,Math.random()*1.6+.3]);
+document.querySelector('main').innerHTML=`<div class="so"><div><canvas class="so-cv" id="cv" width="${W}" height="${W}"></canvas>
+<div class="so-ctl"><button class="btn white small" id="pp">⏸ Pause</button>⏩ Speed <input type="range" id="sp" min="1" max="100" value="20"><button class="btn white small" id="sc">📏 Distances: squeezed to fit</button></div></div>
+<div class="so-p"><div class="so-date" id="dt"></div><div class="so-pl" id="pl">${PL.map((p,i)=>`<button data-i="${i}" style="--pc:${p[3]}"><i></i>${p[0]}</button>`).join('')}</div><div class="so-card" id="cd"></div>
+<div class="so-age">🎂 How old would you be? I am <input type="number" id="age" value="9" min="1" max="99" style="width:70px"> Earth years old.</div><div id="ages" style="font-weight:700"></div></div></div>`;
+const cv=$('cv'),x=cv.getContext('2d'),C=W/2;
+const rad=i=>{const au=PL[i][1];return scale==='fit'?60+Math.sqrt(au/30.05)*(C-80):40+au/30.05*(C-60)};
+function pos(i){const a=start[i]+days/PL[i][2]*Math.PI*2;const r=rad(i);return [C+Math.cos(a)*r,C-Math.sin(a)*r]}
+function draw(){x.fillStyle='#070B24';x.fillRect(0,0,W,W);stars.forEach(([a,b,r])=>{x.fillStyle='rgba(255,255,255,.7)';x.beginPath();x.arc(a,b,r,0,7);x.fill()});
+ const g=x.createRadialGradient(C,C,4,C,C,48);g.addColorStop(0,'#FFF7C2');g.addColorStop(.5,'#FFC24A');g.addColorStop(1,'rgba(255,140,40,0)');x.fillStyle=g;x.beginPath();x.arc(C,C,48,0,7);x.fill();
+ PL.forEach((p,i)=>{x.strokeStyle=i===sel?'rgba(255,201,60,.8)':'rgba(255,255,255,.18)';x.lineWidth=i===sel?3:1.5;x.beginPath();x.arc(C,C,rad(i),0,7);x.stroke()});
+ PL.forEach((p,i)=>{const [px,py]=pos(i),s=scale==='fit'?p[4]:Math.max(3,p[4]*.6);if(i===5){x.strokeStyle='#C9B57A';x.lineWidth=3;x.beginPath();x.ellipse(px,py,s*1.9,s*.6,-.4,0,7);x.stroke()}
+  const pg=x.createRadialGradient(px-s/3,py-s/3,1,px,py,s);pg.addColorStop(0,'#fff');pg.addColorStop(.25,p[3]);pg.addColorStop(1,'#1D2B53');x.fillStyle=pg;x.beginPath();x.arc(px,py,s,0,7);x.fill();
+  if(i===sel){x.strokeStyle='#FFC93C';x.lineWidth=3;x.beginPath();x.arc(px,py,s+7,0,7);x.stroke();x.fillStyle='#fff';x.font='800 20px Fredoka,system-ui';x.textAlign='center';x.fillText(p[0],px,py-s-14)}});
+ const y=days/365.25;$('dt').textContent=`📅 ${Math.floor(days).toLocaleString()} Earth days have passed (${y.toFixed(y<10?1:0)} Earth years)`}
+function card(){const p=PL[sel];[...$('pl').children].forEach((b,i)=>b.classList.toggle('on',i===sel));const yrs=p[2]/365.25;
+ $('cd').innerHTML=`<h2 style="color:${p[3]};text-shadow:1px 1px 0 var(--ink)">${p[0]}</h2><p style="margin:4px 0;font-weight:600">${p[7]}</p><div class="so-facts"><div>☀️ From the Sun<b>${p[1]} AU</b><span class="muted">${Math.round(p[1]*150).toLocaleString()} million km</span></div><div>🔄 One year<b>${yrs<1?Math.round(p[2])+' Earth days':yrs.toFixed(1)+' Earth years'}</b></div><div>🕐 One day<b>${p[6]}</b></div><div>🌙 Moons<b>${p[5]}</b></div></div>`;ages()}
+function ages(){const a=+$('age').value||0;$('ages').innerHTML=PL.map(p=>`${p[0]}: <b>${(a*365.25/p[2]).toFixed(a*365.25/p[2]<10?1:0)}</b>`).join(' · ')}
+function loop(ts){const dt=Math.min(.05,(ts-(last||ts))/1000);last=ts;if(run)days+=dt*speed*speed*.5;draw();window.__t={days,sel,angles:PL.map((_,i)=>(start[i]+days/PL[i][2]*Math.PI*2)%(Math.PI*2))};requestAnimationFrame(loop)}
+cv.onclick=e=>{const r=cv.getBoundingClientRect(),px=(e.clientX-r.left)/r.width*W,py=(e.clientY-r.top)/r.height*W;let b=-1,bd=1e9;PL.forEach((_,i)=>{const [a,c]=pos(i),d=Math.hypot(a-px,c-py);if(d<bd){bd=d;b=i}});if(bd<40){sel=b;card();Kit.tick()}};
+$('pl').onclick=e=>{const b=e.target.closest('[data-i]');if(b){sel=+b.dataset.i;card();Kit.tick()}};
+$('pp').onclick=()=>{run=!run;$('pp').textContent=run?'⏸ Pause':'▶ Play'};$('sp').oninput=()=>speed=+$('sp').value;
+$('sc').onclick=()=>{scale=scale==='fit'?'real':'fit';$('sc').textContent=scale==='fit'?'📏 Distances: squeezed to fit':'📏 Distances: real spacing (inner planets get tiny!)'};
+$('age').oninput=ages;window.__s={setDays:d=>days=d};
+card();requestAnimationFrame(loop);
+</script>
+</body></html>

@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Heat Transfer Simulator</title>
+<style>
+main{max-width:1500px}
+.ht-tabs{display:flex;gap:8px;justify-content:center;margin-bottom:12px;flex-wrap:wrap}
+.ht-tabs button{font:inherit;font-weight:800;border:4px solid var(--ink);border-radius:99px;padding:6px 16px;background:#fff;cursor:pointer;color:var(--ink)}.ht-tabs button.on{background:var(--sun)}
+.ht{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.ht{grid-template-columns:1fr}}
+.ht-cv{width:100%;aspect-ratio:3/2;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);background:#FFFDF6;display:block}
+.ht-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:14px;display:grid;gap:10px}
+.ht-p h2{margin:0}
+.ht-res div{display:flex;justify-content:space-between;border:3px solid var(--ink);border-radius:12px;padding:5px 10px;margin-bottom:6px;font-weight:800;background:#F4FAFF}.ht-res div.win{background:#C9F1D2}
+.ht-pred{display:flex;gap:6px;flex-wrap:wrap}.ht-pred button{font:inherit;font-weight:800;border:3px solid var(--ink);border-radius:12px;padding:4px 10px;background:#fff;cursor:pointer;color:var(--ink)}.ht-pred button.on{background:var(--grape);color:#fff}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🔥", "Heat Transfer Simulator");
+const $=id=>document.getElementById(id);
+const W=900,H=600;let mode='cond',run=false,t=0,last=0,pred=null;
+// conduction: each spoon is 40 little pieces; heat spreads from piece to piece. Metal passes heat along fast; wood and plastic are slow (insulators).
+const SP=[['metal','🥄 Metal spoon',.42,'#AEB6C8'],['plastic','🍴 Plastic spoon',.016,'#7FD3F7'],['wood','🪵 Wooden spoon',.01,'#C68A55']];let sp,melt;
+// convection
+let pts=[],flame=true;
+// radiation
+let cans,lamp=true,rhist=[];
+document.querySelector('main').innerHTML=`<div class="ht-tabs" id="tabs"><button data-m="cond" class="on">🥄 Conduction</button><button data-m="conv">🍲 Convection</button><button data-m="rad">☀️ Radiation</button></div>
+<div class="ht"><div><canvas class="ht-cv" id="cv" width="${W}" height="${H}"></canvas><div class="row" style="justify-content:center;margin-top:12px"><button class="btn big green" id="go">▶ Start</button><button class="btn white" id="rs">↺ Reset</button><button class="btn white" id="tg" hidden></button></div></div><div class="ht-p" id="pn"></div></div>`;
+const cv=$('cv'),x=cv.getContext('2d');
+function reset(){t=0;run=false;$('go').textContent='▶ Start';sp=SP.map(()=>Array(40).fill(20));melt=SP.map(()=>null);pts=Array.from({length:160},()=>({x:150+Math.random()*600,y:170+Math.random()*340,T:20+Math.random()*4}));cans=[{n:'⚫ Black can',a:.9,T:20},{n:'⚪ White can',a:.35,T:20},{n:'🪞 Shiny foil can',a:.12,T:20}];rhist=[];panel()}
+const col=T=>{const f=Math.max(0,Math.min(1,(T-20)/60));return `rgb(${Math.round(60+195*f)},${Math.round(130-60*f)},${Math.round(230-200*f)})`};
+function panel(){const P={cond:['🥄 Conduction','Heat moves through a solid by passing from particle to particle. Which spoon will melt its butter first?',`<div class="ht-pred" id="pr">${SP.map((s,i)=>`<button data-p="${i}" class="${pred===i?'on':''}">${s[1]}</button>`).join('')}</div><div class="ht-res" id="res"></div>`],
+ conv:['🍲 Convection','Warm water is lighter, so it rises. Cool water is heavier, so it sinks. This makes the water go around in a loop called a current.','<div class="ht-res" id="res"></div>'],
+ rad:['☀️ Radiation','Heat can travel through empty space as light, like warmth from the Sun. Dark colors soak up more of it than light or shiny ones.','<div class="ht-res" id="res"></div>']}[mode];
+ $('pn').innerHTML=`<h2>${P[0]}</h2><p style="margin:0;font-weight:600">${P[1]}</p>${P[2]}`;$('tg').hidden=mode==='cond';$('tg').textContent=mode==='conv'?(flame?'🔥 Burner: on':'🔥 Burner: off'):(lamp?'💡 Lamp: on':'💡 Lamp: off');
+ if($('pr'))$('pr').onclick=e=>{const b=e.target.closest('[data-p]');if(!b||run)return;pred=+b.dataset.p;panel()}}
+function drawCond(dt){if(run){for(let k=0;k<Math.round(dt*160);k++)sp.forEach((s,i)=>{const a=SP[i][2],n=s.slice();n[0]=80;for(let j=1;j<s.length;j++){const r=j<s.length-1?s[j+1]:s[j];n[j]=s[j]+a*(s[j-1]-2*s[j]+r)*.5-.00005*(s[j]-20)}sp[i]=n});
+  sp.forEach((s,i)=>{if(melt[i]==null&&s[39]>=32){melt[i]=t;Kit.ding();if(melt.filter(m=>m!=null).length===1&&pred!=null)Kit.tada()}})}
+ x.fillStyle='#FFFDF6';x.fillRect(0,0,W,H);
+ // mug of hot cocoa
+ x.fillStyle='#8B5A2B';x.fillRect(110,380,680,170);x.fillStyle='#5A3417';x.fillRect(120,390,660,30);x.strokeStyle='#1D2B53';x.lineWidth=6;x.strokeRect(110,380,680,170);x.fillStyle='#fff';x.font='800 26px Fredoka,system-ui';x.textAlign='center';x.fillText('☕ Hot cocoa: 80°C',450,500);
+ for(let k=0;k<3;k++){x.strokeStyle='rgba(180,180,190,.6)';x.lineWidth=4;x.beginPath();const sx=240+k*200;x.moveTo(sx,370);x.bezierCurveTo(sx-20,340,sx+20,320,sx,290+Math.sin(t*3+k)*6);x.stroke()}
+ SP.forEach((s,i)=>{const bx=230+i*220;for(let j=0;j<40;j++){const y=420-j*8.5;x.fillStyle=col(sp[i][j]);x.fillRect(bx-12,y-8,24,9)}x.strokeStyle='#1D2B53';x.lineWidth=4;x.strokeRect(bx-12,420-39*8.5-8,24,40*8.5);
+  const ty=420-39*8.5-8;x.fillStyle=melt[i]!=null?'#FFE38A':'#FFF1A8';x.strokeStyle='#C9A400';x.lineWidth=3;if(melt[i]!=null){x.beginPath();x.ellipse(bx,ty-4,26,8,0,0,7);x.fill();x.stroke()}else{x.fillRect(bx-20,ty-30,40,26);x.strokeRect(bx-20,ty-30,40,26)}
+  x.fillStyle='#1D2B53';x.font='800 20px Fredoka,system-ui';x.fillText(SP[i][1].split(' ').slice(1).join(' '),bx,ty-44);x.fillText(Math.round(sp[i][39])+'°C at the top',bx,ty-70)});
+ $('res').innerHTML=SP.map((s,i)=>`<div class="${melt[i]!=null&&melt[i]===Math.min(...melt.filter(m=>m!=null))?'win':''}"><span>${s[1]}</span><span>${melt[i]!=null?`🧈 melted at ${melt[i].toFixed(1)} s`:`${Math.round(sp[i][39])}°C`}</span></div>`).join('')+(melt[0]!=null&&pred!=null?`<p style="margin:4px 0;font-weight:800">${pred===0?'✅ You predicted it!':'🤔 Metal won!'} Metals are great <u>conductors</u>. Wood and plastic are <u>insulators</u>, which is why cooking spoons often have wooden or plastic handles.</p>`:'');window.__t={melt:[...melt],top:sp.map(s=>Math.round(s[39]))}}
+function drawConv(dt){x.fillStyle='#FFFDF6';x.fillRect(0,0,W,H);x.fillStyle='#DDE6F0';x.fillRect(120,140,660,390);
+ pts.forEach(p=>{if(run){if(flame&&p.y>470&&p.x>330&&p.x<570)p.T=Math.min(90,p.T+40*dt);if(p.y<200)p.T=Math.max(18,p.T-12*dt);p.T+=(22-p.T)*.02*dt;
+  const buoy=-(p.T-35)*1.6;p.y+=buoy*dt*3;const side=p.y<220?(p.x<450?-1:1):p.y>460?(p.x<450?1:-1):0;p.x+=side*60*dt+(Math.random()-.5)*20*dt;p.x=Math.max(130,Math.min(770,p.x));p.y=Math.max(150,Math.min(520,p.y));
+  if(p.x<=140||p.x>=760)p.y+=40*dt}
+  x.fillStyle=col(p.T);x.beginPath();x.arc(p.x,p.y,8,0,7);x.fill()});
+ x.strokeStyle='#1D2B53';x.lineWidth=8;x.beginPath();x.moveTo(110,120);x.lineTo(120,530);x.lineTo(780,530);x.lineTo(790,120);x.stroke();
+ if(flame){for(let k=0;k<9;k++){const fx=340+k*28;x.fillStyle=k%2?'#FF9F43':'#FFC93C';x.beginPath();x.moveTo(fx-12,575);x.quadraticCurveTo(fx,520+Math.sin(t*10+k)*10,fx+12,575);x.fill()}}
+ x.fillStyle='#55607E';x.fillRect(300,575,300,20);
+ if(run&&t>4){x.strokeStyle='rgba(229,83,63,.7)';x.lineWidth=6;x.beginPath();x.ellipse(450,330,170,130,0,0,7);x.stroke();x.fillStyle='#E5533F';x.font='800 22px Fredoka,system-ui';x.textAlign='center';x.fillText('⬆ warm water rises in the middle',450,120);x.fillText('⬇ cool water sinks at the sides',450,110+500)}
+ const top=pts.filter(p=>p.y<250),bot=pts.filter(p=>p.y>420),avg=a=>a.reduce((s,p)=>s+p.T,0)/(a.length||1);$('res').innerHTML=`<div><span>🌡️ Water at the top</span><span>${avg(top).toFixed(0)}°C</span></div><div><span>🌡️ Water at the bottom</span><span>${avg(bot).toFixed(0)}°C</span></div>`;window.__t={top:avg(top),bot:avg(bot)}}
+function drawRad(dt){if(run){cans.forEach(c=>{c.T+=((lamp?c.a*1.6:0)-(c.T-20)*.04)*dt*4});if(Math.floor(t*4)!==Math.floor((t-dt)*4))rhist.push(cans.map(c=>c.T))}
+ x.fillStyle='#FFFDF6';x.fillRect(0,0,W,H);if(lamp){const g=x.createRadialGradient(450,40,10,450,40,500);g.addColorStop(0,'rgba(255,220,100,.55)');g.addColorStop(1,'rgba(255,220,100,0)');x.fillStyle=g;x.fillRect(0,0,W,H);for(let k=0;k<7;k++){x.strokeStyle='rgba(255,180,40,.5)';x.lineWidth=4;x.beginPath();x.moveTo(450,60);x.lineTo(150+k*100,320);x.stroke()}}
+ x.fillStyle='#55607E';x.fillRect(420,0,60,30);x.fillStyle=lamp?'#FFE38A':'#C9D2E3';x.beginPath();x.arc(450,45,30,0,7);x.fill();x.strokeStyle='#1D2B53';x.lineWidth=4;x.stroke();
+ cans.forEach((c,i)=>{const cx=220+i*230;x.fillStyle=['#1D2B53','#F4F6FA','#C9D2E3'][i];x.fillRect(cx-55,340,110,170);x.strokeStyle='#1D2B53';x.lineWidth=5;x.strokeRect(cx-55,340,110,170);if(i===2){x.fillStyle='rgba(255,255,255,.7)';x.fillRect(cx-40,350,16,150)}
+  x.fillStyle='#fff';x.fillRect(cx-8,250,16,90);x.strokeRect(cx-8,250,16,90);const h=(c.T-15)/40*80;x.fillStyle='#E5533F';x.fillRect(cx-4,336-h,8,h);x.fillStyle='#1D2B53';x.font='800 22px Fredoka,system-ui';x.textAlign='center';x.fillText(c.T.toFixed(1)+'°C',cx,240);x.fillText(c.n.split(' ').slice(1).join(' '),cx,545)});
+ $('res').innerHTML=cans.map(c=>`<div class="${c.T===Math.max(...cans.map(z=>z.T))&&run?'win':''}"><span>${c.n}</span><span>${c.T.toFixed(1)}°C</span></div>`).join('');window.__t={cans:cans.map(c=>+c.T.toFixed(2))}}
+function loop(ts){const dt=Math.min(.05,(ts-(last||ts))/1000);last=ts;if(run)t+=dt;(mode==='cond'?drawCond:mode==='conv'?drawConv:drawRad)(dt);requestAnimationFrame(loop)}
+$('go').onclick=()=>{run=!run;$('go').textContent=run?'⏸ Pause':'▶ Start'};$('rs').onclick=reset;
+$('tg').onclick=()=>{if(mode==='conv')flame=!flame;else lamp=!lamp;panel()};
+$('tabs').onclick=e=>{const b=e.target.closest('[data-m]');if(!b)return;mode=b.dataset.m;[...$('tabs').children].forEach(z=>z.classList.toggle('on',z===b));reset()};
+reset();requestAnimationFrame(loop);
+</script>
+</body></html>

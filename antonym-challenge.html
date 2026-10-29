@@ -26,7 +26,9 @@ main{max-width:1100px}
 <script>
 Kit.mount("↔️", "Antonym Challenge");
 const $=id=>document.getElementById(id);
-const A=[['hot','cold'],['up','down'],['big','small'],['happy','sad'],['fast','slow'],['open','closed'],['wet','dry'],['day','night'],['loud','quiet'],['full','empty'],['old','new'],['hard','soft'],['tall','short'],['light','dark'],['push','pull'],['win','lose'],['in','out'],['early','late'],['sweet','sour'],['strong','weak'],['heavy','light'],['clean','dirty'],['first','last'],['friend','enemy'],['give','take'],['above','below'],['laugh','cry'],['awake','asleep'],['brave','scared'],['rich','poor']];
+const A0=[['hot','cold'],['up','down'],['big','small'],['happy','sad'],['fast','slow'],['open','closed'],['wet','dry'],['day','night'],['loud','quiet'],['full','empty'],['old','new'],['hard','soft'],['tall','short'],['light','dark'],['push','pull'],['win','lose'],['in','out'],['early','late'],['sweet','sour'],['strong','weak'],['heavy','light'],['clean','dirty'],['first','last'],['friend','enemy'],['give','take'],['above','below'],['laugh','cry'],['awake','asleep'],['brave','scared'],['rich','poor']];
+let A=[];const parseA=t=>{const L=Kit.lines(t).map(l=>l.split('|').map(x=>x.trim().toLowerCase())).filter(p=>p.length>=2&&p[0]&&p[1]&&p[0]!==p[1]).map(p=>[p[0],p[1]]);A=L.length>=3?L:A0};
+parseA(Kit.editable({key:'antonyms',title:'Opposite pairs',help:'(one per line: word | opposite. At least 3 pairs.)',def:A0.map(p=>p.join(' | ')).join('\n'),onSave:parseA}));
 const opp=w=>A.filter(p=>p.includes(w)).map(p=>p[0]===w?p[1]:p[0]);
 const X=[16.7,50,83.3];let lane=1,items=[],cur,sc=0,lives=3,speed=.25,run=false,last=0,spawnT=0,caught=0;
 document.querySelector('main').innerHTML=`<div class="an-top"><span class="ln-pill">⭐ <b id="sc">0</b></span><span class="ln-pill" id="lv">❤️❤️❤️</span><span class="ln-pill">Best <b id="bs">${Kit.get('an-best',0)}</b></span></div>

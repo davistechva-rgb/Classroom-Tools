@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Weather Simulator</title>
+<style>
+main{max-width:1500px}
+.ws-tabs{display:flex;gap:8px;justify-content:center;margin-bottom:12px;flex-wrap:wrap}
+.ws-tabs button{font:inherit;font-weight:800;border:4px solid var(--ink);border-radius:99px;padding:6px 16px;background:#fff;cursor:pointer;color:var(--ink)}.ws-tabs button.on{background:var(--sun)}
+.ws{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.ws{grid-template-columns:1fr}}
+.ws-scene{border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);overflow:hidden}
+.ws-fc{margin-top:12px;background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px 16px;display:flex;gap:14px;align-items:center}
+.ws-fc .big{font-size:clamp(2.6rem,6vw,4rem);line-height:1}
+.ws-fc h2{margin:0;font-size:clamp(1.3rem,3vw,2rem)}
+.ws-fc p{margin:4px 0 0;font-weight:600;color:#55607E}
+.ws-ins{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:520px){.ws-ins{grid-template-columns:1fr}}
+.ws-i{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:10px 12px;display:grid;gap:6px;text-align:center}
+.ws-i h3{margin:0;font-size:1rem}.ws-i .v{font-size:1.5rem;font-weight:800}
+.ws-i input{width:100%}
+.ws-gauge{width:100%;max-width:150px;margin:0 auto;display:block}
+.ws-seg{display:flex;gap:4px;justify-content:center;flex-wrap:wrap}.ws-seg button{font:inherit;font-weight:700;font-size:.85rem;border:3px solid var(--ink);border-radius:10px;padding:3px 8px;background:#fff;cursor:pointer;color:var(--ink)}.ws-seg button.on{background:var(--cyan);color:#fff}
+.ws-q{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:14px;margin-top:12px}
+.ws-q .ch{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px}
+@media (max-width:520px){.ws-q .ch{grid-template-columns:1fr 1fr}}
+.ws-q .ch button{font:inherit;font-weight:800;border:4px solid var(--ink);border-radius:14px;padding:8px;background:#fff;cursor:pointer;color:var(--ink);font-size:1rem}
+.ws-q .ch button.yes{background:#8BE09A}.ws-q .ch button.no{background:#FFB3AA}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script><script src="scene.js"></script>
+<script>
+Kit.mount("🌪️", "Weather Simulator");
+const $=id=>document.getElementById(id);
+// What the instruments say -> what the weather does (simple rules meteorologists teach kids)
+const WX={sunny:['☀️','Sunny','High pressure pushes air down, so clouds can\'t form.'],partly:['⛅','Partly cloudy','Some moisture, but the pressure is steady.'],rain:['🌧️','Rain','Falling pressure means rising air. Humid air cools, makes clouds, and rains.'],storm:['⛈️','Thunderstorm','Warm, very humid air rising fast (pressure dropping quickly) builds tall storm clouds.'],snow:['🌨️','Snow','Rain clouds + freezing temperatures = snow!'],fog:['🌫️','Fog','The air is almost full of water and it\'s calm, so a cloud forms right at the ground.'],windy:['💨','Windy','A big difference in pressure nearby makes strong wind.']};
+function forecast(s){if(s.wind>=45)return s.hum>=75&&s.tr<0?(s.temp<=0?'snow':'rain'):'windy';
+ if(s.tr<=-2&&s.hum>=70&&s.temp>=22)return 'storm';if(s.tr<0&&s.hum>=70)return s.temp<=0?'snow':'rain';
+ if(s.hum>=95&&s.wind<=10&&s.tr>=0)return 'fog';if(s.tr>0||s.hum<45)return 'sunny';return 'partly'}
+const TR=[[-2,'⬇️⬇️ Falling fast'],[-1,'⬇️ Falling'],[0,'➡️ Steady'],[1,'⬆️ Rising']];
+let s={temp:22,hum:55,tr:0,wind:10},mode='lab',q=null,score=0,nq=0;
+document.querySelector('main').innerHTML=`<div class="ws-tabs" id="tabs"><button data-m="lab" class="on">🧪 Weather lab</button><button data-m="quiz">🎯 Be the meteorologist</button></div>
+<div class="ws"><div><div class="ws-scene" id="sc"></div><div class="ws-fc" id="fc"></div></div><div><div class="ws-ins" id="ins"></div><div class="ws-q" id="qz" hidden></div></div></div>`;
+function gauge(v,min,max,col,unit){const a=-120+240*(v-min)/(max-min);return `<svg class="ws-gauge" viewBox="0 0 120 80"><path d="M15 70 A50 50 0 1 1 105 70" fill="none" stroke="#E3E8F2" stroke-width="12" stroke-linecap="round"/><path d="M15 70 A50 50 0 1 1 105 70" fill="none" stroke="${col}" stroke-width="12" stroke-linecap="round" stroke-dasharray="${(v-min)/(max-min)*209} 300"/><line x1="60" y1="60" x2="${60+38*Math.sin(a*Math.PI/180)}" y2="${60-38*Math.cos(a*Math.PI/180)}" stroke="#1D2B53" stroke-width="5" stroke-linecap="round"/><circle cx="60" cy="60" r="6" fill="#1D2B53"/></svg>`}
+const GA={temp:[-15,40,()=>s.temp<=0?'#22C3E6':'#FF6B5B',v=>v+'°C'],hum:[0,100,()=>'#2F7FD1',v=>v+'%'],wind:[0,80,()=>'#9B6BF2',v=>v+' km/h']};
+function ins(lock){$('ins').innerHTML=`<div class="ws-i"><h3>🌡️ Thermometer</h3><div id="g-temp"></div><div class="v" id="v-temp"></div>${lock?'':`<input type="range" data-k="temp" min="-15" max="40" value="${s.temp}">`}</div>
+ <div class="ws-i"><h3>💧 Humidity</h3><div id="g-hum"></div><div class="v" id="v-hum"></div>${lock?'':`<input type="range" data-k="hum" min="5" max="100" value="${s.hum}">`}</div>
+ <div class="ws-i"><h3>📉 Air pressure</h3><div class="v" style="font-size:1.2rem" id="v-tr"></div>${lock?'':`<div class="ws-seg">${TR.map(t=>`<button data-tr="${t[0]}">${t[1].split(' ')[0]}</button>`).join('')}</div>`}<span class="muted" style="font-size:.85rem">Barometers show if pressure is going up or down.</span></div>
+ <div class="ws-i"><h3>🌬️ Wind speed</h3><div id="g-wind"></div><div class="v" id="v-wind"></div>${lock?'':`<input type="range" data-k="wind" min="0" max="80" value="${s.wind}">`}</div>`;upd()}
+function upd(){Object.entries(GA).forEach(([k,[mn,mx,c,f]])=>{$('g-'+k).innerHTML=gauge(s[k],mn,mx,c());$('v-'+k).textContent=f(s[k])});$('v-tr').textContent=TR.find(t=>t[0]===s.tr)[1];$('ins').querySelectorAll('[data-tr]').forEach(b=>b.classList.toggle('on',+b.dataset.tr===s.tr))}
+function scene(w){const sky={sunny:'day',partly:'day',rain:'linear-gradient(#7A8698,#AEB8C6)',storm:'linear-gradient(#3A3F55,#6B7184)',snow:'linear-gradient(#A9B6C8,#DCE4EE)',fog:'linear-gradient(#C9D0DA,#E6EAF0)',windy:'day'}[w];
+ const it=[['🏠',22,86,20],['🌳',72,82,18,{cls:s.wind>30?'sway':''}],['🌳',88,84,12,{cls:s.wind>30?'sway':''}],['🐕',44,92,9]];
+ if(w==='sunny')it.push(['☀️',80,32,14,{shadow:false}]);if(w==='partly')it.push(['☀️',76,30,12,{shadow:false}],['☁️',60,30,16,{shadow:false,cls:'drift'}]);
+ if(['rain','storm','snow'].includes(w))it.push(['☁️',30,26,22,{shadow:false}],['☁️',62,22,26,{shadow:false}]);if(w==='storm')it.push(['⚡',48,48,10,{shadow:false,cls:'twk'}]);
+ if(w==='windy')it.push(['🍃',30,40,6,{shadow:false,cls:'drift',style:'animation-duration:5s'}],['🪁',58,36,10,{shadow:false,cls:'bob'}]);if(w==='snow')it.push(['⛄',58,93,10]);if(s.temp>=30&&w==='sunny')it.push(['😎',44,80,7,{shadow:false}]);
+ $('sc').innerHTML=Scene.html({sky,back:[['hills',w==='snow'?'#DDE6F0':'#7CC56A']],ground:w==='snow'||s.temp<=-2?'snow':'grass',items:it,fx:{rain:['rain'],storm:['rain'],snow:['snow'],fog:['fog'],windy:['wind']}[w]||[]})}
+function lab(build){const w=forecast(s),W=WX[w];scene(w);if(build||!$('ins').querySelector('input'))ins(false);else upd();$('fc').innerHTML=`<span class="big">${W[0]}</span><div><h2>${W[1]}</h2><p>${W[2]}</p></div>`;window.__t={w,s:{...s}}}
+function quiz(){const keys=Object.keys(WX);let w;do{s={temp:Kit.rand(-12,36),hum:Kit.rand(20,100),tr:Kit.pick([-2,-1,0,1]),wind:Kit.pick([0,5,10,15,25,50,60])};w=forecast(s)}while(q&&w===q.w&&Math.random()<.7);
+ q={w,opts:Kit.shuffle([w,...Kit.shuffle(keys.filter(k=>k!==w)).slice(0,5)]),miss:false};nq++;ins(true);
+ $('sc').innerHTML=Scene.html({sky:'linear-gradient(#1D2B53,#3B4E8C)',back:['hills'],ground:'grass',items:[['📡',50,90,20],['❓',50,40,14,{shadow:false,cls:'bob'}]],fx:['stars']});
+ $('fc').innerHTML=`<span class="big">🧑‍🔬</span><div><h2>Forecast #${nq}</h2><p>Read the instruments, then pick tomorrow's weather. Score: ${score}</p></div>`;
+ $('qz').hidden=false;$('qz').innerHTML=`<b>What weather is coming?</b><div class="ch">${q.opts.map(k=>`<button data-w="${k}">${WX[k][0]} ${WX[k][1]}</button>`).join('')}</div><p id="qe" class="muted"></p>`;window.__t={answer:w}}
+$('qz').onclick=e=>{const b=e.target.closest('[data-w]');if(!b||!q||b.classList.contains('no'))return;if(b.dataset.w===q.w){b.classList.add('yes');if(!q.miss)score++;scene(q.w);$('qe').innerHTML=`✅ <b>${WX[q.w][1]}!</b> ${WX[q.w][2]}`;Kit.tada();const w=q.w;q=null;setTimeout(()=>{if(mode==='quiz')quiz()},2600)}else{q.miss=true;b.classList.add('no');Learn.flash(b,false)}};
+$('ins').oninput=e=>{const r=e.target.closest('[data-k]');if(!r)return;s[r.dataset.k]=+r.value;lab()};
+$('ins').onclick=e=>{const b=e.target.closest('[data-tr]');if(!b)return;s.tr=+b.dataset.tr;Kit.tick();lab()};
+$('tabs').onclick=e=>{const b=e.target.closest('[data-m]');if(!b)return;mode=b.dataset.m;[...$('tabs').children].forEach(x=>x.classList.toggle('on',x===b));if(mode==='lab'){$('qz').hidden=true;s={temp:22,hum:55,tr:0,wind:10};lab(true)}else{score=0;nq=0;quiz()}};
+lab(true);
+</script>
+</body></html>

@@ -38,10 +38,13 @@ const THEMES={
  weather:()=>Kit.shuffle(['☀️','🌧️','⛄','🌈','⚡','🌙','⭐','☁️']).slice(0,4).map(e=>({k:'e',e})),
  letters:()=>Kit.shuffle([...'ABCDEFGHKMPRST']).slice(0,4).map(e=>({k:'t',e})),
 };
+let MINE=[];const parseMine=t=>{MINE=t.split(/[\s,]+/).map(x=>x.trim()).filter(Boolean)};
+parseMine(Kit.editable({key:'pattern-mine',title:'My pictures',help:'(4 or more emojis or letters, separated by spaces. Then pick "My pictures" in the menu.)',def:'🦄 🍩 🚗 🎈 🌵 🐳',rows:80,onSave:parseMine}));
+THEMES.mine=()=>Kit.shuffle(MINE.length>=4?MINE:['🦄','🍩','🚗','🎈']).slice(0,4).map(e=>({k:/\p{Extended_Pictographic}/u.test(e)?'e':'t',e}));
 const CORES={1:['AB'],2:['AAB','ABB','ABC','AB'],3:['AABB','ABCD','ABAC','AABC','ABBC','ABCB']};
 document.querySelector('main').innerHTML=`<div class="card ln-set" id="set"><div class="row">
  <label>Level <select id="lv" style="width:auto"><option value="1">1 · AB patterns</option><option value="2" selected>2 · AAB, ABB, ABC</option><option value="3">3 · Tricky patterns</option></select></label>
- <label>Pictures <select id="th" style="width:auto"><option value="mix">Mix it up</option><option value="shapes">Shapes</option><option value="colors">Colors</option><option value="animals">Animals</option><option value="food">Food</option><option value="weather">Weather</option><option value="letters">Letters</option></select></label>
+ <label>Pictures <select id="th" style="width:auto"><option value="mix">Mix it up</option><option value="shapes">Shapes</option><option value="colors">Colors</option><option value="animals">Animals</option><option value="food">Food</option><option value="weather">Weather</option><option value="letters">Letters</option><option value="mine">✏️ My pictures</option></select></label>
  <label><input type="checkbox" id="mid"> Gaps can be in the middle</label><button class="btn big green" id="go">Start</button></div>
  <p class="muted" style="margin:8px 0 0">Look at the pattern. What comes in the empty spots? Tap the right piece to fill the blinking spot.</p></div>
 <div id="game" hidden><div class="cp-hud"><span class="ln-pill" id="pr"></span><span class="ln-pill">⭐ <b id="sc">0</b></span><span class="ln-pill">🔥 <b id="st">0</b></span><button class="btn white small" id="say">🗣️ Say the pattern</button><button class="btn white small" id="back">⚙️</button></div>

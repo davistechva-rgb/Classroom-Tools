@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Ecosystem Simulator</title>
+<style>
+main{max-width:1600px}
+.es2{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.es2{grid-template-columns:1fr}}
+.es2-f{width:100%;aspect-ratio:4/3;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);display:block;background:#8BC56A}
+.es2-p{display:grid;gap:12px}
+.es2-box{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px}
+.es2-box canvas{width:100%;display:block}
+.es2-n{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.es2-n div{border:3px solid var(--ink);border-radius:14px;padding:6px;text-align:center;font-weight:800;background:var(--nc)}
+.es2-n b{display:block;font-size:1.8rem;line-height:1}
+.es2-ev{display:flex;gap:6px;flex-wrap:wrap}.es2-ev button{font:inherit;font-weight:800;border:3px solid var(--ink);border-radius:12px;padding:5px 10px;background:#fff;cursor:pointer;color:var(--ink)}
+.es2-msg{font-weight:700;min-height:2.6em}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🌱", "Ecosystem Simulator");
+const $=id=>document.getElementById(id);
+const W=800,H=600,G=20,GW=W/G,GH=H/G;
+let grass,rab,fox,hist,tick=0,run=true,speed=2,rain=1,last=0,msg='';
+function reset(){grass=Array.from({length:GW*GH},()=>Math.random()*.6+.3);rab=Array.from({length:30},()=>animal(1));fox=Array.from({length:4},()=>animal(0));hist=[];tick=0;msg='Watch how the numbers rise and fall together.'}
+function animal(isR){return {x:Math.random()*W,y:Math.random()*H,a:Math.random()*6.28,e:isR?6:30,age:0}}
+document.querySelector('main').innerHTML=`<div class="es2"><div><canvas class="es2-f" id="cv" width="${W}" height="${H}"></canvas>
+<div class="row" style="justify-content:center;margin-top:10px"><button class="btn green" id="pp">⏸ Pause</button><select id="sp" style="width:auto"><option value="1">🐢 Slow</option><option value="2" selected>🙂 Normal</option><option value="4">🐇 Fast</option></select><button class="btn white small" id="rs">↺ Start over</button></div></div>
+<div class="es2-p"><div class="es2-n"><div style="--nc:#C9F1D2">🌾 Grass<b id="ng"></b></div><div style="--nc:#FFF1C9">🐇 Rabbits<b id="nr"></b></div><div style="--nc:#FFE3C4">🦊 Foxes<b id="nf"></b></div></div>
+<div class="es2-box"><b>📈 Populations over time</b><canvas id="gc" width="600" height="300"></canvas></div>
+<div class="es2-box"><b>🌍 Change the ecosystem</b><div class="es2-ev" id="ev"><button data-e="rab">🐇 Add 10 rabbits</button><button data-e="fox">🦊 Add 3 foxes</button><button data-e="drought">☀️ Drought</button><button data-e="rain">🌧️ Lots of rain</button><button data-e="hunt">🚫 Remove all foxes</button></div><p class="es2-msg" id="msg"></p></div></div></div>`;
+const cv=$('cv'),x=cv.getContext('2d');
+function step(){tick++;
+ for(let i=0;i<grass.length;i++)grass[i]=Math.min(1,grass[i]+.004*rain);
+ const move=(a,sp)=>{a.a+=(Math.random()-.5)*.8;a.x+=Math.cos(a.a)*sp;a.y+=Math.sin(a.a)*sp;if(a.x<0||a.x>W)a.a=Math.PI-a.a;if(a.y<0||a.y>H)a.a=-a.a;a.x=Math.max(1,Math.min(W-1,a.x));a.y=Math.max(1,Math.min(H-1,a.y));a.age++};
+ const born=[];rab.forEach(r=>{const f0=fox.find(f=>Math.abs(f.x-r.x)<45&&Math.abs(f.y-r.y)<45);if(f0)r.a=Math.atan2(r.y-f0.y,r.x-f0.x)+(Math.random()-.5)*.6;move(r,f0?2.7:2.2);r.e-=.06;const gi=Math.floor(r.y/G)*GW+Math.floor(r.x/G);if(grass[gi]>.3){const eat=Math.min(grass[gi],.25);grass[gi]-=eat;r.e+=eat*2.2}if(r.e>9&&rab.length+born.length<400){r.e-=4.5;born.push({...animal(1),x:r.x,y:r.y,e:4})}});
+ rab=rab.filter(r=>r.e>0&&r.age<1400).concat(born);
+ const fb=[];fox.forEach(f=>{const near=rab.reduce((b,r)=>{const d=Math.hypot(r.x-f.x,r.y-f.y);return d<(b?b.d:70)?{r,d}:b},null);if(near)f.a=Math.atan2(near.r.y-f.y,near.r.x-f.x)+(Math.random()-.5)*.4;move(f,2.5);f.e-=.12;
+  if(near&&near.d<10&&Math.random()<.5){near.r.e=-1;f.e+=9}if(f.e>60&&fox.length+fb.length<40){f.e-=28;fb.push({...animal(0),x:f.x,y:f.y,e:26})}});
+ rab=rab.filter(r=>r.e>0);fox=fox.filter(f=>f.e>0&&f.age<3000).concat(fb);
+ if(tick%10===0){const g=grass.reduce((a,b)=>a+b,0)/grass.length*100;hist.push([g,rab.length,fox.length]);if(hist.length>300)hist.shift()}
+ if(rab.length===0&&fox.length)msg='😟 The rabbits are all gone. Without food, the foxes will go hungry too.';else if(fox.length===0&&tick%10===0&&rab.length>150)msg='🐇 With no foxes to eat them, the rabbits multiply until they eat almost all the grass!';}
+function draw(){for(let gy=0;gy<GH;gy++)for(let gx=0;gx<GW;gx++){const v=grass[gy*GW+gx];x.fillStyle=`rgb(${Math.round(196-80*v)},${Math.round(170+40*v)},${Math.round(110-40*v)})`;x.fillRect(gx*G,gy*G,G,G)}
+ const em=(e,a,s)=>{const im=window.E3D&&E3D.img(e);if(im)x.drawImage(im,a.x-s/2,a.y-s/2,s,s);else{x.font=s+'px serif';x.textAlign='center';x.textBaseline='middle';x.fillText(e,a.x,a.y)}};
+ rab.forEach(r=>em('🐇',r,22));fox.forEach(f=>em('🦊',f,32));
+ const g=hist.length?hist[hist.length-1][0]:0;$('ng').textContent=Math.round(g)+'%';$('nr').textContent=rab.length;$('nf').textContent=fox.length;$('msg').textContent=msg;
+ const c=$('gc').getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,600,300);const mx=Math.max(50,...hist.map(h=>h[1]),...hist.map(h=>h[2]*4));
+ [[0,'#3FA34D',v=>v/100*270],[1,'#E0A800',v=>v/mx*270],[2,'#E5533F',v=>v*4/mx*270]].forEach(([k,col,f])=>{c.strokeStyle=col;c.lineWidth=4;c.beginPath();hist.forEach((h,i)=>{const px=i/300*600,py=290-f(h[k]);i?c.lineTo(px,py):c.moveTo(px,py)});c.stroke()});
+ c.font='700 14px system-ui';c.fillStyle='#3FA34D';c.fillText('grass %',8,18);c.fillStyle='#E0A800';c.fillText('rabbits',80,18);c.fillStyle='#E5533F';c.fillText('foxes (×4)',150,18);
+ window.__t={grass:+g.toFixed(1),rab:rab.length,fox:fox.length,tick}}
+function loop(ts){if(run)for(let i=0;i<speed;i++)step();draw();requestAnimationFrame(loop)}
+$('ev').onclick=e=>{const b=e.target.closest('[data-e]');if(!b)return;const k=b.dataset.e;
+ if(k==='rab'){for(let i=0;i<10;i++)rab.push(animal(1));msg='🐇 More rabbits! What will happen to the grass and the foxes?'}
+ if(k==='fox'){for(let i=0;i<3;i++)fox.push(animal(0));msg='🦊 More foxes! Watch the rabbit numbers.'}
+ if(k==='drought'){rain=.25;grass=grass.map(v=>v*.4);msg='☀️ A drought! Grass grows slowly now. Rabbits have less food.'}
+ if(k==='rain'){rain=1.6;msg='🌧️ Lots of rain! The grass grows back fast.'}
+ if(k==='hunt'){fox=[];msg='🚫 All the foxes are gone. What happens to the rabbits now?'}Kit.tick()};
+$('pp').onclick=()=>{run=!run;$('pp').textContent=run?'⏸ Pause':'▶ Play'};$('sp').onchange=()=>speed=+$('sp').value;$('rs').onclick=()=>{rain=1;reset()};
+window.__e={steps:n=>{for(let i=0;i<n;i++)step()}};
+reset();requestAnimationFrame(loop);
+</script>
+</body></html>

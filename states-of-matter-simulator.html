@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>States of Matter Simulator</title>
+<style>
+main{max-width:1500px}
+.sm{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.sm{grid-template-columns:1fr}}
+.sm-box{background:#fff;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);padding:10px}
+.sm-box canvas{width:100%;display:block;border-radius:14px}
+.sm-state{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px}
+.sm-state b{font-size:clamp(1.4rem,3vw,2rem)}
+.sm-t{font-size:clamp(1.6rem,4vw,2.6rem);font-weight:800;font-variant-numeric:tabular-nums}
+.sm-ctl{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:12px 0}
+.sm-msg{background:#FFF6C9;border:4px solid var(--ink);border-radius:16px;padding:10px 12px;font-weight:700;min-height:3.2em}
+.sm-leg{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.sm-leg span{border:3px solid var(--ink);border-radius:99px;padding:2px 10px;font-weight:800;font-size:.9rem;background:var(--lc)}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("💧", "States of Matter Simulator");
+const $=id=>document.getElementById(id);
+// energy -> temperature for water. While it melts or boils, the energy breaks particles apart instead of making them faster,
+// so the temperature stays flat. That's why the heating curve has two flat steps.
+const SEG=[[0,10,'ice'],[10,25,'melt'],[25,45,'water'],[45,85,'boil'],[85,100,'steam']];
+function info(E){if(E<10)return {T:-20+E*2,s:1,l:0,g:0,st:'ice'};if(E<25)return {T:0,s:1-(E-10)/15,l:(E-10)/15,g:0,st:'melt'};if(E<45)return {T:(E-25)*5,s:0,l:1,g:0,st:'water'};if(E<85)return {T:100,s:0,l:1-(E-45)/40,g:(E-45)/40,st:'boil'};return {T:100+(E-85)*3.33,s:0,l:0,g:1,st:'steam'}}
+const NAME={ice:['🧊 Solid (ice)','Particles are packed tight and only wiggle in place.'],melt:['🧊💧 Melting','Heat is breaking the particles out of their places. The temperature stays at 0°C until all the ice melts!'],water:['💧 Liquid (water)','Particles slide past each other. A liquid takes the shape of its container.'],boil:['💧♨️ Boiling','Particles escape as a gas. The temperature stays at 100°C until all the water boils away!'],steam:['♨️ Gas (steam)','Particles zoom around fast and spread out to fill the whole space.']};
+const N=64,W=600,H=420;let E=4,hist=[],heat=0,P=[];
+for(let i=0;i<N;i++){const c=i%8,r=Math.floor(i/8);P.push({hx:150+c*40,hy:H-30-r*36,x:150+c*40,y:H-30-r*36,vx:0,vy:0})}
+document.querySelector('main').innerHTML=`<div class="sm"><div class="sm-box"><canvas id="pc" width="${W}" height="${H}"></canvas><div class="sm-state"><b id="nm"></b><span class="sm-t" id="tt"></span></div><div class="sm-leg"><span style="--lc:#BFE6FA">🔵 particle = a tiny piece of water</span></div></div>
+<div class="sm-box"><b>📈 Heating curve</b><canvas id="gc" width="600" height="380"></canvas></div></div>
+<div class="sm-ctl"><button class="btn big" id="ht">🔥 Hold to heat</button><button class="btn big white" id="cl">❄️ Hold to cool</button><button class="btn white" id="rs">↺ Start as ice</button></div><div class="sm-msg" id="msg"></div>`;
+const pc=$('pc').getContext('2d'),gc=$('gc').getContext('2d');
+function step(){if(heat){E=Math.max(0,Math.min(100,E+heat*.12));hist.push([hist.length,info(E).T]);if(hist.length>600)hist.shift()}
+ const I=info(E),sp=Math.sqrt(Math.max(1,I.T+40))*.35,nS=Math.round(N*I.s),nG=Math.round(N*I.g),nL=N-nS-nG,lvl=H-20-Math.ceil(nL/12)*34-40;
+ P.forEach((p,i)=>{const s=i<nS?'s':i<nS+nL?'l':'g';p.s=s;
+  if(s==='s'){p.x+=(p.hx-p.x)*.3+(Math.random()-.5)*sp*.6;p.y+=(p.hy-p.y)*.3+(Math.random()-.5)*sp*.6;p.vx=p.vy=0}
+  else{if(!p.vx&&!p.vy){p.vx=(Math.random()-.5)*sp;p.vy=-Math.random()*sp}const f=s==='g'?2.2:.9;const v=Math.hypot(p.vx,p.vy)||1;p.vx=p.vx/v*sp*f;p.vy=p.vy/v*sp*f;if(s==='l')p.vy+=.15;
+   p.vx+=(Math.random()-.5)*.4;p.x+=p.vx;p.y+=p.vy;const top=s==='g'?16:Math.max(16,lvl);if(p.x<16){p.x=16;p.vx*=-1}if(p.x>W-16){p.x=W-16;p.vx*=-1}if(p.y<top){p.y=top;p.vy=Math.abs(p.vy)}if(p.y>H-16){p.y=H-16;p.vy=-Math.abs(p.vy)}}});
+ pc.fillStyle='#F4F8FF';pc.fillRect(0,0,W,H);if(nL>0&&nS<N){pc.fillStyle='rgba(91,180,240,.18)';pc.fillRect(0,Math.max(16,lvl)-10,W,H)}
+ pc.fillStyle=heat>0?'#FF6B5B':heat<0?'#5BB4F0':'#C9D2E3';pc.fillRect(0,H-8,W,8);
+ P.forEach(p=>{pc.fillStyle=p.s==='s'?'#2F7FD1':p.s==='l'?'#3FA9F5':'#9FD3FF';pc.strokeStyle='#1D2B53';pc.lineWidth=2;pc.beginPath();pc.arc(p.x,p.y,13,0,7);pc.fill();pc.stroke();pc.fillStyle='rgba(255,255,255,.6)';pc.beginPath();pc.arc(p.x-4,p.y-4,4,0,7);pc.fill()});
+ $('nm').textContent=NAME[I.st][0];$('tt').textContent=`${Math.round(I.T)}°C`;$('msg').textContent=NAME[I.st][1];graph();window.__t={E:+E.toFixed(2),T:+I.T.toFixed(1),st:I.st};requestAnimationFrame(step)}
+function graph(){const c=gc;c.fillStyle='#fff';c.fillRect(0,0,600,380);const y=T=>330-(T+30)/190*300;c.strokeStyle='#E3E8F2';c.lineWidth=1;c.font='700 14px system-ui';c.fillStyle='#6B7695';
+ [-20,0,50,100,150].forEach(T=>{c.beginPath();c.moveTo(50,y(T));c.lineTo(590,y(T));c.stroke();c.fillText(T+'°',8,y(T)+5)});
+ c.fillStyle='rgba(91,180,240,.15)';c.fillRect(50,y(0)-6,540,12);c.fillStyle='rgba(255,159,67,.15)';c.fillRect(50,y(100)-6,540,12);c.fillStyle='#55607E';c.fillText('melting point',470,y(0)-10);c.fillText('boiling point',470,y(100)-10);
+ if(hist.length>1){c.strokeStyle='#E5533F';c.lineWidth=4;c.beginPath();hist.forEach(([,T],i)=>{const px=50+i/600*540;i?c.lineTo(px,y(T)):c.moveTo(px,y(T))});c.stroke()}
+ c.fillStyle='#55607E';c.fillText('time heating →',260,370)}
+const hold=(b,d)=>{const on=e=>{e.preventDefault();heat=d},off=()=>heat=0;b.addEventListener('pointerdown',on);['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,off))};
+hold($('ht'),1);hold($('cl'),-1);$('rs').onclick=()=>{E=4;hist=[]};
+window.__s={setE:v=>E=v,heat:v=>heat=v};
+step();
+</script>
+</body></html>

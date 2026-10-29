@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Gravity Simulator</title>
+<style>
+main{max-width:1500px}
+.gv{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.gv{grid-template-columns:1fr}}
+.gv-lanes{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:min(560px,100%);margin:0 auto}
+.gv-lane{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:8px;display:grid;gap:6px}
+.gv-lane canvas{width:100%;aspect-ratio:3/5;display:block;border-radius:12px}
+.gv-lane select{font-weight:800}
+.gv-t{text-align:center;font-weight:800;font-size:1.4rem;font-variant-numeric:tabular-nums}
+.gv-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:10px}
+.gv-seg{display:flex;gap:6px;flex-wrap:wrap}.gv-seg button{font:inherit;font-weight:800;border:3px solid var(--ink);border-radius:12px;padding:4px 10px;background:#fff;cursor:pointer;color:var(--ink)}.gv-seg button.on{background:var(--sun)}
+.gv-tab{width:100%;border-collapse:collapse;font-weight:700}.gv-tab td,.gv-tab th{border-bottom:2px solid #E3E8F2;padding:4px;text-align:left}
+.gv-w{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.gv-w div{border:3px solid var(--ink);border-radius:12px;padding:4px 8px;font-weight:700;font-size:.9rem;background:#F4FAFF}.gv-w b{display:block;font-size:1.1rem}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🌌", "Gravity Simulator");
+const $=id=>document.getElementById(id);
+// gravity in meters per second², and whether there is air
+const WO={earth:['🌍 Earth',9.8,1,'#BFE6FA','#7CC56A'],moon:['🌕 Moon',1.62,0,'#0B1033','#B8B8C0'],mars:['🔴 Mars',3.71,.02,'#E8B48A','#C2643C'],jupiter:['🟠 Jupiter',24.8,1,'#E6C79A','#B9875A'],pluto:['🧊 Pluto',.62,0,'#1A1F3D','#D9D2C8'],space:['🛰️ Deep space',0,0,'#05041A','#05041A']};
+const OB={ball:['🎳','Bowling ball',0],feather:['🪶','Feather',10],hammer:['🔨','Hammer',0],ball2:['⚽','Soccer ball',.025]};// last = how much the air slows it (0 = hardly at all)
+let lanes=[{w:'earth',o:'ball',y:0,v:0,t:0,run:false},{w:'moon',o:'ball',y:0,v:0,t:0,run:false}],H=5,rec=[],last=0;
+document.querySelector('main').innerHTML=`<div class="gv"><div><div class="gv-lanes">${[0,1].map(i=>`<div class="gv-lane"><select data-l="${i}" data-f="w">${Object.entries(WO).map(([k,v])=>`<option value="${k}">${v[0]}</option>`).join('')}</select><select data-l="${i}" data-f="o">${Object.entries(OB).map(([k,v])=>`<option value="${k}">${v[0]} ${v[1]}</option>`).join('')}</select><canvas id="c${i}" width="300" height="500"></canvas><div class="gv-t" id="t${i}">0.00 s</div></div>`).join('')}</div>
+<div class="row" style="justify-content:center;margin-top:12px"><button class="btn big green" id="go">⬇️ Drop both!</button><button class="btn white" id="rs">↺ Back up</button></div></div>
+<div class="gv-p"><b>📏 Drop height</b><div class="gv-seg" id="hs">${[2,5,10,20].map(h=>`<button data-h="${h}" class="${h===H?'on':''}">${h} m</button>`).join('')}</div>
+<b>🧪 Try these experiments</b><div class="gv-seg" id="ex"><button data-x="0">Earth vs Moon</button><button data-x="1">Feather vs hammer on Earth</button><button data-x="2">Feather vs hammer on the Moon</button><button data-x="3">Jupiter vs Pluto</button></div>
+<table class="gv-tab"><thead><tr><th>World</th><th>Thing</th><th>Height</th><th>Time</th></tr></thead><tbody id="rec"></tbody></table>
+<b>⚖️ What would you weigh?</b><div class="row">On Earth I weigh <input type="number" id="wt" value="70" style="width:80px"> <select id="wu" style="width:auto"><option>lb</option><option>kg</option></select></div><div class="gv-w" id="wv"></div>
+<span class="muted">Gravity pulls everything down at the same rate, no matter how heavy. Only air slows light things like feathers. On the Moon there's no air, so a feather and a hammer land together, just like astronaut David Scott showed in 1971!</span></div></div>`;
+function draw(i){const L=lanes[i],w=WO[L.w],c=$('c'+i).getContext('2d'),top=50,bot=470,px=(bot-top)/H;
+ const g=c.createLinearGradient(0,0,0,500);g.addColorStop(0,w[3]);g.addColorStop(1,w[1]?w[3]:w[3]);c.fillStyle=g;c.fillRect(0,0,300,500);if(!w[2]){for(let k=0;k<30;k++){c.fillStyle='rgba(255,255,255,.6)';c.fillRect((k*97)%300,(k*53)%470,2,2)}}
+ c.fillStyle=w[4];c.fillRect(0,bot,300,30);
+ c.strokeStyle=w[2]&&L.w!=='space'?'rgba(29,43,83,.5)':'rgba(255,255,255,.5)';c.fillStyle=c.strokeStyle;c.lineWidth=2;c.font='700 14px system-ui';for(let m=0;m<=H;m+=H<=5?1:H<=10?2:5){const y=bot-m*px;c.beginPath();c.moveTo(0,y);c.lineTo(18,y);c.stroke();c.fillText(m+' m',22,y+5)}
+ const im=window.E3D&&E3D.img(OB[L.o][0]),y=top+L.y*px;if(im)c.drawImage(im,150-30,y-60,60,60);else{c.font='54px serif';c.textAlign='center';c.fillText(OB[L.o][0],150,y);c.textAlign='left'}
+ if(L.w==='space'){c.fillStyle='#fff';c.font='800 18px system-ui';c.textAlign='center';c.fillText('No gravity: it floats!',150,250);c.textAlign='left'}
+ $('t'+i).textContent=`${L.t.toFixed(2)} s${L.done?' 🏁':''}`}
+function step(ts){const dt=Math.min(.05,(ts-(last||ts))/1000);last=ts;
+ lanes.forEach((L,i)=>{if(L.run){const w=WO[L.w],k=w[2]*OB[L.o][2];const a=w[1]-k*L.v*L.v*(w[1]?1:0);L.v+=a*dt;L.y+=L.v*dt;L.t+=dt;
+  if(L.y>=H){L.y=H;L.run=false;L.done=true;Kit.tone(160+i*60,.15,'triangle',.25);rec.unshift([WO[L.w][0],OB[L.o][1],H,L.t]);rec=rec.slice(0,8);$('rec').innerHTML=rec.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]} m</td><td>${r[3].toFixed(2)} s</td></tr>`).join('')}
+  if(w[1]===0&&L.t>4){L.run=false}}draw(i)});window.__t={lanes:lanes.map(l=>({w:l.w,o:l.o,t:+l.t.toFixed(2),done:!!l.done}))};requestAnimationFrame(step)}
+const reset=()=>lanes.forEach(L=>Object.assign(L,{y:0,v:0,t:0,run:false,done:false}));
+$('go').onclick=()=>{reset();lanes.forEach(L=>L.run=true);Kit.tick()};$('rs').onclick=reset;
+document.querySelector('.gv-lanes').onchange=e=>{const s=e.target.closest('[data-l]');if(!s)return;lanes[+s.dataset.l][s.dataset.f]=s.value;reset()};
+$('hs').onclick=e=>{const b=e.target.closest('[data-h]');if(!b)return;H=+b.dataset.h;[...$('hs').children].forEach(z=>z.classList.toggle('on',z===b));reset()};
+const EX=[[['earth','ball'],['moon','ball']],[['earth','feather'],['earth','hammer']],[['moon','feather'],['moon','hammer']],[['jupiter','ball'],['pluto','ball']]];
+$('ex').onclick=e=>{const b=e.target.closest('[data-x]');if(!b)return;EX[+b.dataset.x].forEach(([w,o],i)=>{lanes[i].w=w;lanes[i].o=o;document.querySelector(`[data-l="${i}"][data-f="w"]`).value=w;document.querySelector(`[data-l="${i}"][data-f="o"]`).value=o});reset();$('go').click()};
+function wts(){const v=+$('wt').value||0,u=$('wu').value;$('wv').innerHTML=Object.values(WO).filter(w=>w[1]).map(w=>`<div>${w[0]}<b>${Math.round(v*w[1]/9.8)} ${u}</b></div>`).join('')}
+$('wt').oninput=wts;$('wu').onchange=wts;document.querySelector('[data-l="1"][data-f="w"]').value='moon';
+wts();requestAnimationFrame(step);
+</script>
+</body></html>

@@ -40,6 +40,12 @@ main{max-width:1500px}
 .cd-edit{position:absolute;top:8px;right:8px}
 @media (max-width:900px){.cd-grid>*{grid-column:1/-1!important}}
 .cd-hide{display:none}
+.cd-sm{grid-column:span 4}
+.cd-wd{font-size:clamp(1.8rem,4vw,3rem);font-weight:800;color:var(--grape);line-height:1.1}.cd-wm{font-weight:700;color:#55607E;margin-top:4px}
+.cd-qt{font-size:clamp(1.1rem,2.2vw,1.5rem);font-weight:700;line-height:1.35}
+.cd-todo{display:grid;gap:6px}.cd-todo div{display:flex;gap:8px;align-items:center;border:3px solid var(--ink);border-radius:12px;padding:4px 10px;font-weight:700;background:#F4FAFF;cursor:pointer}.cd-todo div.ok{background:#C9F1D2;text-decoration:line-through;opacity:.7}
+.cd-pts{display:grid;gap:6px}.cd-pts div{display:flex;align-items:center;gap:8px;font-weight:800;font-size:1.1rem}.cd-pts span{flex:1}.cd-pts b{font-size:1.6rem;min-width:2ch;text-align:center}.cd-pts button{font:inherit;font-weight:800;border:3px solid var(--ink);border-radius:10px;background:#fff;cursor:pointer;padding:0 10px}
+.cd-arrtip{background:#fff;border:4px solid var(--grape);border-radius:16px;padding:8px 14px;font-weight:600;margin-bottom:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}.cd-arrtip[hidden]{display:none}
 </style></head>
 <body>
 <main></main>
@@ -49,22 +55,39 @@ main{max-width:1500px}
 Kit.mount("📺", "Classroom Dashboard");
 const $=id=>document.getElementById(id);
 const D=Kit.get('cd-data',{msg:'Good morning, superstars! 🌟 Remember: library books are due Friday.',sched:'8:00 Morning meeting\n8:30 Reading\n9:45 Snack & recess\n10:15 Math\n11:30 Lunch\n12:15 Science\n1:15 Specials\n2:00 Writing\n2:45 Pack up\n3:00 Dismissal',jobs:'🧹 Sweeper: Ava\n📚 Librarian: Leo\n🌱 Plant helper: Mia\n🚪 Door holder: Sam\n💡 Lights: Zoe\n📬 Messenger: Eli',countName:'Days of school',count:42,countDate:'',noise:1,h24:false});
+Object.assign(D,{word:'curious',wordMean:'wanting to learn or know more',quote:'\u201cMistakes are proof that you are trying.\u201d',todo:'Return library books\nPicture day form\nBring a jacket',done:[],cdName:'Field trip',cdDate:'',bdays:'Ava 11/14\nLeo 11/22',lunch:'Pizza, salad, and apple slices',teams:'🔴 Red\n🔵 Blue\n🟢 Green',pts:{}},{...D});
 const save=()=>Kit.set('cd-data',D);
 const NOISE=[['🤫 Silent','#5A6C8A'],['🗣️ Whisper','#22C3E6'],['💬 Partner','#5DC66E'],['🎉 Group','#FF9F43']];
-document.querySelector('main').innerHTML=`<div class="row" style="justify-content:flex-end;margin-bottom:10px"><button class="btn white small" id="edit">✏️ Edit the dashboard</button></div>
+document.querySelector('main').innerHTML=`<div class="row" style="justify-content:flex-end;margin-bottom:10px"><button class="btn white small" id="arr">🧩 Arrange panels</button><button class="btn white small" id="edit">✏️ Edit the dashboard</button></div><div class="cd-arrtip" id="arrtip" hidden>🧩 <b>Arrange mode:</b> show or hide panels, move them, and change their size. Hidden panels are faded. <button class="btn small green" id="arrdone">✓ Done</button> <button class="btn small white" id="arrreset">↺ Starting layout</button></div>
 <div class="cd-grid">
- <div class="cd-p cd-clock"><h3>🕐 Right now</h3><div class="cd-time" id="tm"></div><div class="cd-date" id="dt"></div></div>
- <div class="cd-p cd-now"><h3>📍 What we're doing</h3><div class="cd-nowbig" id="nw"></div><div class="cd-nowsub" id="ns"></div><div class="cd-bar"><b id="nb"></b></div><div class="cd-next" id="nx"></div></div>
- <div class="cd-p cd-msg"><h3>📣 Today's message <span class="muted" style="text-transform:none;letter-spacing:0">(tap to type)</span></h3><div class="cd-msgt" id="msg" contenteditable="true" spellcheck="false"></div></div>
- <div class="cd-p cd-jobs"><h3>⭐ Class jobs</h3><div class="cd-joblist" id="jb"></div></div>
- <div class="cd-p cd-timer"><h3>⏱️ Timer</h3><div class="cd-tt" id="tt">5:00</div><div class="row" style="justify-content:center;gap:6px;margin-top:6px"><button class="btn small white" data-m="-1">−1</button><button class="btn small green" id="ts">▶ Start</button><button class="btn small white" data-m="1">+1</button><button class="btn small white" id="tr">↺</button></div></div>
- <div class="cd-p cd-cnt"><h3>📅 <span id="cnn"></span></h3><div class="cd-cntn" id="cn"></div><div class="row" style="justify-content:center;gap:6px;margin-top:8px"><button class="btn small white" id="cm">−</button><button class="btn small" id="cp">+1</button></div></div>
- <div class="cd-p cd-noise"><h3>🔊 Voice level</h3><div class="cd-time" style="font-size:clamp(1.6rem,3vw,2.4rem)" id="nz"></div><div class="cd-lvl" id="lv"></div></div>
+ <div class="cd-p cd-clock" data-w="clock" data-n="🕐 Clock"><h3>🕐 Right now</h3><div class="cd-time" id="tm"></div><div class="cd-date" id="dt"></div></div>
+ <div class="cd-p cd-now" data-w="now" data-n="📍 What we're doing"><h3>📍 What we're doing</h3><div class="cd-nowbig" id="nw"></div><div class="cd-nowsub" id="ns"></div><div class="cd-bar"><b id="nb"></b></div><div class="cd-next" id="nx"></div></div>
+ <div class="cd-p cd-msg" data-w="msg" data-n="📣 Today's message"><h3>📣 Today's message <span class="muted" style="text-transform:none;letter-spacing:0">(tap to type)</span></h3><div class="cd-msgt" id="msg" contenteditable="true" spellcheck="false"></div></div>
+ <div class="cd-p cd-jobs" data-w="jobs" data-n="⭐ Class jobs"><h3>⭐ Class jobs</h3><div class="cd-joblist" id="jb"></div></div>
+ <div class="cd-p cd-timer" data-w="timer" data-n="⏱️ Timer"><h3>⏱️ Timer</h3><div class="cd-tt" id="tt">5:00</div><div class="row" style="justify-content:center;gap:6px;margin-top:6px"><button class="btn small white" data-m="-1">−1</button><button class="btn small green" id="ts">▶ Start</button><button class="btn small white" data-m="1">+1</button><button class="btn small white" id="tr">↺</button></div></div>
+ <div class="cd-p cd-cnt" data-w="count" data-n="📅 Counter"><h3>📅 <span id="cnn"></span></h3><div class="cd-cntn" id="cn"></div><div class="row" style="justify-content:center;gap:6px;margin-top:8px"><button class="btn small white" id="cm">−</button><button class="btn small" id="cp">+1</button></div></div>
+ <div class="cd-p cd-noise" data-w="noise" data-n="🔊 Voice level"><h3>🔊 Voice level</h3><div class="cd-time" style="font-size:clamp(1.6rem,3vw,2.4rem)" id="nz"></div><div class="cd-lvl" id="lv"></div></div>
+ <div class="cd-p cd-sm" data-w="word" data-n="🌟 Word of the day" data-off><h3>🌟 Word of the day</h3><div class="cd-wd" id="wd"></div><div class="cd-wm" id="wm"></div></div>
+ <div class="cd-p cd-sm" data-w="quote" data-n="💬 Quote" data-off><h3>💬 Quote of the day</h3><div class="cd-qt" id="qt"></div></div>
+ <div class="cd-p cd-sm" data-w="todo" data-n="✅ Reminders" data-off><h3>✅ Reminders <span class="muted" style="text-transform:none;letter-spacing:0">(tap to check)</span></h3><div class="cd-todo" id="td"></div></div>
+ <div class="cd-p cd-sm" data-w="days" data-n="⏳ Countdown" data-off style="text-align:center"><h3>⏳ Countdown</h3><div class="cd-cntn" id="cdn" style="color:var(--tomato)"></div><div class="cd-wm" id="cdl"></div></div>
+ <div class="cd-p cd-sm" data-w="bday" data-n="🎂 Birthdays" data-off><h3>🎂 Birthdays this month</h3><div class="cd-todo" id="bd"></div></div>
+ <div class="cd-p cd-sm" data-w="lunch" data-n="🍎 Lunch menu" data-off><h3>🍎 Today's lunch</h3><div class="cd-qt" id="lu"></div></div>
+ <div class="cd-p cd-sm" data-w="pick" data-n="🎲 Name picker" data-off style="text-align:center"><h3>🎲 Who's next?</h3><div class="cd-cntn" id="pk" style="font-size:clamp(1.8rem,4vw,3rem);color:var(--ink)">?</div><button class="btn small green" id="pkb" style="margin-top:8px">Pick a name</button></div>
+ <div class="cd-p cd-sm" data-w="points" data-n="🏆 Team points" data-off><h3>🏆 Team points</h3><div class="cd-pts" id="pt"></div></div>
 </div>
 <div class="card stack" id="ed" hidden style="margin-top:16px"><h2 style="margin:0">✏️ Edit the dashboard</h2>
  <label>Today's schedule <span class="muted">(one per line: start time then what, like 10:15 Math. Use 24-hour time or add pm.)</span><textarea id="es" style="min-height:200px"></textarea></label>
  <label>Class jobs <span class="muted">(one per line)</span><textarea id="ej" style="min-height:120px"></textarea></label>
  <div class="row"><label>Counter name <input type="text" id="ecn" style="width:220px"></label><label>Count <input type="number" id="ec"></label><label><input type="checkbox" id="eauto"> Add 1 every school day automatically</label><label><input type="checkbox" id="e24"> 24-hour clock</label></div>
+ <h3 style="margin:8px 0 0">Extra panels <span class="muted" style="font-weight:600">(turn them on with 🧩 Arrange panels)</span></h3>
+ <div class="row"><label>🌟 Word <input type="text" id="ewd" style="width:180px"></label><label style="flex:1">Meaning <input type="text" id="ewm"></label></div>
+ <label>💬 Quote <input type="text" id="eqt"></label>
+ <label>✅ Reminders <span class="muted">(one per line)</span><textarea id="etd" style="min-height:90px"></textarea></label>
+ <div class="row"><label>⏳ Countdown to <input type="text" id="ecdn" style="width:200px" placeholder="Field trip"></label><label>on <input type="date" id="ecdd"></label></div>
+ <label>🎂 Birthdays <span class="muted">(one per line: name and date, like Ava 11/14)</span><textarea id="ebd" style="min-height:90px"></textarea></label>
+ <label>🍎 Lunch menu <input type="text" id="elu"></label>
+ <label>🏆 Teams <span class="muted">(one per line)</span><textarea id="ept" style="min-height:70px"></textarea></label>
  <button class="btn green" id="esv">✓ Save</button></div>`;
 const clockStr=d=>{let h=d.getHours(),m=String(d.getMinutes()).padStart(2,'0');if(D.h24)return `${h}:${m}`;const ap=h>=12?'PM':'AM';h=h%12||12;return `${h}:${m}<small>${ap}</small>`};
 function parseSched(){return Kit.lines(D.sched).map(l=>{const m=l.match(/^(\d{1,2}):(\d{2})\s*(am|pm)?\s*(.*)$/i);if(!m)return null;let h=+m[1];const ap=(m[3]||'').toLowerCase();if(ap==='pm'&&h<12)h+=12;if(ap==='am'&&h===12)h=0;if(!ap&&h>=1&&h<7)h+=12;return {min:h*60+ +m[2],what:m[4]||'…',label:`${m[1]}:${m[2]}${m[3]?' '+m[3]:''}`}}).filter(Boolean).sort((a,b)=>a.min-b.min)}
@@ -79,6 +102,17 @@ function tick(){const d=new Date();$('tm').innerHTML=clockStr(d);$('dt').textCon
 function drawStatic(){$('msg').textContent=D.msg;$('jb').innerHTML=Kit.lines(D.jobs).map(j=>{const [a,b]=j.split(':');return `<div class="cd-job">${Kit.esc(a.trim())}${b?`: <span>${Kit.esc(b.trim())}</span>`:''}</div>`}).join('');
  autoCount();$('cnn').textContent=D.countName;$('cn').textContent=D.count;
  $('lv').innerHTML=NOISE.map((n,i)=>`<button data-n="${i}" class="${i===D.noise?'on':''}" style="--lc:${n[1]}">${i}</button>`).join('');$('nz').textContent=NOISE[D.noise][0];$('nz').style.color=NOISE[D.noise][1]}
+function drawExtra(){$('wd').textContent=D.word;$('wm').textContent=D.wordMean;$('qt').textContent=D.quote;$('lu').textContent=D.lunch;
+ $('td').innerHTML=Kit.lines(D.todo).map((t,i)=>`<div data-t="${i}" class="${D.done.includes(t)?'ok':''}">${D.done.includes(t)?'✅':'⬜'} ${Kit.esc(t)}</div>`).join('')||'<span class="muted">Add reminders in ✏️ Edit.</span>';
+ if(D.cdDate){const t=new Date(D.cdDate+'T00:00'),n=new Date();n.setHours(0,0,0,0);const d=Math.round((t-n)/864e5);$('cdn').textContent=d>0?d:d===0?'🎉':'✓';$('cdl').textContent=d>0?`day${d===1?'':'s'} until ${D.cdName}`:d===0?`${D.cdName} is today!`:`${D.cdName} is done`}else{$('cdn').textContent='?';$('cdl').textContent='Set a date in ✏️ Edit'}
+ const mo=new Date().getMonth()+1,bl=Kit.lines(D.bdays).map(l=>{const m=l.match(/^(.*?)\s+(\d{1,2})\/(\d{1,2})/);return m&&+m[2]===mo?{n:m[1],d:+m[3]}:null}).filter(Boolean).sort((a,b)=>a.d-b.d);
+ $('bd').innerHTML=bl.map(b=>`<div>🎈 ${Kit.esc(b.n)} <span class="muted">${mo}/${b.d}</span>${b.d===new Date().getDate()?' 🎉 Today!':''}</div>`).join('')||'<span class="muted">No birthdays this month.</span>';
+ $('pt').innerHTML=Kit.lines(D.teams).map((t,i)=>`<div><span>${Kit.esc(t)}</span><button data-p="${i}" data-d="-1">−</button><b>${D.pts[t]||0}</b><button data-p="${i}" data-d="1">+</button></div>`).join('')}
+$('td').onclick=e=>{const r=e.target.closest('[data-t]');if(!r)return;const t=Kit.lines(D.todo)[+r.dataset.t];D.done=D.done.includes(t)?D.done.filter(x=>x!==t):[...D.done,t];save();drawExtra();Kit.tick()};
+$('pt').onclick=e=>{const b=e.target.closest('[data-p]');if(!b)return;const t=Kit.lines(D.teams)[+b.dataset.p];D.pts[t]=(D.pts[t]||0)+ +b.dataset.d;save();drawExtra();if(+b.dataset.d>0)Kit.ding()};
+$('pkb').onclick=()=>{const r=Learn.roster();let k=0;const iv=setInterval(()=>{$('pk').textContent=Kit.pick(r);Kit.tick();if(++k>12){clearInterval(iv);Kit.tada()}},80)};
+const AR=Kit.arrange(document.querySelector('.cd-grid'),'classroom-dashboard');
+$('arr').onclick=()=>{const on=AR.toggle();$('arrtip').hidden=!on;$('arr').hidden=on};$('arrdone').onclick=()=>$('arr').click();$('arrreset').onclick=()=>{if(confirm('Go back to the starting layout?'))AR.reset()};
 function autoCount(){if(!D.countAuto)return;const t=new Date();const key=t.toDateString();if(D.countDate===key)return;if(D.countDate){const last=new Date(D.countDate);let d=new Date(last);d.setDate(d.getDate()+1);while(d<=t){if(d.getDay()%6)D.count++;d.setDate(d.getDate()+1)}}D.countDate=key;save()}
 $('msg').oninput=()=>{D.msg=$('msg').textContent;save()};
 $('lv').onclick=e=>{const b=e.target.closest('button');if(!b)return;D.noise=+b.dataset.n;save();drawStatic();Kit.tone(500+D.noise*120,.15,'triangle',.2)};
@@ -88,8 +122,8 @@ let tLeft=300,tSet=300,tRun=null;const tDraw=()=>{$('tt').textContent=`${Math.fl
 document.querySelector('.cd-timer').onclick=e=>{const b=e.target.closest('[data-m]');if(!b)return;tSet=Math.max(60,tSet+60*+b.dataset.m);if(!tRun)tLeft=tSet;else tLeft=Math.max(1,tLeft+60*+b.dataset.m);tDraw()};
 $('ts').onclick=()=>{if(tRun){clearInterval(tRun);tRun=null;$('ts').textContent='▶ Start';return}$('tt').classList.remove('done');if(tLeft<=0)tLeft=tSet;$('ts').textContent='⏸ Pause';tRun=setInterval(()=>{tLeft--;tDraw();if(tLeft<=0){clearInterval(tRun);tRun=null;$('ts').textContent='▶ Start';$('tt').classList.add('done');Kit.alarm()}},1000)};
 $('tr').onclick=()=>{clearInterval(tRun);tRun=null;tLeft=tSet;$('ts').textContent='▶ Start';$('tt').classList.remove('done');tDraw()};
-$('edit').onclick=()=>{const e=$('ed');e.hidden=!e.hidden;if(!e.hidden){$('es').value=D.sched;$('ej').value=D.jobs;$('ecn').value=D.countName;$('ec').value=D.count;$('eauto').checked=!!D.countAuto;$('e24').checked=!!D.h24;e.scrollIntoView({behavior:'smooth'})}};
-$('esv').onclick=()=>{D.sched=$('es').value;D.jobs=$('ej').value;D.countName=$('ecn').value||'Counter';D.count=+$('ec').value||0;D.countAuto=$('eauto').checked;D.countDate=new Date().toDateString();D.h24=$('e24').checked;save();drawStatic();tick();$('ed').hidden=true;Kit.ding()};
-drawStatic();tick();tDraw();setInterval(tick,1000);
+$('edit').onclick=()=>{const e=$('ed');e.hidden=!e.hidden;if(!e.hidden){$('ewd').value=D.word;$('ewm').value=D.wordMean;$('eqt').value=D.quote;$('etd').value=D.todo;$('ecdn').value=D.cdName;$('ecdd').value=D.cdDate;$('ebd').value=D.bdays;$('elu').value=D.lunch;$('ept').value=D.teams;$('es').value=D.sched;$('ej').value=D.jobs;$('ecn').value=D.countName;$('ec').value=D.count;$('eauto').checked=!!D.countAuto;$('e24').checked=!!D.h24;e.scrollIntoView({behavior:'smooth'})}};
+$('esv').onclick=()=>{Object.assign(D,{word:$('ewd').value,wordMean:$('ewm').value,quote:$('eqt').value,todo:$('etd').value,cdName:$('ecdn').value||'The big day',cdDate:$('ecdd').value,bdays:$('ebd').value,lunch:$('elu').value,teams:$('ept').value});drawExtra();D.sched=$('es').value;D.jobs=$('ej').value;D.countName=$('ecn').value||'Counter';D.count=+$('ec').value||0;D.countAuto=$('eauto').checked;D.countDate=new Date().toDateString();D.h24=$('e24').checked;save();drawStatic();tick();$('ed').hidden=true;Kit.ding()};
+drawStatic();drawExtra();tick();tDraw();setInterval(tick,1000);
 </script>
 </body></html>

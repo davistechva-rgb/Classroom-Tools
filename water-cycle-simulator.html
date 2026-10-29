@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Water Cycle Simulator</title>
+<style>
+main{max-width:1500px}
+.wc-wrap{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px;align-items:start}
+@media (max-width:900px){.wc-wrap{grid-template-columns:1fr}}
+.wc-cv{width:100%;aspect-ratio:16/9;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);display:block}
+.wc-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:8px}
+.wc-p label{font-weight:800}.wc-p input{width:100%}
+.wc-st{display:grid;gap:6px}
+.wc-s{display:flex;justify-content:space-between;align-items:center;border:3px solid var(--ink);border-radius:12px;padding:4px 10px;font-weight:800;background:#F2F5FA;cursor:pointer;transition:.2s}
+.wc-s.on{background:var(--sc);transform:scale(1.03)}
+.wc-s b{font-size:1.1rem}
+.wc-fact{background:#FFFDF6;border:4px solid var(--ink);border-radius:14px;padding:8px 10px;font-weight:600;min-height:90px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🌊", "Water Cycle Simulator");
+const $=id=>document.getElementById(id);
+const ST=[['evap','☀️ Evaporation','#FFE9A8','The sun heats water in the ocean, lakes, and rivers. It turns into an invisible gas called water vapor and rises into the air.'],
+ ['trans','🌳 Transpiration','#C9F1D2','Plants pull water up from their roots and let water vapor out through tiny holes in their leaves.'],
+ ['cond','☁️ Condensation','#E3F2FF','High in the sky the air is cold. Water vapor cools down and turns back into tiny droplets of liquid water. Billions of droplets make a cloud!'],
+ ['prec','🌧️ Precipitation','#BFE6FA','When the droplets in a cloud join together and get too heavy, they fall as rain. If it is cold enough, they fall as snow.'],
+ ['coll','🏞️ Collection','#C6E7F7','Water flows over the ground (runoff) into rivers and lakes, or soaks into the ground (groundwater). Then it flows back to the ocean, and the cycle starts again!']];
+document.querySelector('main').innerHTML=`<div class="wc-wrap"><canvas class="wc-cv" id="cv" width="1280" height="720"></canvas><div class="wc-p">
+<label>☀️ Sun heat</label><input type="range" id="sun" min="0" max="100" value="60"><label>💨 Wind (pushes clouds to the mountain)</label><input type="range" id="wind" min="0" max="100" value="40"><label>🌡️ Air temperature on the mountain</label><input type="range" id="cold" min="0" max="100" value="60"><div style="display:flex;justify-content:space-between;font-size:.85rem;font-weight:700;color:#6B7695"><span>❄️ Freezing</span><span>Warm</span></div>
+<div class="wc-st" id="st">${ST.map(s=>`<div class="wc-s" data-k="${s[0]}" style="--sc:${s[2]}"><span>${s[1]}</span><b id="n-${s[0]}">0</b></div>`).join('')}</div><div class="wc-fact" id="fact">Tap a step to learn about it. Watch the counters to see where the water goes!</div></div></div>`;
+const cv=$('cv'),x=cv.getContext('2d'),W=1280,H=720,SEA_X=560,SEA_Y=520;
+let drops=[],clouds=[{x:300,y:140,w:0}],cnt={evap:0,trans:0,cond:0,prec:0,coll:0},glow={},snow=0,river=[],t=0,lake=0;
+const mtn=xx=>xx<620?H:xx<900?H-(xx-620)/280*420:xx<1000?300+(xx-900)/100*120-0:xx<1280?420+(xx-1000)/280*100:H;
+function hit(k){cnt[k]++;glow[k]=30;$('n-'+k).textContent=cnt[k]}
+function draw(){const sun=$('sun').value/100,cold=$('cold').value/100;const sk=x.createLinearGradient(0,0,0,H);sk.addColorStop(0,`hsl(200,${50+sun*30}%,${55+sun*20}%)`);sk.addColorStop(1,'#EAF6FF');x.fillStyle=sk;x.fillRect(0,0,W,H);
+ // sun
+ x.fillStyle='#FFC93C';x.beginPath();x.arc(110,100,40+sun*25,0,7);x.fill();x.strokeStyle='#FFB020';x.lineWidth=6;for(let a=0;a<12;a++){const r=70+sun*30;x.beginPath();x.moveTo(110+Math.cos(a/12*6.28+t/80)*(r-12),100+Math.sin(a/12*6.28+t/80)*(r-12));x.lineTo(110+Math.cos(a/12*6.28+t/80)*r,100+Math.sin(a/12*6.28+t/80)*r);x.stroke()}
+ // ocean
+ x.fillStyle='#2F7FD1';x.fillRect(0,SEA_Y,SEA_X+60,H-SEA_Y);x.fillStyle='rgba(255,255,255,.35)';for(let k=0;k<8;k++){x.beginPath();x.ellipse(40+k*80+Math.sin(t/30+k)*10,SEA_Y+8,26,5,0,0,7);x.fill()}
+ // land + mountain
+ x.fillStyle='#6FBF4E';x.beginPath();x.moveTo(SEA_X+40,H);x.lineTo(SEA_X+40,SEA_Y+20);x.lineTo(620,SEA_Y+10);for(let xx=620;xx<=W;xx+=10)x.lineTo(xx,Math.min(mtn(xx),SEA_Y+10));x.lineTo(W,H);x.fill();
+ x.fillStyle='#8A7B6A';x.beginPath();x.moveTo(640,SEA_Y);for(let xx=640;xx<=1200;xx+=10)x.lineTo(xx,mtn(xx));x.lineTo(1200,SEA_Y);x.fill();
+ if(snow>0||cold<.3){x.fillStyle='#fff';x.beginPath();x.moveTo(840,mtn(840));x.lineTo(900,mtn(900));x.lineTo(960,mtn(960));x.lineTo(930,mtn(930)+Math.min(80,snow*3));x.lineTo(870,mtn(870)+Math.min(80,snow*3));x.fill()}
+ // river
+ x.strokeStyle='#4FA8EE';x.lineWidth=12;x.lineCap='round';x.beginPath();x.moveTo(880,360);x.quadraticCurveTo(780,520,700,560);x.quadraticCurveTo(640,600,SEA_X+20,SEA_Y+40);x.stroke();
+ // lake + groundwater
+ x.fillStyle='#4FA8EE';x.beginPath();x.ellipse(1120,600,90,20+Math.min(12,lake/4),0,0,7);x.fill();x.fillStyle='rgba(79,168,238,.25)';x.fillRect(SEA_X+60,H-60,W-SEA_X-60,60);x.fillStyle='#1D2B53';x.font='700 18px system-ui';x.fillText('groundwater',SEA_X+90,H-24);
+ // trees
+ [[680,505],[730,500],[1060,520],[1180,525]].forEach(([tx,ty])=>{x.fillStyle='#6B4226';x.fillRect(tx-5,ty-10,10,30);x.fillStyle='#2E8B3A';x.beginPath();x.arc(tx,ty-24,26,0,7);x.fill()});
+ // clouds
+ clouds.forEach(c=>{if(c.w<.5)return;const s=18+c.w*2.2,gray=Math.max(150,255-c.w*2.2);x.fillStyle=`rgb(${gray},${gray},${gray+8})`;[[0,0,1],[-.9,.3,.75],[.9,.3,.75],[-.4,-.4,.8],[.45,-.35,.7]].forEach(([dx,dy,r])=>{x.beginPath();x.arc(c.x+dx*s,c.y+dy*s,s*r,0,7);x.fill()})});
+ // drops
+ drops.forEach(d=>{x.fillStyle=d.k==='v'?'rgba(255,255,255,.85)':d.k==='s'?'#fff':'#2F7FD1';x.beginPath();if(d.k==='r'){x.ellipse(d.x,d.y,3,8,0,0,7)}else x.arc(d.x,d.y,d.k==='v'?4:5,0,7);x.fill();if(d.k==='v'){x.strokeStyle='rgba(47,127,209,.5)';x.lineWidth=1.5;x.stroke()}});
+ // labels
+ const L=[['evap','Evaporation',230,430],['trans','Transpiration',640,420],['cond','Condensation',clouds[0].x-60,clouds[0].y-70],['prec','Precipitation',920,190],['coll','Collection',980,650]];
+ L.forEach(([k,s,lx,ly])=>{const g=glow[k]>0;x.font=`800 ${g?28:22}px Fredoka,system-ui`;x.lineWidth=5;x.strokeStyle='rgba(29,43,83,.8)';x.strokeText(s,lx,ly);x.fillStyle=g?'#FFC93C':'#fff';x.fillText(s,lx,ly);if(glow[k])glow[k]--});
+ document.querySelectorAll('.wc-s').forEach(e=>e.classList.toggle('on',glow[e.dataset.k]>0))}
+function step(){t++;const sun=$('sun').value/100,wind=$('wind').value/100,cold=$('cold').value/100;
+ if(Math.random()<sun*.35)drops.push({k:'v',x:Kit.rand(20,560),y:SEA_Y,vy:-1.2-sun,ev:'evap'});
+ if(Math.random()<sun*.06){const tr=Kit.pick([[680,480],[730,476],[1060,496],[1180,500]]);drops.push({k:'v',x:tr[0],y:tr[1],vy:-1-sun*.6,ev:'trans'})}
+ const c=clouds[0];c.x=Math.min(980,Math.max(260,c.x+(wind-.3)*.8));if(wind<.3&&c.x>300)c.x-=.3;
+ drops.forEach(d=>{if(d.k==='v'){d.y+=d.vy;d.x+=(c.x-d.x)*.004+Math.sin(d.y/20)*.6;if(!d.counted){hit(d.ev);d.counted=1}if(d.y<c.y+30){d.dead=1;c.w=Math.min(60,c.w+1);hit('cond')}}
+  else{d.y+=d.k==='s'?2:7;d.x+=d.k==='s'?Math.sin(d.y/15):0;const gy=d.x<SEA_X+40?SEA_Y:Math.min(mtn(d.x),SEA_Y+10);if(d.y>=gy){d.dead=1;if(d.k==='s'){snow++}else{hit('coll');if(d.x>1040&&d.x<1200)lake++}}}});
+ const overMtn=c.x>760;if(c.w>(overMtn?18:45)&&Math.random()<(overMtn?.5:.25)){c.w-=1;const isSnow=overMtn&&cold<.35;drops.push({k:isSnow?'s':'r',x:c.x+Kit.rand(-50,50),y:c.y+30});hit('prec')}
+ if(cold>.4&&snow>0&&Math.random()<.05*cold){snow--;hit('coll')}
+ drops=drops.filter(d=>!d.dead);draw();window.__t={...cnt,cloud:Math.round(c.w),cx:Math.round(c.x),snow};requestAnimationFrame(step)}
+$('st').onclick=e=>{const s=e.target.closest('[data-k]');if(!s)return;const S=ST.find(q=>q[0]===s.dataset.k);$('fact').innerHTML=`<b>${S[1]}</b><br>${S[3]}`;glow[S[0]]=60;Kit.tick()};
+step();
+</script>
+</body></html>
