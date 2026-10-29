@@ -29,9 +29,11 @@ main{max-width:1600px}
 Kit.mount("🌱", "Ecosystem Simulator");
 const $=id=>document.getElementById(id);
 const W=800,H=600,G=20,GW=W/G,GH=H/G;
+// balance numbers for the food web (tuned so foxes and rabbits rise and fall but usually survive)
+const K={flee:35,see:110,catchP:.5,gain:10,fdecay:.1,frep:60,fcost:26,rdecay:.06,fsp:3};
 let grass,rab,fox,hist,tick=0,run=true,speed=2,rain=1,last=0,msg='';
 function reset(){grass=Array.from({length:GW*GH},()=>Math.random()*.6+.3);rab=Array.from({length:30},()=>animal(1));fox=Array.from({length:4},()=>animal(0));hist=[];tick=0;msg='Watch how the numbers rise and fall together.'}
-function animal(isR){return {x:Math.random()*W,y:Math.random()*H,a:Math.random()*6.28,e:isR?6:30,age:0}}
+function animal(isR){return {x:Math.random()*W,y:Math.random()*H,a:Math.random()*6.28,e:isR?6:50,age:0}}
 document.querySelector('main').innerHTML=`<div class="es2"><div><canvas class="es2-f" id="cv" width="${W}" height="${H}"></canvas>
 <div class="row" style="justify-content:center;margin-top:10px"><button class="btn green" id="pp">⏸ Pause</button><select id="sp" style="width:auto"><option value="1">🐢 Slow</option><option value="2" selected>🙂 Normal</option><option value="4">🐇 Fast</option></select><button class="btn white small" id="rs">↺ Start over</button></div></div>
 <div class="es2-p"><div class="es2-n"><div style="--nc:#C9F1D2">🌾 Grass<b id="ng"></b></div><div style="--nc:#FFF1C9">🐇 Rabbits<b id="nr"></b></div><div style="--nc:#FFE3C4">🦊 Foxes<b id="nf"></b></div></div>
@@ -41,10 +43,10 @@ const cv=$('cv'),x=cv.getContext('2d');
 function step(){tick++;
  for(let i=0;i<grass.length;i++)grass[i]=Math.min(1,grass[i]+.004*rain);
  const move=(a,sp)=>{a.a+=(Math.random()-.5)*.8;a.x+=Math.cos(a.a)*sp;a.y+=Math.sin(a.a)*sp;if(a.x<0||a.x>W)a.a=Math.PI-a.a;if(a.y<0||a.y>H)a.a=-a.a;a.x=Math.max(1,Math.min(W-1,a.x));a.y=Math.max(1,Math.min(H-1,a.y));a.age++};
- const born=[];rab.forEach(r=>{const f0=fox.find(f=>Math.abs(f.x-r.x)<45&&Math.abs(f.y-r.y)<45);if(f0)r.a=Math.atan2(r.y-f0.y,r.x-f0.x)+(Math.random()-.5)*.6;move(r,f0?2.7:2.2);r.e-=.06;const gi=Math.floor(r.y/G)*GW+Math.floor(r.x/G);if(grass[gi]>.3){const eat=Math.min(grass[gi],.25);grass[gi]-=eat;r.e+=eat*2.2}if(r.e>9&&rab.length+born.length<400){r.e-=4.5;born.push({...animal(1),x:r.x,y:r.y,e:4})}});
+ const born=[];rab.forEach(r=>{const f0=fox.find(f=>Math.abs(f.x-r.x)<K.flee&&Math.abs(f.y-r.y)<K.flee);if(f0)r.a=Math.atan2(r.y-f0.y,r.x-f0.x)+(Math.random()-.5)*.6;move(r,f0?2.7:2.2);r.e-=K.rdecay;const gi=Math.floor(r.y/G)*GW+Math.floor(r.x/G);if(grass[gi]>.3){const eat=Math.min(grass[gi],.25);grass[gi]-=eat;r.e+=eat*2.2}if(r.e>9&&rab.length+born.length<400){r.e-=4.5;born.push({...animal(1),x:r.x,y:r.y,e:4})}});
  rab=rab.filter(r=>r.e>0&&r.age<1400).concat(born);
- const fb=[];fox.forEach(f=>{const near=rab.reduce((b,r)=>{const d=Math.hypot(r.x-f.x,r.y-f.y);return d<(b?b.d:70)?{r,d}:b},null);if(near)f.a=Math.atan2(near.r.y-f.y,near.r.x-f.x)+(Math.random()-.5)*.4;move(f,2.5);f.e-=.12;
-  if(near&&near.d<10&&Math.random()<.5){near.r.e=-1;f.e+=9}if(f.e>60&&fox.length+fb.length<40){f.e-=28;fb.push({...animal(0),x:f.x,y:f.y,e:26})}});
+ const fb=[];fox.forEach(f=>{const near=rab.reduce((b,r)=>{const d=Math.hypot(r.x-f.x,r.y-f.y);return d<(b?b.d:K.see)?{r,d}:b},null);if(near)f.a=Math.atan2(near.r.y-f.y,near.r.x-f.x)+(Math.random()-.5)*.4;move(f,K.fsp);f.e-=K.fdecay;
+  if(near&&near.d<10&&Math.random()<K.catchP){near.r.e=-1;f.e+=K.gain}if(f.e>K.frep&&fox.length+fb.length<40){f.e-=K.fcost;fb.push({...animal(0),x:f.x,y:f.y,e:K.fcost})}});
  rab=rab.filter(r=>r.e>0);fox=fox.filter(f=>f.e>0&&f.age<3000).concat(fb);
  if(tick%10===0){const g=grass.reduce((a,b)=>a+b,0)/grass.length*100;hist.push([g,rab.length,fox.length]);if(hist.length>300)hist.shift()}
  if(rab.length===0&&fox.length)msg='😟 The rabbits are all gone. Without food, the foxes will go hungry too.';else if(fox.length===0&&tick%10===0&&rab.length>150)msg='🐇 With no foxes to eat them, the rabbits multiply until they eat almost all the grass!';}
@@ -64,7 +66,7 @@ $('ev').onclick=e=>{const b=e.target.closest('[data-e]');if(!b)return;const k=b.
  if(k==='rain'){rain=1.6;msg='🌧️ Lots of rain! The grass grows back fast.'}
  if(k==='hunt'){fox=[];msg='🚫 All the foxes are gone. What happens to the rabbits now?'}Kit.tick()};
 $('pp').onclick=()=>{run=!run;$('pp').textContent=run?'⏸ Pause':'▶ Play'};$('sp').onchange=()=>speed=+$('sp').value;$('rs').onclick=()=>{rain=1;reset()};
-window.__e={steps:n=>{for(let i=0;i<n;i++)step()}};
+window.__e={K,steps:n=>{for(let i=0;i<n;i++)step()}};
 reset();requestAnimationFrame(loop);
 </script>
 </body></html>

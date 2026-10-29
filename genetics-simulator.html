@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Genetics Simulator</title>
+<style>
+main{max-width:1500px}
+.gs-tr{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
+.gs-tr button{font:inherit;font-weight:800;border:4px solid var(--ink);border-radius:99px;padding:6px 14px;background:#fff;cursor:pointer;color:var(--ink)}.gs-tr button.on{background:var(--sun)}
+.gs{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:16px;align-items:start}
+@media (max-width:900px){.gs{grid-template-columns:1fr}}
+.gs-par{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:10px;align-items:center}
+.gs-pp .g button{padding:4px 6px!important}
+.gs-pp{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:10px;text-align:center}
+.gs-pp .pic{font-size:3.4rem;line-height:1.1}
+.gs-pp .g{display:flex;gap:4px;justify-content:center;margin-top:6px}
+.gs-pp .g button{font:inherit;font-weight:900;font-size:1.1rem;border:3px solid var(--ink);border-radius:10px;padding:4px 10px;background:#fff;cursor:pointer;color:var(--ink)}.gs-pp .g button.on{background:var(--grape);color:#fff}
+.gs-x{font-size:2rem;font-weight:900;color:#fff;text-shadow:2px 2px 0 var(--ink)}
+.gs-sq{display:grid;grid-template-columns:auto 1fr 1fr;gap:6px;margin-top:14px;background:#fff;border:5px solid var(--ink);border-radius:20px;padding:10px}
+.gs-sq .h{font-weight:900;font-size:1.6rem;text-align:center;align-self:center;background:#F4FAFF;border-radius:10px;padding:4px 10px}
+.gs-sq .c{border:4px solid var(--ink);border-radius:14px;text-align:center;padding:6px;background:var(--cc);font-weight:800}
+.gs-sq .c span{display:block;font-size:2.4rem;line-height:1.1}
+.gs-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:10px}
+.gs-babies{display:grid;grid-template-columns:repeat(10,1fr);gap:4px}
+.gs-babies span{font-size:clamp(1.2rem,2.6vw,2rem);text-align:center;animation:gsIn .3s backwards}@keyframes gsIn{from{transform:scale(0)}}
+.gs-bar{display:flex;height:30px;border:4px solid var(--ink);border-radius:99px;overflow:hidden;font-weight:800;color:#fff;text-shadow:1px 1px 0 rgba(0,0,0,.4)}
+.gs-bar div{display:grid;place-items:center;transition:width .5s;min-width:0;overflow:hidden;white-space:nowrap}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🧬", "Genetics Simulator");
+const $=id=>document.getElementById(id);
+// each trait: big letter = dominant (it shows even with only one copy)
+const TR={flower:{n:'🌸 Pea flower color',L:'P',dom:['🟣','Purple','#9B6BF2'],rec:['⚪','White','#C9D2E3'],who:'pea plants (like Gregor Mendel studied!)',pic:'🌱'},
+ seed:{n:'🫛 Pea shape',L:'R',dom:['🟢','Round','#5DC66E'],rec:['🫘','Wrinkled','#C68A55'],who:'pea plants',pic:'🌱'},
+ fur:{n:'🐶 Puppy fur',L:'B',dom:['🐕','Black fur','#3E3E48'],rec:['🐕‍🦺','Golden fur','#E0A800'],who:'puppies',pic:'🐶'},
+ horns:{n:'🦄 Monster horns',L:'H',dom:['🦄','Has a horn','#FF8FC7'],rec:['🐴','No horn','#8892A8'],who:'made-up monsters',pic:'👾'}};
+let tk='flower',par=['Pp','Pp'],kids=[];
+const geno=(L,k)=>[L+L,L+L.toLowerCase(),L.toLowerCase()+L.toLowerCase()][k];
+const shows=(g,L)=>g.includes(L)?'dom':'rec';
+document.querySelector('main').innerHTML=`<div class="gs-tr" id="tr">${Object.entries(TR).map(([k,t])=>`<button data-t="${k}">${t.n}</button>`).join('')}</div>
+<div class="gs"><div><div class="gs-par" id="par"></div><div class="gs-sq" id="sq"></div></div>
+<div class="gs-p"><b>📊 Predicted babies</b><div class="gs-bar" id="pb"></div><div id="pt" style="font-weight:700"></div>
+<div class="row"><button class="btn big green" id="br">🍼 Make 20 babies</button><button class="btn white small" id="cl">🧽 Clear</button></div>
+<div class="gs-babies" id="bb"></div><div class="gs-bar" id="ab" hidden></div><div id="at" style="font-weight:700"></div>
+<span class="muted">Each parent has two copies of the gene and passes on just one, picked by chance. The Punnett square shows the 4 equally likely ways they can combine.</span></div></div>`;
+function draw(){const T=TR[tk],L=T.L;[...$('tr').children].forEach(b=>b.classList.toggle('on',b.dataset.t===tk));
+ $('par').innerHTML=par.map((g,i)=>`<div class="gs-pp"><b>${i?'👨 Parent 2':'👩 Parent 1'}</b><div class="pic">${T[shows(g,L)][0]}</div><div style="font-weight:800">${T[shows(g,L)][1]}</div><div class="g">${[0,1,2].map(k=>`<button data-p="${i}" data-g="${geno(L,k)}" class="${g===geno(L,k)?'on':''}">${geno(L,k)}</button>`).join('')}</div></div>`).join('<div class="gs-x">✖</div>');
+ const a=par[0].split(''),b=par[1].split('');const cells=[];
+ let h=`<div></div>${b.map(x=>`<div class="h">${x}</div>`).join('')}`;a.forEach(x=>{h+=`<div class="h">${x}</div>`;b.forEach(y=>{const g=[x,y].sort((p,q)=>p===L?-1:q===L?1:0).join('');cells.push(g);const s=T[shows(g,L)];h+=`<div class="c" style="--cc:${s[2]}33"><span>${s[0]}</span>${g}<br><small>${s[1]}</small></div>`})});
+ $('sq').innerHTML=h;const d=cells.filter(g=>shows(g,L)==='dom').length;bar('pb',d/4);$('pt').textContent=`${d} out of 4 boxes (${d*25}%) are ${T.dom[1].toLowerCase()}, ${4-d} out of 4 (${(4-d)*25}%) are ${T.rec[1].toLowerCase()}.`;
+ window.__t={par:[...par],dom:d,kids:kids.length}}
+function bar(id,f){const T=TR[tk];$(id).innerHTML=`<div style="width:${f*100}%;background:${T.dom[2]}">${f>.12?Math.round(f*100)+'%':''}</div><div style="width:${(1-f)*100}%;background:${T.rec[2]}">${1-f>.12?Math.round((1-f)*100)+'%':''}</div>`}
+$('par').onclick=e=>{const b=e.target.closest('[data-g]');if(!b)return;par[+b.dataset.p]=b.dataset.g;kids=[];$('bb').innerHTML='';$('ab').hidden=true;$('at').textContent='';Kit.tick();draw()};
+$('br').onclick=()=>{const T=TR[tk],L=T.L;for(let i=0;i<20;i++){const g=[Kit.pick(par[0].split('')),Kit.pick(par[1].split(''))].join('');kids.push(shows(g,L))}
+ $('bb').innerHTML=kids.slice(-60).map((k,i)=>`<span style="animation-delay:${(i%20)*.03}s" title="${T[k][1]}">${T[k][0]}</span>`).join('');const d=kids.filter(k=>k==='dom').length;$('ab').hidden=false;bar('ab',d/kids.length);
+ $('at').textContent=`Real babies so far: ${d} ${T.dom[1].toLowerCase()} and ${kids.length-d} ${T.rec[1].toLowerCase()} out of ${kids.length}. Close to the prediction? The more babies, the closer it usually gets!`;Kit.tada();window.__t={...window.__t,kids:kids.length,real:d}};
+$('cl').onclick=()=>{kids=[];$('bb').innerHTML='';$('ab').hidden=true;$('at').textContent=''};
+$('tr').onclick=e=>{const b=e.target.closest('[data-t]');if(!b)return;tk=b.dataset.t;const L=TR[tk].L;par=[L+L.toLowerCase(),L+L.toLowerCase()];kids=[];$('bb').innerHTML='';$('ab').hidden=true;$('at').textContent='';draw()};
+draw();
+</script>
+</body></html>

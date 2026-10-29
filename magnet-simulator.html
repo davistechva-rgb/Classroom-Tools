@@ -30,7 +30,7 @@ Kit.mount("🧲", "Magnet Simulator");
 const $=id=>document.getElementById(id);
 const W=1000,H=625,L=200,T=56;
 // things to test: only iron and steel (and nickel) are pulled by a magnet
-const OBJ=[['📎','Paper clip',1,'steel'],['🔩','Steel bolt',1,'steel'],['🪙','Coin',0,'copper and zinc'],['🔑','Brass key',0,'brass'],['🥫','Food can',1,'steel'],['🥤','Soda can',0,'aluminum'],['✏️','Pencil',0,'wood'],['🧽','Sponge',0,'foam'],['🥄','Steel spoon',1,'steel'],['🧷','Safety pin',1,'steel'],['🪵','Wood block',0,'wood'],['🧸','Teddy bear',0,'cloth']];
+const OBJ=[['📎','Paper clip',1,'steel'],['🔩','Steel bolt',1,'steel'],['🪙','Coin',0,'copper and zinc'],['🔑','Brass key',0,'brass'],['🥫','Food can',1,'steel'],['🥤','Soda can',0,'aluminum'],['✏️','Pencil',0,'wood'],['🧽','Sponge',0,'foam'],['🪝','Steel hook',1,'steel'],['🧷','Safety pin',1,'steel'],['🪵','Wood block',0,'wood'],['🧸','Teddy bear',0,'cloth']];
 let M=[{x:330,y:310,a:0},{x:700,y:310,a:Math.PI}],dragM=-1,off=[0,0],objs=[],dragO=null,lines=true,found={};
 document.querySelector('main').innerHTML=`<div class="mg"><div><canvas class="mg-cv" id="cv" width="${W}" height="${H}"></canvas>
 <div class="mg-bar"><button class="btn white" id="f0">🔄 Flip magnet 1</button><button class="btn white" id="f1">🔄 Flip magnet 2</button><button class="btn white" id="ln">〰️ Field lines: on</button><button class="btn white small" id="rs">↺ Reset</button></div>

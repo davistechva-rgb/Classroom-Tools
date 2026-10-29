@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Food Chain Builder</title>
+<style>
+main{max-width:1500px}
+.fc-tabs{display:flex;gap:8px;justify-content:center;margin-bottom:12px;flex-wrap:wrap}
+.fc-tabs button{font:inherit;font-weight:800;border:4px solid var(--ink);border-radius:99px;padding:6px 14px;background:#fff;cursor:pointer;color:var(--ink)}.fc-tabs button.on{background:var(--sun)}
+.fc-chain{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;background:var(--hb);border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);padding:18px 10px;min-height:190px}
+.fc-slot{width:clamp(96px,13vw,150px);aspect-ratio:1;border:5px dashed rgba(29,43,83,.4);border-radius:22px;display:grid;place-items:center;text-align:center;font-weight:800;background:rgba(255,255,255,.55);cursor:pointer;position:relative;padding:4px}
+.fc-slot.full{border-style:solid;border-color:var(--ink);background:#fff}
+.fc-slot .e{font-size:clamp(2.2rem,5vw,3.4rem);line-height:1;display:block}
+.fc-slot small{display:block;font-size:.72rem;color:#55607E;font-weight:700}
+.fc-slot.ok{background:#C9F1D2}.fc-slot.bad{background:#FFD9D4;animation:fcS .4s}@keyframes fcS{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.fc-slot.sun{background:radial-gradient(#FFF7C9,#FFC93C);border-style:solid;border-color:var(--ink);cursor:default}
+.fc-arr{font-size:2rem;font-weight:900;color:var(--ink)}
+.fc-arr small{display:block;font-size:.65rem;font-weight:700;text-align:center;line-height:1}
+.fc-bank{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-top:14px}
+.fc-o{font:inherit;font-weight:800;border:4px solid var(--ink);border-radius:16px;padding:6px;background:#fff;cursor:pointer;text-align:center;color:var(--ink)}
+.fc-o span{display:block;font-size:2.2rem;line-height:1.1}.fc-o.used{opacity:.35}
+.fc-msg{text-align:center;font-weight:800;font-size:1.2rem;color:#fff;text-shadow:2px 2px 0 var(--ink);min-height:1.6em;margin:10px 0}
+.fc-pyr{display:grid;gap:6px;justify-items:center;margin-top:14px}
+.fc-pyr div{border:4px solid var(--ink);border-radius:14px;padding:6px 10px;font-weight:800;text-align:center;background:var(--pc)}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🐾", "Food Chain Builder");
+const $=id=>document.getElementById(id);
+// [emoji, name, role, foods it eats]
+const HAB={forest:['🌲 Forest','#CDEBC0',[['🌳','Oak tree','producer',[]],['🌾','Grass and seeds','producer',[]],['🐛','Caterpillar','consumer',['Oak tree']],['🐇','Rabbit','consumer',['Grass and seeds']],['🐁','Mouse','consumer',['Grass and seeds']],['🐦','Songbird','consumer',['Caterpillar','Grass and seeds']],['🐍','Snake','consumer',['Mouse','Songbird']],['🦊','Fox','consumer',['Rabbit','Mouse']],['🦉','Owl','consumer',['Mouse','Songbird','Snake']],['🍄','Mushroom','decomposer',[]]]],
+ ocean:['🌊 Ocean','#BFE6FA',[['🦠','Phytoplankton','producer',[]],['🌿','Seaweed','producer',[]],['🦐','Krill','consumer',['Phytoplankton']],['🐠','Small fish','consumer',['Krill','Seaweed']],['🦑','Squid','consumer',['Small fish']],['🦭','Seal','consumer',['Small fish','Squid']],['🦈','Shark','consumer',['Seal','Squid','Small fish']],['🐋','Blue whale','consumer',['Krill']],['🦀','Crab','decomposer',[]]]],
+ desert:['🏜️ Desert','#F7E1B0',[['🌵','Cactus','producer',[]],['🌾','Desert grass','producer',[]],['🦗','Grasshopper','consumer',['Desert grass']],['🐁','Kangaroo rat','consumer',['Desert grass']],['🦎','Lizard','consumer',['Grasshopper']],['🐍','Rattlesnake','consumer',['Lizard','Kangaroo rat']],['🦅','Hawk','consumer',['Rattlesnake','Lizard','Kangaroo rat']],['🐪','Camel','consumer',['Cactus','Desert grass']],['🪲','Dung beetle','decomposer',[]]]],
+ arctic:['🧊 Arctic','#E6F2FA',[['🦠','Phytoplankton','producer',[]],['🦐','Zooplankton','consumer',['Phytoplankton']],['🐟','Arctic cod','consumer',['Zooplankton']],['🦭','Ringed seal','consumer',['Arctic cod']],['🐻‍❄️','Polar bear','consumer',['Ringed seal']],['🦊','Arctic fox','consumer',['Ringed seal']]]]};
+const LV=['Producer','Primary consumer','Secondary consumer','Tertiary consumer','Top predator'];
+let hab='forest',chain=[],sel=null,sc=Kit.get('fc-score',0),solved=new Set();
+document.querySelector('main').innerHTML=`<div class="fc-tabs" id="tabs">${Object.entries(HAB).map(([k,h])=>`<button data-h="${k}">${h[0]}</button>`).join('')}</div>
+<div class="fc-chain" id="ch"></div><div class="fc-msg" id="msg"></div>
+<div class="row" style="justify-content:center"><button class="btn green" id="chk">✓ Check my food chain</button><button class="btn white" id="clr">🧽 Clear</button><select id="len" style="width:auto"><option value="3">3 links</option><option value="4" selected>4 links</option><option value="5">5 links</option></select></div>
+<div class="fc-bank" id="bank"></div><div class="fc-pyr" id="pyr"></div>`;
+const ORG=()=>HAB[hab][2],N=()=>+$('len').value;
+function draw(){[...$('tabs').children].forEach(b=>b.classList.toggle('on',b.dataset.h===hab));$('ch').style.setProperty('--hb',HAB[hab][1]);
+ let h='<div class="fc-slot sun"><span class="e">☀️</span>Sun<small>energy starts here</small></div>';
+ for(let i=0;i<N();i++){const o=chain[i];h+=`<div class="fc-arr">➜<small>energy</small></div><div class="fc-slot ${o?'full':''}" data-s="${i}">${o?`<span class="e">${o[0]}</span>${o[1]}<small>${LV[Math.min(i,4)]}</small>`:`<small>${LV[Math.min(i,4)]}</small>?`}</div>`}
+ $('ch').innerHTML=h;$('bank').innerHTML=ORG().map((o,i)=>`<button class="fc-o ${chain.includes(o)?'used':''}" data-o="${i}"><span>${o[0]}</span>${o[1]}</button>`).join('');
+ window.__t={hab,chain:chain.map(o=>o&&o[1])}}
+$('bank').onclick=e=>{const b=e.target.closest('[data-o]');if(!b)return;const o=ORG()[+b.dataset.o];if(o[2]==='decomposer'){$('msg').textContent=`${o[0]} ${o[1]} is a decomposer. It breaks down dead plants and animals at the end of every chain!`;return}
+ if(chain.includes(o)){chain=chain.map(x=>x===o?undefined:x)}else{const i=[...Array(N()).keys()].find(k=>!chain[k]);if(i===undefined){$('msg').textContent='The chain is full. Tap a box to take something out.';return}chain[i]=o}Kit.tick();$('pyr').innerHTML='';draw()};
+$('ch').onclick=e=>{const s=e.target.closest('[data-s]');if(!s)return;chain[+s.dataset.s]=undefined;draw()};
+$('chk').onclick=()=>{const n=N();if(chain.filter(Boolean).length<n){$('msg').textContent='Fill every box first!';return}let ok=true,why='';
+ chain.slice(0,n).forEach((o,i)=>{const el=$('ch').querySelector(`[data-s="${i}"]`);let good;if(i===0){good=o[2]==='producer';if(!good&&!why)why=`The first box needs a producer, a plant that makes food from sunlight. ${o[1]} has to eat.`}else{good=o[3].includes(chain[i-1][1]);if(!good&&!why)why=`A ${o[1].toLowerCase()} doesn't eat ${chain[i-1][1].toLowerCase()}.`}el.classList.add(good?'ok':'bad');ok=ok&&good});
+ if(ok){const key=hab+chain.map(o=>o[1]).join();const fresh=!solved.has(key);solved.add(key);if(fresh){sc++;Kit.set('fc-score',sc)}$('msg').textContent=`🎉 It works! The arrows show energy moving from the sun to the ${chain[n-1][1].toLowerCase()}. Chains found: ${sc}`;Kit.tada();Kit.confetti(50);
+  const E=[10000,1000,100,10,1];$('pyr').innerHTML=`<b style="color:#fff;text-shadow:2px 2px 0 var(--ink)">⚡ Energy pyramid: only about 10% of the energy passes up each level</b>`+chain.slice(0,n).map((o,i)=>`<div style="width:${100-i*18}%;--pc:${['#C9F1D2','#FFF1C9','#FFE3C4','#FFD9D4','#EAE0FF'][i]}">${o[0]} ${o[1]}: ${E[i].toLocaleString()} energy units</div>`).reverse().join('')}
+ else{$('msg').textContent='🤔 '+why;Kit.tone(200,.25,'triangle',.15)}window.__t={...window.__t,ok}};
+$('clr').onclick=()=>{chain=[];$('pyr').innerHTML='';$('msg').textContent='';draw()};$('len').onchange=()=>{chain=chain.slice(0,N());draw()};
+$('tabs').onclick=e=>{const b=e.target.closest('[data-h]');if(!b)return;hab=b.dataset.h;chain=[];$('pyr').innerHTML='';$('msg').textContent='Build a food chain: start with a producer, then who eats it, and so on.';draw()};
+$('msg').textContent='Build a food chain: start with a producer, then who eats it, and so on.';draw();
+</script>
+</body></html>

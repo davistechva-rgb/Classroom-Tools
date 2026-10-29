@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Solar Energy Simulator</title>
+<style>
+main{max-width:1500px}
+.se2{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.se2{grid-template-columns:1fr}}
+.se2-cv{width:100%;aspect-ratio:3/2;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);display:block}
+.se2-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:10px}
+.se2-p label{font-weight:800}.se2-p input[type=range]{width:100%}
+.se2-seg{display:flex;gap:6px;flex-wrap:wrap}.se2-seg button{font:inherit;font-weight:800;border:3px solid var(--ink);border-radius:12px;padding:4px 10px;background:#fff;cursor:pointer;color:var(--ink)}.se2-seg button.on{background:var(--sun)}
+.se2-app{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.se2-app button{font:inherit;font-weight:800;font-size:.85rem;border:3px solid var(--ink);border-radius:12px;padding:6px 4px;background:#F4FAFF;cursor:pointer;color:var(--ink);text-align:center}
+.se2-app button span{display:block;font-size:1.6rem}.se2-app button.on{background:#C9F1D2}
+.se2-bat{display:flex;align-items:center;gap:10px;font-weight:800}
+.se2-bat i{flex:1;height:26px;border:4px solid var(--ink);border-radius:8px;overflow:hidden;background:#fff;position:relative}.se2-bat i b{display:block;height:100%;background:var(--grass);transition:width .2s}
+.se2-msg{border:4px solid var(--ink);border-radius:16px;padding:8px 12px;background:#FFF6C9;font-weight:700}
+.se2-ch div{display:flex;gap:8px;border:3px solid var(--ink);border-radius:12px;padding:5px 10px;margin-bottom:6px;font-weight:700;background:#F4FAFF}.se2-ch div.ok{background:#C9F1D2}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("☀️", "Solar Energy Simulator");
+const $=id=>document.getElementById(id);
+const W=900,H=600;
+// appliances and how much power they use (watts)
+const APP=[['💡','Lights',60],['🧊','Fridge',150],['📺','TV',120],['💻','Computer',80],['🔥','Heater',900],['🧺','Washer',500]];
+const SEASON={summer:['☀️ Summer',70,14.5],spring:['🌷 Spring',50,12],winter:['❄️ Winter',28,9.5]};// [name, highest sun angle, hours of daylight]
+let hour=6,season='summer',tilt=35,cloud=0,on=new Set([1]),bat=50,run=true,last=0,daySun=0,hist=[],done=new Set(),dead=false;
+const CH=[['Keep the fridge running through a whole night',s=>s.night],['Make more than 900 watts at once',s=>s.p>900],['Find the best panel tilt for winter',s=>s.season==='winter'&&s.tilt>=50&&s.p>0],['Run the heater on sunshine alone',s=>on.has(4)&&s.p>=s.use&&s.use>=900]];
+document.querySelector('main').innerHTML=`<div class="se2"><div><canvas class="se2-cv" id="cv" width="${W}" height="${H}"></canvas><div class="row" style="justify-content:center;margin-top:10px"><button class="btn green" id="pp">⏸ Pause the day</button><input type="range" id="hr" min="0" max="2400" value="600" style="width:min(380px,70vw)"></div></div>
+<div class="se2-p"><div class="se2-seg" id="ss">${Object.entries(SEASON).map(([k,v])=>`<button data-s="${k}">${v[0]}</button>`).join('')}</div>
+<label>📐 Panel tilt: <span id="tv"></span>°</label><input type="range" id="tl" min="0" max="90" value="35">
+<label>☁️ Clouds: <span id="cl2"></span></label><input type="range" id="cd" min="0" max="100" value="0">
+<div class="se2-bat">🔋 Battery<i><b id="bt"></b></i><span id="bp"></span></div><div class="se2-msg" id="msg"></div>
+<b>🏠 Turn things on in the house</b><div class="se2-app" id="ap">${APP.map((a,i)=>`<button data-a="${i}"><span>${a[0]}</span>${a[1]} · ${a[2]} W</button>`).join('')}</div>
+<b>🎯 Challenges</b><div class="se2-ch" id="ch"></div></div></div>`;
+const cv=$('cv'),x=cv.getContext('2d');
+function sun(){const [,maxA,len]=SEASON[season],rise=12-len/2,set=12+len/2;if(hour<rise||hour>set)return null;const f=(hour-rise)/len;return {alt:Math.sin(f*Math.PI)*maxA,az:f}}// alt = degrees above the horizon
+function power(){const s=sun();if(!s)return 0;// panel faces the sun's path; power depends on how straight the light hits it
+ const inc=Math.abs((90-s.alt)-tilt);const k=Math.max(0,Math.cos(inc*Math.PI/180))*Math.min(1,s.alt/12+.2);return Math.round(1000*k*(1-cloud*.85))}
+function use(){return [...on].reduce((a,i)=>a+APP[i][2],0)}
+function draw(p){const s=sun(),dark=s?Math.max(0,1-s.alt/25):1;const g=x.createLinearGradient(0,0,0,H);g.addColorStop(0,`rgb(${Math.round(80+(1-dark)*0)},${Math.round(150*(1-dark)+20)},${Math.round(230*(1-dark)+60)})`);g.addColorStop(1,`rgb(${Math.round(190*(1-dark)+30)},${Math.round(225*(1-dark)+30)},${Math.round(250*(1-dark)+70)})`);x.fillStyle=g;x.fillRect(0,0,W,H);
+ if(dark>.6){for(let i=0;i<50;i++){x.fillStyle=`rgba(255,255,255,${dark-.5})`;x.fillRect((i*173)%W,(i*67)%300,2,2)}}
+ if(s){const sx=80+s.az*(W-160),sy=440-s.alt/90*400;x.fillStyle='#FFD447';x.beginPath();x.arc(sx,sy,34,0,7);x.fill();x.strokeStyle='rgba(255,212,71,.4)';x.lineWidth=4;x.setLineDash([10,10]);x.beginPath();x.moveTo(sx,sy);x.lineTo(560,330);x.stroke();x.setLineDash([])}
+ else{x.fillStyle='#F4EBC8';x.beginPath();x.arc(760,90,26,0,7);x.fill()}
+ if(cloud>.05){x.fillStyle=`rgba(${dark>.5?90:240},${dark>.5?95:243},${dark>.5?110:248},${.4+cloud*.5})`;[[200,110],[420,80],[650,120]].forEach(([cx,cy],i)=>{const w=60+cloud*80;x.beginPath();x.arc(cx+Math.sin(Date.now()/3000+i)*20,cy,w*.5,0,7);x.arc(cx+w*.5,cy+10,w*.4,0,7);x.arc(cx-w*.5,cy+10,w*.4,0,7);x.fill()})}
+ x.fillStyle='#6FBF4E';x.fillRect(0,470,W,130);
+ // house with a solar panel on the roof
+ x.fillStyle='#F2D7B6';x.fillRect(420,330,300,140);x.strokeStyle='#1D2B53';x.lineWidth=5;x.strokeRect(420,330,300,140);x.fillStyle='#B5603A';x.beginPath();x.moveTo(400,335);x.lineTo(570,230);x.lineTo(740,335);x.closePath();x.fill();x.stroke();
+ const lit=on.has(0)&&!dead;x.fillStyle=lit?'#FFE38A':'#3A4A6B';x.fillRect(460,370,70,60);x.fillRect(610,370,70,60);x.strokeRect(460,370,70,60);x.strokeRect(610,370,70,60);x.fillStyle='#8B5A2B';x.fillRect(548,400,44,70);
+ x.save();x.translate(560,330);x.rotate(-tilt*Math.PI/180);x.fillStyle='#1E3A8A';x.fillRect(-90,-18,180,14);x.strokeStyle='#9FB2DA';x.lineWidth=2;for(let k=-90;k<90;k+=30)x.strokeRect(k,-18,30,14);x.restore();x.fillStyle='#55607E';x.fillRect(554,318,12,14);
+ x.fillStyle='#1D2B53';x.font='800 26px Fredoka,system-ui';x.textAlign='left';const hh=Math.floor(hour),mm=Math.floor((hour%1)*60);x.fillText(`🕐 ${(hh%12)||12}:${String(mm).padStart(2,'0')} ${hh<12?'AM':'PM'}`,20,40);x.fillText(`⚡ Making ${p} W`,20,76);x.fillText(`🏠 Using ${use()} W`,20,112)}
+function loop(ts){const dt=Math.min(.05,(ts-(last||ts))/1000);last=ts;if(run){hour=(hour+dt*1.2)%24;$('hr').value=Math.round(hour*100)}
+ const p=power(),u=dead?0:use(),net=p-u;bat=Math.max(0,Math.min(100,bat+net*dt*1.2/250));if(bat<=0&&net<0){if(!dead){dead=true;Kit.tone(120,.6,'sawtooth',.2)}}else if(bat>2)dead=false;
+ if(run&&on.has(1)&&!dead){if(hour>=20&&daySun===0)daySun=1;if(daySun===1&&hour>=6&&hour<7)daySun=2}else if(dead)daySun=0;
+ const S={p,use:use(),season,tilt,night:daySun===2};CH.forEach((c,i)=>{if(!done.has(i)&&c[1](S)){done.add(i);Kit.tada();Kit.confetti(50)}});
+ draw(p);$('bt').style.width=bat+'%';$('bt').style.background=bat<20?'var(--tomato)':bat<50?'var(--sun)':'var(--grass)';$('bp').textContent=Math.round(bat)+'%';
+ $('msg').textContent=dead?'🔌 The battery is empty! Everything turned off. Turn some things off and wait for the sun.':!sun()?'🌙 Night: no sunlight, so the house runs on the battery.':net>=0?`☀️ Making ${net} W more than the house needs. The extra charges the battery!`:`⚠️ Using ${-net} W more than the panel makes. The battery is draining.`;
+ $('ch').innerHTML=CH.map((c,i)=>`<div class="${done.has(i)?'ok':''}">${done.has(i)?'✅':'⬜'} ${c[0]}</div>`).join('');window.__t={hour:+hour.toFixed(2),p,use:use(),bat:+bat.toFixed(1),dead,done:[...done]};requestAnimationFrame(loop)}
+$('ss').onclick=e=>{const b=e.target.closest('[data-s]');if(!b)return;season=b.dataset.s;ui()};
+$('tl').oninput=()=>{tilt=+$('tl').value;ui()};$('cd').oninput=()=>{cloud=$('cd').value/100;ui()};
+$('ap').onclick=e=>{const b=e.target.closest('[data-a]');if(!b)return;const i=+b.dataset.a;on.has(i)?on.delete(i):on.add(i);Kit.tick();ui()};
+$('pp').onclick=()=>{run=!run;$('pp').textContent=run?'⏸ Pause the day':'▶ Play the day'};$('hr').oninput=()=>{hour=$('hr').value/100};
+function ui(){[...$('ss').children].forEach(b=>b.classList.toggle('on',b.dataset.s===season));$('tv').textContent=tilt;$('cl2').textContent=cloud<.05?'clear sky':cloud<.5?'some clouds':'very cloudy';[...$('ap').children].forEach((b,i)=>b.classList.toggle('on',on.has(i)))}
+window.__z={set:o=>{if(o.hour!=null)hour=o.hour;if(o.season)season=o.season;if(o.tilt!=null)tilt=o.tilt;if(o.cloud!=null)cloud=o.cloud;if(o.bat!=null)bat=o.bat;if(o.run!=null)run=o.run;ui()}};
+ui();requestAnimationFrame(loop);
+</script>
+</body></html>

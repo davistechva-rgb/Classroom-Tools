@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Ocean Current Simulator</title>
+<style>
+main{max-width:1500px}
+.oc-tabs{display:flex;gap:8px;justify-content:center;margin-bottom:12px;flex-wrap:wrap}
+.oc-tabs button{font:inherit;font-weight:800;border:4px solid var(--ink);border-radius:99px;padding:6px 14px;background:#fff;cursor:pointer;color:var(--ink)}.oc-tabs button.on{background:var(--sun)}
+.oc{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.oc{grid-template-columns:1fr}}
+.oc-cv{width:100%;aspect-ratio:3/2;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);display:block;background:#DDEFFB}
+.oc-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:14px;display:grid;gap:10px}
+.oc-seg{display:flex;gap:6px;flex-wrap:wrap}.oc-seg button{font:inherit;font-weight:800;border:3px solid var(--ink);border-radius:12px;padding:5px 10px;background:#fff;cursor:pointer;color:var(--ink)}.oc-seg button.on{background:var(--cyan);color:#fff}
+.oc-msg{border:4px solid var(--ink);border-radius:16px;padding:10px 12px;background:#FFF6C9;font-weight:700;min-height:3em}
+.oc-log div{border-bottom:2px solid #E3E8F2;padding:3px 0;font-weight:700}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🌊", "Ocean Current Simulator");
+const $=id=>document.getElementById(id);
+const W=900,H=600;let mode='tank',temp='cold',salt='salty',drops=[],log=[],t=0,P=[];
+// density order: salt makes water much heavier than cold does, so warm salty water still sinks below cold fresh water
+const DEN={'warm-fresh':0,'cold-fresh':1,'warm-salty':2,'cold-salty':3};
+const LAY=[['Warm, fresh water','#BFE6FA'],['Cold, fresh water','#8CCBF0'],['Warm, salty water','#4F9BD8'],['Cold, salty water','#2B5FA8']];
+const COL={'warm-fresh':'#FF9F43','warm-salty':'#E5533F','cold-fresh':'#9B6BF2','cold-salty':'#22C3E6'};
+document.querySelector('main').innerHTML=`<div class="oc-tabs" id="tabs"><button data-m="tank" class="on">🧪 Density tank</button><button data-m="belt">🌍 The ocean conveyor belt</button></div>
+<div class="oc"><canvas class="oc-cv" id="cv" width="${W}" height="${H}"></canvas><div class="oc-p" id="pn"></div></div>`;
+const cv=$('cv'),x=cv.getContext('2d');
+function panel(){if(mode==='tank'){$('pn').innerHTML=`<b>💧 Make a drop of water</b><div class="oc-seg" id="tp"><button data-v="cold">🧊 Cold</button><button data-v="warm">♨️ Warm</button></div><div class="oc-seg" id="sl"><button data-v="salty">🧂 Salty</button><button data-v="fresh">💧 Fresh</button></div>
+ <button class="btn big green" id="dp">💧 Drop it in!</button><div class="oc-msg" id="msg">The tank has 4 layers. Heavier (denser) water sinks below lighter water. Where will your drop end up?</div><b>📓 Results</b><div class="oc-log" id="lg"></div><button class="btn white small" id="cl">🧽 Empty the drops</button>`;
+ const seg=()=>{[...$('tp').children].forEach(b=>b.classList.toggle('on',b.dataset.v===temp));[...$('sl').children].forEach(b=>b.classList.toggle('on',b.dataset.v===salt))};seg();
+ $('tp').onclick=e=>{const b=e.target.closest('[data-v]');if(b){temp=b.dataset.v;seg()}};$('sl').onclick=e=>{const b=e.target.closest('[data-v]');if(b){salt=b.dataset.v;seg()}};
+ $('dp').onclick=()=>{const k=temp+'-'+salt;drops.push({k,x:180+drops.length%6*110,y:40,vy:0,d:DEN[k],done:false});Kit.tick()};$('cl').onclick=()=>{drops=[];log=[];$('lg').innerHTML=''}}
+ else $('pn').innerHTML=`<h3 style="margin:0">🌍 The global conveyor belt</h3><p style="margin:0;font-weight:600">Near the poles, ocean water gets very cold and salty (when sea ice forms, it leaves salt behind). That heavy water <b>sinks</b> to the deep ocean and creeps toward the equator. Near the equator, water warms up and <b>rises</b>, then flows back toward the poles along the surface.</p><p style="margin:0;font-weight:600">This giant loop carries heat around the planet and helps shape the weather. One trip takes about <b>1,000 years</b>!</p><div class="oc-seg"><span style="background:#FFD9D4;border:3px solid var(--ink);border-radius:99px;padding:2px 10px;font-weight:800">🔴 warm surface water</span><span style="background:#DCEBFF;border:3px solid var(--ink);border-radius:99px;padding:2px 10px;font-weight:800">🔵 cold deep water</span></div>`}
+function tank(){x.fillStyle='#fff';x.fillRect(0,0,W,H);const top=90,lh=(H-130)/4;LAY.forEach((l,i)=>{x.fillStyle=l[1];x.fillRect(80,top+i*lh,W-160,lh);x.fillStyle=i<2?'#1D2B53':'#fff';x.font='800 20px Fredoka,system-ui';x.textAlign='left';x.fillText(l[0],96,top+i*lh+28)});
+ x.strokeStyle='#1D2B53';x.lineWidth=8;x.strokeRect(80,top,W-160,H-130);
+ drops.forEach(d=>{const target=top+d.d*lh+lh*.6;if(!d.done){d.vy+=.25;d.y+=d.vy;if(d.y>=top){d.vy*=.86}if(d.y>=target&&d.y>top){d.y=target;d.done=true;const n=temp;log.unshift(`${d.k.replace('-',', ')} water → settled in layer ${d.d+1}: ${LAY[d.d][0].toLowerCase()}`);$('lg')&&($('lg').innerHTML=log.slice(0,6).map(l=>`<div>${l}</div>`).join(''));
+  $('msg').innerHTML=`Your <b>${d.k.replace('-',' and ')}</b> drop ${d.d===0?'floats at the top. It\'s the lightest!':d.d===3?'sinks all the way to the bottom. Cold, salty water is the heaviest!':`stops in the middle, where the water around it weighs the same.`}`;Kit.ding()}}
+  x.fillStyle=COL[d.k];x.strokeStyle='#1D2B53';x.lineWidth=3;x.beginPath();x.arc(d.x,d.y,16,0,7);x.fill();x.stroke()});
+ x.fillStyle='#1D2B53';x.font='800 22px Fredoka,system-ui';x.textAlign='center';x.fillText('⬆ lighter (less dense)',W/2,40);x.fillText('⬇ heavier (more dense)',W/2,H-12);window.__t={drops:drops.map(d=>[d.k,d.done?d.d:-1])}}
+function belt(){t++;x.fillStyle='#DDEFFB';x.fillRect(0,0,W,H);
+ // ocean cross-section from the north pole (left) to the equator (right)
+ x.fillStyle='#E9F6FF';x.fillRect(0,0,W,110);x.fillStyle='#3B7FC4';x.fillRect(0,110,W,H-110);const g=x.createLinearGradient(0,110,0,H);g.addColorStop(0,'rgba(255,255,255,.15)');g.addColorStop(1,'rgba(0,0,40,.35)');x.fillStyle=g;x.fillRect(0,110,W,H-110);
+ x.fillStyle='#fff';x.fillRect(0,96,200,20);x.font='800 22px Fredoka,system-ui';x.fillStyle='#1D2B53';x.textAlign='left';x.fillText('🧊 Cold pole',20,70);x.textAlign='right';x.fillText('☀️ Warm equator',W-20,70);
+ const loop=(f)=>{// a rounded rectangle path around the ocean: surface (right→left), sink at the pole, deep (left→right), rise at the equator
+  const L=110,R=W-110,T=160,B=H-70,per=2*(R-L)+2*(B-T);let d=f*per;if(d<R-L)return [R-d,T,'w'];d-=R-L;if(d<B-T)return [L,T+d,'c'];d-=B-T;if(d<R-L)return [L+d,B,'c'];d-=R-L;return [R,B-d,'w']};
+ if(!P.length)P=Array.from({length:70},(_,i)=>i/70);P=P.map(f=>(f+.0009)%1);P.forEach(f=>{const [px,py,k]=loop(f);x.fillStyle=k==='w'?'#FF6B5B':'#7FC8FF';x.beginPath();x.arc(px,py,9,0,7);x.fill();x.strokeStyle='#1D2B53';x.lineWidth=2;x.stroke()});
+ x.font='800 20px Fredoka,system-ui';x.textAlign='center';x.fillStyle='#fff';x.fillText('⬇ cold, salty water sinks',200,(160+H-70)/2);x.fillText('⬆ warm water rises',W-220,(160+H-70)/2);x.fillText('⬅ warm surface current',W/2,145);x.fillText('cold deep current ➡',W/2,H-40);window.__t={belt:true}}
+function frame(){(mode==='tank'?tank:belt)();requestAnimationFrame(frame)}
+$('tabs').onclick=e=>{const b=e.target.closest('[data-m]');if(!b)return;mode=b.dataset.m;[...$('tabs').children].forEach(z=>z.classList.toggle('on',z===b));panel()};
+panel();frame();
+</script>
+</body></html>
