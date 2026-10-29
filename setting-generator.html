@@ -11,14 +11,7 @@
 main{max-width:1400px}
 .st-wrap{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:18px;align-items:start}
 @media (max-width:900px){.st-wrap{grid-template-columns:1fr}}
-.st-scene{position:relative;aspect-ratio:16/10;border:7px solid var(--ink);border-radius:26px;box-shadow:8px 8px 0 var(--ink);overflow:hidden;background:var(--sky)}
-.st-scene .gr{position:absolute;left:0;right:0;bottom:0;height:34%;background:var(--ground)}
-.st-scene .it{position:absolute;transform:translate(-50%,-50%);line-height:1}
-.st-scene .wx{position:absolute;inset:0;pointer-events:none}
-.st-rain i{position:absolute;width:3px;height:18px;background:rgba(255,255,255,.7);border-radius:2px;animation:strn .7s linear infinite}@keyframes strn{to{transform:translateY(60vh)}}
-.st-snow i{position:absolute;width:9px;height:9px;background:#fff;border-radius:50%;animation:stsn 4s linear infinite}@keyframes stsn{to{transform:translate(30px,60vh)}}
-.st-fog{background:linear-gradient(rgba(255,255,255,.1),rgba(255,255,255,.55))}
-.st-lab{position:absolute;left:12px;top:10px;background:rgba(255,255,255,.92);border:3px solid var(--ink);border-radius:12px;padding:2px 12px;font-weight:800}
+.st-scene{border:7px solid var(--ink);border-radius:26px;box-shadow:8px 8px 0 var(--ink);overflow:hidden}
 .st-f{display:grid;gap:8px}
 .st-r{display:grid;grid-template-columns:7.5em 1fr auto;gap:8px;align-items:center;background:#fff;border:4px solid var(--ink);border-radius:16px;padding:8px 10px;font-weight:700}
 .st-r b{color:#6B7695;font-size:.85rem}
@@ -31,34 +24,40 @@ main{max-width:1400px}
 <body>
 <main></main>
 <script src="kit.js"></script>
-<script src="learn.js"></script>
+<script src="learn.js"></script><script src="scene.js"></script>
 <script>
 Kit.mount("🗺️", "Setting Generator");
 const $=id=>document.getElementById(id);
-const PL=[{n:'a spooky old library',g:'#6B4E3A',it:['📚','🕯️','🪑','🕸️','🦉'],see:'dusty books stacked to the ceiling',hear:'pages rustling all by themselves',smell:'old paper and candle wax',feel:'a cold draft on my neck',taste:'dust in the air'},
- {n:'a busy city street',g:'#7A8496',it:['🏢','🚕','🚦','🏪','🚲'],see:'flashing signs and yellow taxis',hear:'honking horns and chattering people',smell:'hot pretzels from a cart',feel:'the crowd bumping past me',taste:'a salty pretzel'},
- {n:'a quiet forest',g:'#4E9A3F',it:['🌲','🍄','🦌','🌲','🪵'],see:'sunlight peeking through tall pine trees',hear:'birds chirping and twigs snapping',smell:'fresh pine needles',feel:'soft moss under my feet',taste:'sweet wild berries'},
- {n:'a sandy beach',g:'#F1D79A',it:['🌴','🐚','🦀','⛱️','🏰'],see:'waves sparkling in the sun',hear:'seagulls and crashing waves',smell:'salty sea air and sunscreen',feel:'warm sand between my toes',taste:'salt on my lips'},
- {n:'a space station',g:'#3A3F5C',it:['🛰️','🪐','👩‍🚀','🔭','🌍'],see:'Earth glowing outside the window',hear:'machines humming and beeping',smell:'clean, metal air',feel:'floating with no gravity',taste:'freeze-dried ice cream'},
- {n:'a snowy mountain village',g:'#F4F8FF',it:['🏔️','🏠','⛄','🌲','🛷'],see:'smoke curling from chimneys',hear:'sleigh bells and crunching snow',smell:'hot cocoa and wood smoke',feel:'icy wind on my cheeks',taste:'snowflakes on my tongue'},
- {n:'a farm at harvest time',g:'#9BC25B',it:['🚜','🌽','🐄','🏡','🐓'],see:'golden fields of corn',hear:'roosters crowing and cows mooing',smell:'fresh hay',feel:'scratchy straw',taste:'a crunchy apple'},
- {n:'an underwater cave',g:'#1E5F7A',it:['🐙','🪸','🐠','💎','🦈'],see:'glowing jellyfish and bright coral',hear:'bubbles popping',smell:'nothing, because I\'m underwater',feel:'cool water all around you',taste:'salty water'}];
-const TIME=[['sunrise','linear-gradient(#FFB27A,#FFE3A8)','🌅'],['noon','linear-gradient(#5BC0F8,#BFE6FA)','☀️'],['sunset','linear-gradient(#7B4FB8,#FF8A5C)','🌇'],['night','linear-gradient(#0E1035,#2B2E6E)','🌙']];
+const PL=[{n:'a spooky old library',out:0,see:'dusty books stacked to the ceiling',hear:'pages rustling all by themselves',smell:'old paper and candle wax',feel:'a cold draft on my neck',taste:'dust in the air',
+  sc:{sky:'linear-gradient(#4A3A5E,#2E2440)',back:[['wall','#5A4670','#3A2A20']],ground:'floor',items:[['🪟',52,50,20,{shadow:false}],['📚',16,74,18],['📚',33,73,12],['🦉',16,47,10],['🕯️',66,76,9,{cls:'twk'}],['🪑',82,93,18],['🕸️',92,24,15,{shadow:false}],['📖',48,92,12]]}},
+ {n:'a busy city street',out:1,sun:{sunset:['☀️',52,34,11],sunrise:['☀️',52,36,11],noon:['☀️',52,22,11],night:['🌙',52,22,9]},see:'flashing signs and yellow taxis',hear:'honking horns and chattering people',smell:'hot pretzels from a cart',feel:'the crowd bumping past me',taste:'a salty pretzel',
+  sc:{back:['skyline'],ground:'road',items:[['🏢',14,72,24],['🏪',84,72,22],['🌳',34,73,13],['🚦',62,74,7],['🚕',44,94,22],['🚲',74,95,14],['🥨',90,96,7]]}},
+ {n:'a quiet forest',out:1,see:'sunlight peeking through tall pine trees',hear:'birds chirping and twigs snapping',smell:'fresh pine needles',feel:'soft moss under my feet',taste:'sweet wild berries',
+  sc:{back:[['hills','#5BA05A'],['trees']],ground:'grass',items:[['🌲',12,82,24],['🌲',90,80,22],['🌳',70,74,17],['🦌',46,90,18],['🍄',28,93,8],['🪵',62,95,14],['🐦',58,40,6,{cls:'drift',shadow:false}]]}},
+ {n:'a sandy beach',out:1,see:'waves sparkling in the sun',hear:'seagulls and crashing waves',smell:'salty sea air and sunscreen',feel:'warm sand between my toes',taste:'salt on my lips',
+  sc:{back:['sea'],ground:'sand',groundTop:70,items:[['🌴',14,96,27,{cls:'sway'}],['⛱️',73,93,19],['🪣',42,95,9],['🦀',53,97,9],['🐚',91,97,6]]}},
+ {n:'a space station',out:0,see:'Earth glowing outside the window',hear:'machines humming and beeping',smell:'clean, metal air',feel:'floating with no gravity',taste:'freeze-dried ice cream',
+  sc:{sky:'space',pre:['stars'],ground:'metal',groundTop:80,items:[['🌍',74,52,26,{shadow:false}],['🪐',18,30,15,{shadow:false}],['🛰️',46,30,12,{cls:'bob',shadow:false}],['🧑‍🚀',36,68,17,{cls:'bob',shadow:false}],['🔭',86,96,12],['🚀',12,96,12]]}},
+ {n:'a snowy mountain village',out:1,see:'smoke curling from chimneys',hear:'sleigh bells and crunching snow',smell:'hot cocoa and wood smoke',feel:'icy wind on my cheeks',taste:'snowflakes on my tongue',
+  sc:{back:[['mountains','#8C9BB8']],ground:'snow',items:[['🏠',30,78,20],['🏘️',70,76,22],['⛄',50,90,13],['🌲',8,82,15],['🌲',92,84,15],['🛷',62,96,12]]}},
+ {n:'a farm at harvest time',out:1,see:'golden fields of corn',hear:'roosters crowing and cows mooing',smell:'fresh hay',feel:'scratchy straw',taste:'a crunchy apple',
+  sc:{back:[['hills','#9BC25B']],ground:'field',items:[['🏡',20,74,22],['🚜',58,92,22],['🐄',86,84,16],['🌽',36,90,7],['🌽',42,93,7],['🐓',10,94,9],['🍎',72,97,6]]}},
+ {n:'an underwater cave',out:0,see:'glowing jellyfish and bright coral',hear:'bubbles popping',smell:'nothing, because I\'m underwater',feel:'cool water all around you',taste:'salty water',
+  sc:{sky:'water',pre:['rays'],back:['cave'],ground:'seabed',groundTop:84,fx:['bubbles'],items:[['🐙',25,94,16],['🪸',70,96,15],['🐠',45,48,10,{cls:'swim',shadow:false}],['🐠',60,32,8,{cls:'swim',flip:1,shadow:false,style:'animation-delay:-4s'}],['🦈',80,40,22,{cls:'swim',shadow:false,style:'animation-delay:-2s'}],['💎',88,97,8],['🪼',14,40,9,{cls:'bob',shadow:false}]]}}];
+const TIME=[['sunrise','sunrise',['🌅'],''],['noon','day',['☀️'],''],['sunset','sunset',['🌇'],'linear-gradient(rgba(120,60,140,.12),rgba(255,120,60,.1))'],['night','night',['🌙'],'rgba(10,16,60,.38)']];
+const SUN={sunrise:['☀️',16,48,11],noon:['☀️',82,30,12],sunset:['☀️',86,50,12],night:['🌙',82,28,10]};
 const WX=[['clear',''],['rainy','rain'],['snowy','snow'],['foggy','fog'],['windy','wind']];
 const MOOD=['peaceful','mysterious','exciting','scary','cheerful','lonely','magical'];
 let s={};const pk=a=>Kit.pick(a);
-function roll(k){if(!k||k==='p')s.p=pk(PL.filter(x=>x!==s.p));if(!k||k==='t')s.t=pk(TIME);if(!k||k==='w')s.w=pk(WX);if(!k||k==='m')s.m=pk(MOOD)}
+function roll(k){if(!k||k==='p')s.p=pk(PL.filter(x=>x!==s.p));if(!k||k==='t')s.t=pk(TIME);if(!k||k==='w'||!s.p.out)s.w=s.p.out?pk(WX):WX[0];if(!k||k==='m')s.m=pk(MOOD)}
 document.querySelector('main').innerHTML=`<div class="st-wrap"><div class="st-scene" id="sc"></div><div class="st-f" id="f"></div></div><div class="st-sense" id="se"></div><div class="st-para" id="pa"></div>
 <div class="row" style="justify-content:center;margin-top:14px"><button class="btn big green" id="go">🎲 New setting</button><button class="btn white" id="say">🔈 Read it</button></div>`;
-function draw(){const P=s.p,[tn,sky,tem]=s.t,[wn,wc]=s.w;const sc=$('sc');sc.style.setProperty('--sky',sky);sc.style.setProperty('--ground',P.g);
- let h=`<div class="gr"></div><span class="it" style="left:84%;top:16%;font-size:3rem">${tem}</span>`;P.it.forEach((e,i)=>{h+=`<span class="it" style="left:${12+i*19}%;top:${i%2?72:62}%;font-size:${i%2?3:4.2}rem">${e}</span>`});
- if(wc==='rain')h+=`<div class="wx st-rain">${Array.from({length:40},()=>`<i style="left:${Kit.rand(0,100)}%;top:-${Kit.rand(0,60)}%;animation-delay:-${Math.random()}s"></i>`).join('')}</div>`;
- if(wc==='snow')h+=`<div class="wx st-snow">${Array.from({length:40},()=>`<i style="left:${Kit.rand(0,100)}%;top:-${Kit.rand(0,80)}%;animation-delay:-${Math.random()*4}s"></i>`).join('')}</div>`;
- if(wc==='fog')h+='<div class="wx st-fog"></div>';if(wc==='wind')h+='<span class="it" style="left:30%;top:25%;font-size:3rem">💨</span><span class="it" style="left:60%;top:35%;font-size:2.4rem">🍃</span>';
- sc.innerHTML=h+`<span class="st-lab">📍 ${Kit.esc(P.n)}</span>`;
- const R=[['p','WHERE',P.n],['t','WHEN',`at ${tn}`],['w','WEATHER',wn],['m','MOOD',s.m]];$('f').innerHTML=R.map(([k,l,v])=>`<div class="st-r"><b>${l}</b><span>${Kit.esc(v)}</span><button data-k="${k}">🎲</button></div>`).join('');
+function draw(){const P=s.p,[tn,skyK,,tint]=s.t,[wn,wc]=s.w;const sp=P.sc,items=[...sp.items];
+ if(P.out){const [e,x,y,w]=(P.sun&&P.sun[tn])||SUN[tn];items.push([e,x,y,w,{shadow:false,z:-1}]);if(wc==='rain'||wc==='snow'||wc==='fog')items.push(['☁️',30,30,18,{shadow:false,cls:'drift',z:0}],['☁️',60,24,14,{shadow:false,cls:'drift',style:'animation-delay:-20s',z:0}]);else items.push(['☁️',40,24,12,{shadow:false,cls:'drift',z:0}]);if(wc==='wind')items.push(['🍃',30,50,6,{shadow:false,cls:'drift',style:'animation-duration:6s'}])}
+ $('sc').innerHTML=Scene.html({...sp,items,sky:P.out?(wc==='rain'||wc==='fog'?(tn==='night'?'night':'linear-gradient(#8A97AD,#C3CCDA)'):skyK):sp.sky,pre:[...(sp.pre||[]),...(P.out&&tn==='night'?['stars']:[])],fx:[...(sp.fx||[]),...(P.out&&wc?[wc]:[])],tint:P.out?tint:(tn==='night'&&P.out===0&&sp.ground==='floor'?'rgba(10,10,40,.25)':''),label:`📍 ${Kit.esc(P.n)}`});
+ const R=[['p','WHERE',P.n],['t','WHEN',`at ${tn}`],...(P.out?[['w','WEATHER',wn]]:[]),['m','MOOD',s.m]];$('f').innerHTML=R.map(([k,l,v])=>`<div class="st-r"><b>${l}</b><span>${Kit.esc(v)}</span><button data-k="${k}">🎲</button></div>`).join('');
  const SE=[['👀 See',P.see,'#E3F2FF'],['👂 Hear',P.hear,'#FDE7F3'],['👃 Smell',P.smell,'#FFF1B8'],['✋ Feel',P.feel,'#C9F1D2'],['👅 Taste',P.taste,'#FFE3C4']];$('se').innerHTML=SE.map(x=>`<div class="st-s" style="--sc:${x[2]}"><b>${x[0]}</b>${Kit.esc(x[1])}</div>`).join('');
- $('pa').textContent=`It was a ${wn}, ${s.m} ${tn==='night'?'night':tn==='noon'?'afternoon':tn==='sunrise'?'morning':'evening'} in ${P.n}. I could see ${P.see}. I heard ${P.hear}, and the air smelled like ${P.smell}. I could feel ${P.feel}.`;window.__t={place:P.n}}
+ $('pa').textContent=`It was a ${P.out?wn+', ':''}${s.m} ${tn==='night'?'night':tn==='noon'?'afternoon':tn==='sunrise'?'morning':'evening'} in ${P.n}. I could see ${P.see}. I heard ${P.hear}, and the air smelled like ${P.smell}. I could feel ${P.feel}.`;window.__t={place:P.n}}
 $('f').onclick=e=>{const b=e.target.closest('[data-k]');if(b){roll(b.dataset.k);Kit.tick();draw()}};
 $('go').onclick=()=>{roll();Kit.tone(600,.1,'triangle',.2);draw()};
 $('say').onclick=()=>{try{const u=new SpeechSynthesisUtterance($('pa').textContent);speechSynthesis.cancel();speechSynthesis.speak(u)}catch{}};

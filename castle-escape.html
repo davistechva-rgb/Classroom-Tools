@@ -23,6 +23,8 @@
 .ca-door.open{background:#F1D79A}
 .ca-door.k-red{background:#FF5148}.ca-door.k-blue{background:#3B8CFF}.ca-door.k-gold{background:#FFC93C}
 .ca-side{display:grid;gap:12px}
+.ca-two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ca-view{padding:0!important;overflow:hidden}.ca-view .scn{border-radius:13px}
 .ca-box{background:#fff;border:5px solid var(--ink);border-radius:18px;box-shadow:5px 5px 0 var(--ink);padding:12px}
 .ca-moves{display:grid;grid-template-columns:repeat(3,auto);gap:6px;justify-content:center}
 .ca-torch{font-size:1.8rem;letter-spacing:.1em}
@@ -32,7 +34,7 @@
 <body>
 <main></main>
 <script src="kit.js"></script>
-<script src="escape.js"></script>
+<script src="escape.js"></script><script src="scene.js"></script>
 <script>
 Kit.mount("🏰", "Castle Escape");
 
@@ -61,16 +63,38 @@ start({room}){
  const NAMES=['Dungeon','Armory','Kitchen','Library','Great Hall','Chapel','Throne Room','Stables','Treasury','Garden','Dragon Den','Wizard Study','Gallery','Ballroom','Bell Room','Tower'];
  const EM=['⛓️','⚔️','🍗','📚','🏛️','🕯️','👑','🐎','💰','🌹','🐉','🔮','🖼️','💃','🔔','🌟'];
  const order=Kit.shuffle([...Array(N*N).keys()].filter(c=>c!==start&&c!==exit));const nm={},em={};order.forEach((c,i)=>{nm[c]=NAMES[i+1];em[c]=EM[i+1]});nm[start]='Dungeon';em[start]='⛓️';nm[exit]='Tower exit';em[exit]='🌟';
+
+ // what each room looks like (3D picture of the room you are standing in)
+ const IN={sky:'#6E6A84',back:[['bricks','#8A86A0','#5E5A74']],ground:'stone'};
+ const OUTS={sky:'day',back:[['hills','#7CC56A']],ground:'grass'};
+ const LOOK={'Dungeon':[['⛓️',30,50,12],['⛓️',70,50,12],['🦴',40,94,12],['🕯️',84,92,7],['🪣',18,95,11]],
+  'Armory':[['⚔️',28,52,15],['🛡️',50,52,14],['🛡️',72,52,14],['🪓',85,95,12],['🏹',22,95,14]],
+  'Kitchen':[['🍗',30,92,12],['🍞',48,94,12],['🧀',64,95,10],['🍲',82,93,13],['🔥',14,95,12]],
+  'Library':[['📚',22,92,18],['📚',48,90,14],['📜',70,95,12],['🕯️',86,92,7]],
+  'Great Hall':[['🪑',24,94,15],['🪑',76,94,15],['🍷',50,93,7],['🕯️',38,92,6],['🕯️',62,92,6],['🏺',90,94,9]],
+  'Chapel':[['🕯️',30,92,7],['🕯️',50,90,8],['🕯️',70,92,7],['🔔',50,48,13]],
+  'Throne Room':[['🪑',50,94,22],['👑',50,74,10,{shadow:false}],['🛡️',20,52,12],['🛡️',80,52,12],['🏺',14,95,11],['🏺',86,95,11]],
+  'Stables':[['🐎',42,94,30],['🌾',80,95,12],['🪣',16,96,10]],
+  'Treasury':[['💰',28,95,14],['💰',72,94,16],['💎',50,96,10],['👑',50,82,10],['🪙',88,97,7]],
+  'Garden':[['🌳',18,90,22],['🌹',48,95,9],['🌹',58,96,8],['🦋',70,45,7,{cls:'bob'}],['⛲',82,93,16]],
+  'Dragon Den':[['🐉',50,94,38],['🔥',16,95,10],['💰',86,96,12],['🦴',30,97,9]],
+  'Wizard Study':[['🔮',50,93,13],['📜',28,95,12],['🧪',70,95,8],['🦉',82,52,10],['📚',16,94,13]],
+  'Gallery':[['🖼️',22,52,14],['🖼️',50,48,16],['🖼️',78,52,14],['🏺',50,95,10]],
+  'Ballroom':[['💃',35,94,18],['🕺',65,94,18],['🎻',88,95,10],['🎶',50,40,10,{cls:'bob'}]],
+  'Bell Room':[['🔔',50,62,26],['🪜',85,95,14],['🕊️',20,40,8,{cls:'drift'}]],
+  'Tower exit':[['🌟',50,40,16,{cls:'bob'}],['🏰',22,92,24],['☁️',75,28,14]]};
+ const view=()=>{const n=nm[me],out=n==='Garden'||n==='Tower exit';$('view').innerHTML=Scene.html({...(out?OUTS:IN),items:LOOK[n]||[],label:`📍 ${n}`})};
  let me=start,torches=3;const seen=new Set([start]),inv=new Set(),beaten=new Set([start]);
  room.innerHTML=`<div class="ca-wrap"><div class="ca-map" id="map"></div><div class="ca-side">
-  <div class="ca-box"><b>Torches</b><div class="ca-torch" id="tor"></div></div>
-  <div class="ca-box"><b>Keys</b><div class="ca-inv" id="inv"></div></div>
+  <div class="ca-box ca-view" id="view"></div>
+  <div class="ca-two"><div class="ca-box"><b>Torches</b><div class="ca-torch" id="tor"></div></div>
+  <div class="ca-box"><b>Keys</b><div class="ca-inv" id="inv"></div></div></div>
   <div class="ca-box"><b>Move</b><div class="ca-moves"><span></span><button class="btn white" data-m="0,-1" aria-label="North">⬆️</button><span></span><button class="btn white" data-m="-1,0" aria-label="West">⬅️</button><span class="btn" style="pointer-events:none">🧍</span><button class="btn white" data-m="1,0" aria-label="East">➡️</button><span></span><button class="btn white" data-m="0,1" aria-label="South">⬇️</button><span></span></div><div class="muted" style="text-align:center;margin-top:6px">Or tap a room next to you.</div></div></div></div>`;
  const draw=()=>{let h='';for(let y=0;y<N;y++)for(let x=0;x<N;x++){const c=id(x,y);const vis=seen.has(c)||[[0,1],[1,0],[0,-1],[-1,0]].some(([dx,dy])=>{const n=id(x+dx,y+dy);return x+dx>=0&&y+dy>=0&&x+dx<N&&y+dy<N&&seen.has(n)&&edges[ek(c,n)]});
    const up=y>0?edges[ek(c,id(x,y-1))]:null,lf=x>0?edges[ek(c,id(x-1,y))]:null;const dr=(e,cls)=>e?`<span class="ca-door ${cls} ${e.lock&&!inv.has(e.lock)?'k-'+e.lock:'open'}">${e.lock&&!inv.has(e.lock)?'🔒':''}</span>`:'';
    h+=`<div class="ca-r ${c===me?'here':seen.has(c)?'seen':vis?'':'fog'}" data-c="${c}">${dr(up,'h')}${dr(lf,'v')}<div><span class="e">${seen.has(c)||c===exit&&vis?em[c]:'❔'}</span><br>${seen.has(c)?nm[c]:''}${keyAt[c]&&seen.has(c)&&!inv.has(keyAt[c])?'<br>🗝️':''}</div>${c===me?'<span class="me">🧍</span>':''}</div>`}
   $('map').innerHTML=h;$('tor').innerHTML=[0,1,2].map(i=>`<span class="${i<torches?'':'out'}">🔥</span>`).join('');$('inv').innerHTML=[...inv].map(k=>KEYS.find(x=>x[0]===k)[1]).join(' ')||'<span class="muted" style="font-size:1rem">None yet</span>';
-  Esc.stat(`🏰 ${seen.size} of ${N*N} rooms`)};draw();
+  Esc.stat(`🏰 ${seen.size} of ${N*N} rooms`);view()};draw();
  let busy=false;
  const go=async c=>{if(busy)return;const x=me%N,y=Math.floor(me/N),cx=c%N,cy=Math.floor(c/N);if(Math.abs(cx-x)+Math.abs(cy-y)!==1)return;const e=edges[ek(me,c)];
   if(!e){Esc.msg('🧱 A solid stone wall.');Kit.tone(120,.15,'square',.1);return}

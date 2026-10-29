@@ -154,7 +154,7 @@ $('bkBtn').onclick=()=>{const n=Object.keys(ctData()).length;
   if(!confirm(`Restore ${keys.length} saved items from this backup${j.made?` (made ${new Date(j.made).toLocaleDateString()})`:''}?`))return;keys.forEach(k=>{try{localStorage.setItem(k,String(d[k]))}catch{}});
   Kit.tada();alert('All set! Your saved items are back.');location.reload()}catch{alert('That file isn\'t a Classroom Tools backup.')}}};
 $('q').oninput=show;addEventListener('resize',()=>{const n=$('tiles').querySelectorAll('.tile').length;if(n)layout(n)});
-$('foot').outerHTML=Kit.LOGO('');document.querySelector('footer.brand').insertAdjacentHTML('beforeend','<span class="ver">Version 25</span>');show();
+$('foot').outerHTML=Kit.LOGO('');document.querySelector('footer.brand').insertAdjacentHTML('beforeend','<span class="ver">Version 26</span>');show();
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).catch(()=>{});
 </script>
 </body></html>

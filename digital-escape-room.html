@@ -12,8 +12,15 @@
  background:linear-gradient(#FCE9C8 0 70%,#B9875A 70% 100%)}
 .dr-scene::before{content:"";position:absolute;left:0;right:0;top:70%;height:8px;background:#7A5230}
 .dr-scene::after{content:"";position:absolute;inset:0 0 30% 0;background:repeating-linear-gradient(90deg,transparent 0 60px,rgba(0,0,0,.03) 60px 62px);pointer-events:none}
-.dr-spot{position:absolute;font-size:clamp(2.2rem,6.5vh,4.4rem);background:none;border:0;cursor:pointer;line-height:1;padding:6px;border-radius:16px;transition:transform .15s;z-index:2}
-.dr-spot:hover,.dr-spot:focus-visible{transform:scale(1.12);outline:none;filter:drop-shadow(0 0 10px #fff) drop-shadow(0 0 4px #FFC93C)}
+.dr-scene{container-type:inline-size;isolation:isolate}
+.dr-spot{position:absolute;background:none;border:0;cursor:pointer;padding:0;transform:translate(-50%,-100%);transition:transform .15s;z-index:2}
+.dr-spot img{display:block;width:100%;filter:drop-shadow(0 .4cqw .3cqw rgba(0,0,0,.2))}
+.dr-spot.fl::after{content:"";position:absolute;left:12%;right:12%;bottom:-5%;height:12%;background:radial-gradient(rgba(60,35,10,.4),transparent 70%);z-index:-1}
+.dr-spot:hover,.dr-spot:focus-visible{transform:translate(-50%,-100%) scale(1.1);outline:none;filter:drop-shadow(0 0 10px #fff) drop-shadow(0 0 4px #FFC93C)}
+.dr-shelf{position:absolute;left:34%;top:48%;width:10%;height:1.6%;background:#A26A35;border:3px solid #4A2C12;border-radius:3px}
+.dr-rug{position:absolute;left:30%;top:80%;width:34%;height:14%;background:radial-gradient(ellipse,#E5533F 0 55%,#C2410C 56% 62%,#E5533F 63%);border-radius:50%;opacity:.85}
+.dr-desk{position:absolute;left:18%;top:74%;width:20%;height:4%;background:#A26A35;border:3px solid #4A2C12;border-radius:4px;z-index:1}
+.dr-desk::before,.dr-desk::after{content:"";position:absolute;top:100%;width:8%;height:220%;background:#7A5230}.dr-desk::before{left:6%}.dr-desk::after{right:6%}
 .dr-spot.done{filter:grayscale(.6);opacity:.65;cursor:default}
 .dr-spot.done::after{content:"✓";position:absolute;right:-4px;top:-4px;font-size:1.1rem;background:var(--grass);color:#fff;border:3px solid var(--ink);border-radius:50%;width:28px;height:28px;display:grid;place-items:center}
 .dr-door{position:absolute;right:6%;top:16%;width:18%;height:54%;background:linear-gradient(90deg,#8B5A2B,#A26A35);border:5px solid #4A2C12;border-radius:8px 8px 0 0;cursor:pointer;z-index:2;transition:transform .8s;transform-origin:left center}
@@ -21,9 +28,9 @@
 .dr-door::after{content:"";position:absolute;inset:56% 14% 8% 14%;border:4px solid #6B4220;border-radius:4px}
 .dr-door .pad{position:absolute;right:-30%;top:40%;background:#2B2D42;border:3px solid var(--ink);border-radius:6px;font-size:clamp(.7rem,1.6vh,1rem);color:#7CFF9B;padding:4px 6px;font-weight:800;z-index:3}
 .dr-door.open{transform:perspective(600px) rotateY(-75deg)}
-.dr-exit{position:absolute;right:6%;top:16%;width:18%;height:54%;background:radial-gradient(#FFF7C9,#FFC93C);display:grid;place-items:center;font-size:3rem;z-index:1}
+.dr-exit{position:absolute;right:6%;top:16%;width:18%;height:54%;background:radial-gradient(#FFF7C9,#FFC93C);display:grid;place-items:center;font-size:5cqw;z-index:1}
 .dr-window{position:absolute;left:30%;top:10%;width:16%;height:26%;background:linear-gradient(#9ED8FF,#D9F1FF);border:6px solid #fff;outline:4px solid var(--ink);border-radius:6px}
-.dr-board{position:absolute;left:4%;top:12%;width:22%;height:30%;background:#2F5D50;border:6px solid #8B5A2B;border-radius:6px;color:#fff;font-weight:700;display:grid;place-items:center;text-align:center;font-size:clamp(.8rem,2vh,1.2rem);padding:6px}
+.dr-board{position:absolute;left:4%;top:12%;width:22%;height:30%;background:#2F5D50;border:6px solid #8B5A2B;border-radius:6px;color:#fff;font-weight:700;display:grid;place-items:center;text-align:center;font-size:clamp(.55rem,2.2cqw,1.2rem);padding:6px}
 .dr-inv{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:14px 0}
 .dr-inv .es-note{min-width:120px;text-align:center}
 .dr-inv .slot{border:3px dashed rgba(29,43,83,.35);border-radius:8px;padding:6px 12px;min-width:120px;text-align:center;color:rgba(29,43,83,.5);font-weight:700}
@@ -40,13 +47,15 @@ how:'You are locked in the classroom! Click things around the room to search the
 start({room}){
  const $=id=>document.getElementById(id);
  const code=Array.from({length:4},()=>Kit.rand(0,9));window.__sol={code:code.join('')};
- const SPOTS=[['🖼️','painting',[34,44]],['📚','bookshelf',[8,52]],['🕰️','clock',[52,10]],['🪴','plant',[64,58]],['🗄️','filing cabinet',[48,56]],['💻','computer',[26,58]],['🎒','backpack',[74,78]],['🧸','teddy bear',[10,78]]];
+ // [emoji, name, [x%, bottom y%, width%]] - things on the floor (y over 70) get a shadow
+ const SPOTS=[['🖼️','painting',[56,40,10]],['📚','bookshelf',[9,92,11]],['🕰️','clock',[39,48,6]],['🪴','plant',[66,90,9]],['🗄️','filing cabinet',[54,84,10]],['💻','computer',[28,74.5,9]],['🎒','backpack',[45,96,8]],['🧸','teddy bear',[20,97,8]]];
  const spots=Kit.shuffle(SPOTS).slice(0,7);
  const hide=Kit.shuffle(spots.map((_,i)=>i)); const holds={};hide.slice(0,4).forEach((s,k)=>holds[s]=k); // spot index -> digit position
  const found=[];const ORD=['1st','2nd','3rd','4th'];
  room.innerHTML=`<div class="dr-scene" id="scene"><div class="dr-board">Find the code<br>____</div><div class="dr-window"></div><div class="dr-exit">🌞</div>
+  <div class="dr-shelf"></div><div class="dr-rug"></div><div class="dr-desk"></div>
   <div class="dr-door" id="door" role="button" tabindex="0" aria-label="Door"><span class="pad">####</span></div>
-  ${spots.map((s,i)=>`<button class="dr-spot" data-i="${i}" style="left:${s[2][0]}%;top:${s[2][1]}%" aria-label="Search the ${s[1]}">${s[0]}</button>`).join('')}</div>
+  ${spots.map((s,i)=>`<button class="dr-spot ${s[2][1]>70?'fl':''}" data-i="${i}" style="left:${s[2][0]}%;top:${s[2][1]}%;width:${s[2][2]}%;z-index:${s[2][1]>70?3+Math.round(s[2][1]):2}" aria-label="Search the ${s[1]}"><img src="${E3D.url(s[0])}" alt="${s[1]}" draggable="false"></button>`).join('')}</div>
   <div class="dr-inv" id="inv"></div>`;
  const inv=()=>$('inv').innerHTML=ORD.map((o,k)=>found.includes(k)?`<span class="es-note">${o} digit: <b style="font-size:1.4em">${code[k]}</b></span>`:`<span class="slot">${o} digit: ?</span>`).join('');inv();
  Esc.stat(`📝 0 of 4 digits`);Esc.msg('Click something in the room to search it.');

@@ -10,7 +10,10 @@
 <style>
 .hc-room{position:relative;aspect-ratio:16/9;max-height:62vh;margin:0 auto;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);overflow:hidden;cursor:none;touch-action:none;
  background:linear-gradient(#3B3557 0 66%,#2B2440 66%);user-select:none}
-.hc-room .it{position:absolute;font-size:clamp(1.8rem,5.5vh,3.6rem);line-height:1;transform:translate(-50%,-50%)}
+.hc-room{container-type:inline-size}
+.hc-room .it{position:absolute;width:var(--w);transform:translate(-50%,-100%);pointer-events:none}.hc-room .it img{display:block;width:100%;filter:drop-shadow(0 .5cqw .3cqw rgba(0,0,0,.35))}
+.hc-room .rug{position:absolute;left:30%;top:76%;width:40%;height:16%;border-radius:50%;background:radial-gradient(ellipse,#5B3A6E 0 60%,#4A2E5A 61%);opacity:.8}
+.hc-room .bd{position:absolute;left:36%;top:8%;width:28%;height:2%;}
 .hc-ghost{position:absolute;transform:translate(-50%,-50%);font-size:clamp(1.6rem,4.5vh,3rem);background:none;border:0;padding:6px;cursor:pointer;opacity:.9;animation:float 2.6s ease-in-out infinite;z-index:1}
 .hc-ghost.got{opacity:0;pointer-events:none;transition:opacity .6s}
 @keyframes float{50%{margin-top:-10px}}
@@ -36,10 +39,11 @@ start({room,extra}){
  const $=id=>document.getElementById(id);
  const WORDS=['GHOST','SPOOK','CANDY','WITCH','RAVEN','MAGIC','BROOM','NIGHT','SHADOW','LANTERN'];
  const word=Kit.pick(WORDS);window.__sol={word};
- const ITEMS=[['🪑',20,74],['🪑',44,76],['🪑',68,74],['🖥️',12,52],['📚',86,48],['🕸️',6,10],['🕸️',94,8],['🎃',82,80],['🧹',94,62],['🪟',50,18],['🕰️',28,16],['🦇',70,14],['🗑️',8,86],['📦',58,58],['🧸',34,58]];
+ // [emoji, x%, bottom y%, width%] - the floor starts at 66%
+ const ITEMS=[['🪑',22,90,9],['🪑',46,93,9],['🪑',70,90,9],['🖥️',12,66,10],['📚',86,66,10],['🕸️',6,22,10],['🕸️',94,20,10],['🎃',82,96,8],['🧹',95,84,7],['🪟',50,36,13],['🕰️',28,32,6],['🦇',70,26,6],['🗑️',8,97,7],['📦',58,76,8],['🧸',34,76,7]];
  const spots=Kit.shuffle([[14,30],[38,32],[62,34],[86,26],[24,62],[52,72],[76,60],[90,86],[40,88],[64,88],[30,44],[72,44]]).slice(0,word.length);
  const letters=Kit.shuffle([...word]);
- room.innerHTML=`<div class="hc-room" id="rm">${ITEMS.map(i=>`<span class="it" style="left:${i[1]}%;top:${i[2]}%">${i[0]}</span>`).join('')}
+ room.innerHTML=`<div class="hc-room" id="rm"><div class="rug"></div>${ITEMS.map(i=>`<span class="it" style="left:${i[1]}%;top:${i[2]}%;--w:${i[3]}%"><img src="${E3D.url(i[0])}" alt=""></span>`).join('')}
   ${spots.map((s,i)=>`<button class="hc-ghost" data-g="${i}" style="left:${s[0]}%;top:${s[1]}%;animation-delay:${i*.4}s" aria-label="Ghost">👻</button>`).join('')}<div class="hc-dark" id="dark"></div></div>
   <div class="hc-letters" id="let"></div>
   <form class="es-type" id="f"><input type="text" id="ans" placeholder="Magic word" autocomplete="off" aria-label="Magic word"><button class="btn green">💡 Lights on</button></form>`;

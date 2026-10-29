@@ -10,14 +10,20 @@
 <style>
 .is-wrap{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:20px;align-items:start}
 @media (max-width:860px){.is-wrap{grid-template-columns:1fr}}
-.is-map{position:relative;aspect-ratio:4/3;background:radial-gradient(ellipse 46% 40% at 50% 52%,#F1D79A 0 82%,#E3C47E 86%,transparent 88%),radial-gradient(ellipse 54% 48% at 50% 52%,#7FD8E8 0 90%,transparent 92%),#2E8BC0;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);overflow:hidden}
-.is-spot{position:absolute;transform:translate(-50%,-50%);background:#fff;border:4px solid var(--ink);border-radius:18px;padding:6px 10px;text-align:center;cursor:pointer;font:inherit;font-weight:700;color:var(--ink);box-shadow:0 4px 0 var(--ink);min-width:110px}
-.is-spot .e{font-size:2rem;display:block;line-height:1.1}
-.is-spot small{display:block;font-size:.78rem;opacity:.75}
-.is-spot:active{transform:translate(-50%,-46%);box-shadow:none}
+.is-map{position:relative;aspect-ratio:4/3;container-type:inline-size;background:radial-gradient(ellipse 40% 32% at 50% 50%,#7CC56A 0 70%,#9BCF6A 78%,transparent 80%),radial-gradient(ellipse 46% 40% at 50% 52%,#F7DDA4 0 84%,#EDC27E 88%,transparent 90%),radial-gradient(ellipse 54% 48% at 50% 52%,#7FD8E8 0 88%,transparent 92%),linear-gradient(#2E8BC0,#1F6FA6);border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);overflow:hidden}
+.is-map::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 2cqw 1cqw,rgba(255,255,255,.18) .45cqw,transparent .55cqw) 0 0/7cqw 6cqw;animation:isWave 6s linear infinite;pointer-events:none}
+@keyframes isWave{to{background-position:6cqw 0}}
+.is-dec{position:absolute;transform:translate(-50%,-100%);pointer-events:none;width:var(--w)}
+.is-dec img{width:100%;display:block;filter:drop-shadow(0 .5cqw .3cqw rgba(0,0,0,.2))}
+.is-spot{position:absolute;transform:translate(-50%,-50%);background:none;border:0;padding:0;text-align:center;cursor:pointer;font:inherit;font-weight:700;color:var(--ink);z-index:2;transition:transform .15s}
+.is-spot:hover{transform:translate(-50%,-50%) scale(1.08)}
+.is-spot .lb{display:block;background:#fff;border:3px solid var(--ink);border-radius:12px;padding:2px 8px;box-shadow:0 3px 0 var(--ink);font-size:clamp(.7rem,1.8cqw,.95rem);white-space:nowrap;margin-top:-.4cqw}
+.is-spot .e{font-size:clamp(2.2rem,8.5cqw,4.4rem);display:block;line-height:1;filter:drop-shadow(0 .6cqw .4cqw rgba(0,0,0,.25))}
+.is-spot small{display:block;font-size:.75em;opacity:.75;font-weight:600}
+.is-spot:active{transform:translate(-50%,-46%)}
 .is-spot.storm{animation:esshake .6s}
 .is-weather{position:absolute;right:10px;top:10px;background:#fff;border:3px solid var(--ink);border-radius:12px;padding:4px 10px;font-weight:800}
-.is-raft{position:absolute;left:10%;bottom:8%;font-size:3rem;transition:transform 3s ease-in}
+.is-raft{position:absolute;left:10%;bottom:6%;font-size:clamp(2rem,8cqw,4rem);transition:transform 3s ease-in}
 .is-raft.go{transform:translate(120vw,-10vh)}
 .is-side{display:grid;gap:12px}
 .is-box{background:#fff;border:5px solid var(--ink);border-radius:18px;box-shadow:5px 5px 0 var(--ink);padding:12px}
@@ -43,14 +49,14 @@ start({room}){
  const NEED={wood:4,rope:2,sail:1,food:2,water:2};const have={wood:0,rope:0,sail:0,food:0,water:0,shelter:0};
  const DAYS=18;let day=0;const ICON={wood:'🪵',rope:'🪢',sail:'🏳️',food:'🥥',water:'💧',shelter:'⛺'};
  const PLACES=[{id:'forest',e:'🌲',nm:'Forest',at:[27,32],gives:()=>({wood:2}),note:'wood'},
-  {id:'jungle',e:'🌿',nm:'Jungle vines',at:[73,30],gives:()=>({rope:1}),note:'rope'},
-  {id:'beach',e:'🏖️',nm:'Shipwreck beach',at:[25,70],gives:()=>!have.sail?{sail:1}:{wood:1,food:1},note:'sail, wood'},
+  {id:'jungle',e:'🌴',nm:'Jungle vines',at:[73,30],gives:()=>({rope:1}),note:'rope'},
+  {id:'beach',e:'⚓',nm:'Shipwreck beach',at:[25,70],gives:()=>!have.sail?{sail:1}:{wood:1,food:1},note:'sail, wood'},
   {id:'grove',e:'🥥',nm:'Coconut grove',at:[51,78],gives:()=>({food:Kit.rand(1,2)}),note:'food'},
-  {id:'spring',e:'💧',nm:'Waterfall',at:[76,66],gives:()=>({water:Kit.rand(1,2)}),note:'water'},
+  {id:'spring',e:'🏞️',nm:'Waterfall',at:[76,66],gives:()=>({water:Kit.rand(1,2)}),note:'water'},
   {id:'camp',e:'⛺',nm:'Build shelter',at:[50,51],gives:()=>({shelter:1}),note:'protects wood'}];
  let weather=[],storms=0;for(let d=0;d<DAYS;d++){const st=d>2&&storms<3&&Math.random()<.2;if(st)storms++;weather.push(st?'⛈️':Math.random()<.4?'⛅':'☀️')}
  window.__sol={need:NEED};
- room.innerHTML=`<div class="is-wrap"><div class="is-map" id="map">${PLACES.map(p=>`<button class="is-spot" data-p="${p.id}" style="left:${p.at[0]}%;top:${p.at[1]}%"><span class="e">${p.e}</span>${p.nm}<small>${p.note}</small></button>`).join('')}
+ room.innerHTML=`<div class="is-wrap"><div class="is-map" id="map">${[['🌴',12,52,7],['🌴',88,50,7],['🌴',40,26,6],['🌴',62,90,6],['🪨',38,62,5],['🦀',17,84,4],['🐚',84,84,3.5],['🐬',92,96,7],['⛵',10,14,7]].map(d=>`<span class="is-dec" style="left:${d[1]}%;top:${d[2]}%;--w:${d[3]}%"><img src="${E3D.url(d[0])}" alt=""></span>`).join('')}${PLACES.map(p=>`<button class="is-spot" data-p="${p.id}" style="left:${p.at[0]}%;top:${p.at[1]}%"><span class="e">${p.e}</span><span class="lb">${p.nm}<small>${p.note}</small></span></button>`).join('')}
   <div class="is-weather" id="wx"></div><div class="is-raft" id="raft">🛶</div></div>
   <div class="is-side"><div class="is-box"><b>📅 Days until the rescue window closes</b><div class="is-days" id="days"></div></div>
   <div class="is-box"><b>🛶 Raft list</b><div class="is-res" id="res"></div><div style="margin-top:6px;font-weight:700" id="sh"></div>
