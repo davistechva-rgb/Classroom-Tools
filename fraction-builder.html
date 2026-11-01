@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Fraction Builder</title>
+<style>
+main{max-width:1400px}
+.fb-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:12px}
+.fb-ch{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:10px 16px;text-align:center;font-weight:900;font-size:clamp(1.2rem,3vw,1.7rem);margin-bottom:12px;display:flex;gap:12px;justify-content:center;align-items:center;flex-wrap:wrap}
+.fr{display:inline-grid;grid-template-rows:auto auto;justify-items:center;font:900 1.25em Fredoka,sans-serif;line-height:1;vertical-align:middle;margin:0 .15em}
+.fr b{border-bottom:4px solid currentColor;padding:0 .15em}
+.fb-models{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:16px}
+.fb-m{background:#FFF6E0;border:6px solid var(--ink);border-radius:26px;box-shadow:7px 7px 0 var(--ink);padding:14px;display:grid;gap:10px;justify-items:center}
+.fb-m svg{width:min(300px,100%);height:auto;touch-action:manipulation}
+.fb-m svg path,.fb-m svg rect{cursor:pointer;transition:fill .15s}
+.fb-den{display:flex;gap:4px;flex-wrap:wrap;justify-content:center}
+.fb-den button{font:inherit;font-weight:900;width:42px;height:38px;border:3px solid var(--ink);border-radius:10px;background:#fff;cursor:pointer;color:var(--ink)}
+.fb-den button.on{background:var(--sun)}
+.fb-read{font-size:2rem}
+.fb-cmp{display:flex;gap:10px;justify-content:center}
+.fb-cmp button{font:900 2rem Fredoka,sans-serif;width:70px;height:62px;border:5px solid var(--ink);border-radius:16px;background:#9FD8FF;cursor:pointer;color:var(--ink)}
+.fb-msg{font-weight:900;font-size:1.3rem;min-height:1.5em;text-align:center;margin-top:10px;color:#fff;text-shadow:2px 2px 0 var(--ink)}
+.fb-strip{width:100%;max-width:620px;margin:10px auto 0;background:#fff;border:5px solid var(--ink);border-radius:18px;padding:8px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🍕", "Fraction Builder");
+const $=id=>document.getElementById(id);
+const MODES={build:'🍕 Build it',equiv:'🟰 Same amount, different slices',cmp:'⚖️ Which is bigger?',add:'➕ Add fractions'};
+let mode=Kit.get('fb-mode','build'),shape=Kit.get('fb-shape','pizza'),M=[],goal=null,stars=Kit.get('fb-stars',0),answered=false;
+const gcd=(a,b)=>b?gcd(b,a%b):a;
+const fr=(n,d)=>`<span class="fr"><b>${n}</b><span>${d}</span></span>`;
+const DENS=[2,3,4,5,6,8,10,12];
+function model(d,n=0,lock=false,col='#FF6B5B'){return {d,on:Array.from({length:d},(_,i)=>i<n),lock,col}}
+function newGoal(){answered=false;if(mode==='build'){const d=Kit.pick(DENS),n=Kit.rand(1,d-1);goal={n,d};M=[model(Kit.pick([2,4,6,8]))]}
+ if(mode==='equiv'){const pairs=[[1,2],[1,3],[2,3],[1,4],[3,4],[1,5],[2,5],[1,6],[5,6]];const [n,d]=Kit.pick(pairs);goal={n,d};M=[model(d,n,true,'#22C3E6'),model(d*Kit.pick([2,3,4].filter(k=>d*k<=12))||d*2)]}
+ if(mode==='cmp'){let a,b;do{a={d:Kit.pick(DENS)};a.n=Kit.rand(1,a.d-1);b={d:Kit.pick(DENS)};b.n=Kit.rand(1,b.d-1)}while(a.d===b.d&&a.n===b.n);goal={a,b};M=[model(a.d),model(b.d,0,false,'#9B6BF2')]}
+ if(mode==='add'){const d=Kit.pick([4,5,6,8,10]);const a=Kit.rand(1,d-2),b=Kit.rand(1,d-1-a);goal={a,b,d};M=[model(d,a,true,'#FF6B5B'),model(d,b,true,'#22C3E6'),model(d,0,false,'#5DC66E')]}
+ $('mg').textContent='';draw()}
+document.querySelector('main').innerHTML=`<div class="fb-top"><select id="md" style="width:auto">${Object.entries(MODES).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select><select id="sh" style="width:auto"><option value="pizza">🍕 Pizzas</option><option value="bar">🍫 Chocolate bars</option></select><button class="btn green" id="nw">🎲 New one</button><span style="font-weight:900;color:#fff;text-shadow:2px 2px 0 var(--ink)" id="sr"></span></div>
+<div class="fb-ch" id="ch"></div><div class="fb-models" id="ms"></div><div class="fb-msg" id="mg"></div>`;
+function pie(m,mi){const R=140,c=150;if(m.d===1)return `<circle cx="${c}" cy="${c}" r="${R}" fill="${m.on[0]?m.col:'#FFE9B8'}" stroke="#1D2B53" stroke-width="5" data-m="${mi}" data-k="0"/>`;
+ return m.on.map((on,k)=>{const a0=k/m.d*2*Math.PI-Math.PI/2,a1=(k+1)/m.d*2*Math.PI-Math.PI/2;const p=(a)=>`${c+R*Math.cos(a)},${c+R*Math.sin(a)}`;return `<path d="M${c},${c} L${p(a0)} A${R},${R} 0 ${a1-a0>Math.PI?1:0} 1 ${p(a1)} Z" fill="${on?m.col:'#FFE9B8'}" stroke="#1D2B53" stroke-width="5" stroke-linejoin="round" data-m="${mi}" data-k="${k}"/>${shape==='pizza'&&!on?'':''}`}).join('')+(shape==='pizza'?`<circle cx="${c}" cy="${c}" r="${R+4}" fill="none" stroke="#C8792B" stroke-width="9"/>`:'')}
+function bar(m,mi){const W=290,H=120,w=W/m.d;return m.on.map((on,k)=>`<rect x="${5+k*w}" y="5" width="${w}" height="${H}" fill="${on?'#7B4A2B':'#E8C9A8'}" stroke="#1D2B53" stroke-width="5" data-m="${mi}" data-k="${k}" style="${on?'':''}"/>`).join('')}
+function draw(){$('md').value=mode;$('sh').value=shape;$('sr').textContent=`⭐ ${stars}`;
+ const g=goal;$('ch').innerHTML=mode==='build'?`Show ${fr(g.n,g.d)} of the ${shape==='pizza'?'pizza':'bar'}`:mode==='equiv'?`Shade the same amount as ${fr(g.n,g.d)} on the second one`:mode==='cmp'?`Build ${fr(g.a.n,g.a.d)} and ${fr(g.b.n,g.b.d)}, then pick &lt;, = or &gt;`:`${fr(g.a,g.d)} + ${fr(g.b,g.d)} = ?  Shade the answer on the green one`;
+ $('ms').innerHTML=M.map((m,i)=>{const n=m.on.filter(Boolean).length;return `<div class="fb-m"><svg viewBox="0 0 300 ${shape==='pizza'?300:130}">${shape==='pizza'?pie(m,i):bar(m,i)}</svg>${m.lock?'<div class="muted" style="font-weight:800">🔒 Already built</div>':`<div class="fb-den">${(mode==='build'||mode==='equiv'?DENS:[m.d]).map(d=>`<button data-d="${d}" data-mi="${i}" class="${d===m.d?'on':''}">${d}</button>`).join('')}</div>`}<div class="fb-read">${fr(n,m.d)}${n&&gcd(n,m.d)>1?` <span style="font-size:.6em">= ${fr(n/gcd(n,m.d),m.d/gcd(n,m.d))}</span>`:''}</div></div>`}).join('')+(mode==='cmp'?`<div class="fb-m" style="align-content:center"><b>Which is bigger?</b><div class="fb-cmp">${['<','=','>'].map(o=>`<button data-o="${o}">${o}</button>`).join('')}</div><div style="font-weight:800">left ? right</div></div>`:'');
+ if(mode!=='cmp')$('ms').insertAdjacentHTML('beforeend',`<div class="fb-m" style="align-content:center"><button class="btn green big" id="ck">✅ Check</button></div>`);
+ const ck=$('ck');if(ck)ck.onclick=check;window.__t={mode,goal:JSON.stringify(goal),models:M.map(m=>[m.on.filter(Boolean).length,m.d]),stars}}
+function win(t){$('mg').textContent=t;if(!answered){stars++;Kit.set('fb-stars',stars);answered=true}Kit.tada();Kit.confetti(90);draw()}
+function nope(t){$('mg').textContent=t;Kit.tone(180,.25,'sawtooth',.08)}
+const val=m=>m.on.filter(Boolean).length/m.d;
+function check(){const g=goal;
+ if(mode==='build'){const m=M[0],n=m.on.filter(Boolean).length;if(Math.abs(val(m)-g.n/g.d)<1e-9)win(m.d===g.d?`🎉 That's ${g.n}/${g.d}!`:`🎉 Yes! ${n}/${m.d} is the same as ${g.n}/${g.d}!`);else nope(m.d%g.d&&m.d!==g.d?`Hmm, try cutting it into ${g.d} slices first.`:`You shaded ${n}/${m.d}. Try again!`)}
+ if(mode==='equiv'){const m=M[1],n=m.on.filter(Boolean).length;if(m.d===g.d)nope('Use a different number of slices than the first one!');else if(Math.abs(val(m)-g.n/g.d)<1e-9)win(`🎉 ${g.n}/${g.d} = ${n}/${m.d}. They're equivalent!`);else nope(`${n}/${m.d} isn't the same amount. Compare the shaded parts!`)}
+ if(mode==='add'){const m=M[2],n=m.on.filter(Boolean).length;if(n===g.a+g.b)win(`🎉 ${g.a}/${g.d} + ${g.b}/${g.d} = ${n}/${g.d}`);else nope(`Count all the shaded slices in the first two. You shaded ${n}.`)}}
+$('ms').onclick=e=>{const s=e.target.closest('[data-k]');if(s){const m=M[+s.dataset.m];if(m.lock)return;const k=+s.dataset.k;
+  // tapping fills in order like a real fraction: tap slice k → first k+1 slices are shaded (tap the last shaded one to remove it)
+  const n=m.on.filter(Boolean).length;const next=n===k+1?k:k+1;m.on=m.on.map((_,i)=>i<next);Kit.tone(500+next*40,.06,'triangle',.08);draw();return}
+ const d=e.target.closest('[data-d]');if(d){const m=M[+d.dataset.mi];if(m.lock)return;M[+d.dataset.mi]=model(+d.dataset.d,0,false,m.col);Kit.tick();draw();return}
+ const o=e.target.closest('[data-o]');if(o){const g=goal,[a,b]=[M[0],M[1]];if(Math.abs(val(a)-g.a.n/g.a.d)>1e-9||Math.abs(val(b)-g.b.n/g.b.d)>1e-9){nope('Build both fractions first so you can see them!');return}
+  const x=g.a.n/g.a.d,y=g.b.n/g.b.d,r=Math.abs(x-y)<1e-9?'=':x<y?'<':'>';if(o.dataset.o===r)win(`🎉 ${g.a.n}/${g.a.d} ${r} ${g.b.n}/${g.b.d}`);else nope('Look closely at how much is shaded on each one!')}};
+$('md').onchange=()=>{mode=$('md').value;Kit.set('fb-mode',mode);newGoal()};$('sh').onchange=()=>{shape=$('sh').value;Kit.set('fb-shape',shape);draw()};$('nw').onclick=newGoal;
+window.__f={goal:g=>{goal=g;draw()},shade:(i,n)=>{M[i].on=M[i].on.map((_,k)=>k<n);draw()},den:(i,d)=>{M[i]=model(d,0,false,M[i].col);draw()}};
+newGoal();
+</script>
+</body></html>

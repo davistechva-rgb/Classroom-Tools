@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Measurement Challenge</title>
+<style>
+main{max-width:1300px}
+.mc-tools{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:12px}
+.mc-tools button{font:inherit;font-weight:900;border:4px solid var(--ink);border-radius:99px;padding:6px 14px;background:#fff;cursor:pointer;color:var(--ink)}
+.mc-tools button.on{background:var(--sun)}
+.mc-stage{background:#fff;border:6px solid var(--ink);border-radius:26px;box-shadow:8px 8px 0 var(--ink);padding:14px;display:grid;gap:12px;justify-items:center}
+.mc-stage svg{width:100%;max-height:440px;height:auto;display:block}.mc-stage svg.rl{min-width:720px}
+.mc-q{font-weight:900;font-size:clamp(1.2rem,3vw,1.6rem);text-align:center}
+.mc-ans{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;font:900 1.5rem Fredoka,sans-serif}
+.mc-ans input{width:130px;font:inherit;text-align:center;padding:4px;border:5px solid var(--ink);border-radius:14px}
+.mc-ans select{font:inherit;padding:4px;border:5px solid var(--ink);border-radius:14px;width:auto}
+.mc-msg{font-weight:900;font-size:1.25rem;min-height:1.5em;text-align:center}
+.mc-bar{display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;margin-top:12px;color:#fff;font-weight:900;text-shadow:2px 2px 0 var(--ink);font-size:1.2rem}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("📏", "Measurement Challenge");
+const $=id=>document.getElementById(id);
+const T={cm:'📏 Ruler (cm)',in:'📏 Ruler (inches)',therm:'🌡️ Thermometer',cup:'🥛 Measuring cup',scale:'⚖️ Scale'};
+const OBJ=['✏️','🖍️','🔑','🥕','🐛','🍌','🦎','🖊️','🪥','🥢'];
+let tool=Kit.get('mc-tool','cm'),hard=Kit.get('mc-hard',false),q=null,streak=0,stars=Kit.get('mc-stars',0),tries=0;
+const FR=[[0,''],[.25,'¼'],[.5,'½'],[.75,'¾']];
+function gen(){tries=0;$('mg').textContent='';
+ if(tool==='cm'){const len=hard?Kit.rand(20,140)/10:Kit.rand(2,14);const start=hard?Kit.rand(0,4):0;q={ans:len,start,unit:'cm',o:Kit.pick(OBJ),tol:hard?.05:0}}
+ if(tool==='in'){const len=hard?Kit.rand(4,22)/4:Kit.rand(2,10)/2;const start=hard?Kit.rand(0,2):0;q={ans:len,start,unit:'in',o:Kit.pick(OBJ),tol:0}}
+ if(tool==='therm'){const step=hard?1:2;const v=Kit.rand(hard?-10:0,hard?40:50/step)*(hard?1:step);q={ans:v,unit:'°C',tol:0}}
+ if(tool==='cup'){const v=Kit.rand(1,hard?19:9)*(hard?25:50);q={ans:v,unit:'mL',tol:0,max:hard?500:500}}
+ if(tool==='scale'){const v=Kit.rand(1,hard?39:19)*(hard?25:50);q={ans:v,unit:'g',tol:0,o:Kit.pick(['🍎','🧀','🥔','🍊','🧁','🥚'])}}
+ draw()}
+document.querySelector('main').innerHTML=`<div class="mc-tools" id="tl">${Object.entries(T).map(([k,v])=>`<button data-t="${k}">${v}</button>`).join('')}</div>
+<div class="mc-stage"><div class="mc-q" id="qq"></div><div id="sw" style="width:100%;overflow-x:auto"><svg id="sv"></svg></div><div class="mc-ans" id="an"></div><div class="row" style="gap:8px;justify-content:center"><button class="btn green" id="ck">✅ Check</button><button class="btn white small" id="nx">➡ Next</button></div><div class="mc-msg" id="mg"></div></div>
+<div class="mc-bar"><label><input type="checkbox" id="hd"> 🔥 Harder</label><span id="sr"></span></div>`;
+function ruler(){const inch=tool==='in',ppu=inch?84:42,n=inch?12:24,W=n*ppu+60,x0=30;let h=`<rect x="10" y="150" width="${W-20}" height="90" rx="8" fill="#FFE29A" stroke="#1D2B53" stroke-width="4"/>`;
+ const sub=inch?(hard?4:2):10;for(let i=0;i<=n*sub;i++){const x=x0+i*ppu/sub,major=i%sub===0,half=sub%2===0&&i%(sub/2)===0;h+=`<line x1="${x}" y1="150" x2="${x}" y2="${150+(major?42:half?30:inch?20:16)}" stroke="#1D2B53" stroke-width="${major?3:2}"/>`;if(major)h+=`<text x="${x}" y="222" font-size="22" font-weight="800" text-anchor="middle" fill="#1D2B53">${i/sub}</text>`}
+ h+=`<text x="${W-24}" y="232" font-size="16" font-weight="800" text-anchor="end" fill="#55607E">${inch?'inches':'cm'}</text>`;
+ const a=x0+q.start*ppu,b=a+q.ans*ppu;
+ // object: a stretched bar with the emoji at its end
+ h+=`<rect x="${a}" y="96" width="${b-a}" height="36" rx="18" fill="#9B6BF2" stroke="#1D2B53" stroke-width="4"/><text x="${a+(b-a)/2}" y="122" font-size="22" text-anchor="middle">${q.o}</text><line x1="${a}" y1="90" x2="${a}" y2="150" stroke="#E5533F" stroke-width="2" stroke-dasharray="4 3"/><line x1="${b}" y1="90" x2="${b}" y2="150" stroke="#E5533F" stroke-width="2" stroke-dasharray="4 3"/>`;
+ $('sv').setAttribute('viewBox',`0 70 ${W} 180`);return h}
+function therm(){const lo=-20,hi=50,y=v=>380-(v-lo)/(hi-lo)*320;let h=`<rect x="160" y="40" width="60" height="360" rx="30" fill="#fff" stroke="#1D2B53" stroke-width="5"/><circle cx="190" cy="410" r="40" fill="#E5533F" stroke="#1D2B53" stroke-width="5"/><rect x="178" y="${y(q.ans)}" width="24" height="${400-y(q.ans)}" fill="#E5533F"/>`;
+ for(let v=lo;v<=hi;v+=hard?1:2){const big=v%10===0;h+=`<line x1="${220}" y1="${y(v)}" x2="${220+(big?28:v%5===0?18:10)}" y2="${y(v)}" stroke="#1D2B53" stroke-width="${big?3:1.5}"/>`;if(big)h+=`<text x="258" y="${y(v)+7}" font-size="20" font-weight="800" fill="#1D2B53">${v}</text>`}
+ h+=`<text x="300" y="60" font-size="22" font-weight="800" fill="#55607E">°C</text><text x="80" y="200" font-size="70">${q.ans<5?'🥶':q.ans>28?'🥵':'🙂'}</text>`;$('sv').setAttribute('viewBox','0 20 420 450');return h}
+function cup(){const top=60,bot=400,y=v=>bot-v/q.max*(bot-top-20);let h=`<path d="M120 ${top} L130 ${bot} Q130 420 150 420 L290 420 Q310 420 310 ${bot} L320 ${top}" fill="#EAF6FF" stroke="#1D2B53" stroke-width="5"/><path d="M127 ${y(q.ans)} L132 ${bot} Q132 417 150 417 L290 417 Q308 417 308 ${bot} L313 ${y(q.ans)} Z" fill="#9FD8FF" opacity=".9"/><line x1="125" y1="${y(q.ans)}" x2="315" y2="${y(q.ans)}" stroke="#1E7FD0" stroke-width="4"/>`;
+ const st=hard?25:50;for(let v=st;v<=q.max;v+=st){const big=v%100===0;h+=`<line x1="${270}" y1="${y(v)}" x2="${big?305:290}" y2="${y(v)}" stroke="#1D2B53" stroke-width="${big?3:2}"/>`;if(big)h+=`<text x="330" y="${y(v)+7}" font-size="20" font-weight="800" fill="#1D2B53">${v}</text>`}
+ h+=`<text x="330" y="40" font-size="20" font-weight="800" fill="#55607E">mL</text>`;$('sv').setAttribute('viewBox','80 20 340 420');return h}
+function scale(){const cx=200,cy=250,R=130,max=hard?1000:1000,a=v=>(-90+v/max*360)*Math.PI/180;let h=`<rect x="40" y="90" width="320" height="320" rx="40" fill="#E5533F" stroke="#1D2B53" stroke-width="5"/><rect x="60" y="40" width="280" height="40" rx="14" fill="#D9DEE8" stroke="#1D2B53" stroke-width="5"/><text x="200" y="40" font-size="56" text-anchor="middle">${q.o}</text><circle cx="${cx}" cy="${cy}" r="${R+10}" fill="#fff" stroke="#1D2B53" stroke-width="5"/>`;
+ const st=hard?25:50;for(let v=0;v<max;v+=st){const big=v%100===0;const t=a(v);h+=`<line x1="${cx+Math.cos(t)*R}" y1="${cy+Math.sin(t)*R}" x2="${cx+Math.cos(t)*(R-(big?22:12))}" y2="${cy+Math.sin(t)*(R-(big?22:12))}" stroke="#1D2B53" stroke-width="${big?3:2}"/>`;if(big)h+=`<text x="${cx+Math.cos(t)*(R-42)}" y="${cy+Math.sin(t)*(R-42)+6}" font-size="16" font-weight="800" text-anchor="middle" fill="#1D2B53">${v}</text>`}
+ const t=a(q.ans);h+=`<line x1="${cx}" y1="${cy}" x2="${cx+Math.cos(t)*(R-8)}" y2="${cy+Math.sin(t)*(R-8)}" stroke="#E5533F" stroke-width="6" stroke-linecap="round"/><circle cx="${cx}" cy="${cy}" r="10" fill="#1D2B53"/><text x="${cx}" y="${cy+60}" font-size="16" font-weight="800" text-anchor="middle" fill="#55607E">grams</text>`;$('sv').setAttribute('viewBox','30 0 340 420');return h}
+function draw(){document.querySelectorAll('[data-t]').forEach(b=>b.classList.toggle('on',b.dataset.t===tool));$('hd').checked=hard;$('sr').textContent=`⭐ ${stars} · 🔥 streak ${streak}`;
+ $('qq').textContent=tool==='cm'||tool==='in'?`How long is the ${q.o}?${q.start?' (Careful, it doesn\'t start at 0!)':''}`:tool==='therm'?'What temperature does it show?':tool==='cup'?'How much water is in the cup?':`How much does the ${q.o} weigh?`;
+ $('sv').classList.toggle('rl',tool==='cm'||tool==='in');$('sv').innerHTML=tool==='cm'||tool==='in'?ruler():tool==='therm'?therm():tool==='cup'?cup():scale();
+ $('an').innerHTML=tool==='in'?`<input id="aw" type="number" min="0" max="12" placeholder="0" aria-label="Whole inches"><select id="af">${FR.filter(f=>hard||f[0]%.5===0).map(f=>`<option value="${f[0]}">${f[1]||'—'}</option>`).join('')}</select> in`:`<input id="aw" type="number" step="${tool==='cm'&&hard?'0.1':'1'}" aria-label="Answer"> ${q.unit}`;
+ window.__t={tool,ans:q.ans,stars,streak}}
+$('ck').onclick=()=>{let v=parseFloat($('aw').value);if(isNaN(v)&&tool!=='in'){$('aw').focus();return}if(tool==='in')v=(isNaN(v)?0:v)+parseFloat($('af').value);tries++;
+ if(Math.abs(v-q.ans)<=q.tol+1e-9){streak++;if(tries===1){stars++;Kit.set('mc-stars',stars)}$('mg').textContent=`🎉 Yes! ${tool==='in'?fmtIn(q.ans):q.ans} ${q.unit}${streak>=3?` · 🔥 ${streak} in a row!`:''}`;Kit.tada();if(streak%5===0)Kit.confetti(100);draw();$('mg').textContent=`🎉 Yes! ${tool==='in'?fmtIn(q.ans):q.ans} ${q.unit}`}
+ else{streak=0;const hint=q.start?`Remember to subtract where it starts (${q.start}).`:tool==='cm'||tool==='in'?'Count the little lines between the numbers.':'Figure out what each small line is worth.';$('mg').textContent=`❌ Not quite. ${hint}`;Kit.tone(180,.25,'sawtooth',.08);if(tries>=3)$('mg').textContent+=` (It was ${tool==='in'?fmtIn(q.ans):q.ans} ${q.unit}.)`;$('sr').textContent=`⭐ ${stars} · 🔥 streak ${streak}`}};
+function fmtIn(v){const w=Math.floor(v),f=FR.find(f=>Math.abs(f[0]-(v-w))<1e-9);return `${w||''}${f&&f[1]?f[1]:''}`||'0'}
+$('nx').onclick=gen;$('tl').onclick=e=>{const b=e.target.closest('[data-t]');if(b){tool=b.dataset.t;Kit.set('mc-tool',tool);gen()}};
+$('hd').onchange=()=>{hard=$('hd').checked;Kit.set('mc-hard',hard);gen()};
+$('an').addEventListener('keydown',e=>{if(e.key==='Enter')$('ck').click()});
+gen();
+</script>
+</body></html>

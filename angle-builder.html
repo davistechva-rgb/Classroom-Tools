@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Angle Builder</title>
+<style>
+main{max-width:1400px}
+.an-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:12px}
+.an{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.an{grid-template-columns:minmax(0,1fr)}}
+.an-board{background:#fff;border:6px solid var(--ink);border-radius:26px;box-shadow:8px 8px 0 var(--ink);padding:8px}
+.an-board svg{display:block;width:100%;height:auto;touch-action:none;user-select:none}
+.an-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:14px;display:grid;gap:12px}
+.an-goal{text-align:center;font-weight:900;font-size:clamp(1.3rem,3.4vw,1.9rem)}
+.an-goal .big{display:inline-block;font:900 clamp(2.4rem,7vw,3.6rem) Fredoka,sans-serif;background:#FFC93C;border:5px solid var(--ink);border-radius:16px;padding:0 14px}
+.an-ch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.an-ch button{font:inherit;font-weight:900;border:4px solid var(--ink);border-radius:14px;padding:8px;background:#fff;cursor:pointer;color:var(--ink)}
+.an-ch button.ok{background:#C8F3D0}.an-ch button.no{background:#FFD3CC}
+.an-ans{display:flex;gap:6px;align-items:center;justify-content:center;font:900 1.6rem Fredoka,sans-serif}
+.an-ans input{width:110px;font:inherit;text-align:center;border:5px solid var(--ink);border-radius:14px;padding:3px}
+.an-msg{font-weight:900;font-size:1.2rem;text-align:center;min-height:1.4em}
+.an-sc{display:flex;justify-content:space-around;font-weight:900;font-size:1.1rem;background:#F4FAFF;border-radius:12px;padding:6px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("📐", "Angle Builder");
+const $=id=>document.getElementById(id);
+const MODES={build:'🛠️ Build the angle',est:'👀 Estimate the angle',kind:'🏷️ What kind of angle?'};
+let mode=Kit.get('an-mode','build'),deg=45,goal=90,prot=Kit.get('an-prot',true),score=0,rounds=0,answered=false,drag=false,rot=0;
+const C=[300,300],R=230;
+const kind=d=>d<90?'Acute':d===90?'Right':d<180?'Obtuse':d===180?'Straight':'Reflex';
+function newRound(){answered=false;$('ui').dataset.m='';$('mg').textContent='';rot=mode==='build'?0:Kit.pick([0,0,30,-20,60]);
+ if(mode==='build'){goal=Kit.pick([30,45,60,90,120,135,150,180,Kit.rand(2,34)*5]);deg=Kit.pick([20,200])}
+ if(mode==='est'){deg=Kit.rand(2,34)*5}
+ if(mode==='kind'){deg=Kit.pick([Kit.rand(10,80),90,Kit.rand(100,170),180,Kit.rand(200,340)])}draw()}
+document.querySelector('main').innerHTML=`<div class="an-top"><select id="md" style="width:auto">${Object.entries(MODES).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select><label style="font-weight:800;color:#fff;text-shadow:1px 1px 0 var(--ink)"><input type="checkbox" id="pr"> 📐 Show protractor</label><button class="btn green" id="nw">🎲 New angle</button></div>
+<div class="an"><div class="an-board"><svg id="sv" viewBox="0 0 600 600"></svg></div><div class="an-p"><div class="an-goal" id="gl"></div><div id="ui"></div><div class="an-msg" id="mg"></div><div class="an-sc" id="sc"></div></div></div>`;
+function pt(a,r){const t=(a+rot)*Math.PI/180;return [C[0]+Math.cos(t)*r,C[1]-Math.sin(t)*r]}
+function draw(){$('md').value=mode;$('pr').checked=prot;let h='';
+ if(prot){h+=`<g opacity=".55"><path d="M${pt(0,R+40)} A${R+40},${R+40} 0 0 0 ${pt(180,R+40)} Z" fill="#E3F6FF" stroke="#1E7FD0" stroke-width="3"/>`;for(let a=0;a<=180;a+=5){const big=a%10===0,p1=pt(a,R+40),p2=pt(a,R+40-(a%30===0?28:big?18:10));h+=`<line x1="${p1[0]}" y1="${p1[1]}" x2="${p2[0]}" y2="${p2[1]}" stroke="#1E7FD0" stroke-width="${big?2.5:1.5}"/>`;if(a%30===0){const p=pt(a,R+5);h+=`<text x="${p[0]}" y="${p[1]+6}" font-size="17" font-weight="800" text-anchor="middle" fill="#1E5FA0">${a}</text>`}}h+=`</g>`}
+ // arc showing the angle
+ const ar=70,a0=pt(0,ar),a1=pt(deg,ar);h+=`<path d="M${C} L${a0} A${ar},${ar} 0 ${deg>180?1:0} 0 ${a1} Z" fill="${deg===90?'#C8F3D0':'#FFE29A'}" stroke="#E8A317" stroke-width="3"/>`;
+ if(deg===90){const s1=pt(0,30),s2=pt(45,42),s3=pt(90,30);h+=`<path d="M${s1} L${s2} L${s3}" fill="none" stroke="#2E9E47" stroke-width="4"/>`}
+ const e0=pt(0,R),e1=pt(deg,R);h+=`<line x1="${C[0]}" y1="${C[1]}" x2="${e0[0]}" y2="${e0[1]}" stroke="#1D2B53" stroke-width="10" stroke-linecap="round"/><line x1="${C[0]}" y1="${C[1]}" x2="${e1[0]}" y2="${e1[1]}" stroke="#E5533F" stroke-width="10" stroke-linecap="round"/><circle cx="${C[0]}" cy="${C[1]}" r="11" fill="#1D2B53"/>`;
+ if(mode==='build')h+=`<circle cx="${e1[0]}" cy="${e1[1]}" r="22" fill="#FFC93C" stroke="#1D2B53" stroke-width="5" id="hd" style="cursor:grab"/>`;
+ if(mode==='build'||answered){const lp=pt(deg/2,ar+38);h+=`<text x="${lp[0]}" y="${lp[1]+9}" font-size="28" font-weight="900" text-anchor="middle" fill="#1D2B53" stroke="#fff" stroke-width="6" paint-order="stroke">${deg}°</text>`}
+ $('sv').innerHTML=h;
+ $('gl').innerHTML=mode==='build'?`Make <span class="big">${goal}°</span>`:mode==='est'?'How big is this angle?':'What kind of angle is this?';
+ if(!$('ui').dataset.m||$('ui').dataset.m!==mode+rounds){$('ui').dataset.m=mode+rounds;$('ui').innerHTML=mode==='build'?'<div class="muted" style="font-weight:700;text-align:center">Drag the yellow dot to turn the red arm.</div><button class="btn green" id="ck" style="width:100%">✅ Check</button>':mode==='est'?'<div class="an-ans"><input id="ea" type="number" min="0" max="360">°</div><button class="btn green" id="ck" style="width:100%">✅ Check</button>':`<div class="an-ch">${['Acute','Right','Obtuse','Straight','Reflex'].map(k=>`<button data-k="${k}">${k}</button>`).join('')}</div>`;bind()}
+ $('sc').innerHTML=`<span>⭐ ${score} points</span><span>🎯 ${rounds} rounds</span>`;window.__t={mode,deg,goal,score,rounds,answered}}
+function bind(){const ck=$('ck');if(ck)ck.onclick=check;$('ui').querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{if(answered)return;const ok=b.dataset.k===kind(deg);b.classList.add(ok?'ok':'no');finish(ok?10:0,ok?`🎉 Yes! ${deg}° is ${kind(deg).toLowerCase()}.`:`❌ It's ${kind(deg).toLowerCase()}: ${deg}°.`)});const ea=$('ea');if(ea)ea.onkeydown=e=>{if(e.key==='Enter')check()}}
+function finish(p,t){answered=true;score+=p;rounds++;$('mg').textContent=t;p>=8?(Kit.tada(),p===10&&Kit.confetti(60)):p>0?Kit.ding():Kit.tone(180,.25,'sawtooth',.08);$('ui').dataset.m=mode+rounds;draw()}
+function check(){if(answered)return;if(mode==='build'){const off=Math.abs(deg-goal);const p=off===0?10:off<=5?8:off<=10?5:off<=20?2:0;finish(p,off===0?`🎯 Exactly ${goal}°! +10`:`You made ${deg}°. That's ${off}° off. +${p}`)}
+ if(mode==='est'){const v=+$('ea').value;if($('ea').value===''){$('ea').focus();return}const off=Math.abs(v-deg);const p=off===0?10:off<=5?8:off<=10?6:off<=20?3:0;finish(p,`It's ${deg}°. You were ${off}° off. +${p}`)}}
+function angAt(e){const r=$('sv').getBoundingClientRect(),x=(e.clientX-r.left)*600/r.width,y=(e.clientY-r.top)*600/r.height;let a=Math.atan2(C[1]-y,x-C[0])*180/Math.PI-rot;a=(a+360)%360;return Math.round(a)}
+$('sv').onpointerdown=e=>{if(mode!=='build'||answered)return;drag=true;$('sv').setPointerCapture(e.pointerId);move(e)};
+function move(e){if(!drag)return;let a=angAt(e);if(Math.abs(a-deg)>300)return;if(a!==deg){deg=a;if(deg%15===0)Kit.tone(400+deg*2,.03,'triangle',.05);draw()}}
+$('sv').onpointermove=move;$('sv').onpointerup=()=>drag=false;
+$('md').onchange=()=>{mode=$('md').value;Kit.set('an-mode',mode);newRound()};$('pr').onchange=()=>{prot=$('pr').checked;Kit.set('an-prot',prot);draw()};$('nw').onclick=newRound;
+window.__an={set:(d,g)=>{deg=d;if(g!=null)goal=g;draw()}};
+newRound();
+</script>
+</body></html>

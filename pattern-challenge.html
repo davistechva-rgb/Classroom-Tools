@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Pattern Challenge</title>
+<style>
+main{max-width:1400px}
+.pc-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:12px}
+.pc{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.pc{grid-template-columns:minmax(0,1fr)}}
+.pc-mach{background:linear-gradient(#7B8BB2,#55607E);border:6px solid var(--ink);border-radius:28px;box-shadow:8px 8px 0 var(--ink);padding:18px;display:grid;gap:14px;justify-items:center;color:#fff;position:relative;overflow:hidden}
+.pc-flow{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:10px;align-items:center;width:100%}
+.pc-box{background:#1D2B53;border:5px solid var(--ink);border-radius:22px;padding:18px 10px;text-align:center;position:relative;min-width:130px}
+.pc-box .lights{display:flex;gap:6px;justify-content:center;margin-bottom:6px}.pc-box .lights i{width:12px;height:12px;border-radius:50%;background:#333;border:2px solid #000}
+.pc-mach.run .lights i{animation:bl .3s infinite alternate}.pc-mach.run .lights i:nth-child(2){animation-delay:.1s}.pc-mach.run .lights i:nth-child(3){animation-delay:.2s}
+@keyframes bl{to{background:#FFC93C}}
+.pc-box .gear{font-size:3rem;display:inline-block}.pc-mach.run .gear{animation:spin .6s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+.pc-box .rule{font:900 1.3rem ui-monospace,Menlo,monospace;color:#FFC93C;margin-top:6px}
+.pc-io{display:grid;gap:6px;justify-items:center;font-weight:900}
+.pc-io input{width:100px;font:900 2rem Fredoka,sans-serif;text-align:center;border:5px solid var(--ink);border-radius:16px;padding:4px}
+.pc-out{font:900 2.4rem Fredoka,sans-serif;background:#FFF;color:#1D2B53;border:5px solid var(--ink);border-radius:16px;min-width:100px;padding:4px 10px;text-align:center;min-height:62px}
+.pc-ball{position:absolute;font:900 1.6rem Fredoka,sans-serif;background:#FFC93C;color:#1D2B53;border:3px solid var(--ink);border-radius:99px;padding:2px 12px;pointer-events:none;transition:left .6s ease-in,top .6s,opacity .3s}
+.pc-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:10px}
+.pc-tbl{width:100%;border-collapse:collapse;font:900 1.4rem Fredoka,sans-serif;text-align:center}
+.pc-tbl th{background:var(--ink);color:#fff;padding:4px;font-size:1rem}.pc-tbl td{border-bottom:2px solid #E3E8F2;padding:3px}
+.pc-tbl tr.q td:last-child{color:#E5533F}
+.pc-tbl input{width:80px;font:inherit;text-align:center;border:3px solid var(--ink);border-radius:10px}
+.pc-guess{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font:900 1.3rem ui-monospace,Menlo,monospace}
+.pc-guess select,.pc-guess input{font:inherit;padding:3px 6px;border:3px solid var(--ink);border-radius:10px;width:auto}
+.pc-guess input{width:80px}
+.pc-msg{font-weight:900;font-size:1.25rem;min-height:1.4em}
+.pc-score{font-weight:900;font-size:1.2rem;color:#fff;text-shadow:2px 2px 0 var(--ink)}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🔢", "Pattern Challenge");
+const $=id=>document.getElementById(id);
+// a rule is a list of steps [op, n]; ops: + − × ÷
+const LV={1:{n:'🌱 One step (+ or −)',k:1,ops:['+','-'],r:[1,10]},2:{n:'⭐ One step (any)',k:1,ops:['+','-','×'],r:[2,9]},3:{n:'🔥 Two steps',k:2,ops:['+','-','×'],r:[2,6]},4:{n:'🚀 Two steps with ÷',k:2,ops:['×','÷','+','-'],r:[2,5]}};
+let lv=Kit.get('pc-lv','1'),rule=[],tried=[],quiz=[],score=Kit.get('pc-score',0),solved=false,custom=null;
+const apply=(x,R=rule)=>R.reduce((v,[o,n])=>v==null?null:o==='+'?v+n:o==='-'?v-n:o==='×'?v*n:(v%n===0?v/n:null),x);
+const show=R=>R.map(([o,n])=>`${o==='-'?'−':o} ${n}`).join(', then ');
+function newRule(){const L=LV[lv];for(let g=0;g<200;g++){let R=[];for(let i=0;i<L.k;i++)R.push([Kit.pick(L.ops),Kit.rand(L.r[0],L.r[1])]);
+  if(R.length===2&&R[0][0]===R[1][0]&&'+-'.includes(R[0][0]))continue;if(R[0][0]==='÷'&&R.length===1)continue;
+  // ÷ must give whole numbers for at least 6 inputs from 1 to 20
+  const good=[];for(let x=0;x<=20;x++){const y=apply(x,R);if(y!=null&&y>=0)good.push(x)}if(good.length<6)continue;rule=R;break}
+ custom=null;tried=[];solved=false;const ok=[];for(let x=1;x<=20;x++){const y=apply(x);if(y!=null&&y>=0)ok.push(x)}quiz=Kit.shuffle(ok).slice(0,3).map(x=>({x,a:''}));draw();$('mg').textContent='Feed the machine some numbers to figure out its secret rule!'}
+document.querySelector('main').innerHTML=`<div class="pc-top"><select id="lv" style="width:auto">${Object.entries(LV).map(([k,v])=>`<option value="${k}">${v.n}</option>`).join('')}</select><button class="btn green" id="nw">🤖 New machine</button><button class="btn white small" id="mk">✏️ Teacher: set the rule</button><span class="pc-score" id="sc"></span></div>
+<div class="pc"><div class="pc-mach" id="mc"><div class="pc-flow"><div class="pc-io">IN<input id="in" type="number" min="0" max="999" placeholder="?" aria-label="Number in"></div><div class="pc-box"><div class="lights"><i></i><i></i><i></i></div><span class="gear">⚙️</span><div class="rule" id="rl">??? </div></div><div class="pc-io">OUT<div class="pc-out" id="out"></div></div></div><button class="btn big" style="background:var(--sun)" id="feed">▶ Feed it!</button></div>
+<div class="pc-p"><b>📋 What went in and out</b><table class="pc-tbl" id="tb"></table><b>🧠 What's the rule?</b><div class="pc-guess" id="gs"></div><button class="btn green" id="gu">✅ Check my rule</button><div class="pc-msg" id="mg"></div><button class="btn white small" id="rv">🙈 Reveal the rule</button></div></div>`;
+function guessUI(){const k=custom?custom.length:LV[lv].k;$('gs').innerHTML=`<span>IN</span>`+Array.from({length:k},(_,i)=>`<select data-go="${i}"><option>+</option><option value="-">−</option><option>×</option><option>÷</option></select><input data-gn="${i}" type="number" min="0" max="99">`).join('<span>then</span>')+`<span>= OUT</span>`}
+function draw(){$('lv').value=lv;$('sc').textContent=`🏅 Rules cracked: ${score}`;$('rl').textContent=solved?show(rule):'???';
+ $('tb').innerHTML=`<tr><th>IN</th><th>OUT</th></tr>${tried.map(([x,y])=>`<tr><td>${x}</td><td>${y==null?'🤯':y}</td></tr>`).join('')}${solved?'':quiz.map((q,i)=>`<tr class="q"><td>${q.x}</td><td><input data-q="${i}" type="number" value="${q.a}" placeholder="?" aria-label="Predict the output for ${q.x}"></td></tr>`).join('')}`;
+ window.__t={tried:tried.length,solved,score,rule:rule.map(r=>r.join('')).join(',')}}
+async function feed(){const x=parseInt($('in').value);if(isNaN(x)||x<0){$('in').focus();return}const y=apply(x);const M=$('mc');
+ const ball=document.createElement('div');ball.className='pc-ball';ball.textContent=x;const ir=$('in').getBoundingClientRect(),mr=M.getBoundingClientRect(),br=M.querySelector('.pc-box').getBoundingClientRect(),or=$('out').getBoundingClientRect();
+ ball.style.left=(ir.left-mr.left+20)+'px';ball.style.top=(ir.top-mr.top)+'px';M.appendChild(ball);M.classList.add('run');Kit.tone(300,.1,'square',.06);$('out').textContent='';
+ await Kit.sleep(30);ball.style.left=(br.left-mr.left+br.width/2-20)+'px';ball.style.top=(br.top-mr.top+br.height/2-20)+'px';await Kit.sleep(window.__fast?1:700);ball.textContent=y==null?'🤯':y;ball.style.background='#5DC66E';Kit.tone(600,.1,'square',.06);
+ ball.style.left=(or.left-mr.left+10)+'px';ball.style.top=(or.top-mr.top)+'px';await Kit.sleep(window.__fast?1:650);ball.remove();M.classList.remove('run');$('out').textContent=y==null?'🤯':y;
+ if(!tried.some(t=>t[0]===x))tried.push([x,y]);tried.sort((a,b)=>a[0]-b[0]);if(y==null)$('mg').textContent="🤯 That number doesn't work with this machine's rule!";Kit.ding();draw();$('in').select()}
+$('feed').onclick=feed;$('in').onkeydown=e=>{if(e.key==='Enter')feed()};
+$('tb').oninput=e=>{const i=e.target.dataset.q;if(i!=null)quiz[+i].a=e.target.value};
+$('gu').onclick=()=>{if(solved)return;const k=custom?custom.length:LV[lv].k,G=[];for(let i=0;i<k;i++){const n=parseInt($('gs').querySelector(`[data-gn="${i}"]`).value);if(isNaN(n)){$('mg').textContent='Fill in the number for each step.';return}G.push([$('gs').querySelector(`[data-go="${i}"]`).value,n])}
+ // a guess is right if it gives the same output for 0..30 (so equivalent rules count too)
+ let same=true;for(let x=0;x<=30;x++){const a=apply(x),b=apply(x,G);if(a!==b&&!(a==null&&b==null)){same=false;break}}
+ const preds=quiz.every(q=>q.a!==''&&+q.a===apply(q.x));
+ if(same){solved=true;score++;Kit.set('pc-score',score);$('mg').textContent=preds?'🎉 You cracked it AND predicted every output! Super star!':'🎉 You cracked the rule!';Kit.tada();Kit.confetti(preds?150:80)}
+ else{const bad=tried.find(([x,y])=>apply(x,G)!==y);$('mg').textContent=bad?`❌ Not quite: your rule turns ${bad[0]} into ${apply(bad[0],G)??'🤯'}, but the machine made ${bad[1]}.`:'❌ Not quite! Try feeding it more numbers.';Kit.tone(180,.25,'sawtooth',.08)}draw()};
+$('rv').onclick=()=>{solved=true;$('mg').textContent=`The rule was: ${show(rule)}`;draw()};
+$('nw').onclick=()=>{newRule();guessUI()};$('lv').onchange=()=>{lv=$('lv').value;Kit.set('pc-lv',lv);newRule();guessUI()};
+$('mk').onclick=()=>{Kit.modal(`<h2 style="margin-top:0">✏️ Set a secret rule</h2><p style="font-weight:700">Pick one or two steps. The class won't see it.</p><div class="pc-guess" id="cg">${[0,1].map(i=>`<select id="co${i}">${i?'<option value="">(no 2nd step)</option>':''}<option>+</option><option value="-">−</option><option>×</option><option>÷</option></select><input id="cn${i}" type="number" min="1" max="50" value="${i?'':'3'}">`).join('<span>then</span>')}</div><button class="btn green" id="cs" style="margin-top:10px">🤖 Load the machine</button>`);
+ $('cs').onclick=()=>{const R=[[$('co0').value,+$('cn0').value||1]];if($('co1').value)R.push([$('co1').value,+$('cn1').value||1]);rule=R;custom=R;tried=[];solved=false;const ok=[];for(let x=1;x<=20;x++){const y=apply(x);if(y!=null&&y>=0)ok.push(x)}quiz=Kit.shuffle(ok).slice(0,3).map(x=>({x,a:''}));document.getElementById('kitModal').remove();guessUI();draw();$('mg').textContent='🤖 The teacher loaded a secret rule!'}};
+window.__p={set:R=>{rule=R;custom=R;tried=[];solved=false;quiz=[];guessUI();draw()},apply:x=>apply(x)};
+newRule();guessUI();
+</script>
+</body></html>

@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Target Number Challenge</title>
+<style>
+main{max-width:1300px}
+.tn-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:12px}
+.tn-board{background:#1D2B53;border:6px solid var(--ink);border-radius:28px;box-shadow:8px 8px 0 var(--ink);padding:18px;display:grid;gap:16px;justify-items:center;color:#fff}
+.tn-target{display:flex;align-items:center;gap:16px}
+.tn-target .lbl{font-weight:900;font-size:1.1rem;opacity:.85}
+.tn-target .num{font:900 clamp(3.4rem,10vw,6rem)/1 Fredoka,sans-serif;background:#FFC93C;color:#1D2B53;border:6px solid #fff;border-radius:22px;padding:4px 22px;letter-spacing:.04em;min-width:3ch;text-align:center}
+.tn-target .num.roll{animation:roll .08s infinite}@keyframes roll{50%{transform:translateY(-3px)}}
+.tn-timer{width:min(500px,100%);height:16px;border:3px solid #fff;border-radius:99px;overflow:hidden}.tn-timer i{display:block;height:100%;background:#5DC66E;transition:width 1s linear}
+.tn-tiles{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.tn-tile{font:900 clamp(1.5rem,4.5vw,2.3rem) Fredoka,sans-serif;min-width:clamp(60px,13vw,92px);height:clamp(60px,13vw,86px);padding:0 8px;border:5px solid var(--ink);border-radius:18px;background:#fff;color:#1D2B53;cursor:pointer;box-shadow:0 6px 0 #0B1430;transition:transform .1s}
+.tn-tile.made{background:#C8F3D0}
+.tn-tile.sel{background:#FFC93C;transform:translateY(-6px)}
+.tn-tile:disabled{opacity:.15;cursor:default;box-shadow:none}
+.tn-ops{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.tn-op{font:900 2rem Fredoka,sans-serif;width:70px;height:62px;border:5px solid var(--ink);border-radius:50%;background:#9FD8FF;color:#1D2B53;cursor:pointer;box-shadow:0 5px 0 #0B1430}
+.tn-op.sel{background:#FF9F43;transform:translateY(-4px)}
+.tn-steps{display:grid;gap:4px;font:800 1.2rem ui-monospace,Menlo,monospace;min-height:2em;text-align:center}
+.tn-msg{font-weight:900;font-size:clamp(1.2rem,3vw,1.7rem);min-height:1.5em;text-align:center}
+.tn-side{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin-top:16px}
+@media (max-width:800px){.tn-side{grid-template-columns:minmax(0,1fr)}}
+.tn-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:8px;align-content:start}
+.tn-score{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px}
+.tn-score div{border:3px solid var(--ink);border-radius:12px;padding:4px 8px;font-weight:900;display:flex;justify-content:space-between;align-items:center}
+.tn-score button{font:inherit;border:2px solid var(--ink);border-radius:8px;background:#C8F3D0;cursor:pointer;font-weight:900}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🎯", "Target Number Challenge");
+const $=id=>document.getElementById(id);
+const LV={easy:{n:4,big:[],small:[1,2,3,4,5,6,7,8,9,10],t:[10,50],ops:'+-'},medium:{n:5,big:[10,20,25],small:[1,2,3,4,5,6,7,8,9],t:[20,150],ops:'+-×'},hard:{n:6,big:[25,50,75,100],small:[1,2,3,4,5,6,7,8,9,10],t:[100,999],ops:'+-×÷'}};
+const OP={'+':(a,b)=>a+b,'-':(a,b)=>a-b,'×':(a,b)=>a*b,'÷':(a,b)=>b&&a%b===0?a/b:null};
+let lv=Kit.get('tn-lv','medium'),tiles=[],target=0,steps=[],sel=null,op=null,timer=null,left=0,dur=Kit.get('tn-dur',60),best=null,teams=Kit.get('tn-teams',{});
+// find the closest reachable number (and how) with a depth-first search over pairs
+function solve(nums,goal,ops){let bestD=1e9,bestPath=null;const seen=new Set();
+ function go(a,path){for(const x of a){const d=Math.abs(x-goal);if(d<bestD){bestD=d;bestPath=path.slice()}}if(bestD===0||a.length<2)return;const k=a.slice().sort((p,q)=>p-q).join(',');if(seen.has(k))return;seen.add(k);
+  for(let i=0;i<a.length;i++)for(let j=0;j<a.length;j++){if(i===j)continue;for(const o of ops){if((o==='+'||o==='×')&&i>j)continue;const r=OP[o](a[i],a[j]);if(r==null||r<0||(o==='-'&&r===0))continue;const rest=a.filter((_,q)=>q!==i&&q!==j);rest.push(r);path.push(`${a[i]} ${o} ${a[j]} = ${r}`);go(rest,path);path.pop();if(bestD===0)return}}}
+ go(nums,[]);return {d:bestD,path:bestPath}}
+document.querySelector('main').innerHTML=`<div class="tn-top"><select id="lv" style="width:auto"><option value="easy">🌱 Easy (+ −)</option><option value="medium">🌟 Medium (+ − ×)</option><option value="hard">🔥 Hard (+ − × ÷)</option></select><select id="du" style="width:auto">${[0,30,60,90,120].map(s=>`<option value="${s}">${s?`⏱️ ${s} seconds`:'⏱️ No timer'}</option>`).join('')}</select><button class="btn green" id="go">🎲 New numbers</button></div>
+<div class="tn-board"><div class="tn-target"><span class="lbl">🎯 TARGET</span><span class="num" id="tg">?</span></div><div class="tn-timer" id="tmw"><i id="tm"></i></div><div class="tn-tiles" id="tl"></div><div class="tn-ops" id="op"></div><div class="tn-steps" id="st"></div><div class="tn-msg" id="mg">Tap a number, an operation, then another number.</div><div class="row" style="gap:8px;justify-content:center"><button class="btn white small" id="un">↶ Undo</button><button class="btn white small" id="rs">🔄 Start over</button><button class="btn small" style="background:var(--sun)" id="sv">💡 Show a solution</button></div></div>
+<div class="tn-side"><div class="tn-p"><b>🧮 How to play</b><div style="font-weight:700">Use the number tiles to get as close to the target as you can. Each tile can be used once. Every answer you make becomes a new tile you can use again!<br>🎯 Exact = 10 points · 1–5 away = 7 · 6–10 away = 5</div></div>
+<div class="tn-p"><b>🏅 Team scores</b><div class="tn-score" id="sc"></div><div class="row" style="gap:6px"><button class="btn white small" id="ta">➕ Add team</button><button class="btn white small" id="tz">🧽 Reset scores</button></div></div></div>`;
+function newRound(){const L=LV[lv];clearInterval(timer);steps=[];sel=op=null;best=null;
+ for(let g=0;g<40;g++){const nb=lv==='hard'?Kit.rand(1,2):lv==='medium'?Kit.rand(0,1):0;const bigs=Kit.shuffle(L.big).slice(0,nb),sm=Array.from({length:L.n-bigs.length},()=>Kit.pick(L.small));const nums=[...bigs,...sm];const t=Kit.rand(L.t[0],L.t[1]);const s=solve(nums,t,L.ops.split(''));if(s.d===0){tiles=nums.map((v,i)=>({v,id:i,used:false,made:false}));target=t;best=s;break}}
+ $('tg').classList.add('roll');let k=0;const iv=setInterval(()=>{$('tg').textContent=Kit.rand(LV[lv].t[0],LV[lv].t[1]);if(++k>(window.__fast?0:12)){clearInterval(iv);$('tg').classList.remove('roll');$('tg').textContent=target;startTimer()}},70);
+ $('mg').textContent='Tap a number, an operation, then another number.';draw()}
+function startTimer(){left=dur;$('tmw').hidden=!dur;if(!dur)return;$('tm').style.width='100%';timer=setInterval(()=>{left--;$('tm').style.width=(left/dur*100)+'%';$('tm').style.background=left<10?'#E5533F':'#5DC66E';if(left<=5&&left>0)Kit.tick();if(left<=0){clearInterval(timer);Kit.alarm&&Kit.alarm();finish(true)}},1000)}
+function closest(){const live=tiles.filter(t=>!t.used);return live.reduce((b,t)=>Math.abs(t.v-target)<Math.abs(b-target)?t.v:b,live[0]?live[0].v:0)}
+function pts(d){return d===0?10:d<=5?7:d<=10?5:0}
+function finish(timeUp){clearInterval(timer);const c=closest(),d=Math.abs(c-target);$('mg').innerHTML=d===0?`🎉 You hit ${target} exactly! (10 points)`:`${timeUp?'⏰ Time! ':''}Closest: ${c}, that's ${d} away (${pts(d)} points)`;if(d===0){Kit.tada();Kit.confetti(120)}}
+function draw(){$('lv').value=lv;$('du').value=dur;const ops=LV[lv].ops.split('');
+ $('tl').innerHTML=tiles.map(t=>`<button class="tn-tile ${t.made?'made':''} ${sel===t.id?'sel':''}" data-id="${t.id}" ${t.used?'disabled':''}>${t.v}</button>`).join('');
+ $('op').innerHTML=ops.map(o=>`<button class="tn-op ${op===o?'sel':''}" data-o="${o}">${o==='-'?'−':o}</button>`).join('');
+ $('st').innerHTML=steps.map(s=>`<div>${s.txt.replace('-','−')}</div>`).join('');
+ $('sc').innerHTML=Object.entries(teams).map(([n,v])=>`<div><span>${Kit.esc(n)}</span><span>${v} <button data-tp="${Kit.esc(n)}">+</button></span></div>`).join('')||'<span class="muted">Add teams to keep score.</span>';
+ window.__t={target,tiles:tiles.filter(t=>!t.used).map(t=>t.v),steps:steps.length,best:best&&best.path}}
+$('tl').onclick=e=>{const b=e.target.closest('[data-id]');if(!b)return;const id=+b.dataset.id,t=tiles.find(x=>x.id===id);
+ if(sel==null||op==null){sel=sel===id?null:id;Kit.tick();draw();return}if(id===sel){sel=null;draw();return}
+ const a=tiles.find(x=>x.id===sel),r=OP[op](a.v,t.v);if(r==null||r<0){$('mg').textContent=op==='÷'?`😬 ${a.v} ÷ ${t.v} doesn't come out even.`:'😬 No negative numbers!';Kit.tone(200,.2,'triangle',.12);op=null;draw();return}
+ a.used=t.used=true;const n={v:r,id:Date.now(),used:false,made:true};tiles.push(n);steps.push({txt:`${a.v} ${op} ${t.v} = ${r}`,a:a.id,b:t.id,n:n.id});sel=n.id;op=null;Kit.ding();
+ if(r===target)finish(false);else $('mg').textContent=`${r} is ${Math.abs(r-target)} away from ${target}.`;draw()};
+$('op').onclick=e=>{const b=e.target.closest('[data-o]');if(!b||sel==null)return;op=op===b.dataset.o?null:b.dataset.o;Kit.tick();draw()};
+$('un').onclick=()=>{const s=steps.pop();if(!s)return;tiles=tiles.filter(t=>t.id!==s.n);tiles.find(t=>t.id===s.a).used=false;tiles.find(t=>t.id===s.b).used=false;sel=op=null;$('mg').textContent='↶ Undone.';draw()};
+$('rs').onclick=()=>{tiles=tiles.filter(t=>!t.made);tiles.forEach(t=>t.used=false);steps=[];sel=op=null;draw()};
+$('sv').onclick=()=>{clearInterval(timer);Kit.modal(`<h2 style="margin-top:0">💡 One way to make ${target}</h2><div style="font:800 1.4rem ui-monospace,monospace;display:grid;gap:6px">${best.path.map(s=>`<div>${s.replace('-','−')}</div>`).join('')}</div><p style="font-weight:700">There are often other ways too!</p>`)};
+$('go').onclick=newRound;$('lv').onchange=()=>{lv=$('lv').value;Kit.set('tn-lv',lv);newRound()};$('du').onchange=()=>{dur=+$('du').value;Kit.set('tn-dur',dur);clearInterval(timer);startTimer()};
+$('ta').onclick=()=>{const n=`Team ${Object.keys(teams).length+1}`;teams[n]=0;Kit.set('tn-teams',teams);draw()};$('tz').onclick=()=>{Object.keys(teams).forEach(k=>teams[k]=0);Kit.set('tn-teams',teams);draw()};
+$('sc').onclick=e=>{const b=e.target.closest('[data-tp]');if(b){const c=closest();teams[b.dataset.tp]+=Math.max(1,pts(Math.abs(c-target)));Kit.set('tn-teams',teams);Kit.ding();draw()}};
+window.__tn={set:(nums,t)=>{clearInterval(timer);tiles=nums.map((v,i)=>({v,id:i,used:false,made:false}));target=t;steps=[];sel=op=null;best=solve(nums,t,LV[lv].ops.split(''));$('tg').textContent=t;draw()}};
+newRound();
+</script>
+</body></html>

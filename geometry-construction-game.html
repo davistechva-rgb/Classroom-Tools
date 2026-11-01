@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Geometry Construction Game</title>
+<style>
+main{max-width:1500px}
+.gc{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.gc{grid-template-columns:minmax(0,1fr)}}
+.gc-board{background:#fff;border:6px solid var(--ink);border-radius:24px;box-shadow:8px 8px 0 var(--ink);padding:10px}
+.gc-board svg{display:block;width:100%;height:auto;touch-action:none;user-select:none}
+.gc-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:10px}
+.gc-ch{background:#FFF6C9;border:4px solid var(--ink);border-radius:16px;padding:12px;text-align:center}
+.gc-ch .e{font-size:2.6rem}.gc-ch h2{margin:4px 0;font-size:clamp(1.2rem,3vw,1.6rem)}
+.gc-meas{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.gc-meas div{background:#F4FAFF;border-radius:10px;padding:5px 9px;font-weight:800}
+.gc-meas b{display:block;font-size:.8rem;color:#55607E}
+.gc-list{display:flex;flex-wrap:wrap;gap:5px}
+.gc-list button{font:inherit;font-size:1.3rem;width:46px;height:46px;border:3px solid var(--ink);border-radius:12px;background:#fff;cursor:pointer}
+.gc-list button.on{background:var(--sun)}.gc-list button.done{background:#C8F3D0}
+.gc-msg{font-weight:900;font-size:1.2rem;min-height:1.4em;text-align:center}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("📐", "Geometry Construction Game");
+const $=id=>document.getElementById(id);
+const N=12,U=50;// grid 0..12, 50px per unit
+const d2=(a,b)=>(a[0]-b[0])**2+(a[1]-b[1])**2,len=(a,b)=>Math.sqrt(d2(a,b));
+const area=P=>Math.abs(P.reduce((s,p,i)=>{const q=P[(i+1)%P.length];return s+p[0]*q[1]-q[0]*p[1]},0))/2;
+const per=P=>P.reduce((s,p,i)=>s+len(p,P[(i+1)%P.length]),0);
+const ang=(P,i)=>{const a=P[(i+P.length-1)%P.length],b=P[i],c=P[(i+1)%P.length];const v=[a[0]-b[0],a[1]-b[1]],w=[c[0]-b[0],c[1]-b[1]];const d=(v[0]*w[0]+v[1]*w[1])/Math.sqrt((v[0]**2+v[1]**2)*(w[0]**2+w[1]**2));return Math.round(Math.acos(Math.max(-1,Math.min(1,d)))*180/Math.PI)};
+const sides=P=>P.map((p,i)=>d2(p,P[(i+1)%P.length]));
+const par=(a,b,c,d)=>(b[0]-a[0])*(d[1]-c[1])-(b[1]-a[1])*(d[0]-c[0])===0;
+const angs=P=>P.map((_,i)=>ang(P,i));
+const right=P=>angs(P).filter(a=>a===90).length;
+const simple=P=>{if(area(P)===0)return false;const n=P.length;const x=(p,q,r,s)=>{const o=(a,b,c)=>Math.sign((b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]));return o(p,q,r)*o(p,q,s)<0&&o(r,s,p)*o(r,s,q)<0};for(let i=0;i<n;i++)for(let j=i+2;j<n;j++){if(i===0&&j===n-1)continue;if(x(P[i],P[(i+1)%n],P[j],P[(j+1)%n]))return false}return true};
+const pairsPar=P=>(par(P[0],P[1],P[3],P[2])?1:0)+(par(P[1],P[2],P[0],P[3])?1:0);
+const axis=P=>P.every((p,i)=>{const q=P[(i+1)%P.length];return p[0]===q[0]||p[1]===q[1]});
+const C=[
+ ['📐','A right triangle','A triangle with one 90° angle.',3,P=>right(P)===1],
+ ['🔺','An isosceles triangle','A triangle with two sides the same length.',3,P=>{const s=sides(P);return s[0]===s[1]||s[1]===s[2]||s[0]===s[2]}],
+ ['6️⃣','A triangle with an area of 6','Area = ½ × base × height.',3,P=>area(P)===6],
+ ['🟦','A rectangle with a perimeter of 16','Four right angles, all the way around = 16.',4,P=>right(P)===4&&Math.abs(per(P)-16)<.01],
+ ['🔷','A tilted square','A square whose sides are NOT straight across or up and down.',4,P=>{const s=sides(P);return right(P)===4&&s.every(x=>x===s[0])&&!axis(P)}],
+ ['▱','A parallelogram that isn\'t a rectangle','Two pairs of parallel sides, but no right angles.',4,P=>pairsPar(P)===2&&right(P)===0],
+ ['💎','A rhombus that isn\'t a square','Four equal sides, but no right angles.',4,P=>{const s=sides(P);return s.every(x=>x===s[0])&&right(P)===0}],
+ ['⏢','A trapezoid','Exactly one pair of parallel sides.',4,P=>pairsPar(P)===1],
+ ['🔟','A shape with an area of exactly 12','Any shape you like, as long as the area is 12.',0,P=>area(P)===12],
+ ['🪁','A kite','Two pairs of equal sides that are next to each other (not a rhombus).',4,P=>{const s=sides(P);return (s[0]===s[1]&&s[2]===s[3]||s[1]===s[2]&&s[3]===s[0])&&!s.every(x=>x===s[0])}],
+ ['⬠','A pentagon with an area of 10','Five sides, area 10.',5,P=>area(P)===10],
+ ['📏','A rectangle with an area of 18 that isn\'t 3 by 6','Think about other ways to make 18!',4,P=>{if(right(P)!==4||area(P)!==18)return false;const s=sides(P).map(Math.sqrt).sort((a,b)=>a-b);return !(Math.abs(s[0]-3)<.01&&Math.abs(s[3]-6)<.01)}]];
+let cur=0,pts=[],done=Kit.get('gc-done',[]),drag=null,closed=false;
+document.querySelector('main').innerHTML=`<div class="gc"><div class="gc-board"><svg id="sv" viewBox="-20 -20 ${N*U+40} ${N*U+40}"></svg></div>
+<div class="gc-p"><div class="gc-ch" id="ch"></div><div class="row" style="gap:6px;justify-content:center"><button class="btn green" id="ck">✅ Check my shape</button><button class="btn white small" id="un">↶ Undo point</button><button class="btn white small" id="cl">🧽 Clear</button></div><div class="gc-msg" id="mg"></div><div class="gc-meas" id="ms"></div><b>🗂️ Challenges</b><div class="gc-list" id="ls"></div><div class="muted" style="font-weight:700">Tap dots to make corners. Tap the first corner again to close the shape. Drag a corner to move it.</div></div></div>`;
+function draw(){const c=C[cur];$('ch').innerHTML=`<div class="e">${c[0]}</div><h2>Build: ${c[1]}</h2><div style="font-weight:700">${c[2]}</div>`;
+ let h='';for(let i=0;i<=N;i++){h+=`<line x1="${i*U}" y1="0" x2="${i*U}" y2="${N*U}" stroke="#DDE4F0" stroke-width="2"/><line x1="0" y1="${i*U}" x2="${N*U}" y2="${i*U}" stroke="#DDE4F0" stroke-width="2"/>`}
+ for(let x=0;x<=N;x++)for(let y=0;y<=N;y++)h+=`<circle cx="${x*U}" cy="${y*U}" r="5" fill="#9AA6C0" data-g="${x},${y}" style="cursor:pointer"/><circle cx="${x*U}" cy="${y*U}" r="20" fill="transparent" data-g="${x},${y}" style="cursor:pointer"/>`;
+ const xy=pts.map(p=>`${p[0]*U},${p[1]*U}`).join(' ');
+ if(pts.length>1)h+=closed?`<polygon points="${xy}" fill="rgba(34,195,230,.25)" stroke="#1E7FD0" stroke-width="6" stroke-linejoin="round"/>`:`<polyline points="${xy}" fill="none" stroke="#1E7FD0" stroke-width="6" stroke-dasharray="14 8"/>`;
+ if(closed)pts.forEach((p,i)=>{const a=ang(pts,i);const q=pts[(i+1)%pts.length];h+=`<text x="${(p[0]+q[0])/2*U}" y="${(p[1]+q[1])/2*U-8}" font-size="18" font-weight="800" text-anchor="middle" fill="#55607E" stroke="#fff" stroke-width="4" paint-order="stroke">${(+len(p,q).toFixed(2))}</text>`;if(a===90){h+=`<text x="${p[0]*U+14}" y="${p[1]*U-12}" font-size="20">∟</text>`}});
+ pts.forEach((p,i)=>h+=`<circle cx="${p[0]*U}" cy="${p[1]*U}" r="13" fill="${i===0?'#FFC93C':'#E5533F'}" stroke="#1D2B53" stroke-width="4" data-p="${i}" style="cursor:grab"/>`);
+ $('sv').innerHTML=h;
+ $('ms').innerHTML=closed?`<div><b>Corners</b>${pts.length}</div><div><b>Area</b>${area(pts)} sq units</div><div><b>Perimeter</b>${+per(pts).toFixed(2)}</div><div><b>Angles</b>${angs(pts).join('°, ')}°</div>`:`<div><b>Corners</b>${pts.length}</div><div><b>Shape</b>${pts.length?'not closed yet':'empty'}</div>`;
+ $('ls').innerHTML=C.map((c,i)=>`<button data-c="${i}" class="${i===cur?'on':''} ${done.includes(i)?'done':''}" title="${c[1]}">${c[0]}</button>`).join('');
+ window.__t={cur,pts:pts.length,closed,area:closed?area(pts):null,done:done.length}}
+function pt(e){const r=$('sv').getBoundingClientRect(),s=(N*U+40)/r.width;return [Math.round(((e.clientX-r.left)*s-20)/U),Math.round(((e.clientY-r.top)*s-20)/U)].map(v=>Math.max(0,Math.min(N,v)))}
+$('sv').onpointerdown=e=>{const p=e.target.closest('[data-p]');if(p){const i=+p.dataset.p;if(i===0&&!closed&&pts.length>=3){closed=true;Kit.ding();$('mg').textContent='';draw();return}drag=i;$('sv').setPointerCapture(e.pointerId);return}
+ const g=e.target.closest('[data-g]');if(!g||closed)return;const q=g.dataset.g.split(',').map(Number);if(pts.some(x=>x[0]===q[0]&&x[1]===q[1]))return;pts.push(q);Kit.tick();draw()};
+$('sv').onpointermove=e=>{if(drag==null)return;const q=pt(e);if(pts[drag][0]!==q[0]||pts[drag][1]!==q[1]){pts[drag]=q;draw()}};
+$('sv').onpointerup=()=>drag=null;
+$('ck').onclick=()=>{const c=C[cur];if(!closed){$('mg').textContent='Close your shape first: tap the yellow corner.';return}
+ if(!simple(pts)){$('mg').textContent='🤔 The sides cross over each other. Try moving a corner.';return}
+ if(c[3]&&pts.length!==c[3]){$('mg').textContent=`❌ This needs exactly ${c[3]} corners. Yours has ${pts.length}.`;Kit.tone(200,.2,'triangle',.1);return}
+ if(c[4](pts)){if(!done.includes(cur)){done.push(cur);Kit.set('gc-done',done)}$('mg').textContent=`🎉 Yes! That's ${c[1].toLowerCase()}!`;Kit.tada();Kit.confetti(100)}else{$('mg').textContent='❌ Not quite. Look at the measurements and try again!';Kit.tone(180,.25,'sawtooth',.08)}draw()};
+$('un').onclick=()=>{if(closed)closed=false;else pts.pop();draw()};$('cl').onclick=()=>{pts=[];closed=false;$('mg').textContent='';draw()};
+$('ls').onclick=e=>{const b=e.target.closest('[data-c]');if(b){cur=+b.dataset.c;pts=[];closed=false;$('mg').textContent='';draw()}};
+window.__gc={set:(i,P)=>{cur=i;pts=P;closed=true;draw()}};
+draw();
+</script>
+</body></html>

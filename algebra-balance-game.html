@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Algebra Balance Game</title>
+<style>
+main{max-width:1400px}
+.ab-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:12px}
+.ab-eq{text-align:center;font:900 clamp(2rem,6vw,3.4rem) Fredoka,sans-serif;color:#fff;text-shadow:3px 3px 0 var(--ink);margin-bottom:8px}
+.ab-stage{background:linear-gradient(#E9F6FF,#C9E6FF);border:6px solid var(--ink);border-radius:28px;box-shadow:8px 8px 0 var(--ink);padding:16px 10px 10px;position:relative;overflow:hidden}
+.ab-beam{position:relative;height:clamp(260px,40vw,360px);margin:0 auto;max-width:900px}
+.ab-arm{position:absolute;left:4%;right:4%;top:40px;height:14px;background:#8B5A2B;border:4px solid var(--ink);border-radius:8px;transform-origin:50% 50%;transition:transform .8s cubic-bezier(.3,1.6,.5,1)}
+.ab-pan{position:absolute;top:7px;width:44%;transform-origin:50% 0;transition:transform .8s cubic-bezier(.3,1.6,.5,1)}
+.ab-pan.l{left:-2%}.ab-pan.r{right:-2%}
+.ab-pan .str{height:60px;margin:0 18%;border-left:3px solid var(--ink);border-right:3px solid var(--ink)}
+.ab-pan .dish{background:#D9DEE8;border:5px solid var(--ink);border-radius:0 0 999px 999px;min-height:30px;padding:8px 6px 16px;display:flex;flex-wrap:wrap-reverse;gap:5px;justify-content:center;align-content:flex-start}
+.ab-x,.ab-1{border:4px solid var(--ink);display:grid;place-items:center;font:900 1.3rem Fredoka,sans-serif;cursor:pointer;box-shadow:0 3px 0 var(--ink);transition:transform .15s}
+.ab-x{width:clamp(44px,7vw,58px);height:clamp(44px,7vw,58px);border-radius:12px;background:#9B6BF2;color:#fff}
+.ab-1{width:clamp(28px,4.5vw,36px);height:clamp(28px,4.5vw,36px);border-radius:50%;background:#FFC93C;font-size:1rem}
+.ab-x:hover,.ab-1:hover{transform:translateY(-4px)}
+.ab-x.gone,.ab-1.gone{animation:gone .35s forwards}@keyframes gone{to{transform:translateY(-60px);opacity:0}}
+.ab-post{position:absolute;left:50%;top:44px;bottom:0;width:22px;margin-left:-11px;background:#8B5A2B;border:4px solid var(--ink);border-bottom:0}
+.ab-post::after{content:"";position:absolute;left:-60px;right:-60px;bottom:0;height:22px;background:#8B5A2B;border:4px solid var(--ink);border-radius:10px 10px 0 0}
+.ab-msg{text-align:center;font-weight:900;font-size:clamp(1.1rem,2.8vw,1.5rem);min-height:1.5em;margin-top:6px}
+.ab-tools{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:10px}
+.ab-steps{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:10px 14px;margin-top:14px;font:800 1.2rem ui-monospace,Menlo,monospace;display:grid;gap:3px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🧱", "Algebra Balance Game");
+const $=id=>document.getElementById(id);
+const LV={1:'🌱 x + 3 = 7',2:'⭐ 3x = 12',3:'🔥 2x + 3 = 11',4:'🚀 3x + 2 = x + 8'};
+let lv=Kit.get('ab-lv','3'),L={x:0,n:0},R={x:0,n:0},X=0,hist=[],steps=[],tilt=0,stars=Kit.get('ab-stars',0),solved=false;
+function gen(){X=Kit.rand(1,lv==='1'?9:6);let a,b,c,d;
+ if(lv==='1'){a=1;b=Kit.rand(1,8);c=0}if(lv==='2'){a=Kit.rand(2,4);b=0;c=0}if(lv==='3'){a=Kit.rand(2,3);b=Kit.rand(1,6);c=0}if(lv==='4'){c=Kit.rand(1,2);a=c+Kit.rand(1,2);b=Kit.rand(0,5)}
+ d=a*X+b-c*X;L={x:a,n:b};R={x:c,n:d};if(Math.random()<.4){[L,R]=[R,L]}hist=[];steps=[eq()];solved=false;draw();msg('Get the x box all alone on one side. Keep the scale balanced!')}
+const term=(s)=>{const p=[];if(s.x)p.push(s.x===1?'x':`${s.x}x`);if(s.n||!s.x)p.push(s.n);return p.join(' + ')};
+const eq=()=>`${term(L)} = ${term(R)}`;
+const w=s=>s.x*X+s.n;
+function msg(t){$('mg').textContent=t}
+document.querySelector('main').innerHTML=`<div class="ab-top"><select id="lv" style="width:auto">${Object.entries(LV).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select><button class="btn green" id="nw">🎲 New equation</button><span style="font-weight:900;color:#fff;text-shadow:2px 2px 0 var(--ink)" id="sr"></span></div>
+<div class="ab-eq" id="eq"></div><div class="ab-stage"><div class="ab-beam"><div class="ab-post"></div><div class="ab-arm" id="arm"></div><div class="ab-pan l" id="pl"><div class="str"></div><div class="dish" data-s="L"></div></div><div class="ab-pan r" id="pr"><div class="str"></div><div class="dish" data-s="R"></div></div></div><div class="ab-msg" id="mg"></div>
+<div class="ab-tools"><button class="btn white" id="d1">🟡 Take 1 from both sides</button><button class="btn white" id="dx">🟪 Take an x from both sides</button><button class="btn white" id="dv">✂️ Split both sides into groups</button><button class="btn white small" id="un">↶ Undo</button></div></div>
+<div class="ab-steps" id="st"></div>`;
+function draw(){$('lv').value=lv;$('sr').textContent=`⭐ ${stars}`;$('eq').textContent=eq();
+ const diff=w(L)-w(R);tilt=Math.max(-14,Math.min(14,-diff*3));
+ $('arm').style.transform=`rotate(${-tilt}deg)`;const dy=Math.sin(tilt*Math.PI/180)*230;$('pl').style.transform=`translateY(${dy}px)`;$('pr').style.transform=`translateY(${-dy}px)`;
+ for(const [k,s] of [['L',L],['R',R]])document.querySelector(`.dish[data-s="${k}"]`).innerHTML=Array(s.x).fill(`<div class="ab-x" data-t="x" title="x">x</div>`).join('')+Array(s.n).fill(`<div class="ab-1" data-t="1" title="1">1</div>`).join('');
+ $('st').innerHTML=steps.map((s,i)=>`<div>${i?'→ ':''}${s}</div>`).join('');
+ window.__t={L:{...L},R:{...R},X,bal:diff===0,solved,stars,eq:eq()}}
+function push(){hist.push([{...L},{...R},steps.length])}
+function after(t){steps.push(eq());draw();check(t)}
+function check(t){if(w(L)!==w(R)){msg('😮 Uh oh, the scale tipped! Do the same thing to the other side.');Kit.tone(200,.3,'sawtooth',.08);return}
+ const alone=(a,b)=>a.x===1&&a.n===0&&b.x===0;if(alone(L,R)||alone(R,L)){solved=true;const v=L.x?R.n:L.n;msg(`🎉 x = ${v}! You solved it!`);if(!hist.solvedOnce){stars++;Kit.set('ab-stars',stars);hist.solvedOnce=true}Kit.tada();Kit.confetti(120);draw();return}msg(t||'✅ Still balanced. Keep going!');Kit.ding()}
+// tap a block: remove it from that side only (to see the scale tip)
+document.querySelector('.ab-beam').onclick=async e=>{const b=e.target.closest('[data-t]');if(!b||solved)return;const side=b.closest('[data-s]').dataset.s==='L'?L:R,t=b.dataset.t;push();b.classList.add('gone');Kit.tick();await Kit.sleep(window.__fast?1:250);if(t==='x')side.x--;else side.n--;
+ const other=side===L?R:L;steps.push(eq());draw();if(w(L)!==w(R))msg(`😮 The scale tipped! Now take ${t==='x'?'an x':'a 1'} off the other side too.`);else check()};
+$('d1').onclick=()=>{if(solved)return;if(!L.n||!R.n){msg('One side has no 🟡 ones to take!');return}push();L.n--;R.n--;after(`✅ Took 1 from both sides. Still balanced!`)};
+$('dx').onclick=()=>{if(solved)return;if(!L.x||!R.x){msg('One side has no 🟪 x boxes to take!');return}push();L.x--;R.x--;after('✅ Took an x from both sides. Still balanced!')};
+$('dv').onclick=()=>{if(solved)return;const xs=L.x?L:R,ns=L.x?R:L;if(L.x&&R.x||xs.n||ns.x){msg('✂️ First get just x boxes on one side and just ones on the other.');return}if(xs.x<2){msg('There is only one x. You\'re almost done!');return}
+ if(ns.n%xs.x){msg(`${ns.n} ones can't split evenly into ${xs.x} groups.`);return}push();const k=xs.x;ns.n/=k;xs.x=1;after(`✂️ Split both sides into ${k} equal groups and kept one group.`)};
+$('un').onclick=()=>{const h=hist.pop();if(!h)return;[L,R]=[h[0],h[1]];steps.length=h[2];solved=false;draw();msg('↶ Undone.')};
+$('nw').onclick=gen;$('lv').onchange=()=>{lv=$('lv').value;Kit.set('ab-lv',lv);gen()};
+window.__a={set:(l,r,x)=>{L=l;R=r;X=x;hist=[];steps=[eq()];solved=false;draw()}};
+gen();
+</script>
+</body></html>

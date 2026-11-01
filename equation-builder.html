@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Equation Builder</title>
+<style>
+main{max-width:1300px}
+.eb-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:12px}
+.eb-board{background:#FFF6E0;border:6px solid var(--ink);border-radius:28px;box-shadow:8px 8px 0 var(--ink);padding:18px;display:grid;gap:18px;justify-items:center}
+.eb-eq{display:flex;gap:clamp(2px,1vw,10px);flex-wrap:wrap;justify-content:center;align-items:center}
+.eb-slot{width:clamp(40px,10vw,80px);height:clamp(58px,12vw,92px);border:5px dashed #B48A4A;border-radius:16px;display:grid;place-items:center;font:900 clamp(1.7rem,5vw,2.8rem) Fredoka,sans-serif;color:#1D2B53;background:#fff;cursor:pointer}
+.eb-slot.full{border-style:solid;border-color:var(--ink);background:#fff;box-shadow:0 5px 0 var(--ink)}
+.eb-slot.fixed{border:0;background:none;box-shadow:none;cursor:default;width:auto;min-width:30px}
+.eb-slot.op.full{background:#9FD8FF}
+.eb-eq.ok .eb-slot.full{background:#C8F3D0;animation:pop .4s}.eb-eq.bad .eb-slot.full{background:#FFD3CC;animation:sh .3s}
+@keyframes pop{50%{transform:scale(1.12)}}@keyframes sh{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.eb-tray{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;background:#E8C38A;border:5px solid var(--ink);border-radius:20px;padding:12px;min-height:90px;width:min(760px,100%)}
+.eb-tile{width:clamp(48px,10vw,72px);height:clamp(54px,11vw,80px);border:5px solid var(--ink);border-radius:14px;background:#fff;font:900 clamp(1.6rem,4.5vw,2.4rem) Fredoka,sans-serif;color:#1D2B53;cursor:pointer;box-shadow:0 5px 0 var(--ink)}
+.eb-tile.op{background:#9FD8FF}.eb-tile:disabled{visibility:hidden}
+.eb-msg{font-weight:900;font-size:clamp(1.15rem,3vw,1.6rem);min-height:1.5em;text-align:center}
+.eb-found{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.eb-found span{background:#C8F3D0;border:3px solid var(--ink);border-radius:99px;padding:2px 12px;font:800 1.05rem ui-monospace,Menlo,monospace}
+.eb-stars{font-size:1.6rem;letter-spacing:4px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🧩", "Equation Builder");
+const $=id=>document.getElementById(id);
+// templates: N = number slot, O = operator slot, anything else is fixed text
+const LV={add:{name:'🌱 Add & subtract',t:['N O N = N','N O N O N = N'],ops:'+-',max:20},mul:{name:'✖️ Times & divide',t:['N O N = N','N O N = N O N'],ops:'×÷',max:10},mix:{name:'🌟 Mixed',t:['N O N O N = N','N O N = N O N'],ops:'+-×',max:10},ord:{name:'🔥 Order of operations',t:['N O N O N = N','N O N O N O N = N'],ops:'+-×÷',max:9}};
+let lv=Kit.get('eb-lv','add'),slots=[],tray=[],found=[],msg='',solution='';
+function evalSide(tok){// numbers and ops with × ÷ first
+ let a=tok.slice();for(const set of [['×','÷'],['+','-']]){for(let i=1;i<a.length;i+=2){if(set.includes(a[i])){const x=a[i-1],y=a[i+1];let r;if(a[i]==='×')r=x*y;else if(a[i]==='÷'){if(y===0||x%y)return null;r=x/y}else if(a[i]==='+')r=x+y;else r=x-y;a.splice(i-1,3,r);i-=2}}}return a.length===1?a[0]:null}
+function check(tokens){const i=tokens.indexOf('=');const L=tokens.slice(0,i),R=tokens.slice(i+1);if(L.some(t=>t==null)||R.some(t=>t==null))return null;const l=evalSide(L),r=evalSide(R);return l!=null&&r!=null&&l===r}
+function gen(){const L=LV[lv];for(let g=0;g<500;g++){const t=Kit.pick(L.t).split(' ');const tok=t.map(x=>x==='N'?Kit.rand(lv==='mul'||lv==='ord'?1:0,L.max):x==='O'?Kit.pick(L.ops.split('')):x);
+  // fill the last number so the equation is true when the right side is a single number
+  const i=tok.indexOf('=');if(tok.length-i===2){const v=evalSide(tok.slice(0,i));if(v==null||v<0||v>99)continue;tok[i+1]=v}
+  if(check(tok)!==true)continue;const nums=tok.filter(x=>typeof x==='number');if(nums.some(n=>n>99))continue;
+  return {tpl:t,tok}}return null}
+function newPuzzle(){const p=gen();solution=p.tok.map(x=>x==='-'?'−':x).join(' ');slots=p.tpl.map((x,i)=>x==='N'||x==='O'?{k:x,v:null,tray:null}:{k:'F',v:x});
+ const pieces=p.tok.filter((x,i)=>p.tpl[i]==='N'||p.tpl[i]==='O').map(String);
+ // decoys: one extra number and one extra operator
+ pieces.push(String(Kit.rand(0,LV[lv].max)));pieces.push(Kit.pick(LV[lv].ops.split('')));
+ tray=Kit.shuffle(pieces).map((v,i)=>({v,id:i,used:false}));found=[];msg='Tap tiles to fill the boxes and make a true equation!';draw()}
+document.querySelector('main').innerHTML=`<div class="eb-top"><select id="lv" style="width:auto">${Object.entries(LV).map(([k,v])=>`<option value="${k}">${v.name}</option>`).join('')}</select><button class="btn green" id="nw">🎲 New puzzle</button></div>
+<div class="eb-board"><div class="eb-eq" id="eq"></div><div class="eb-tray" id="tr"></div><div class="eb-msg" id="mg"></div><div class="row" style="gap:8px;justify-content:center"><button class="btn green" id="ck">✅ Check</button><button class="btn white small" id="cl">🧽 Clear</button><button class="btn white small" id="hn">💡 Hint</button></div><div class="eb-stars" id="sr"></div><div><b>🧠 Different true equations found:</b> <span class="muted" style="font-weight:700">(find more than one for extra stars!)</span></div><div class="eb-found" id="fd"></div></div>`;
+const isOp=v=>'+-×÷'.includes(v);
+function draw(){$('lv').value=lv;$('eq').className='eb-eq';
+ $('eq').innerHTML=slots.map((s,i)=>s.k==='F'?`<div class="eb-slot fixed">${s.v}</div>`:`<div class="eb-slot ${s.k==='O'?'op':''} ${s.v!=null?'full':''}" data-s="${i}" title="${s.k==='O'?'operation':'number'}">${s.v!=null?(s.v==='-'?'−':s.v):(s.k==='O'?'<span style="opacity:.3">±</span>':'')}</div>`).join('');
+ $('tr').innerHTML=tray.map(t=>`<button class="eb-tile ${isOp(t.v)?'op':''}" data-t="${t.id}" ${t.used?'disabled':''}>${t.v==='-'?'−':t.v}</button>`).join('');
+ $('mg').textContent=msg;$('fd').innerHTML=found.map(f=>`<span>${Kit.esc(f)}</span>`).join('')||'<span style="background:#fff">none yet</span>';$('sr').textContent=found.length?'⭐'.repeat(Math.min(5,found.length)):'';
+ window.__t={found:found.length,full:slots.every(s=>s.k==='F'||s.v!=null),solution}}
+$('tr').onclick=e=>{const b=e.target.closest('[data-t]');if(!b)return;const t=tray.find(x=>x.id===+b.dataset.t);const want=isOp(t.v)?'O':'N';const s=slots.find(x=>x.k===want&&x.v==null);
+ if(!s){msg=want==='O'?'All the operation boxes are full.':'All the number boxes are full.';Kit.tone(200,.15,'triangle',.1);draw();return}s.v=t.v;s.tray=t.id;t.used=true;Kit.tick();msg='';draw()};
+$('eq').onclick=e=>{const b=e.target.closest('[data-s]');if(!b)return;const s=slots[+b.dataset.s];if(s.v==null)return;tray.find(t=>t.id===s.tray).used=false;s.v=null;s.tray=null;Kit.tick();draw()};
+$('ck').onclick=()=>{if(!slots.every(s=>s.k==='F'||s.v!=null)){msg='Fill every box first!';draw();return}const tok=slots.map(s=>s.k==='N'?+s.v:s.v);const ok=check(tok);const txt=tok.map(x=>x==='-'?'−':x).join(' ');
+ if(ok){if(found.includes(txt)){msg='✅ True! But you already found that one. Can you find a different one?'}else{found.push(txt);msg=found.length===1?'🎉 True! Now can you find a different true equation?':`🌟 Another one! That's ${found.length}!`;Kit.tada();Kit.confetti(found.length*30)}draw();$('eq').classList.add('ok')}
+ else{const i=tok.indexOf('=');const l=evalSide(tok.slice(0,i)),r=evalSide(tok.slice(i+1));msg=l==null||r==null?'🤔 That division doesn\'t come out even.':`❌ Not true: the left side is ${l} and the right side is ${r}.`;Kit.tone(180,.25,'sawtooth',.08);draw();$('eq').classList.add('bad')}};
+$('cl').onclick=()=>{slots.forEach(s=>{if(s.k!=='F'){s.v=null;s.tray=null}});tray.forEach(t=>t.used=false);msg='';draw()};
+$('hn').onclick=()=>{const first=solution.split(' ').filter(x=>x!=='=')[0];msg=`💡 One answer starts with ${first}. And remember: one number and one operation are extras you won't need!`;draw()};
+$('nw').onclick=newPuzzle;$('lv').onchange=()=>{lv=$('lv').value;Kit.set('eb-lv',lv);newPuzzle()};
+window.__e={fill:arr=>{$('cl').click();arr.forEach(v=>{const t=tray.find(x=>x.v===String(v)&&!x.used);if(t)$('tr').querySelector(`[data-t="${t.id}"]`).click()})},solution:()=>solution,check};
+newPuzzle();
+</script>
+</body></html>

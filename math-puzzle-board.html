@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Math Puzzle Board</title>
+<style>
+main{max-width:1300px}
+.mp-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:12px}
+.mp-kinds{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.mp-kinds button{font:inherit;font-weight:900;border:4px solid var(--ink);border-radius:99px;padding:6px 14px;background:#fff;cursor:pointer;color:var(--ink)}.mp-kinds button.on{background:var(--sun)}
+.mp{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:860px){.mp{grid-template-columns:minmax(0,1fr)}}
+.mp-board{background:#FFF6E0;border:6px solid var(--ink);border-radius:26px;box-shadow:8px 8px 0 var(--ink);padding:16px;display:grid;justify-items:center;gap:12px}
+.mp-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:10px}
+.mp-cell{width:var(--s);height:var(--s);border:4px solid var(--ink);border-radius:12px;background:#fff;font:900 calc(var(--s)*.45) Fredoka,sans-serif;text-align:center;color:#1E7FD0;padding:0}
+.mp-cell.given{background:#E3E8F2;color:#1D2B53}
+.mp-cell.bad{background:#FFD3CC}.mp-cell.good{background:#C8F3D0}
+.mp-sq{display:grid;grid-template-columns:repeat(3,auto) auto;gap:6px;align-items:center}
+.mp-sum{font:900 1.1rem Fredoka,sans-serif;color:#9B6BF2;text-align:center}
+.mp-py{display:grid;gap:6px;justify-items:center}.mp-py div{display:flex;gap:6px}
+.mp-su{display:grid;grid-template-columns:repeat(4,auto);gap:0;border:5px solid var(--ink);border-radius:12px;overflow:hidden}
+.mp-su .mp-cell{border-radius:0;border-width:1px;border-color:#9AA6C0}
+.mp-su .mp-cell.r{border-right:4px solid var(--ink)}.mp-su .mp-cell.b{border-bottom:4px solid var(--ink)}
+.mp-msg{font-weight:900;font-size:1.25rem;min-height:1.5em;text-align:center}
+.mp-rule{font-weight:700;font-size:1.05rem}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🧮", "Math Puzzle Board");
+const $=id=>document.getElementById(id);
+const K={magic:'✨ Magic square',pyr:'🔺 Number pyramid',sudoku:'🔢 Mini sudoku'};
+let kind=Kit.get('mp-kind','magic'),diff=Kit.get('mp-diff',1),sol=[],given=[],val=[],solved=Kit.get('mp-solved',0),done=false,base=[];
+// magic square: rotate/reflect the Lo Shu square and add a constant
+function magic(){let M=[[2,7,6],[9,5,1],[4,3,8]];for(let r=Kit.rand(0,3);r>0;r--)M=M[0].map((_,i)=>M.map(row=>row[i]).reverse());if(Math.random()<.5)M=M.map(r=>r.reverse());const add=diff===1?0:Kit.rand(1,diff===2?5:20);sol=M.flat().map(v=>v+add);const n=diff===1?4:diff===2?3:3;given=Kit.shuffle([...Array(9).keys()]).slice(0,n)}
+function pyr(){const rows=diff===1?4:5,lo=diff===3?5:1,hi=diff===1?5:diff===2?9:20;base=Array.from({length:rows},()=>Kit.rand(lo,hi));const P=[base];while(P[0].length>1){const r=P[0];P.unshift(r.slice(1).map((v,i)=>v+r[i]))}sol=P.flat();
+ // keep it solvable: give the bottom row except a couple, plus some upper blocks
+ const idx=[...sol.keys()],bottom0=sol.length-rows;const g=new Set();idx.slice(bottom0).forEach(i=>g.add(i));const hide=Kit.shuffle(idx.slice(bottom0)).slice(0,diff);hide.forEach(i=>g.delete(i));
+ // give enough upper blocks to recover hidden bottom ones
+ Kit.shuffle(idx.slice(0,bottom0)).slice(0,diff+(diff>1?1:0)).forEach(i=>g.add(i));given=[...g];if(!pyrSolvable())return pyr()}
+function pyrSolvable(){const v=sol.map((x,i)=>given.includes(i)?x:null),rows=Math.round((Math.sqrt(8*sol.length+1)-1)/2);const at=(r,c)=>r*(r+1)/2+c;let ch=true;while(ch){ch=false;for(let r=0;r<rows-1;r++)for(let c=0;c<=r;c++){const t=at(r,c),a=at(r+1,c),b=at(r+1,c+1);const k=[v[t],v[a],v[b]];const n=k.filter(x=>x==null).length;if(n===1){if(v[t]==null)v[t]=v[a]+v[b];else if(v[a]==null)v[a]=v[t]-v[b];else v[b]=v[t]-v[a];ch=true}}}return v.every(x=>x!=null)}
+function sudoku(){let S=[[1,2,3,4],[3,4,1,2],[2,1,4,3],[4,3,2,1]];const perm=Kit.shuffle([1,2,3,4]);S=S.map(r=>r.map(v=>perm[v-1]));if(Math.random()<.5)S=S[0].map((_,i)=>S.map(r=>r[i]));if(Math.random()<.5)[S[0],S[1]]=[S[1],S[0]];if(Math.random()<.5)[S[2],S[3]]=[S[3],S[2]];sol=S.flat();
+ const n=diff===1?10:diff===2?7:5;for(let g=0;g<100;g++){given=Kit.shuffle([...Array(16).keys()]).slice(0,n);if(count(sol.map((v,i)=>given.includes(i)?v:0))===1)return}given=[...Array(16).keys()].slice(0,10)}
+function count(B,lim=2){let n=0;const i=B.indexOf(0);if(i<0)return 1;for(let v=1;v<=4;v++){if(okAt(B,i,v)){B[i]=v;n+=count(B,lim);B[i]=0;if(n>=lim)break}}return n}
+function okAt(B,i,v){const r=Math.floor(i/4),c=i%4;for(let k=0;k<4;k++){if(B[r*4+k]===v||B[k*4+c]===v)return false}const br=r-r%2,bc=c-c%2;for(let a=0;a<2;a++)for(let b=0;b<2;b++)if(B[(br+a)*4+bc+b]===v)return false;return true}
+function newPuzzle(){done=false;({magic,pyr,sudoku})[kind]();val=sol.map((v,i)=>given.includes(i)?v:'');$('mg').textContent='';draw()}
+document.querySelector('main').innerHTML=`<div class="mp-top"><div class="mp-kinds" id="kd">${Object.entries(K).map(([k,v])=>`<button data-k="${k}">${v}</button>`).join('')}</div><select id="df" style="width:auto"><option value="1">🌱 Easy</option><option value="2">⭐ Medium</option><option value="3">🔥 Hard</option></select><button class="btn green" id="nw">🎲 New puzzle</button></div>
+<div class="mp"><div class="mp-board" id="bd"></div><div class="mp-p"><b id="rt"></b><div class="mp-rule" id="rl"></div><div class="row" style="gap:6px"><button class="btn green" id="ck">✅ Check</button><button class="btn white small" id="hn">💡 Hint</button><button class="btn white small" id="cl">🧽 Clear</button></div><div class="mp-msg" id="mg"></div><div style="font-weight:900">🏆 Puzzles solved: <span id="sv"></span></div></div></div>`;
+const cell=(i,cls='')=>`<input class="mp-cell ${given.includes(i)?'given':''} ${cls}" data-i="${i}" value="${val[i]}" ${given.includes(i)?'readonly':''} inputmode="numeric" maxlength="3" aria-label="Box ${i+1}">`;
+function draw(){document.querySelectorAll('[data-k]').forEach(b=>b.classList.toggle('on',b.dataset.k===kind));$('df').value=diff;$('sv').textContent=solved;$('rt').textContent=K[kind];
+ if(kind==='magic'){const t=sol.slice(0,3).reduce((a,b)=>a+b,0);$('rl').innerHTML=`Fill the square so every row, column and both diagonals add up to <b>${diff===3?'the same number':t}</b>.${diff===1?' Use 1 to 9, once each.':''}`;
+  const rs=r=>[0,1,2].map(c=>+val[r*3+c]||0).reduce((a,b)=>a+b,0),cs=c=>[0,1,2].map(r=>+val[r*3+c]||0).reduce((a,b)=>a+b,0);
+  $('bd').innerHTML=`<div class="mp-sq" style="--s:clamp(64px,17vw,96px)">${[0,1,2].map(r=>[0,1,2].map(c=>cell(r*3+c)).join('')+`<div class="mp-sum">→ ${rs(r)}</div>`).join('')}${[0,1,2].map(c=>`<div class="mp-sum">↓ ${cs(c)}</div>`).join('')}<div class="mp-sum">↘ ${[0,4,8].map(i=>+val[i]||0).reduce((a,b)=>a+b)}</div></div>`}
+ if(kind==='pyr'){const rows=Math.round((Math.sqrt(8*sol.length+1)-1)/2);$('rl').innerHTML='Each block is the <b>sum of the two blocks under it</b>. Fill in the missing blocks!';let k=0,h='';for(let r=0;r<rows;r++){h+='<div>';for(let c=0;c<=r;c++)h+=cell(k++);h+='</div>'}$('bd').innerHTML=`<div class="mp-py" style="--s:clamp(52px,${rows===5?13:16}vw,84px)">${h}</div>`}
+ if(kind==='sudoku'){$('rl').innerHTML='Put 1, 2, 3 and 4 in every <b>row</b>, every <b>column</b> and every <b>2 × 2 box</b>.';$('bd').innerHTML=`<div class="mp-su" style="--s:clamp(62px,17vw,90px)">${sol.map((_,i)=>cell(i,`${i%4===1?'r':''} ${Math.floor(i/4)===1?'b':''}`)).join('')}</div>`}
+ window.__t={kind,sol:[...sol],given:[...given],done,solved,filled:val.filter(v=>v!=='').length}}
+$('bd').oninput=e=>{const i=e.target.dataset.i;if(i==null)return;val[+i]=e.target.value.replace(/\D/g,'');const pos=e.target.selectionStart;draw();const n=$('bd').querySelector(`[data-i="${i}"]`);n.focus();try{n.setSelectionRange(pos,pos)}catch(_){}};
+$('ck').onclick=()=>{let ok=true,empty=false;const cells=$('bd').querySelectorAll('.mp-cell');
+ // magic squares and sudoku can have other right answers, so check the rules instead of one answer
+ let right=sol.map((v,i)=>String(v)===String(val[i]));
+ if(kind==='magic'){const v=val.map(Number);const lines=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];const s=lines.map(l=>l.reduce((a,i)=>a+v[i],0));const t=diff===3?s[0]:sol.slice(0,3).reduce((a,b)=>a+b,0);const uniq=new Set(v).size===9;const good=val.every(x=>x!=='')&&uniq&&s.every(x=>x===t);if(good)right=right.map(()=>true)}
+ if(kind==='sudoku'){const B=val.map(Number);const good=B.every((v,i)=>{if(!v)return false;const t=B[i];B[i]=0;const o=okAt(B,i,t);B[i]=t;return o});if(good)right=right.map(()=>true)}
+ cells.forEach(c=>{const i=+c.dataset.i;if(given.includes(i))return;if(val[i]===''){empty=true;ok=false;return}c.classList.toggle('good',!!right[i]);c.classList.toggle('bad',!right[i]);if(!right[i])ok=false});
+ if(ok){if(!done){solved++;Kit.set('mp-solved',solved);done=true}$('mg').textContent='🎉 Puzzle solved! Brilliant!';Kit.tada();Kit.confetti(130);$('sv').textContent=solved}else $('mg').textContent=empty?'Fill in every box first.':'Some boxes need another look (the red ones).';window.__t.done=done;window.__t.solved=solved};
+$('hn').onclick=()=>{const open=val.map((v,i)=>i).filter(i=>!given.includes(i)&&String(val[i])!==String(sol[i]));if(!open.length)return;const i=Kit.pick(open);val[i]=String(sol[i]);given.push(i);draw();$('mg').textContent='💡 One box filled in for you.'};
+$('cl').onclick=()=>{val=sol.map((v,i)=>given.includes(i)?v:'');draw()};
+$('kd').onclick=e=>{const b=e.target.closest('[data-k]');if(b){kind=b.dataset.k;Kit.set('mp-kind',kind);newPuzzle()}};$('df').onchange=()=>{diff=+$('df').value;Kit.set('mp-diff',diff);newPuzzle()};$('nw').onclick=newPuzzle;
+newPuzzle();
+</script>
+</body></html>

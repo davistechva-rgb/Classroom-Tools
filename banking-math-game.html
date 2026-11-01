@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Banking Math Game</title>
+<style>
+main{max-width:1400px}
+.bk-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:12px}
+.bk{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:960px){.bk{grid-template-columns:minmax(0,1fr)}}
+.bk-reg{background:#FFFDF2;border:6px solid var(--ink);border-radius:20px;box-shadow:8px 8px 0 var(--ink);padding:12px;overflow-x:auto}
+.bk-reg h2{margin:0 0 8px;font-size:1.3rem;display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px}
+.bk-t{width:100%;border-collapse:collapse;font-weight:800;min-width:520px}
+.bk-t th{background:#1E7FD0;color:#fff;padding:6px;font-size:.9rem;text-align:left}
+.bk-t td{padding:5px 6px;border-bottom:2px solid #C9D9EE;background:repeating-linear-gradient(transparent 0 30px,#EAF2FD 30px 31px)}
+.bk-t td.n{text-align:right;font-family:ui-monospace,Menlo,monospace;font-size:1.05rem}
+.bk-t .in{color:#2E9E47}.bk-t .out{color:#E5533F}
+.bk-t input{width:110px;font:800 1.05rem ui-monospace,Menlo,monospace;text-align:right;padding:3px 6px;border:3px solid var(--ink);border-radius:8px}
+.bk-t tr.ok input{background:#C8F3D0;border-color:#2E9E47}.bk-t tr.no input{background:#FFD3CC;animation:sh .3s}@keyframes sh{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.bk-t tr.new td{animation:slide .4s}@keyframes slide{0%{opacity:0;transform:translateX(30px)}}
+.bk-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:10px}
+.bk-card{background:linear-gradient(135deg,#1E7FD0,#9B6BF2);color:#fff;border:5px solid var(--ink);border-radius:18px;padding:14px;display:grid;gap:4px}
+.bk-card .big{font:900 2rem Fredoka,sans-serif}
+.bk-msg{font-weight:900;font-size:1.15rem;min-height:1.4em}
+.bk-goal{display:grid;gap:6px;font-weight:800}.bk-goal input{width:110px;font:inherit;padding:3px 6px;border:3px solid var(--ink);border-radius:8px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🏦", "Banking Math Game");
+const $=id=>document.getElementById(id);
+const EV={dep:[['💼','Paycheck from dog walking',[15,40]],['🎂','Birthday money from Grandma',[10,25]],['🍋','Lemonade stand sales',[8,22]],['🧹','Allowance for chores',[5,12]],['🌱','Sold seedlings at the market',[6,18]]],wd:[['🎮','Bought a video game',[15,30]],['🍕','Pizza with friends',[6,12]],['📚','New book',[5,14]],['🎬','Movie ticket',[8,13]],['🎁','Gift for a friend',[5,15]],['🚲','Bike repair',[7,20]],['🧁','Bakery treat',[2,6]]]};
+let lvl=Kit.get('bk-lvl','dollars'),rows=[],start=0,name=Kit.get('bk-name','Alex'),goal=null,stars=Kit.get('bk-stars',0),day=1;
+const $$=c=>(c<0?'−':'')+'$'+(Math.abs(c)/100).toFixed(2);
+const amt=([a,b])=>lvl==='dollars'?Kit.rand(a,b)*100:Kit.rand(a*100,b*100);
+function bal(i){return rows.slice(0,i+1).reduce((s,r)=>s+r.v,start)}
+function newMonth(){start=(lvl==='dollars'?Kit.rand(10,40):Kit.rand(10,40))*100+(lvl==='dollars'?0:Kit.rand(0,99));rows=[];day=1;goal=null;for(let i=0;i<3;i++)addRow(true);draw();$('mg').textContent='Fill in the new balance after each line.'}
+function addRow(quiet){const b=bal(rows.length-1);let r;
+ if(lvl==='interest'&&rows.length&&rows.length%4===3){const rate=Kit.pick([1,2,5,10]);const v=Math.round(Math.max(0,b)*rate/100);r={e:'🏦',d:`Interest: ${rate}% of ${$$(b)}`,v}}
+ else{const dep=b<800||Math.random()<.45;const [e,d,rg]=Kit.pick(dep?EV.dep:EV.wd);let v=amt(rg);if(!dep&&v>b)v=Math.max(100,Math.floor(b/100)*100);if(!dep&&b<=100)return addRow(quiet);r={e,d,v:dep?v:-v}}
+ day+=Kit.rand(1,4);r.day=day;r.a='';r.st=null;rows.push(r);goal=null;if(!quiet){draw();const tr=$('tb').querySelector(`tr[data-r="${rows.length-1}"]`);tr&&tr.classList.add('new')}}
+document.querySelector('main').innerHTML=`<div class="bk-top"><select id="lv" style="width:auto"><option value="dollars">💵 Whole dollars</option><option value="cents">🪙 Dollars and cents</option><option value="interest">🏦 With interest</option></select><button class="btn green" id="nw">📅 New month</button><span style="font-weight:900;color:#fff;text-shadow:2px 2px 0 var(--ink)" id="sr"></span></div>
+<div class="bk"><div class="bk-reg"><h2><span>📒 <span id="nm" contenteditable="true" spellcheck="false" style="border-bottom:2px dashed #9AA6C0"></span>'s check register</span><span class="muted" style="font-size:1rem" id="mo"></span></h2><table class="bk-t" id="tb"></table></div>
+<div class="bk-p"><div class="bk-card"><span style="font-weight:800">💳 Bank's balance</span><span class="big" id="bb">?</span><span style="font-weight:700;opacity:.85" id="bs">Fill in every line to see it.</span></div><div class="row" style="gap:6px"><button class="btn green" id="ck">✅ Check my math</button><button class="btn white" id="ad">➕ Next transaction</button></div><div class="bk-msg" id="mg"></div>
+<b>🎯 Savings goal</b><div class="bk-goal" id="gl"></div></div></div>`;
+function draw(){$('lv').value=lvl;$('sr').textContent=`⭐ ${stars}`;if(document.activeElement!==$('nm'))$('nm').textContent=name;$('mo').textContent=new Date().toLocaleDateString(undefined,{month:'long',year:'numeric'});
+ $('tb').innerHTML=`<tr><th>Date</th><th>What happened</th><th>Money in</th><th>Money out</th><th>Balance</th></tr><tr><td>1</td><td>🏁 Starting balance</td><td></td><td></td><td class="n">${$$(start)}</td></tr>`+rows.map((r,i)=>`<tr data-r="${i}" class="${r.st===true?'ok':r.st===false?'no':''}"><td>${r.day}</td><td>${r.e} ${Kit.esc(r.d)}</td><td class="n in">${r.v>=0?$$(r.v):''}</td><td class="n out">${r.v<0?$$(-r.v):''}</td><td class="n">$<input data-a="${i}" inputmode="decimal" value="${r.a}" aria-label="Balance after line ${i+1}"></td></tr>`).join('');
+ const all=rows.every(r=>r.st===true);$('bb').textContent=all?$$(bal(rows.length-1)):'?';$('bs').textContent=all?'✅ Your register matches the bank!':'Get every line right to see it.';
+ if(all&&!goal){const b=bal(rows.length-1);goal={t:b+Kit.rand(2,6)*500,a:''};}
+ $('gl').innerHTML=goal?`<span>${Kit.esc(name)} wants a 🛹 skateboard that costs ${$$(goal.t)}. How much more money is needed?</span><span>$<input id="ga" inputmode="decimal" value="${goal.a}"> <button class="btn small green" id="gc">Check</button></span>`:'<span class="muted">Finish the register to unlock this question.</span>';
+ if($('gc'))$('gc').onclick=()=>{goal.a=$('ga').value;const v=Math.round(parseFloat(goal.a)*100);if(v===goal.t-bal(rows.length-1)){stars++;Kit.set('bk-stars',stars);$('mg').textContent=`🎉 Yes! ${$$(goal.t)} − ${$$(bal(rows.length-1))} = ${$$(v)}`;Kit.tada();Kit.confetti(80);goal.done=true;draw()}else{$('mg').textContent='🤔 Try: goal − balance.';Kit.tone(200,.2,'triangle',.1)}};
+ window.__t={rows:rows.length,ok:rows.filter(r=>r.st===true).length,bal:bal(rows.length-1),start,stars,goal:goal&&goal.t}}
+$('tb').oninput=e=>{const i=e.target.dataset.a;if(i!=null){rows[+i].a=e.target.value;rows[+i].st=null;e.target.closest('tr').className=''}};
+$('ck').onclick=()=>{let ok=0,first=null;rows.forEach((r,i)=>{if(r.a===''){r.st=null;return}const v=Math.round(parseFloat(r.a.replace(/[$,]/g,''))*100);r.st=v===bal(i);if(r.st)ok++;else if(first==null)first=i});
+ const all=rows.every(r=>r.st);$('mg').textContent=all?'🎉 Every line is right!':first!=null?`❌ Line ${first+1} isn't right. ${rows[first].v>=0?'Money in: add it.':'Money out: subtract it.'}`:'Fill in the balances first.';
+ if(all){stars++;Kit.set('bk-stars',stars);Kit.tada();Kit.confetti(70)}else if(first!=null)Kit.tone(180,.25,'sawtooth',.08);draw()};
+$('ad').onclick=()=>{addRow(false);$('mg').textContent='📨 A new transaction came in!';Kit.tone(900,.08,'triangle',.08)};
+$('nm').oninput=()=>{name=$('nm').textContent.trim()||'Alex';Kit.set('bk-name',name)};
+$('nw').onclick=newMonth;$('lv').onchange=()=>{lvl=$('lv').value;Kit.set('bk-lvl',lvl);newMonth()};
+window.__b={answer:()=>rows.map((_,i)=>(bal(i)/100).toFixed(2))};
+newMonth();
+</script>
+</body></html>
