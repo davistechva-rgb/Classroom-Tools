@@ -1,7 +1,7 @@
 {
   "name": "classroom-tools",
   "productName": "Classroom Tools",
-  "version": "1.38.0",
+  "version": "1.39.0",
   "description": "Classroom Tools by Davis Tech Support",
   "author": "Davis Tech Support",
   "homepage": "https://davis-tech-support.com",
@@ -10,7 +10,8 @@
   "scripts": {
     "prep": "node prep.js",
     "start": "node prep.js && electron .",
-    "dist": "./build-windows.sh"
+    "dist": "node build.js",
+    "release": "node build.js --publish"
   },
   "devDependencies": {
     "@fontsource/fredoka": "^5.3.0",
@@ -67,5 +68,9 @@
     "portable": {
       "artifactName": "Classroom-Tools-Portable-${version}.exe"
     }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/davistechva-rgb/Classroom-Tools"
   }
 }

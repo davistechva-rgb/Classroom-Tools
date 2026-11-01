@@ -1,0 +1,40 @@
+# Builds the Windows app on a real Windows machine and publishes it as a GitHub release.
+# Every installed copy of Classroom Tools then offers the update.
+# To release: bump "version" in desktop/package.json, write desktop/notes.txt, commit, then push a tag:
+#   git tag desktop-v1.40.0 && git push origin desktop-v1.40.0
+name: Desktop release
+on:
+  push:
+    tags: ['desktop-v*']
+permissions:
+  contents: write
+jobs:
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - name: Check the version matches the tag
+        run: |
+          V=$(node -p "require('./package.json').version")
+          [ "desktop-v$V" = "$GITHUB_REF_NAME" ] || { echo "package.json says $V but the tag is $GITHUB_REF_NAME"; exit 1; }
+      - name: Skip if this release already exists
+        id: exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 && echo "yes=1" >> "$GITHUB_OUTPUT" || true
+      - run: npm ci
+        if: steps.exists.outputs.yes != '1'
+      - name: Build and publish
+        if: steps.exists.outputs.yes != '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node build.js --publish

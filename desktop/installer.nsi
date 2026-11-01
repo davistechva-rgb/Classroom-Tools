@@ -37,6 +37,7 @@ VIAddVersionKey "LegalCopyright" "© Davis Tech Support"
 Section "Install"
   ; close the app if it is open so files can be replaced
   nsExec::Exec 'taskkill /IM "${APP}.exe" /F'
+  Sleep 1500
   SetOutPath "$INSTDIR"
   RMDir /r "$INSTDIR\resources"
   File /r "dist\win-unpacked\*"
@@ -53,6 +54,11 @@ Section "Install"
   WriteRegDWORD HKCU "${UNKEY}" "NoModify" 1
   WriteRegDWORD HKCU "${UNKEY}" "NoRepair" 1
 SectionEnd
+Function .onInstSuccess
+  ; after an automatic update (silent install), open the app again
+  IfSilent 0 +2
+  Exec '"$INSTDIR\${APP}.exe"'
+FunctionEnd
 Section "Uninstall"
   nsExec::Exec 'taskkill /IM "${APP}.exe" /F'
   Delete "$DESKTOP\${APP}.lnk"

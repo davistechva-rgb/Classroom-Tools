@@ -1,0 +1,2 @@
+Automatic updates: Classroom Tools now checks for new versions and offers to install them for you.
+Help menu → Check for updates to look right away.
