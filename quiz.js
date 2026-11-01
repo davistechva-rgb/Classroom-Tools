@@ -13,7 +13,7 @@ const Quiz = {
     const OWN = lv.length - 1;
     main.insertAdjacentHTML('beforeend', `
     <div class="card row noprint" id="qzSet" style="margin-bottom:20px">
-      ${lv.length ? `<label>${cfg.levelLabel || 'Level'} <select id="qzLevel" style="width:auto">${lv.map((l, i) => `<option value="${i}">${l}</option>`).join('')}</select></label>` : ''}
+      ${lv.length ? `<label style="max-width:100%">${cfg.levelLabel || 'Level'} <select id="qzLevel" style="width:auto;max-width:100%">${lv.map((l, i) => `<option value="${i}">${l}</option>`).join('')}</select></label>` : ''}
       <label>Questions <select id="qzN" style="width:auto"><option>5</option><option selected>10</option><option>20</option><option value="0">Keep going</option></select></label>
       <button class="btn green" id="qzStart">Start</button>
     </div>

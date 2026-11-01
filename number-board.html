@@ -8,7 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="kit.css">
 <title>Interactive Number Board</title>
-<style>.board{display:grid;grid-template-columns:repeat(10,1fr);gap:5px;background:var(--ink);border:5px solid var(--ink);border-radius:18px;padding:5px;max-width:900px;margin:0 auto;box-shadow:6px 6px 0 rgba(29,43,83,.4)}
+<style>.board{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:clamp(2px,1vw,5px);background:var(--ink);border:5px solid var(--ink);border-radius:18px;padding:5px;max-width:900px;margin:0 auto;box-shadow:6px 6px 0 rgba(29,43,83,.4)}
 .sq{aspect-ratio:1.35;border:0;border-radius:8px;background:#fff;font:inherit;font-weight:700;font-size:clamp(.9rem,2.6vw,1.7rem);color:var(--ink);cursor:pointer;transition:background .15s}
 .sq.hid{color:transparent;background:#C8D4E3}
 .sw{width:38px;height:38px;border-radius:50%;border:4px solid var(--ink);cursor:pointer}.sw.on{outline:4px dashed var(--ink);outline-offset:2px}</style></head>
