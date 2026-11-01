@@ -48,6 +48,27 @@ nav button.favbtn{--c:#FFC93C}
 .empty small{display:block;font-size:1rem;font-weight:600;opacity:.75;margin-top:8px}
 .bk-row{display:grid;gap:10px;margin:14px 0}.bk-row .btn{width:100%}.bk-note{font-size:.95rem;color:#55607E;text-align:left}
 .empty{display:grid;place-items:center;font-size:1.3rem;font-weight:600;flex:1}
+.ph{display:flex;align-items:center;gap:10px;margin:0 0 10px;flex-wrap:wrap}
+.ph h2{margin:0!important;flex:1;min-width:0;flex-wrap:wrap}
+.ph h2 .btn,.pk-btns{font-size:.95rem}.pk-btns{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+.fnote{font-weight:700;font-size:.9rem;color:#55607E}
+#ftog b{background:var(--tomato,#FF6B5B);color:#fff;border-radius:999px;padding:0 7px;margin-left:2px}
+.fbar{display:grid;gap:6px;margin:0 0 12px;background:#fff;border:3px solid var(--ink);border-radius:16px;padding:8px 10px;max-height:40vh;overflow:auto}
+.fbar>div{display:flex;flex-wrap:wrap;gap:5px;align-items:center}.fbar span{font-weight:800;font-size:.85rem;min-width:7.5em}
+.chip{font:inherit;font-weight:700;font-size:.85rem;border:3px solid var(--ink);border-radius:999px;padding:2px 10px;background:#fff;cursor:pointer;color:var(--ink)}
+.chip.on{background:var(--sun);transform:translateY(-1px)}
+button.tile{font:inherit;cursor:pointer}.tile.pack small{background:#fff}
+.pk-ed{display:grid;gap:10px;text-align:left}.pk-ed input{font:inherit;font-weight:600;padding:6px 10px;border:3px solid var(--ink);border-radius:12px}
+.pk-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:4px;max-height:46vh;overflow:auto;border:3px solid var(--ink);border-radius:12px;padding:8px}
+.pk-list label{display:flex;gap:6px;align-items:center;font-weight:700;font-size:.92rem}.pk-count{font-weight:800}
+.cl-list{display:grid;gap:6px;text-align:left}.cl-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap:8px;align-items:center;border:3px solid var(--ink);border-radius:14px;padding:6px 8px}
+.cl-row.on{background:#FFF6C9}.cl-row input{font:inherit;font-weight:800;padding:4px 8px;border:2px solid #B8C2D6;border-radius:10px;min-width:0}.cl-row .muted{font-size:.85rem}
+.cl-new{display:grid;gap:6px;text-align:left}.cl-new input[type=text],.cl-new #cln{font:inherit;font-weight:700;padding:6px 10px;border:3px solid var(--ink);border-radius:12px}.cl-new label{font-weight:700;display:flex;gap:8px;align-items:flex-start}
+.bk-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:12px 0 4px}.bk-stats div{border:3px solid var(--ink);border-radius:12px;padding:6px;font-size:.8rem;font-weight:700}.bk-stats b{display:block;font-size:1.15rem}.bk-stats .warn{background:#FFE3DE}
+.bk-row small{display:block;font-weight:600;font-size:.8rem;opacity:.85}
+#bkBtn.due{position:relative}#bkBtn.due::after{content:"";position:absolute;top:-5px;right:-5px;width:16px;height:16px;border-radius:50%;background:#FF6B5B;border:3px solid var(--ink);animation:favpop 1.4s infinite}
+#clsBtn{max-width:16em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:760px),(max-height:520px){.bk-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.cl-row{grid-template-columns:minmax(0,1fr) auto auto}.cl-row .muted{display:none}.fbar span{min-width:100%}.ph h2{flex-basis:100%}}
 @media (max-width:760px),(max-height:520px){
   body{height:auto;overflow:auto}
   .app{grid-template-columns:1fr}
@@ -63,12 +84,13 @@ nav button.favbtn{--c:#FFC93C}
 <header class="head">
  <div><h1><span>Classroom</span> Tools</h1><div class="ct-brand" data-ct-brand></div></div>
  <div class="search"><input type="text" id="q" placeholder="🔍 Find a tool" aria-label="Find a tool"></div>
+ <button class="btn white small" id="clsBtn" title="Switch or add classes">🏫 My class</button>
  <button class="btn white small" id="custBtn" title="Customize: class name, logo, colors, text size, sounds">⚙️ Customize</button>
  <button class="btn white small" id="bkBtn" title="Back up or restore your saved lists, favorites, and settings">💾 Backup</button>
 </header>
 <div class="app">
  <nav id="nav" aria-label="Tool groups"></nav>
- <section class="panel" id="panel"><h2 id="ptitle"></h2><div class="tiles" id="tiles"></div></section>
+ <section class="panel" id="panel"><div class="ph"><h2 id="ptitle"></h2><span class="fnote" id="fnote"></span><button class="btn white small" id="ftog" aria-expanded="false" aria-controls="fbar">🎛️ Filters</button></div><div class="fbar" id="fbar" hidden></div><div class="tiles" id="tiles"></div></section>
 </div>
 <div id="foot"></div>
 <script src="kit.js"></script>
@@ -119,44 +141,163 @@ const CATS=[
 {name:"Big systems",emoji:"🏫",color:'#7BD3F7',tools:[["🧩", "Classroom Escape Room Platform", "classroom-escape-room-platform"], ["🎮", "Classroom Game Builder", "classroom-game-builder"], ["🏆", "Classroom RPG", "classroom-rpg"], ["🗺️", "Learning Adventure Platform", "learning-adventure-platform"], ["📚", "Interactive Lesson Builder", "interactive-lesson-builder"], ["🧪", "Virtual Laboratory Platform", "virtual-laboratory-platform"], ["🎤", "Classroom Game Show Platform", "classroom-game-show-platform"], ["📊", "Student Progress Dashboard", "student-progress-dashboard"], ["🏅", "Classroom Achievement Platform", "classroom-achievement-platform"], ["🪙", "Virtual Classroom Economy", "virtual-classroom-economy"], ["🗺️", "Interactive Learning Map", "interactive-learning-map"], ["📖", "Interactive Textbook Builder", "interactive-textbook-builder"], ["🧠", "Interactive Study Platform", "interactive-study-platform"], ["🎯", "Question Bank + Game Engine", "question-bank-game-engine"], ["🖥️", "All-in-One Classroom Dashboard", "all-in-one-classroom-dashboard"]]}
 ];
 const $=id=>document.getElementById(id);const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-let cur=0;try{cur=+(localStorage.getItem('ct:home-cat')??0)}catch{}if(cur!==-1&&!CATS[cur])cur=0;
-// Favorites: a list of tool file names saved on this device. Tool pages share the same list (see kit.js).
-const favs=()=>{try{return JSON.parse(localStorage.getItem('ct:favs'))||[]}catch{return []}};
-const setFavs=f=>{try{localStorage.setItem('ct:favs',JSON.stringify(f))}catch{}};
-const ALLT=()=>{const m={};CATS.forEach(c=>c.tools.forEach(t=>{if(!m[t[2]])m[t[2]]=[t[0],t[1],t[2],t[3],c.color]}));return m};
+let cur=0;try{const v=localStorage.getItem('ct:home-cat');cur=v==null?0:(isNaN(+v)?v:+v)}catch{}if(typeof cur==='number'&&cur>=0&&!CATS[cur])cur=0;
+// Device-wide lists (shared by every class): favorites, recently used, packs.
+const LS=(k,d)=>{try{const v=localStorage.getItem('ct:'+k);return v==null?d:JSON.parse(v)}catch{return d}};
+const LSset=(k,v)=>{try{localStorage.setItem('ct:'+k,JSON.stringify(v))}catch{}};
+const favs=()=>LS('favs',[]);const setFavs=f=>LSset('favs',f);
+const ALLT=()=>{const m={};CATS.forEach((c,ci)=>c.tools.forEach(t=>{if(!m[t[2]])m[t[2]]=[t[0],t[1],t[2],t[3],c.color,ci]}));return m};
+// ---------- 🏷️ tags for filters and search ----------
+const SUBJ={math:'➗ Math',read:'📚 Reading & writing',sci:'🔬 Science',soc:'🌎 Social studies',cs:'💻 Computer science',talk:'💬 Talk & SEL',mgmt:'🧭 Class management',any:'🎯 Any subject'};
+const GRADES={k2:'K–2',g35:'3–5',g68:'6–8',g912:'9–12'};
+const USES={board:'📺 On the board',teams:'👥 Teams',solo:'🧑‍💻 On their own',teacher:'🧑‍🏫 Teacher planning'};
+const ALLG=['k2','g35','g68','g912'];
+// defaults for each group, in the same order as CATS: [subjects, grades, uses]
+const CDEF=[['any',ALLG,'board'],['mgmt',ALLG,'board'],['any',ALLG,'board teams'],['talk',ALLG,'board'],['read',['k2','g35','g68'],'solo board'],['math',['k2','g35','g68'],'solo'],['soc',['g35','g68','g912'],'solo board'],['mgmt',ALLG,'teacher'],
+ ['any',ALLG,'teams board'],['any',['g35','g68','g912'],'teams'],['any',ALLG,'board'],['mgmt',ALLG,'board teacher'],['mgmt',ALLG,'board'],['talk',['g35','g68','g912'],'board'],['read',['g35','g68','g912'],'solo board'],['sci',['g35','g68','g912'],'board solo'],['soc',['g35','g68','g912'],'board solo'],
+ ['cs',['g68','g912'],'solo board'],['any',ALLG,'board'],['any',ALLG,'teacher'],['mgmt',ALLG,'board teacher'],['math',['k2','g35','g68'],'solo teams board'],['any',['k2'],'board solo'],['any',ALLG,'teacher board']];
+const KW=[[/scien|lab\b|planet|weather|volcano|plant|animal|life cycle|butterfly|frog|habitat|rainbow|color mixing|moon|solar|cell|atom|magnet|circuit|ecosystem|rock|cloud|water cycle|dinosaur|fossil|chemical|earthquake|tectonic|energy|force|gravity|space/i,'sci'],
+ [/math|number|count|fraction|addition|subtraction|multipl|division|geometry|angle|money|time-telling|measure|place value|algebra|graph|equation|pattern|target|puzzle board/i,'math'],
+ [/word|spell|letter|story|vocab|read|writ|poem|sentence|grammar|book|character|phonics|rhym|paragraph|textbook/i,'read'],
+ [/map|state|capital|histor|geograph|flag|countr|world|civiliz|explor|timeline|passport/i,'soc'],[/code|algorithm|binary|logic|debug|cpu|network|password|boolean/i,'cs']];
+const TAGS={};
+(()=>{const m=ALLT();Object.values(m).forEach(([e,n,s,soon,col,ci])=>{const d=CDEF[ci]||['any',ALLG,'board'];let sub=new Set([d[0]]);let gr=new Set(d[1]);
+ if(d[0]==='any'||ci===6||ci===22){const hit=KW.filter(([rx])=>rx.test(n)).map(k=>k[1]);if(hit.length){if(d[0]==='any')sub=new Set(hit);else if(ci===6)sub=new Set(hit.includes('sci')?['sci']:['soc']);}}
+ if(/addition|subtraction|count|letter|time-telling|money|shape|color|rainbow/i.test(n))gr.add('k2');if(/multipl|division|fraction/i.test(n)){gr.delete('k2');gr.add('g35');gr.add('g68')}
+ TAGS[s]={s:[...sub],g:[...gr],u:d[2].split(' ')}})})();
+let F=LS('home-filt',{s:[],g:[],u:[]}),fOpen=false;
+const fCount=()=>F.s.length+F.g.length+F.u.length;
+function pass(slug){const t=TAGS[slug];if(!t)return true;return (!F.s.length||F.s.some(x=>t.s.includes(x)))&&(!F.g.length||F.g.some(x=>t.g.includes(x)))&&(!F.u.length||F.u.some(x=>t.u.includes(x)))}
+// ---------- 🔍 search: name, group, tags and everyday words ----------
+const SYN={timer:'clock countdown stopwatch minutes',random:'pick picker choose spin wheel chance',quiz:'test review trivia questions check',game:'play fun',points:'xp reward score badge prize coins',draw:'whiteboard board paint sketch',noise:'quiet volume loud voice',team:'group partner',seat:'seating chart desks',name:'student pick picker',question:'quiz ask prompt',word:'vocab spelling letters',map:'geography world country',read:'book story',write:'writing story essay journal',behavior:'points rewards noise manage',music:'song sound audio',fraction:'pizza',money:'coins dollars cents store',clock:'time timer',schedule:'agenda plan day',vote:'poll survey'};
+function terms(q){const w=q.toLowerCase().split(/\s+/).filter(Boolean);return w.map(x=>{const set=[x];Object.entries(SYN).forEach(([k,v])=>{if(k.startsWith(x)||x.startsWith(k)||v.split(' ').includes(x))set.push(k,...v.split(' '))});return [...new Set(set)]})}
+function search(q){const T=terms(q),m=ALLT();return Object.values(m).map(t=>{const tg=TAGS[t[2]]||{s:[],g:[],u:[]};const name=t[1].toLowerCase(),hay=`${name} ${t[2].replace(/-/g,' ')} ${CATS[t[5]].name} ${tg.s.map(x=>SUBJ[x]).join(' ')} ${tg.u.map(x=>USES[x]).join(' ')}`.toLowerCase();
+  let sc=0;for(const alts of T){let best=0;alts.forEach((a,i)=>{const w=i?0.5:1;if(name.startsWith(a))best=Math.max(best,6*w);else if(new RegExp('\\b'+a.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).test(name))best=Math.max(best,4*w);else if(name.includes(a))best=Math.max(best,3*w);else if(hay.includes(a))best=Math.max(best,1.5*w)});if(!best)return null;sc+=best}return [sc,t]}).filter(Boolean).sort((a,b)=>b[0]-a[0]).map(x=>x[1])}
+// ---------- 🎒 starter packs ----------
+const PACKS=[{id:'first',e:'🏫',n:'First week of school',d:'Get to know each other and set up routines',t:['icebreakers','name-picker','random-seating','team-generator','class-schedule','classroom-timer','would-you-rather-generator','classroom-dashboard','xp-tracker','story-character-builder']},
+ {id:'k',e:'🧸',n:'Kindergarten favorites',d:'Counting, letters, colors and animals',t:['counting-train','letter-builder','color-mixing-lab','number-rocket','dinosaur-counting','underwater-counting','rainbow-builder','animal-habitat-builder','butterfly-life-cycle','sound-board']},
+ {id:'review',e:'📝',n:'Test review day',d:'Team games that use your own questions',t:['quiz-game','jeopardy','horse-race','question-bank-game-engine','classroom-game-show-platform','interactive-study-platform','digital-escape-room','scoreboard']},
+ {id:'calm',e:'🤫',n:'Calm, focused work time',d:'Quiet signals, timers and soft music',t:['silent-work-mode','noise-meter','classroom-timer','music-player','traffic-light','multiple-timers']},
+ {id:'mathc',e:'🧮',n:'Math centers',d:'Hands-on math stations',t:['target-number-challenge','fraction-builder','place-value-builder','math-race','algebra-balance-game','number-board','money-game','time-telling','angle-builder','measurement-challenge']},
+ {id:'lit',e:'📚',n:'Reading & writing block',d:'Stories, spelling and vocabulary',t:['story-generator','story-dice','spelling-bee-practice','vocab-quiz','word-scrambler','interactive-textbook-builder','character-generator','crossword']},
+ {id:'sci',e:'🔬',n:'Science day',d:'Simulations and life cycles',t:['volcano-simulator','plant-growth-simulator','virtual-laboratory-platform','plant-life-cycle','frog-life-cycle','color-mixing-lab','plate-tectonics-simulator']},
+ {id:'xp',e:'🏆',n:'Rewards & motivation',d:'XP, coins, badges and class goals',t:['xp-tracker','class-leaderboard','classroom-rewards-store','mystery-reward-system','streak-tracker','classroom-missions','student-leveling-system','classroom-currency-system']},
+ {id:'sub',e:'🧑‍🏫',n:'Substitute teacher day',d:'Easy to run with no setup',t:['daily-agenda-display','name-picker','classroom-timer','quiz-game','would-you-rather-generator','random-wheel','silent-work-mode']},
+ {id:'fri',e:'🎉',n:'Fun Friday',d:'Big games for the whole class',t:['horse-race','classroom-game-show-platform','classroom-rpg','memory-game','bingo-board','classroom-escape-room-platform','team-health-system']}];
+const myPacks=()=>LS('packs',[]);
+const allPacks=()=>{const m=ALLT();return [...myPacks().map(p=>({...p,mine:true})),...PACKS].map(p=>({...p,t:p.t.filter(s=>m[s])}))};
+// ---------- views ----------
+const VIEWS={'-1':['⭐','My favorites','#FFC93C'],'-2':['🕘','Recently used','#7BD3F7'],'-3':['🎒','Starter packs','#FF9F43'],'-4':['🗂️','All tools','#9B6BF2']};
 function layout(n){const T=$('tiles');T.classList.remove('scroll');T.style.gridTemplateColumns='';T.style.gridTemplateRows='';
  const w=T.clientWidth,h=T.clientHeight;let best=[1,n],bs=0;
  for(let c=1;c<=n;c++){const r=Math.ceil(n/c),tw=(w-(c-1)*14)/c,th=(h-(r-1)*14)/r,s=Math.min(tw,th*1.25);if(s>bs){bs=s;best=[c,r]}}
  if(bs<135){T.classList.add('scroll');return}
  T.style.gridTemplateColumns=`repeat(${best[0]},minmax(0,1fr))`;T.style.gridTemplateRows=`repeat(${best[1]},minmax(0,1fr))`}
-function tiles(list){$('tiles').scrollTop=0;$('tiles').innerHTML=list.length?list.map(([e,n,s,soon,col],i)=>soon===0
-  ?`<div class="tile soon" style="--tbg:${col}14;animation-delay:${Math.min(i,20)*.02}s"><span class="e" style="background:${col}">${e}</span>${esc(n)}<small>Coming soon</small></div>`
-  :`<a class="tile" href="${s}.html" style="--tbg:${col}22;animation-delay:${Math.min(i,20)*.02}s"><button class="fav ${favs().includes(s)?'on':''}" data-fav="${s}" aria-label="${favs().includes(s)?'Remove from':'Add to'} my favorites" title="${favs().includes(s)?'Remove from':'Add to'} my favorites">${favs().includes(s)?'★':'☆'}</button><span class="e" style="background:${col}">${e}</span>${esc(n)}</a>`).join(''):cur===-1&&!$('q').value.trim()?'<div class="empty"><div style="text-align:center">⭐ No favorites yet!<small>Tap the ☆ star on any tool to keep it here.</small></div></div>':'<div class="empty">No tools match that search.</div>';
- if(list.length)layout(list.length)}
-function nav(){const q=$('q').value;$('nav').innerHTML=`<button class="favbtn" aria-pressed="${cur===-1&&!q}" data-i="-1"><span class="ic" style="background:#fff">⭐</span><span class="t">My favorites</span><span class="n">${favs().filter(s=>ALLT()[s]).length}</span></button>`+CATS.map((c,i)=>(i===0?'<div class="navh">Classroom tools</div>':i===8?'<div class="navh">Games and activities</div>':'')+`<button aria-pressed="${i===cur&&!q}" data-i="${i}" style="--c:${c.color}"><span class="ic" style="background:${c.color}">${c.emoji}</span><span class="t">${c.name}</span><span class="n">${c.tools.filter(t=>t[3]!==0).length}</span></button>`).join('')}
-function show(){const q=$('q').value.toLowerCase().trim();nav();
- if(q){const hits=CATS.flatMap(c=>c.tools.filter(t=>t[1].toLowerCase().includes(q)).map(t=>[t[0],t[1],t[2],t[3],c.color]));$('ptitle').textContent='🔍 Search results';$('panel').style.setProperty('--cat','#FFC93C');tiles(hits.sort((a,b)=>(a[3]===0)-(b[3]===0)).slice(0,30))}
- else if(cur===-1){const m=ALLT();$('ptitle').innerHTML='<span>⭐</span>My favorites';$('panel').style.setProperty('--cat','#FFC93C');tiles(favs().map(s=>m[s]).filter(Boolean))}
- else{const c=CATS[cur];$('ptitle').innerHTML=`<span>${c.emoji}</span>${c.name}`;$('panel').style.setProperty('--cat',c.color);tiles(c.tools.map(t=>[...t.slice(0,4),c.color]))}}
-$('nav').onclick=e=>{const b=e.target.closest('[data-i]');if(!b)return;cur=+b.dataset.i;$('q').value='';try{localStorage.setItem('ct:home-cat',cur)}catch{};show()};
-$('tiles').addEventListener('click',e=>{const b=e.target.closest('[data-fav]');if(!b)return;e.preventDefault();e.stopPropagation();
+function tile([e,n,s,soon,col],i){return soon===0?`<div class="tile soon" style="--tbg:${col}14;animation-delay:${Math.min(i,20)*.02}s"><span class="e" style="background:${col}">${e}</span>${esc(n)}<small>Coming soon</small></div>`
+  :`<a class="tile" href="${s}.html" style="--tbg:${col}22;animation-delay:${Math.min(i,20)*.02}s"><button class="fav ${favs().includes(s)?'on':''}" data-fav="${s}" aria-label="${favs().includes(s)?'Remove from':'Add to'} my favorites" title="${favs().includes(s)?'Remove from':'Add to'} my favorites">${favs().includes(s)?'★':'☆'}</button><span class="e" style="background:${col}">${e}</span>${esc(n)}</a>`}
+function tiles(list,empty){const all=list.length,shown=list.filter(t=>pass(t[2]));$('tiles').scrollTop=0;
+ $('tiles').innerHTML=shown.length?shown.map(tile).join(''):`<div class="empty"><div style="text-align:center">${all&&fCount()?`🎛️ None of these match your filters.<small>${all} hidden. <button class="btn white small" data-fclear>Clear filters</button></small>`:empty||'No tools match that search.'}</div></div>`;
+ $('fnote').textContent=fCount()&&all?`Showing ${shown.length} of ${all}`:'';if(shown.length)layout(shown.length)}
+function nav(){const q=$('q').value.trim(),m=ALLT(),on=v=>!q&&String(cur)===String(v);
+ const vb=(v,ic,t,n,c)=>`<button class="favbtn" aria-pressed="${on(v)||(v==='-3'&&String(cur).startsWith('pack:')&&!q)}" data-i="${v}" style="--c:${c}"><span class="ic" style="background:#fff">${ic}</span><span class="t">${t}</span><span class="n">${n}</span></button>`;
+ $('nav').innerHTML=vb('-1','⭐','My favorites',favs().filter(s=>m[s]).length,'#FFC93C')+vb('-2','🕘','Recently used',LS('recent',[]).filter(s=>m[s]).length,'#7BD3F7')+vb('-3','🎒','Starter packs',allPacks().length,'#FF9F43')+vb('-4','🗂️','All tools',Object.keys(m).length,'#C9B6FF')
+  +CATS.map((c,i)=>(i===0?'<div class="navh">Classroom tools</div>':i===8?'<div class="navh">Games and activities</div>':'')+`<button aria-pressed="${on(i)}" data-i="${i}" style="--c:${c.color}"><span class="ic" style="background:${c.color}">${c.emoji}</span><span class="t">${c.name}</span><span class="n">${c.tools.filter(t=>t[3]!==0).length}</span></button>`).join('')}
+function fbar(){const chip=(g,k,l)=>`<button class="chip ${F[g].includes(k)?'on':''}" data-f="${g}" data-k="${k}">${l}</button>`;
+ $('ftog').innerHTML=`🎛️ Filters${fCount()?` <b>${fCount()}</b>`:''}`;$('ftog').setAttribute('aria-expanded',fOpen);
+ $('fbar').hidden=!fOpen;$('fbar').innerHTML=`<div><span>Grade</span>${Object.entries(GRADES).map(([k,l])=>chip('g',k,l)).join('')}</div><div><span>Subject</span>${Object.entries(SUBJ).map(([k,l])=>chip('s',k,l)).join('')}</div><div><span>How it's used</span>${Object.entries(USES).map(([k,l])=>chip('u',k,l)).join('')}</div>${fCount()?'<div><button class="btn white small" data-fclear>✕ Clear filters</button></div>':''}`}
+function title(ic,t,c,extra=''){$('ptitle').innerHTML=`<span>${ic}</span>${t}${extra}`;$('panel').style.setProperty('--cat',c)}
+function show(){const q=$('q').value.trim(),m=ALLT();nav();fbar();
+ if(q){title('🔍','Search results','#FFC93C');tiles(search(q),'No tools match that search. Try a simpler word like "timer" or "math".');return}
+ const v=String(cur);
+ if(v==='-1'){title('⭐','My favorites','#FFC93C');tiles(favs().map(s=>m[s]).filter(Boolean),'⭐ No favorites yet!<small>Tap the ☆ star on any tool to keep it here.</small>')}
+ else if(v==='-2'){title('🕘','Recently used','#7BD3F7',LS('recent',[]).length?' <button class="btn white small" id="rclear" style="margin-left:auto">🧽 Clear</button>':'');tiles(LS('recent',[]).map(s=>m[s]).filter(Boolean),'🕘 Nothing yet!<small>Tools you open will show up here.</small>');const r=$('rclear');if(r)r.onclick=()=>{LSset('recent',[]);show()}}
+ else if(v==='-4'){title('🗂️','All tools','#9B6BF2');tiles(Object.values(m).sort((a,b)=>a[1].localeCompare(b[1])))}
+ else if(v==='-3'){title('🎒','Starter packs','#FF9F43',' <button class="btn white small" id="pnew" style="margin-left:auto">➕ Make a pack</button>');$('fnote').textContent='';
+  const P=allPacks();$('tiles').innerHTML=P.map((p,i)=>`<button class="tile pack" data-pack="${esc(p.id)}" style="--tbg:#FFF6E0;animation-delay:${Math.min(i,20)*.02}s"><span class="e" style="background:${p.mine?'#C8F3D0':'#FFE29A'}">${p.e}</span>${esc(p.n)}<small>${p.t.length} tools${p.mine?' · mine':''}</small></button>`).join('');layout(P.length);$('pnew').onclick=()=>packEditor()}
+ else if(v.startsWith('pack:')){const p=allPacks().find(x=>x.id===v.slice(5));if(!p){cur=-3;return show()}
+  title(p.e,esc(p.n),'#FF9F43',` <span class="pk-btns"><button class="btn white small" id="pback">⬅ Packs</button>${p.mine?'<button class="btn white small" id="pedit">✏️ Edit</button>':'<button class="btn white small" id="pcopy">📄 Copy to my packs</button>'}</span>`);
+  tiles(p.t.map(s=>m[s]),'This pack is empty. Tap ✏️ Edit to add tools.');$('pback').onclick=()=>go(-3);if($('pedit'))$('pedit').onclick=()=>packEditor(p);if($('pcopy'))$('pcopy').onclick=()=>{const n={id:'my'+Date.now(),e:p.e,n:p.n+' (mine)',t:[...p.t]};LSset('packs',[n,...myPacks()]);packEditor(n)}}
+ else{const c=CATS[cur]||CATS[0];title(c.emoji,c.name,c.color);tiles(c.tools.map(t=>[...t.slice(0,4),c.color]))}}
+function go(v){cur=v;$('q').value='';try{localStorage.setItem('ct:home-cat',v)}catch{};show()}
+$('nav').onclick=e=>{const b=e.target.closest('[data-i]');if(!b)return;const v=b.dataset.i;go(isNaN(+v)?v:+v)};
+$('tiles').addEventListener('click',e=>{const pk=e.target.closest('[data-pack]');if(pk){go('pack:'+pk.dataset.pack);return}
+ if(e.target.closest('[data-fclear]')){F={s:[],g:[],u:[]};LSset('home-filt',F);show();return}
+ const b=e.target.closest('[data-fav]');if(!b)return;e.preventDefault();e.stopPropagation();
  const s=b.dataset.fav,f=favs(),k=f.indexOf(s);k<0?f.push(s):f.splice(k,1);setFavs(f);Kit.tone(k<0?880:440,.12,'triangle',.18);
- if(cur===-1&&!$('q').value.trim()){show();return}
+ if(String(cur)==='-1'&&!$('q').value.trim()){show();return}
  b.classList.toggle('on',k<0);b.textContent=k<0?'★':'☆';b.classList.remove('pop');void b.offsetWidth;b.classList.add('pop');nav()});
+$('ftog').onclick=()=>{fOpen=!fOpen;show()};
+$('fbar').onclick=e=>{if(e.target.closest('[data-fclear]')){F={s:[],g:[],u:[]};LSset('home-filt',F);show();return}const c=e.target.closest('[data-f]');if(!c)return;const g=c.dataset.f,k=c.dataset.k;F[g]=F[g].includes(k)?F[g].filter(x=>x!==k):[...F[g],k];LSset('home-filt',F);Kit.tick();show()};
 addEventListener('pageshow',show);
-// 💾 Backup and restore: everything the tools save lives in this browser under keys that start with "ct:".
-function ctData(){const d={};try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('ct:'))d[k]=localStorage.getItem(k)}}catch{}return d}
+// ---------- 🎒 make or edit a pack ----------
+function packEditor(p){const m=ALLT(),isNew=!p;p=p?{...p,t:[...p.t]}:{id:'my'+Date.now(),e:'🎒',n:'',t:[...favs().filter(s=>m[s])]};
+ Kit.modal(`<h2 style="margin-top:0">🎒 ${isNew?'Make a pack':'Edit pack'}</h2><div class="pk-ed"><div class="row" style="gap:8px"><label>Emoji<br><input id="pke" value="${esc(p.e)}" maxlength="4" style="width:70px"></label><label style="flex:1">Pack name<br><input id="pkn" value="${esc(p.n)}" placeholder="Monday morning" style="width:100%"></label></div>
+ <input id="pkq" placeholder="🔍 Find tools to add" style="width:100%"><div class="pk-count" id="pkc"></div><div class="pk-list" id="pkl"></div><div class="row" style="gap:6px"><button class="btn green" id="pks">💾 Save pack</button>${isNew?'':'<button class="btn white small" id="pkd">🗑️ Delete pack</button>'}</div></div>`);
+ const M=document.getElementById('kitModal'),q=s=>M.querySelector(s);
+ const list=()=>{const t=q('#pkq').value.trim();const rows=t?search(t):Object.values(m).sort((a,b)=>(p.t.includes(b[2])-p.t.includes(a[2]))||a[1].localeCompare(b[1]));q('#pkl').innerHTML=rows.slice(0,120).map(r=>`<label><input type="checkbox" data-s="${r[2]}" ${p.t.includes(r[2])?'checked':''}> ${r[0]} ${esc(r[1])}</label>`).join('');q('#pkc').textContent=`${p.t.length} tool${p.t.length===1?'':'s'} in this pack${isNew&&p.t.length?' (started with your favorites)':''}`};
+ list();q('#pkq').oninput=list;q('#pkl').onchange=e=>{const s=e.target.dataset.s;if(!s)return;p.t=e.target.checked?[...p.t,s]:p.t.filter(x=>x!==s);q('#pkc').textContent=`${p.t.length} tool${p.t.length===1?'':'s'} in this pack`};
+ q('#pks').onclick=()=>{p.n=q('#pkn').value.trim()||'My pack';p.e=q('#pke').value.trim()||'🎒';const L=myPacks().filter(x=>x.id!==p.id);L.unshift({id:p.id,e:p.e,n:p.n,t:p.t});LSset('packs',L);M.classList.remove('open');Kit.ding();go('pack:'+p.id)};
+ if(q('#pkd'))q('#pkd').onclick=()=>{if(!confirm('Delete this pack? (The tools stay.)'))return;LSset('packs',myPacks().filter(x=>x.id!==p.id));M.classList.remove('open');go(-3)};
+ setTimeout(()=>q('#pkn').focus(),50)}
+// ---------- 🏫 class profiles ----------
+// The first class keeps the original "ct:" keys; other classes use "ctp:<id>:". These keys are device-wide, not per class:
+const GLOBAL=new Set(['ct:profile','ct:profiles','ct:favs','ct:recent','ct:packs','ct:home-cat','ct:home-filt','ct:last-backup']);
+// "Copy my content" brings these over (lists, question banks, lessons, layouts and look), never students or scores:
+const CONTENT=new Set('prefs rv-questions rw-coin-name cs qe-sets il-lessons sp-decks tb-book ap-trees lap-unit qs-quests eg-room la-adv vl-lab lb-board qb-topics wb-pages tl-events tl-title is-story it-tl gb-lib cd-deck pb-deck mg-board ln-team-names'.split(' '));
+const isContent=k=>k.startsWith('ed:')||k.startsWith('arr:')||k.startsWith('ln-')||CONTENT.has(k);
+const profiles=()=>{const L=LS('profiles',[]);if(!L.find(p=>p.id==='main'))L.unshift({id:'main',name:'My class'});return L};
+const pfxOf=id=>id==='main'?'ct:':'ctp:'+id+':';
+function classKeys(id){const P=pfxOf(id),o={};try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(!k||!k.startsWith(P)||GLOBAL.has(k))continue;if(id==='main'&&k.startsWith('ctp:'))continue;o[k.slice(P.length)]=localStorage.getItem(k)}}catch{}return o}
+function switchTo(id){LSset('profile',id);try{localStorage.setItem('ct:profile',id)}catch{}location.hash='';location.reload()}
+function newClass(name,copy,from=Kit.profile.id){const id='c'+Date.now().toString(36),L=profiles();L.push({id,name});LSset('profiles',L);const src=classKeys(from),P=pfxOf(id);
+ Object.entries(src).forEach(([k,v])=>{if(copy==='all'||(copy==='content'&&isContent(k))||k==='prefs'){try{localStorage.setItem(P+k,v)}catch{}}});
+ // the new class shows its own name at the top of every tool
+ let pr={};try{pr=JSON.parse(localStorage.getItem(P+'prefs'))||{}}catch{}pr.cls=name;try{localStorage.setItem(P+'prefs',JSON.stringify(pr))}catch{}return id}
+function classesModal(){const L=profiles(),me=Kit.profile.id,count=id=>Object.keys(classKeys(id)).length;
+ Kit.modal(`<h2 style="margin-top:0">🏫 My classes</h2><p class="bk-note" style="margin:0 0 10px">Each class has its own class list, points, coins, quests and saved work. Favorites, recently used and packs are shared.</p>
+ <div class="cl-list">${L.map(p=>`<div class="cl-row ${p.id===me?'on':''}" data-id="${p.id}"><input value="${esc(p.name)}" data-rn="${p.id}" aria-label="Class name"><span class="muted">${count(p.id)} saved</span>${p.id===me?'<b>✅ Using now</b>':`<button class="btn green small" data-use="${p.id}">Use</button>`}${p.id==='main'?'':`<button class="btn white small" data-del="${p.id}" aria-label="Delete ${esc(p.name)}">🗑️</button>`}</div>`).join('')}</div>
+ <h3 style="margin:16px 0 6px">➕ Add a class</h3><div class="cl-new"><input id="cln" placeholder="Period 3 Science"><label><input type="radio" name="clc" value="none" checked><span>Start fresh</span></label><label><input type="radio" name="clc" value="content"><span>Copy my lists, question banks, lessons and look from <b>${esc(Kit.profile.name)}</b> (no students or scores)</span></label><label><input type="radio" name="clc" value="all"><span>Copy everything from <b>${esc(Kit.profile.name)}</b></span></label><button class="btn green" id="cla">➕ Add and switch to it</button></div>`);
+ const M=document.getElementById('kitModal');
+ M.querySelectorAll('[data-rn]').forEach(i=>i.onchange=()=>{const L=profiles(),p=L.find(x=>x.id===i.dataset.rn);p.name=i.value.trim()||p.name;LSset('profiles',L);
+  const P=pfxOf(p.id);let pr={};try{pr=JSON.parse(localStorage.getItem(P+'prefs'))||{}}catch{}if(p.id!=='main'||pr.cls){pr.cls=p.name;try{localStorage.setItem(P+'prefs',JSON.stringify(pr))}catch{}}Kit.ding();if(p.id===me)setTimeout(()=>location.reload(),300)});
+ M.querySelectorAll('[data-use]').forEach(b=>b.onclick=()=>switchTo(b.dataset.use));
+ M.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{const id=b.dataset.del,p=profiles().find(x=>x.id===id);if(!confirm(`Delete "${p.name}" and everything saved for it? This can't be undone (unless you have a backup).`))return;const P=pfxOf(id);const ks=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith(P))ks.push(k)}ks.forEach(k=>localStorage.removeItem(k));LSset('profiles',profiles().filter(x=>x.id!==id));if(me===id)switchTo('main');else classesModal()});
+ M.querySelector('#cla').onclick=()=>{const n=M.querySelector('#cln').value.trim();if(!n){M.querySelector('#cln').focus();return}const c=M.querySelector('input[name=clc]:checked').value;switchTo(newClass(n,c))}}
+$('clsBtn').onclick=classesModal;
+// ---------- 💾 backup and restore ----------
+function ctData(){const d={};try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&(k.startsWith('ct:')||k.startsWith('ctp:')))d[k]=localStorage.getItem(k)}}catch{}return d}
+const ago=t=>{if(!t)return 'never';const d=Math.floor((Date.now()-t)/864e5);return d<1?'today':d===1?'yesterday':`${d} days ago`};
+const dueBackup=()=>{const t=LS('last-backup',0),n=Object.keys(ctData()).length;return n>8&&(!t||Date.now()-t>14*864e5)};
+function badge(){$('bkBtn').classList.toggle('due',dueBackup());$('bkBtn').title=dueBackup()?'Time to save a backup!':'Back up or restore your classes, lists, favorites and settings';$('clsBtn').innerHTML=`🏫 ${esc(Kit.profile.name)} <span aria-hidden="true">▾</span>`}
+function download(obj,name){const blob=new Blob([JSON.stringify(obj,null,1)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
+const stamp=()=>new Date().toISOString().slice(0,10);const slugN=s=>s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'class';
+function saveAll(){download({app:'Classroom Tools',kind:'all',made:new Date().toISOString(),data:ctData()},`classroom-tools-backup-${stamp()}.json`);LSset('last-backup',Date.now());Kit.ding();badge()}
+function saveClass(){download({app:'Classroom Tools',kind:'class',name:Kit.profile.name,made:new Date().toISOString(),data:classKeys(Kit.profile.id)},`classroom-tools-${slugN(Kit.profile.name)}-${stamp()}.json`);LSset('last-backup',Date.now());Kit.ding();badge()}
+function backupModal(){const all=ctData(),n=Object.keys(all).length,kb=Math.round(Object.entries(all).reduce((s,[k,v])=>s+k.length+String(v).length,0)*2/1024),L=profiles();
+ Kit.modal(`<div style="font-size:3rem">💾</div><h2 style="margin:4px 0">Backup &amp; restore</h2><p style="margin:0">Everything you save lives only in <b>this browser</b>. Clearing the browser or switching computers loses it, so save a backup file now and then.</p>
+ <div class="bk-stats"><div><b>${L.length}</b>class${L.length===1?'':'es'}</div><div><b>${n}</b>saved items</div><div><b>${kb<1024?kb+' KB':(kb/1024).toFixed(1)+' MB'}</b>of about 5 MB</div><div class="${dueBackup()?'warn':''}"><b>${ago(LS('last-backup',0))}</b>last backup</div></div>
+ <div class="bk-row"><button class="btn green" id="bkAll">⬇️ Save everything (all ${L.length} class${L.length===1?'':'es'})</button>${L.length>1?`<button class="btn white" id="bkOne">⬇️ Save just ${esc(Kit.profile.name)}</button>`:''}<label class="btn white" style="text-align:center">⬆️ Restore from a backup file<input type="file" id="bkLoad" accept=".json,application/json" hidden></label></div>
+ <p class="bk-note">💡 Tip: save the file somewhere safe like Google Drive or OneDrive. You can also use it to move everything to another computer.</p>`);
+ $('bkAll').onclick=saveAll;if($('bkOne'))$('bkOne').onclick=saveClass;
+ $('bkLoad').onchange=async()=>{const f=$('bkLoad').files[0];if(!f)return;let j;try{j=JSON.parse(await f.text());if(!j||typeof j.data!=='object')throw 0}catch{alert('That file isn\'t a Classroom Tools backup.');return}restoreModal(j)}}
+function restoreModal(j){const d=j.data,made=j.made?new Date(j.made).toLocaleDateString():'an unknown date';
+ if(j.kind==='class'){const n=Object.keys(d).length;Kit.modal(`<h2 style="margin-top:0">⬆️ Restore a class</h2><p>This file is <b>${esc(j.name||'a class')}</b>, saved ${made}, with ${n} items.</p><div class="bk-row"><button class="btn green" id="rsNew">➕ Add it as a new class</button><button class="btn white" id="rsInto">⤵️ Put it into ${esc(Kit.profile.name)} (replaces items with the same name)</button></div>`);
+  $('rsNew').onclick=()=>{const id='c'+Date.now().toString(36),L=profiles();let nm=j.name||'Restored class';if(L.some(p=>p.name===nm))nm+=' (restored)';L.push({id,name:nm});LSset('profiles',L);Object.entries(d).forEach(([k,v])=>{try{localStorage.setItem(pfxOf(id)+k,String(v))}catch{}});Kit.tada();switchTo(id)};
+  $('rsInto').onclick=()=>{if(!confirm(`Put this backup into ${Kit.profile.name}?`))return;Object.entries(d).forEach(([k,v])=>{try{localStorage.setItem(Kit.profile.pfx+k,String(v))}catch{}});Kit.tada();location.reload()};return}
+ const keys=Object.keys(d).filter(k=>k.startsWith('ct:')||k.startsWith('ctp:'));if(!keys.length){alert('That backup is empty.');return}
+ let cls=1;try{cls=Math.max(1,(JSON.parse(d['ct:profiles']||'[]')).length)}catch{}
+ Kit.modal(`<h2 style="margin-top:0">⬆️ Restore a backup</h2><p>Saved ${made}: <b>${keys.length}</b> items, ${cls} class${cls===1?'':'es'}.</p><div class="bk-row"><button class="btn green" id="rsAdd">➕ Add to what's here<br><small>Keeps everything else. Items with the same name are replaced.</small></button><button class="btn white" id="rsRep">♻️ Replace everything<br><small>A safety copy of what's here downloads first.</small></button></div>`);
+ const write=()=>{keys.forEach(k=>{if(k==='ct:profiles')return;try{localStorage.setItem(k,String(d[k]))}catch{}});
+  // merge the class lists so no class goes missing
+  try{const a=profiles(),b=JSON.parse(d['ct:profiles']||'[]');b.forEach(p=>{const x=a.find(q=>q.id===p.id);if(x)x.name=p.name;else a.push(p)});LSset('profiles',a)}catch{}};
+ $('rsAdd').onclick=()=>{write();Kit.tada();alert('All set! Your saved items are back.');location.reload()};
+ $('rsRep').onclick=()=>{if(!confirm('Replace everything in this browser with the backup?'))return;download({app:'Classroom Tools',kind:'all',made:new Date().toISOString(),data:ctData()},`classroom-tools-safety-copy-${stamp()}.json`);
+  setTimeout(()=>{Object.keys(ctData()).forEach(k=>localStorage.removeItem(k));write();if(!d['ct:profile'])localStorage.removeItem('ct:profile');Kit.tada();alert('All set! Everything now matches the backup.');location.reload()},400)}}
 $('custBtn').onclick=()=>Kit.customize();document.querySelectorAll('[data-ct-brand]').forEach(e=>e.innerHTML=Kit.brand());
-$('bkBtn').onclick=()=>{const n=Object.keys(ctData()).length;
- Kit.modal(`<div style="font-size:3rem">💾</div><h2 style="margin:4px 0">Backup &amp; restore</h2><p style="margin:0">Your favorites, lists, class names, settings, and boards are saved in this browser. Save a backup file to keep them safe or move them to another computer.</p>
- <div class="bk-row"><button class="btn green" id="bkSave">⬇️ Save a backup file</button><label class="btn white" style="text-align:center">⬆️ Restore from a backup file<input type="file" id="bkLoad" accept=".json,application/json" hidden></label></div>
- <p class="bk-note">This browser has <b>${n}</b> saved ${n===1?'item':'items'}. Restoring adds the backup's items and replaces any with the same name. Everything else stays.</p>`);
- $('bkSave').onclick=()=>{const blob=new Blob([JSON.stringify({app:'Classroom Tools',made:new Date().toISOString(),data:ctData()},null,1)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`classroom-tools-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();Kit.ding()};
- $('bkLoad').onchange=async()=>{const f=$('bkLoad').files[0];if(!f)return;try{const j=JSON.parse(await f.text());const d=j&&j.data;if(!d||typeof d!=='object')throw 0;const keys=Object.keys(d).filter(k=>k.startsWith('ct:'));if(!keys.length)throw 0;
-  if(!confirm(`Restore ${keys.length} saved items from this backup${j.made?` (made ${new Date(j.made).toLocaleDateString()})`:''}?`))return;keys.forEach(k=>{try{localStorage.setItem(k,String(d[k]))}catch{}});
-  Kit.tada();alert('All set! Your saved items are back.');location.reload()}catch{alert('That file isn\'t a Classroom Tools backup.')}}};
+$('bkBtn').onclick=backupModal;
 $('q').oninput=show;addEventListener('resize',()=>{const n=$('tiles').querySelectorAll('.tile').length;if(n)layout(n)});
-$('foot').outerHTML=Kit.LOGO('');document.querySelector('footer.brand').insertAdjacentHTML('beforeend','<span class="ver">Version 37</span>');show();
+badge();if(location.hash==='#classes')setTimeout(classesModal,50);
+$('foot').outerHTML=Kit.LOGO('');document.querySelector('footer.brand').insertAdjacentHTML('beforeend','<span class="ver">Version 38</span>');show();
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).catch(()=>{});
 </script>
 </body></html>

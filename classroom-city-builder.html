@@ -68,7 +68,7 @@ $('mp').onclick=e=>{const t=e.target.closest('[data-i]');if(!t)return;const i=+t
 $('sh').onclick=e=>{const b=e.target.closest('[data-b]');if(!b||b.disabled)return;if(b.dataset.b==='bull'){bull=!bull}else{bull=false;sel=b.dataset.b}draw()};
 document.querySelector('.cc2-coins').onclick=e=>{const b=e.target.closest('[data-c]');if(!b)return;const n=+b.dataset.c;S.coins+=n;news(`🪙 +${n}: ${$('rs').value}`);Kit.tone(880,.08,'triangle',.12);save();draw()};
 $('pd').onclick=()=>{const shops=S.map.filter(k=>k==='shop').length;if(!shops){news('💰 No shops yet, so no payday. Build a shop!');draw();return}S.coins+=shops*2;news(`💰 Payday! ${shops} shop${shops>1?'s':''} earned ${shops*2} 🪙`);Kit.ding();save();draw()};
-$('nm').oninput=()=>{S.name=$('nm').value;save()};$('rst').onclick=()=>{if(confirm('Bulldoze everything and start a brand new city?')){localStorage.removeItem('ct:cc2-city');location.reload()}};
+$('nm').oninput=()=>{S.name=$('nm').value;save()};$('rst').onclick=()=>{if(confirm('Bulldoze everything and start a brand new city?')){Kit.del('cc2-city');location.reload()}};
 window.__c={coins:n=>{S.coins+=n;save();draw()},build:(k,i)=>{sel=k;bull=false;$('mp').children[i].click()},free:()=>S.map.findIndex(k=>!k),map:()=>S.map};
 draw();
 </script>

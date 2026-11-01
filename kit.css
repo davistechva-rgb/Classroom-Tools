@@ -87,3 +87,6 @@ body.fs .grid2:has(> .setup){grid-template-columns:minmax(0,1fr)}
 body.fs .top{padding-top:10px;padding-bottom:8px}
 @media print{footer.brand{display:none}}
 [hidden]{display:none!important}
+
+.ct-cls{max-width:12em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;align-self:center;text-decoration:none}
+@media (max-width:600px){.tool-btns{flex-wrap:wrap}.ct-cls{max-width:9em}}
