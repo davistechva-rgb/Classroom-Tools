@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Question Bank Generator</title>
+<style>
+main{max-width:1500px}
+.qb{display:grid;grid-template-columns:330px minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.qb{grid-template-columns:minmax(0,1fr)}}
+.qb-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:14px;display:grid;gap:10px}
+.qb-p .lb{font-weight:800}
+.qb-topics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+.qb-topics label{border:3px solid var(--ink);border-radius:12px;padding:5px 8px;font-weight:800;cursor:pointer;display:flex;gap:6px;align-items:center;font-size:.92rem}
+.qb-topics label:has(input:checked){background:var(--sun)}
+.qb-seg{display:flex;gap:4px;flex-wrap:wrap}.qb-seg button{font:inherit;font-weight:800;border:3px solid var(--ink);border-radius:10px;padding:4px 10px;background:#fff;cursor:pointer;color:var(--ink)}.qb-seg button.on{background:var(--sun)}
+.qb-sheet{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:18px;box-shadow:6px 6px 0 var(--ink)}
+.qb-sheet h2{margin:0 0 4px}.qb-head{display:flex;gap:30px;font-weight:700;margin-bottom:12px;flex-wrap:wrap}.qb-head span{border-bottom:2px solid var(--ink);min-width:160px;display:inline-block}
+.qb-list{display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));gap:14px 22px;counter-reset:q}
+@media (max-width:700px){.qb-list{grid-template-columns:minmax(0,1fr)}}
+.qb-q{break-inside:avoid;font-size:1.08rem;font-weight:600}
+.qb-q b{margin-right:6px}
+.qb-q .ch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 12px;margin-top:4px;font-weight:500}
+.qb-q .ln{display:inline-block;border-bottom:2px solid #9FA9C4;min-width:90px;margin-left:6px}
+.qb-q .key{color:#2E9E47;font-weight:900;margin-left:6px}
+.qb-q.edit{outline:3px dashed #C3CBDB;border-radius:8px;padding:2px 4px}
+@media print{header,.qb-p,.qb-noprint{display:none!important}.qb{display:block}.qb-sheet{border:0;box-shadow:none;padding:0}.qb-break{break-before:page}}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("❓", "Question Bank Generator");
+const $=id=>document.getElementById(id);
+const R=Kit.rand,P=Kit.pick;
+const VOC=[['happy','joyful','sad'],['big','large','small'],['fast','quick','slow'],['begin','start','finish'],['brave','bold','afraid'],['quiet','silent','loud'],['easy','simple','hard'],['smart','clever','foolish'],['tired','sleepy','rested'],['angry','mad','calm'],['shout','yell','whisper'],['tiny','little','huge'],['rich','wealthy','poor'],['old','ancient','new'],['funny','silly','serious']];
+// each topic makes one question: [question, right answer, wrong, wrong, wrong]
+const near=(a,spread=3,n=3)=>{const s=new Set();let g=0;while(s.size<n&&g++<50){const v=a+R(-spread,spread);if(v!==a&&v>=0)s.add(v)}while(s.size<n)s.add(a+s.size+1);return [...s]};
+const T={
+ add:['➕ Addition',d=>{const m=[10,100,1000][d];const a=R(1,m),b=R(1,m);return [`${a} + ${b} = ?`,a+b,...near(a+b,d?10:3)]}],
+ sub:['➖ Subtraction',d=>{const m=[10,100,1000][d];let a=R(2,m),b=R(1,a);return [`${a} − ${b} = ?`,a-b,...near(a-b,d?10:3)]}],
+ mul:['✖️ Multiplication',d=>{const a=R(2,[5,10,12][d]),b=R(2,[5,10,25][d]);return [`${a} × ${b} = ?`,a*b,a*(b+1),(a+1)*b,a*b+R(1,3)]}],
+ div:['➗ Division',d=>{const b=R(2,[5,10,12][d]),q=R(2,[5,10,20][d]);return [`${b*q} ÷ ${b} = ?`,q,...near(q,3)]}],
+ miss:['🔲 Missing number',d=>{const m=[10,50,200][d],a=R(1,m),b=R(1,m),op=P(['+','−']);return op==='+'?[`${a} + ☐ = ${a+b}`,b,...near(b,4)]:[`${a+b} − ☐ = ${a}`,b,...near(b,4)]}],
+ place:['🔢 Place value',d=>{const n=R([100,1000,10000][d],[999,9999,99999][d]),s=String(n),i=R(0,s.length-1),names=['ones','tens','hundreds','thousands','ten thousands'],pl=s.length-1-i;return [`In ${n.toLocaleString()}, what digit is in the ${names[pl]} place?`,+s[i],...[...new Set(s.split('').map(Number).filter(x=>x!==+s[i]).concat([R(0,9),R(0,9),R(0,9)]))].filter(x=>x!==+s[i]).slice(0,3)]}],
+ round:['🎯 Rounding',d=>{const to=[10,100,1000][d],n=R(to,to*20+to-1),r=Math.round(n/to)*to;return [`Round ${n.toLocaleString()} to the nearest ${to}.`,r,r+to,Math.max(0,r-to),n]}],
+ frac:['🍕 Fractions',d=>{const den=P([2,3,4,5,6,8,10]),a=R(1,den-1),b=R(1,den-1);if(d===0){return [`Which is bigger: ${a}/${den} or ${b}/${den}?`,a===b?'They are equal':`${Math.max(a,b)}/${den}`,a===b?`${a+1}/${den}`:`${Math.min(a,b)}/${den}`,'They are equal',`${den}/${a}`].filter((x,i,arr)=>arr.indexOf(x)===i)}
+  if(d===1){const s=a+b;return [`${a}/${den} + ${b}/${den} = ?`,`${s}/${den}`,`${s}/${den*2}`,`${a*b}/${den}`,`${s+1}/${den}`]}const k=R(2,4),g=(x,y)=>y?g(y,x%y):x,n=R(1,den-1),f=g(n,den);return [`Simplify ${n*k}/${den*k}`,`${n/f}/${den/f}`,`${n}/${den*k}`,`${n*k}/${den}`,`${n+1}/${den}`]}],
+ ops:['🧮 Order of operations',d=>{const a=R(2,9),b=R(2,9),c=R(2,9);return d===2?[`(${a} + ${b}) × ${c} = ?`,(a+b)*c,a+b*c,a*c+b,(a+b)*c+c]:[`${a} + ${b} × ${c} = ?`,a+b*c,(a+b)*c,a*b+c,a+b+c]}],
+ word:['📖 Word problems',d=>{const n=['Maya','Leo','Ava','Sam','Zoe','Eli'],x=P(n),a=R(3,[12,40,90][d]),b=R(2,[9,25,60][d]),it=P(['stickers','apples','marbles','cards','cookies','pencils']);const k=R(0,3);
+  if(k===0)return [`${x} has ${a} ${it}. A friend gives ${x} ${b} more. How many ${it} does ${x} have now?`,a+b,a-b<0?a+b+2:Math.abs(a-b),a*b>999?a+b+1:a+b-1,a+b+10];
+  if(k===1){const big=a+b;return [`${x} had ${big} ${it} and gave away ${b}. How many are left?`,a,big+b,b,a+1]}
+  if(k===2){const g=R(2,6),per=R(2,[5,10,12][d]);return [`${x} has ${g} bags with ${per} ${it} in each bag. How many ${it} in all?`,g*per,g+per,g*per+per,g*(per-1)]}
+  const g=R(2,6),per=R(2,[5,10,12][d]);return [`${x} shares ${g*per} ${it} equally among ${g} friends. How many does each friend get?`,per,g,per+1,g*per-g]}],
+ time:['🕐 Time',d=>{const h=R(1,12),m=d?P([0,15,30,45,5,10,20,25,35,40,50,55]):P([0,30]),add=d===2?P([15,30,45,90]):0;const f=(H,M)=>`${((H-1+12)%12)+1}:${String(M).padStart(2,'0')}`;
+  if(!add)return [`What time is ${m===0?`${h} o'clock`:m===30?`half past ${h}`:m===15?`quarter past ${h}`:m===45?`quarter to ${h%12+1}`:`${m} minutes past ${h}`}?`,f(h,m),f(h,(m+15)%60),f(h%12+1,m),f(h,(m+30)%60)];
+  const t=h*60+m+add;return [`It is ${f(h,m)}. What time will it be in ${add} minutes?`,f(Math.floor(t/60),t%60),f(Math.floor((t-15)/60),(t-15)%60),f(Math.floor((t+15)/60),(t+15)%60),f(h,(m+add)%60===t%60?(m+add+5)%60:(m+add)%60)]}],
+ syn:['📚 Synonyms & antonyms',d=>{const w=P(VOC),anto=Math.random()<.5,others=Kit.shuffle(VOC.filter(v=>v!==w)).slice(0,3);return anto?[`What is the OPPOSITE of "${w[0]}"?`,w[2],w[1],...others.slice(0,2).map(o=>o[2])]:[`Which word means the SAME as "${w[0]}"?`,w[1],w[2],...others.slice(0,2).map(o=>o[1])]}]};
+let picked=Kit.get('qb-topics',['add','sub','mul']),diff=1,count=20,fmt='mc',cols=2,showKey=false,Q=[],title='Practice sheet';
+document.querySelector('main').innerHTML=`<div class="qb"><div class="qb-p"><div class="lb">📚 Topics</div><div class="qb-topics" id="tp">${Object.entries(T).map(([k,t])=>`<label><input type="checkbox" value="${k}" ${picked.includes(k)?'checked':''} hidden>${t[0]}</label>`).join('')}</div>
+<div class="lb">💪 Difficulty</div><div class="qb-seg" id="df">${['🌱 Easy','🌿 Medium','🌳 Hard'].map((t,i)=>`<button data-d="${i}">${t}</button>`).join('')}</div>
+<div class="lb">🔢 How many questions</div><div class="qb-seg" id="ct">${[10,20,30,50].map(n=>`<button data-c="${n}">${n}</button>`).join('')}</div>
+<div class="lb">📝 Answer style</div><div class="qb-seg" id="fm"><button data-f="mc">🔘 Multiple choice</button><button data-f="fill">✏️ Write the answer</button></div>
+<label class="lb">🏷️ Sheet title<input id="ti" value="${title}" style="width:100%;font:inherit;font-weight:700;padding:6px 8px;border:3px solid var(--ink);border-radius:10px;display:block;margin-top:4px"></label>
+<button class="btn green big" id="go">🎲 Make questions</button><div class="row" style="gap:6px"><button class="btn white small" id="ky">🔑 Show answers</button><button class="btn white small" id="pr">🖨️ Print with key</button><button class="btn white small" id="cp">📋 Copy for games</button></div><div class="muted" style="font-weight:700;font-size:.85rem">"Copy for games" makes a list you can paste into any quiz's ✏️ "My own questions".</div></div>
+<div><div class="qb-sheet" id="sh"></div><div class="qb-sheet qb-break" id="ak" style="margin-top:14px" hidden></div></div></div>`;
+function seg(){document.querySelectorAll('[data-d]').forEach(b=>b.classList.toggle('on',+b.dataset.d===diff));document.querySelectorAll('[data-c]').forEach(b=>b.classList.toggle('on',+b.dataset.c===count));document.querySelectorAll('[data-f]').forEach(b=>b.classList.toggle('on',b.dataset.f===fmt))}
+function make(){picked=[...document.querySelectorAll('#tp input:checked')].map(i=>i.value);Kit.set('qb-topics',picked);if(!picked.length){$('sh').innerHTML='<b>Pick at least one topic.</b>';return}
+ const seen=new Set();Q=[];let g=0;while(Q.length<count&&g++<count*30){const k=picked[Q.length%picked.length],q=T[k][1](diff).map(String);if(seen.has(q[0]))continue;seen.add(q[0]);const wr=[...new Set(q.slice(2))].filter(w=>w!==q[1]).slice(0,3);if(wr.length<2)continue;Q.push({q:q[0],a:q[1],w:wr,o:Kit.shuffle([q[1],...wr])})}
+ Q=Kit.shuffle(Q);draw()}
+function draw(){const item=(x,i,key)=>`<div class="qb-q"><b>${i+1}.</b>${Kit.esc(x.q)}${fmt==='fill'?`<span class="ln">${key?`<span class="key">${Kit.esc(x.a)}</span>`:''}</span>`:`<div class="ch">${x.o.map((o,k)=>`<span>${'abcd'[k]}) ${Kit.esc(o)}${key&&o===x.a?' <span class="key">✓</span>':''}</span>`).join('')}</div>`}</div>`;
+ const head=`<h2>${Kit.esc(title)}</h2><div class="qb-head"><div>Name: <span></span></div><div>Date: <span></span></div></div>`;$('sh').innerHTML=head+`<div class="qb-list" style="--cols:${cols}">${Q.map((x,i)=>item(x,i,showKey)).join('')}</div>`;
+ $('ak').innerHTML=`<h2>🔑 Answer key: ${Kit.esc(title)}</h2><div class="qb-list" style="--cols:3">${Q.map((x,i)=>`<div class="qb-q"><b>${i+1}.</b>${fmt==='mc'?`${'abcd'[x.o.indexOf(x.a)]}) `:''}${Kit.esc(x.a)}</div>`).join('')}</div>`;$('ky').textContent=showKey?'🙈 Hide answers':'🔑 Show answers';seg();
+ window.__t={n:Q.length,qs:Q.map(x=>[x.q,x.a]),fmt}}
+$('tp').onchange=make;$('df').onclick=e=>{const b=e.target.closest('[data-d]');if(b){diff=+b.dataset.d;make()}};$('ct').onclick=e=>{const b=e.target.closest('[data-c]');if(b){count=+b.dataset.c;make()}};$('fm').onclick=e=>{const b=e.target.closest('[data-f]');if(b){fmt=b.dataset.f;draw()}};
+$('ti').oninput=()=>{title=$('ti').value||'Practice sheet';draw()};$('go').onclick=()=>{make();Kit.tick()};$('ky').onclick=()=>{showKey=!showKey;draw()};
+$('pr').onclick=()=>{const k=showKey;showKey=false;draw();$('ak').hidden=false;setTimeout(()=>{print();$('ak').hidden=true;showKey=k;draw()},100)};
+$('cp').onclick=()=>{const txt=Q.map(x=>[x.q,x.a,...x.w].join(' | ')).join('\n');Kit.modal(`<h2>📋 Questions for games</h2><p>Copy this, then open any quiz or game, tap ✏️ and paste into "My own questions".</p><textarea style="width:100%;height:240px;font-family:ui-monospace,monospace" readonly onclick="this.select()">${Kit.esc(txt)}</textarea>`);navigator.clipboard&&navigator.clipboard.writeText(txt).catch(()=>{})};
+window.__b={make,set:(t,d,c)=>{document.querySelectorAll('#tp input').forEach(i=>i.checked=t.includes(i.value));diff=d;count=c;make()}};
+seg();make();
+</script>
+</body></html>

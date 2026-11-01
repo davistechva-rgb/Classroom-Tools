@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Virtual Lab Builder</title>
+<style>
+main{max-width:1500px}
+.vl-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:12px}
+.vl-steps{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
+.vl-steps button{font:inherit;font-weight:900;border:4px solid var(--ink);border-radius:99px;padding:5px 12px;background:#fff;cursor:pointer;color:var(--ink)}
+.vl-steps button.on{background:var(--sun)}.vl-steps button.ok::after{content:" ✅"}
+.vl-page{background:#FFFDF6;background-image:linear-gradient(#E3EEF9 1px,transparent 1px);background-size:100% 34px;border:6px solid var(--ink);border-radius:20px;box-shadow:7px 7px 0 var(--ink);padding:20px;display:grid;gap:14px}
+.vl-page h2{margin:0;display:flex;gap:10px;align-items:center}
+.vl-page .lb{font-weight:800}
+.vl-page input,.vl-page textarea,.vl-page select{font:inherit;font-weight:600;padding:7px 10px;border:3px solid var(--ink);border-radius:12px;width:100%;display:block;margin-top:4px;background:#fff}
+.vl-page textarea{min-height:0}
+.vl-two{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.vl-tab{border-collapse:collapse;width:100%;font-weight:700;background:#fff}
+.vl-tab th,.vl-tab td{border:3px solid var(--ink);padding:4px 6px;text-align:center}
+.vl-tab th{background:#D6C2FF}.vl-tab td.avg{background:#FFF6C9;font-weight:900}
+.vl-tab input{width:80px;margin:0 auto;padding:4px;text-align:center;border-width:2px}
+.vl-chart svg{width:100%;max-width:820px;display:block;margin:0 auto;background:#fff;border:4px solid var(--ink);border-radius:14px}
+.vl-tip{background:#E8F7FF;border:3px dashed var(--ink);border-radius:12px;padding:8px 12px;font-weight:700}
+.vl-nav{display:flex;justify-content:space-between;gap:8px}
+@media print{header,.vl-top,.vl-steps,.vl-nav{display:none!important}.vl-page{box-shadow:none;break-inside:avoid;margin-bottom:12px;display:grid!important}}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🧪", "Virtual Lab Builder");
+const $=id=>document.getElementById(id);
+const TPL={plane:{title:'Paper airplane test',q:'Does the number of folds change how far a paper airplane flies?',ind:'Number of folds',vals:'4, 6, 8, 10',dep:'Distance flown',unit:'cm',same:'Same paper size, same thrower, same spot, same push',trials:3,sample:[[310,295,330],[420,445,410],[380,365,402],[250,270,240]]},
+ plant:{title:'Plants and sunlight',q:'How does the amount of light a plant gets change how tall it grows?',ind:'Hours of light a day',vals:'0, 4, 8, 12',dep:'Height after 2 weeks',unit:'cm',same:'Same kind of seed, same pot, same soil, same water',trials:2,sample:[[1,1.5],[4,4.5],[7.5,8],[9,8.5]]},
+ ice:{title:'Melting ice cubes',q:'Where in the school does an ice cube melt fastest?',ind:'Place',vals:'Windowsill, Desk, Fridge, Outside',dep:'Time to melt',unit:'minutes',same:'Same size ice cube, same kind of plate, same start time',trials:1,sample:[[18],[35],[120],[22]]},
+ ball:{title:'Bouncing balls',q:'Does dropping a ball from higher make it bounce higher?',ind:'Drop height (cm)',vals:'25, 50, 75, 100',dep:'Bounce height',unit:'cm',same:'Same ball, same floor, same person measuring',trials:3,sample:[[15,16,14],[31,29,32],[44,46,45],[58,61,59]]},
+ blank:{title:'My experiment',q:'',ind:'',vals:'',dep:'',unit:'',same:'',trials:3,sample:null}};
+const STEPS=[['❓','Question'],['💭','Hypothesis'],['🔧','Variables'],['📋','Data'],['📊','Graph'],['🏁','Conclusion']];
+let L=Kit.get('vl-lab',null)||newLab('plane',false),step=0;
+function newLab(k,fill){const t=TPL[k];return {title:t.title,q:t.q,hyp:'',why:'',ind:t.ind,vals:t.vals,dep:t.dep,unit:t.unit,same:t.same,trials:t.trials,data:fill&&t.sample?t.sample.map(r=>[...r]):[],concl:'',tpl:k}}
+document.querySelector('main').innerHTML=`<div class="vl-top"><select id="tp" style="width:auto"><option value="">🧪 Start a new lab…</option>${Object.entries(TPL).map(([k,t])=>`<option value="${k}">${t.title}</option>`).join('')}</select><button class="btn white small" id="sm">🎲 Fill in sample data</button><button class="btn white small" id="pr">🖨️ Print lab report</button></div><div class="vl-steps" id="st"></div><div id="bd"></div>`;
+function save(){Kit.set('vl-lab',L)}
+const vals=()=>L.vals.split(',').map(s=>s.trim()).filter(Boolean);
+const num=v=>v!==''&&v!=null&&!isNaN(+v);
+const avg=r=>{const n=(r||[]).filter(num).map(Number);return n.length?Math.round(n.reduce((a,b)=>a+b,0)/n.length*10)/10:null};
+function done(i){return [L.q.trim(),L.hyp.trim(),L.ind&&vals().length>=2&&L.dep,vals().every((_,k)=>avg(L.data[k])!=null),vals().every((_,k)=>avg(L.data[k])!=null),L.concl.trim().length>10][i]}
+function page(i){const V=vals();
+ if(i===0)return `<h2>❓ The question</h2><label class="lb">🏷️ Lab name<input data-f="title" value="${Kit.esc(L.title)}"></label><label class="lb">What do you want to find out?<textarea data-f="q" rows="2" placeholder="Does … change …?">${Kit.esc(L.q)}</textarea></label><div class="vl-tip">💡 A good science question can be tested. It usually sounds like: "How does ___ change ___?"</div>`;
+ if(i===1)return `<h2>💭 My hypothesis</h2><div class="muted" style="font-weight:700">${Kit.esc(L.q)}</div><label class="lb">I think…<textarea data-f="hyp" rows="2" placeholder="I think the airplane with 6 folds will fly the farthest…">${Kit.esc(L.hyp)}</textarea></label><label class="lb">…because…<textarea data-f="why" rows="2">${Kit.esc(L.why)}</textarea></label><div class="vl-tip">💡 A hypothesis is your best guess before you test. It's OK if it turns out wrong. That's how scientists learn!</div>`;
+ if(i===2)return `<h2>🔧 Variables</h2><div class="vl-two"><label class="lb">🔀 What we change (independent)<input data-f="ind" value="${Kit.esc(L.ind)}"></label><label class="lb">The values we'll test (commas between)<input data-f="vals" value="${Kit.esc(L.vals)}"></label><label class="lb">📏 What we measure (dependent)<input data-f="dep" value="${Kit.esc(L.dep)}"></label><label class="lb">Unit<input data-f="unit" value="${Kit.esc(L.unit)}" placeholder="cm, seconds, grams…"></label></div><label class="lb">🔒 What we keep the same (controlled)<textarea data-f="same" rows="2">${Kit.esc(L.same)}</textarea></label><label class="lb">🔁 Trials for each value<select data-f="trials">${[1,2,3,4,5].map(n=>`<option ${+L.trials===n?'selected':''}>${n}</option>`).join('')}</select></label><div class="vl-tip">💡 Change only ONE thing. Keep everything else the same, so you know what caused the difference. More trials make results more trustworthy.</div>`;
+ if(i===3)return `<h2>📋 Data</h2><div style="overflow-x:auto"><table class="vl-tab"><tr><th>${Kit.esc(L.ind||'Value')}</th>${Array.from({length:+L.trials},(_,t)=>`<th>Trial ${t+1}</th>`).join('')}<th>Average</th></tr>${V.map((v,k)=>`<tr><td><b>${Kit.esc(v)}</b></td>${Array.from({length:+L.trials},(_,t)=>`<td><input inputmode="decimal" data-d="${k},${t}" value="${(L.data[k]||[])[t]??''}"></td>`).join('')}<td class="avg" id="av${k}">${avg(L.data[k])??'—'}</td></tr>`).join('')}</table></div><div class="muted" style="font-weight:700">Measuring ${Kit.esc(L.dep)} in ${Kit.esc(L.unit||'units')}.</div><div class="vl-tip">💡 If one trial is very different from the others, try it again. Something might have gone wrong!</div>`;
+ if(i===4)return `<h2>📊 Graph</h2><div class="vl-chart" id="ch">${chart()}</div><div class="vl-tip" id="pat">${pattern()}</div>`;
+ const p=pattern(true);return `<h2>🏁 Conclusion</h2><div class="vl-two"><div><b>💭 My hypothesis was:</b><div style="font-weight:600">${Kit.esc(L.hyp||'(not written yet)')}</div></div><div><b>📊 What the data shows:</b><div style="font-weight:600">${p}</div></div></div><label class="lb">Was my hypothesis right? What did I learn?<textarea data-f="concl" rows="4" placeholder="My hypothesis was … because the data showed …">${Kit.esc(L.concl)}</textarea></label><div class="vl-tip">💡 Sentence starters: "The data shows…" · "My hypothesis was (correct / not correct) because…" · "Next time I would…"</div>`}
+function chart(){const V=vals(),A=V.map((_,k)=>avg(L.data[k]));if(A.some(a=>a==null))return '<div class="vl-tip">Fill in the data table first!</div>';const mx=Math.max(...A,1)*1.15,W=820,H=420,l=70,b=60,cw=(W-l-20)/V.length,numeric=V.every(num);
+ let s=`<svg viewBox="0 0 ${W} ${H}">`;for(let k=0;k<=5;k++){const y=H-b-(H-b-20)*k/5,v=Math.round(mx*k/5*10)/10;s+=`<line x1="${l}" x2="${W-20}" y1="${y}" y2="${y}" stroke="#E3E8F2" stroke-width="2"/><text x="${l-8}" y="${y+5}" text-anchor="end" font-weight="700" font-size="14">${v}</text>`}
+ const Y=a=>H-b-(H-b-20)*a/mx,X=k=>l+cw*k+cw/2;
+ if(numeric){s+=`<polyline points="${A.map((a,k)=>`${X(k)},${Y(a)}`).join(' ')}" fill="none" stroke="#1E7FD0" stroke-width="5" stroke-linejoin="round"/>`+A.map((a,k)=>`<circle cx="${X(k)}" cy="${Y(a)}" r="9" fill="#FFC93C" stroke="#1D2B53" stroke-width="3"/><text x="${X(k)}" y="${Y(a)-16}" text-anchor="middle" font-weight="900">${a}</text>`).join('')}
+ else s+=A.map((a,k)=>`<rect x="${X(k)-cw*.32}" y="${Y(a)}" width="${cw*.64}" height="${H-b-Y(a)}" rx="8" fill="${['#FF9F43','#5DC66E','#22C3E6','#9B6BF2','#E5533F','#FFC93C'][k%6]}" stroke="#1D2B53" stroke-width="3"/><text x="${X(k)}" y="${Y(a)-8}" text-anchor="middle" font-weight="900">${a}</text>`).join('');
+ s+=V.map((v,k)=>`<text x="${X(k)}" y="${H-b+24}" text-anchor="middle" font-weight="800" font-size="15">${Kit.esc(v)}</text>`).join('')+`<text x="${(W+l)/2}" y="${H-8}" text-anchor="middle" font-weight="900">${Kit.esc(L.ind)}</text><text x="18" y="${(H-b)/2}" text-anchor="middle" font-weight="900" transform="rotate(-90 18 ${(H-b)/2})">${Kit.esc(L.dep)} (${Kit.esc(L.unit)})</text></svg>`;return s}
+function pattern(short){const V=vals(),A=V.map((_,k)=>avg(L.data[k]));if(A.some(a=>a==null))return 'Fill in the data to see a pattern.';const hi=A.indexOf(Math.max(...A)),lo=A.indexOf(Math.min(...A));
+ let t=`The highest ${L.dep.toLowerCase()} was with <b>${Kit.esc(V[hi])}</b> (${A[hi]} ${Kit.esc(L.unit)}), and the lowest was with <b>${Kit.esc(V[lo])}</b> (${A[lo]} ${Kit.esc(L.unit)}).`;
+ if(V.every(num)&&V.length>2){const up=A.every((a,k)=>!k||a>=A[k-1]),dn=A.every((a,k)=>!k||a<=A[k-1]);t+=up?` As ${Kit.esc(L.ind.toLowerCase())} went up, ${Kit.esc(L.dep.toLowerCase())} went up too.`:dn?` As ${Kit.esc(L.ind.toLowerCase())} went up, ${Kit.esc(L.dep.toLowerCase())} went down.`:' The numbers went up and down, so there may be a "best" value in the middle.'}return t}
+function draw(){$('st').innerHTML=STEPS.map((s,i)=>`<button data-s="${i}" class="${i===step?'on':''} ${done(i)?'ok':''}">${s[0]} ${s[1]}</button>`).join('');
+ $('bd').innerHTML=`<div class="vl-page">${page(step)}<div class="vl-nav"><button class="btn white" id="pv" ${step?'':'disabled'}>⬅ Back</button><button class="btn green" id="nx">${step<5?'Next ➜':'🎉 Finish'}</button></div></div>`;
+ $('pv').onclick=()=>{step--;draw()};$('nx').onclick=()=>{if(step<5){step++;draw()}else{if(STEPS.every((_,i)=>done(i))){Kit.tada();Kit.confetti(80)}else alert('Some steps still need work (they don\'t have a ✅ yet).')}};window.__t={step,done:STEPS.map((_,i)=>!!done(i))}}
+$('bd').addEventListener('input',e=>{const f=e.target.dataset.f,d=e.target.dataset.d;if(f){L[f]=e.target.value;save();if(['ind','vals','trials'].includes(f)){}}
+ if(d){const [k,t]=d.split(',').map(Number);L.data[k]=L.data[k]||[];L.data[k][t]=e.target.value.trim();save();$('av'+k).textContent=avg(L.data[k])??'—'}
+ [...$('st').children].forEach((b,i)=>b.classList.toggle('ok',!!done(i)))});
+$('bd').addEventListener('change',e=>{if(e.target.dataset.f==='trials'){L.trials=+e.target.value;save()}});
+$('st').onclick=e=>{const b=e.target.closest('[data-s]');if(b){step=+b.dataset.s;draw()}};
+$('tp').onchange=()=>{const k=$('tp').value;if(k&&confirm('Start a new lab? This will replace the current one.')){L=newLab(k,false);step=0;save();draw()}$('tp').value=''};
+$('sm').onclick=()=>{const t=TPL[L.tpl];if(t&&t.sample&&L.vals===t.vals){L.data=t.sample.map(r=>[...r]);L.trials=t.trials}else{L.data=vals().map(()=>Array.from({length:+L.trials},()=>Kit.rand(5,50)))}save();draw()};
+$('pr').onclick=()=>{const keep=step;$('bd').innerHTML=STEPS.map((_,i)=>`<div class="vl-page">${page(i)}</div>`).join('');setTimeout(()=>{print();step=keep;draw()},150)};
+draw();
+</script>
+</body></html>

@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Lesson Activity Builder</title>
+<style>
+main{max-width:1500px}
+.lb-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:12px}
+.lb{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:960px){.lb{grid-template-columns:minmax(0,1fr)}}
+.lb-board{background:#fff;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);padding:14px;display:grid;gap:10px}
+.lb-board h2{margin:0;text-align:center}
+.lb-board .rule{text-align:center;font-weight:800;color:#55607E}
+.lb-grid{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:10px}
+.lb-cell{aspect-ratio:1.1;border:4px solid var(--ink);border-radius:16px;background:var(--cc);padding:8px;display:grid;align-content:center;justify-items:center;text-align:center;cursor:pointer;position:relative;gap:2px;overflow:hidden}
+.lb-cell .e{font-size:clamp(1.6rem,4vw,2.6rem)}
+.lb-cell b{font-size:clamp(.85rem,1.7vw,1.1rem);line-height:1.15}
+.lb-cell small{font-size:clamp(.7rem,1.3vw,.85rem);font-weight:600;color:#3A4466;line-height:1.2}
+.lb-cell.sel{outline:5px solid #E5533F;outline-offset:2px}
+.lb-cell .stamp{position:absolute;inset:0;display:grid;place-items:center;font-size:clamp(3rem,8vw,5rem);background:rgba(255,255,255,.55);animation:st .35s}
+@keyframes st{0%{transform:scale(2) rotate(-20deg);opacity:0}}
+.lb-cell.line{box-shadow:0 0 0 6px #5DC66E}
+.lb-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:14px;display:grid;gap:10px}
+.lb-p .lbl{font-weight:800}
+.lb-p input,.lb-p textarea,.lb-p select{font:inherit;font-weight:600;padding:7px 10px;border:3px solid var(--ink);border-radius:12px;width:100%;display:block;margin-top:4px}
+.lb-p textarea{min-height:0}
+.lb-emo{display:flex;gap:3px;flex-wrap:wrap}.lb-emo button{font-size:1.3rem;width:38px;height:38px;border:3px solid var(--ink);border-radius:9px;background:#fff;cursor:pointer}.lb-emo button.on{background:var(--sun)}
+.lb-kids{display:flex;gap:5px;flex-wrap:wrap}.lb-kids button{font:inherit;font-weight:800;border:3px solid var(--ink);border-radius:99px;padding:3px 10px;background:#fff;cursor:pointer;color:var(--ink)}.lb-kids button.on{background:var(--sun)}.lb-kids button.fin{background:#8BE09A}
+@media print{header,.lb-top,.lb-p{display:none!important}.lb{display:block}.lb-board{box-shadow:none}}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("📚", "Lesson Activity Builder");
+const $=id=>document.getElementById(id);
+const CC=['#FFF27A','#FFB3D1','#9FE6FF','#B8F59A','#FFC98B','#D6C2FF','#FFFFFF'];
+const EMO=['📖','✏️','🎨','🧮','🔬','🎵','🗣️','💻','🏃','🧩','📝','🎭','🌍','🔤','📊','🧪','🏗️','⭐','🎲','🤝'];
+const RULES={ttt:['⭕ Three in a row','Finish 3 activities in a row: across, down or corner to corner.'],any:['🔢 Any number','Finish at least {k} activities.'],all:['✅ Do them all','Finish every activity on the board.'],must:['🎯 Must-do + may-do','Do the top row (must-do), then pick any {k} more.']};
+const SAMPLE={title:'Reading Choice Board',rule:'ttt',k:4,n:3,cells:[['📖','Read for 20 minutes','Any book you like!'],['✏️','New ending','Write a different ending for your story.'],['🎨','Book cover','Design a new cover.'],['🗣️','Buddy talk','Tell a friend about your book.'],['⭐','Free choice','Pick your own reading activity.'],['📝','Character letter','Write a letter to a character.'],['🎭','Act it out','Act out your favorite scene.'],['🔤','Word hunt','Find 5 new words and their meanings.'],['📊','Story map','Draw the beginning, middle and end.']]};
+let B=Kit.get('lb-board',null)||JSON.parse(JSON.stringify(SAMPLE)),sel=-1,kid=null,done=Kit.get('lb-done',{});
+const KIDS0='Ava\nBen\nCarlos\nDiya\nEli\nFatima\nGus\nHana';
+Kit.editable({key:'choice-kids',title:'My students',help:'(one name per line)',def:KIDS0,onSave:()=>draw()});
+const kids=()=>Kit.lines(Kit.get('ed:choice-kids',KIDS0));
+document.querySelector('main').innerHTML=`<div class="lb-top"><select id="nn" style="width:auto"><option value="3">3 × 3 board</option><option value="4">4 × 4 board</option></select><select id="rl" style="width:auto">${Object.entries(RULES).map(([k,r])=>`<option value="${k}">${r[0]}</option>`).join('')}</select><button class="btn white small" id="pr">🖨️ Print</button><button class="btn white small" id="cl">🧽 Clear all stamps</button><button class="btn white small" id="smp">📋 Sample board</button></div>
+<div class="lb"><div class="lb-board" id="bd"></div><div class="lb-p" id="pp"></div></div>`;
+function save(){Kit.set('lb-board',B);Kit.set('lb-done',done)}
+function need(){return B.rule==='all'?B.n*B.n:B.rule==='ttt'?3:B.rule==='must'?B.n+B.k:B.k}
+function lines(n){const L=[];for(let i=0;i<n;i++){L.push([...Array(n)].map((_,k)=>i*n+k));L.push([...Array(n)].map((_,k)=>k*n+i))}if(n===3){L.push([0,4,8],[2,4,6])}else{L.push([0,5,10,15],[3,6,9,12])}
+ // with a 4×4 board, any 3 in a row counts
+ if(n===4){const out=[];L.forEach(l=>{out.push(l.slice(0,3),l.slice(1))});return out}return L}
+function finished(name){const d=new Set(done[name]||[]),n=B.n;if(B.rule==='ttt')return lines(n).find(l=>l.every(c=>d.has(c)))||null;if(B.rule==='all')return d.size>=n*n?[]:null;if(B.rule==='must'){const top=[...Array(n)].map((_,k)=>k);return top.every(c=>d.has(c))&&d.size>=n+B.k?[]:null}return d.size>=B.k?[]:null}
+function draw(){const n=B.n;while(B.cells.length<n*n)B.cells.push(['⭐','New activity','']);const win=kid&&finished(kid),d=new Set(kid?done[kid]||[]:[]);
+ $('bd').innerHTML=`<h2>${Kit.esc(B.title)}</h2><div class="rule">${RULES[B.rule][1].replace('{k}',B.k)}${kid?` · 🧒 ${Kit.esc(kid)}: ${d.size} done${win?' 🎉':''}`:''}</div><div class="lb-grid" style="--n:${n}">${B.cells.slice(0,n*n).map((c,i)=>`<div class="lb-cell ${i===sel?'sel':''} ${win&&win.includes(i)?'line':''}" data-i="${i}" style="--cc:${B.rule==='must'&&i<n?'#FFD27F':CC[i%6]}"><span class="e">${c[0]}</span><b>${Kit.esc(c[1])}</b><small>${Kit.esc(c[2]||'')}</small>${d.has(i)?'<span class="stamp">✅</span>':''}</div>`).join('')}</div>`;
+ const K=kids(),c=B.cells[sel];
+ $('pp').innerHTML=`<label class="lbl">🏷️ Board title<input id="ti" value="${Kit.esc(B.title)}"></label>${B.rule!=='ttt'&&B.rule!=='all'?`<label class="lbl">🔢 How many to finish${B.rule==='must'?' (after the must-do row)':''}<select id="kk">${[1,2,3,4,5,6,7,8].map(x=>`<option ${x===B.k?'selected':''}>${x}</option>`).join('')}</select></label>`:''}
+ <div class="lbl">🧒 Who is checking off activities? <span class="muted" style="font-weight:600">(✏️ top right to edit names)</span></div><div class="lb-kids" id="kd"><button data-k="" class="${kid?'':'on'}">✏️ Edit board</button>${K.map(k=>`<button data-k="${Kit.esc(k)}" class="${kid===k?'on':''} ${finished(k)?'fin':''}">${Kit.esc(k)} ${(done[k]||[]).length?`(${(done[k]||[]).length})`:''}</button>`).join('')}</div>
+ ${kid?`<div class="muted" style="font-weight:700">Tap a square to stamp it ✅ for ${Kit.esc(kid)}. Tap again to remove the stamp.</div>`:c?`<hr style="width:100%"><b>✏️ Square ${sel+1}</b><div class="lb-emo" id="em">${EMO.map(e=>`<button data-e="${e}" class="${c[0]===e?'on':''}">${e}</button>`).join('')}</div><label class="lbl">Activity<input id="ct" value="${Kit.esc(c[1])}"></label><label class="lbl">Details<textarea id="cdx" rows="2">${Kit.esc(c[2]||'')}</textarea></label>`:'<div class="muted" style="font-weight:700">Tap a square to edit it.</div>'}
+ <div class="lbl">📈 Class progress</div><div style="font-weight:700">${K.filter(k=>finished(k)).length} of ${K.length} students finished the board.</div>`;
+ $('nn').value=n;$('rl').value=B.rule;$('ti').oninput=()=>{B.title=$('ti').value;save();$('bd').querySelector('h2').textContent=B.title};if($('kk'))$('kk').onchange=()=>{B.k=+$('kk').value;save();draw()};
+ if($('ct')){$('ct').oninput=()=>{c[1]=$('ct').value;save();$('bd').querySelector(`[data-i="${sel}"] b`).textContent=c[1]};$('cdx').oninput=()=>{c[2]=$('cdx').value;save();$('bd').querySelector(`[data-i="${sel}"] small`).textContent=c[2]}}
+ window.__t={n,rule:B.rule,kid,done:kid?(done[kid]||[]).length:0,fin:K.filter(k=>finished(k)).length}}
+$('bd').onclick=e=>{const c=e.target.closest('[data-i]');if(!c)return;const i=+c.dataset.i;if(kid){const d=new Set(done[kid]||[]);d.has(i)?d.delete(i):d.add(i);const was=!!finished(kid);done[kid]=[...d];save();Kit.tone(d.has(i)?700:400,.08,'triangle',.12);draw();if(!was&&finished(kid)){Kit.tada();Kit.confetti(70)}}else{sel=i;draw()}};
+$('pp').onclick=e=>{const k=e.target.closest('[data-k]'),em=e.target.closest('[data-e]');if(k){kid=k.dataset.k||null;sel=-1;draw()}if(em){B.cells[sel][0]=em.dataset.e;save();draw()}};
+$('nn').onchange=()=>{B.n=+$('nn').value;save();draw()};$('rl').onchange=()=>{B.rule=$('rl').value;save();draw()};
+$('pr').onclick=()=>{const k=kid;kid=null;sel=-1;draw();setTimeout(()=>{print();kid=k;draw()},100)};$('cl').onclick=()=>{if(confirm('Remove every student\'s stamps?')){done={};save();draw()}};
+$('smp').onclick=()=>{if(confirm('Replace your board with the sample?')){B=JSON.parse(JSON.stringify(SAMPLE));save();draw()}};
+window.__l={kid:k=>{kid=k;draw()},tap:i=>$('bd').querySelector(`[data-i="${i}"]`).click()};
+draw();
+</script>
+</body></html>

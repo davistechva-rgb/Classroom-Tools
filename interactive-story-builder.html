@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Interactive Story Builder</title>
+<style>
+main{max-width:1600px}
+.is-tabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
+.is{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:16px;align-items:start}
+@media (max-width:960px){.is{grid-template-columns:minmax(0,1fr)}}
+.is-map{background:#fff;border:5px solid var(--ink);border-radius:20px;overflow:auto;max-height:76vh}
+.is-map svg{display:block}
+.is-node rect{stroke:#1D2B53;stroke-width:3;cursor:pointer}
+.is-node text{font:800 13px Fredoka,sans-serif;fill:#1D2B53;text-anchor:middle;pointer-events:none}
+.is-node.sel rect{stroke:#E5533F;stroke-width:5}
+.is-ed{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:14px;display:grid;gap:10px}
+.is-ed label{font-weight:800;display:block}
+.is-ed input,.is-ed textarea,.is-ed select{font:inherit;font-weight:600;padding:7px 10px;border:3px solid var(--ink);border-radius:12px;width:100%}
+.is-ch{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) auto;gap:6px;align-items:center}
+.is-emo{display:flex;gap:4px;flex-wrap:wrap}.is-emo button{font-size:1.5rem;border:3px solid var(--ink);border-radius:10px;background:#fff;cursor:pointer;width:44px;height:44px}.is-emo button.on{background:var(--sun)}
+.is-book{max-width:980px;margin:0 auto;background:#FFFDF6;border:7px solid var(--ink);border-radius:20px 20px 20px 20px;box-shadow:9px 9px 0 var(--ink);display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);min-height:440px;position:relative;overflow:hidden}
+@media (max-width:760px){.is-book{grid-template-columns:1fr}}
+.is-book::after{content:"";position:absolute;left:calc(45.5% - 3px);top:0;bottom:0;width:6px;background:linear-gradient(90deg,rgba(0,0,0,.08),rgba(0,0,0,.18),rgba(0,0,0,.08))}
+@media (max-width:760px){.is-book::after{display:none}}
+.is-pic{display:grid;place-items:center;font-size:clamp(6rem,18vw,12rem);background:var(--pg);padding:20px;animation:turn .5s}
+@keyframes turn{0%{transform:rotateY(70deg);opacity:0}}
+.is-txt{padding:24px;display:grid;gap:14px;align-content:center}
+.is-txt h2{margin:0;font-size:clamp(1.4rem,3vw,2rem)}
+.is-txt p{font-size:clamp(1.1rem,2.3vw,1.4rem);line-height:1.5;margin:0;white-space:pre-wrap}
+.is-choices{display:grid;gap:8px}
+.is-choices button{font:800 1.15rem Fredoka,sans-serif;border:4px solid var(--ink);border-radius:16px;padding:10px 14px;background:#fff;cursor:pointer;text-align:left;box-shadow:0 4px 0 var(--ink);color:var(--ink)}
+.is-choices button:hover{background:#FFF1A8}
+.is-end{font-size:1.6rem;font-weight:900;color:#E5533F}
+.is-bar{display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+.eg-card label>input,.eg-card label>textarea,.eg-card label>select,.is-ed label>input,.is-ed label>textarea,.tb-form label>input,.tb-form label>select{display:block;margin-top:4px}
+.eg-card textarea,.is-ed textarea{min-height:0}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("📖", "Interactive Story Builder");
+const $=id=>document.getElementById(id);
+const EMO=['🏰','🌲','🐉','🧙','👸','🤴','🗝️','💎','🚪','🕳️','🌊','🏝️','🚀','👽','🪐','🐶','🐱','🦊','🏠','🌙','☀️','⛈️','🎁','🍰','📜','🗺️','🧭','💀','🎉','😱','😴','🏆'];
+const BG=['#FFE7A3','#C9E58A','#9FD8FF','#FFB3D1','#D6C2FF','#FFC98B','#B8F0E6','#2B3A67'];
+const SAMPLE={title:'The Dragon\'s Lost Egg',start:1,nid:7,s:{1:{t:'A strange note',e:'📜',bg:0,x:'You find a note under your pillow: "A dragon has lost her egg. Can you help?" Outside, a path splits in two.',c:[['Take the forest path',2],['Take the beach path',3]]},
+ 2:{t:'The dark forest',e:'🌲',bg:1,x:'Tall trees block the sun. You hear something crying behind a bush.',c:[['Look behind the bush',4],['Keep walking',5]]},3:{t:'The sandy beach',e:'🏝️',bg:2,x:'Waves crash on the shore. Something shiny is buried in the sand.',c:[['Dig it up',6],['Go back home',5]]},
+ 4:{t:'A baby fox',e:'🦊',bg:5,x:'It\'s a little fox! It says, "I saw the egg roll into the beach cave." The fox leads you there.',c:[['Follow the fox',6]]},5:{t:'Home again',e:'🏠',bg:3,x:'You decide the adventure is too much and go home for a snack. Maybe tomorrow!',c:[]},
+ 6:{t:'The egg!',e:'🐉',bg:4,x:'You find the glowing egg and carry it to the dragon. She is so happy she gives you a ride across the sky!',c:[]}}};
+let ST=Kit.get('is-story',null)||JSON.parse(JSON.stringify(SAMPLE)),sel=ST.start,tab='build',path=[],ends=new Set(Kit.get('is-ends',[]));
+document.querySelector('main').innerHTML=`<div class="is-tabs"><button class="btn" data-t="build">🛠️ Write</button><button class="btn white" data-t="read">📖 Read</button><button class="btn white small" id="ex">📤 Share code</button><button class="btn white small" id="im">📥 Load code</button><button class="btn white small" id="nw">🆕 New story</button></div><div id="bd"></div>`;
+function save(){Kit.set('is-story',ST)}
+const S=id=>ST.s[id];
+function layout(){// put each page in a column by how many choices it takes to reach it
+ const depth={},q=[ST.start];depth[ST.start]=0;while(q.length){const u=q.shift();(S(u)?.c||[]).forEach(([,v])=>{if(S(v)&&depth[v]==null){depth[v]=depth[u]+1;q.push(v)}})}
+ let maxD=Math.max(0,...Object.values(depth));Object.keys(ST.s).forEach(id=>{if(depth[id]==null)depth[id]=++maxD});const cols={};Object.keys(ST.s).forEach(id=>(cols[depth[id]]=cols[depth[id]]||[]).push(+id));
+ const pos={};Object.entries(cols).forEach(([d,ids])=>ids.forEach((id,k)=>pos[id]=[20+d*170,20+k*90]));return pos}
+function build(){const pos=layout(),W=Math.max(400,...Object.values(pos).map(p=>p[0]+160)),H=Math.max(300,...Object.values(pos).map(p=>p[1]+80));
+ let svg=`<svg width="${W}" height="${H}"><defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="#5B6B95"/></marker></defs>`;
+ Object.entries(ST.s).forEach(([id,s])=>s.c.forEach(([,to])=>{const a=pos[id],b=pos[to];if(!b)return;svg+=`<path d="M${a[0]+140},${a[1]+30} C${a[0]+160},${a[1]+30} ${b[0]-20},${b[1]+30} ${b[0]},${b[1]+30}" fill="none" stroke="#5B6B95" stroke-width="3" marker-end="url(#ar)"/>`}));
+ Object.entries(ST.s).forEach(([id,s])=>{const p=pos[id];svg+=`<g class="is-node ${+id===sel?'sel':''}" data-n="${id}"><rect x="${p[0]}" y="${p[1]}" width="140" height="60" rx="14" fill="${BG[s.bg]||'#fff'}"/><text x="${p[0]+70}" y="${p[1]+26}" style="font-size:20px">${s.e||'📄'}</text><text x="${p[0]+70}" y="${p[1]+48}" ${s.bg===7?'style="fill:#fff"':''}>${Kit.esc((+id===ST.start?'⭐ ':'')+(s.t||'Untitled').slice(0,16))}${s.c.length?'':' 🏁'}</text></g>`});
+ svg+='</svg>';const s=S(sel)||S(ST.start);sel=+Object.keys(ST.s).find(k=>ST.s[k]===s);
+ $('bd').innerHTML=`<div class="is"><div><div class="is-ed" style="margin-bottom:10px"><label>📚 Story title<input id="ti" value="${Kit.esc(ST.title)}"></label></div><div class="is-map" id="mp">${svg}</div><div class="row" style="gap:6px;margin-top:10px"><button class="btn green small" id="ap">➕ New page</button><span class="muted" style="font-weight:700;color:#fff">⭐ first page · 🏁 an ending</span></div></div>
+ <div class="is-ed"><b>📄 Editing: ${Kit.esc(s.t||'Untitled')}</b><label>Page title<input data-f="t" value="${Kit.esc(s.t)}"></label><label>What happens<textarea data-f="x" rows="5">${Kit.esc(s.x)}</textarea></label>
+ <div><b>Picture</b><div class="is-emo">${EMO.map(e=>`<button data-e="${e}" class="${s.e===e?'on':''}">${e}</button>`).join('')}</div></div><div><b>Page color</b><div class="is-emo">${BG.map((c,i)=>`<button data-bg="${i}" style="background:${c}" class="${s.bg===i?'on':''}"></button>`).join('')}</div></div>
+ <b>🔀 Choices (leave empty to make this page an ending)</b>${s.c.map((c,i)=>`<div class="is-ch"><input data-cl="${i}" value="${Kit.esc(c[0])}" placeholder="What the reader can choose"><select data-ct="${i}">${Object.entries(ST.s).map(([id,p])=>`<option value="${id}" ${+id===c[1]?'selected':''}>➜ ${Kit.esc(p.t||'Untitled')}</option>`).join('')}<option value="new">➕ A new page…</option></select><button class="btn white small" data-cx="${i}">✖</button></div>`).join('')}
+ <div class="row" style="gap:6px"><button class="btn white small" id="ac" ${s.c.length>=4?'disabled':''}>➕ Add a choice</button><button class="btn white small" id="ss">⭐ Make this the first page</button><button class="btn white small" id="dp">🗑️ Delete page</button><button class="btn white small" id="pv">▶ Read from here</button></div></div></div>`;
+ window.__t={tab,pages:Object.keys(ST.s).length,sel}}
+function newPage(title='New page'){const id=ST.nid++;ST.s[id]={t:title,e:'📄',bg:Object.keys(ST.s).length%7,x:'',c:[]};return id}
+$('bd').addEventListener('input',e=>{const f=e.target.dataset.f,s=S(sel);if(e.target.id==='ti'){ST.title=e.target.value;save();return}if(f){s[f]=e.target.value;save();if(f==='t'){const g=$('mp').querySelector(`[data-n="${sel}"] text:last-child`);if(g)g.textContent=(sel===ST.start?'⭐ ':'')+(s.t||'Untitled').slice(0,16)}}const cl=e.target.dataset.cl;if(cl!=null){s.c[+cl][0]=e.target.value;save()}});
+$('bd').addEventListener('change',e=>{const ct=e.target.dataset.ct;if(ct==null)return;const s=S(sel);if(e.target.value==='new'){const id=newPage(s.c[+ct][0]||'New page');s.c[+ct][1]=id}else s.c[+ct][1]=+e.target.value;save();build()});
+$('bd').addEventListener('click',e=>{const n=e.target.closest('[data-n]'),em=e.target.closest('[data-e]'),bg=e.target.closest('[data-bg]'),cx=e.target.closest('[data-cx]'),s=S(sel);
+ if(n){sel=+n.dataset.n;build();return}if(em){s.e=em.dataset.e;save();build();return}if(bg){s.bg=+bg.dataset.bg;save();build();return}if(cx){s.c.splice(+cx.dataset.cx,1);save();build();return}
+ const id=e.target.id;if(id==='ap'){sel=newPage();save();build()}if(id==='ac'){const to=newPage('What happens next?');s.c.push(['Choice '+(s.c.length+1),to]);save();build()}
+ if(id==='ss'){ST.start=sel;save();build()}if(id==='dp'){if(Object.keys(ST.s).length<2)return;if(!confirm('Delete this page? Choices that pointed to it will be removed.'))return;delete ST.s[sel];Object.values(ST.s).forEach(p=>p.c=p.c.filter(c=>c[1]!==sel));if(!S(ST.start))ST.start=+Object.keys(ST.s)[0];sel=ST.start;save();build()}
+ if(id==='pv'){tab='read';path=[sel];tabs(true)}});
+function read(){const id=path[path.length-1],s=S(id);if(!s){path=[ST.start];return read()}const end=!s.c.length;if(end){ends.add(id);Kit.set('is-ends',[...ends].filter(x=>S(x)))}
+ const total=Object.values(ST.s).filter(p=>!p.c.length).length,found=[...ends].filter(x=>S(x)&&!S(x).c.length).length;
+ $('bd').innerHTML=`<div class="is-book"><div class="is-pic" style="--pg:${BG[s.bg]||'#fff'}">${s.e||'📄'}</div><div class="is-txt"><div class="muted" style="font-weight:800">${Kit.esc(ST.title)} · page ${path.length}</div><h2>${Kit.esc(s.t)}</h2><p>${Kit.esc(s.x)}</p>
+ ${end?`<div class="is-end">🏁 The End</div><div style="font-weight:700">You've found ${found} of ${total} endings.</div>`:`<div class="is-choices" id="cs">${s.c.map(([l,to])=>`<button data-go="${to}">👉 ${Kit.esc(l)}</button>`).join('')}</div>`}</div></div>
+ <div class="is-bar"><button class="btn white" id="bk" ${path.length<2?'disabled':''}>⬅ Back</button><button class="btn white" id="ra">🔊 Read aloud</button><button class="btn ${end?'green':'white'}" id="rs">🔁 Start over</button></div>`;
+ if(end){Kit.tada();if(found===total)Kit.confetti(80)}
+ if($('cs'))$('cs').onclick=e=>{const b=e.target.closest('[data-go]');if(b){path.push(+b.dataset.go);Kit.tick();read()}};$('bk').onclick=()=>{path.pop();read()};$('rs').onclick=()=>{path=[ST.start];read()};
+ $('ra').onclick=()=>{try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(`${s.t}. ${s.x}. ${s.c.map((c,i)=>`Choice ${i+1}: ${c[0]}.`).join(' ')}`);u.rate=.95;speechSynthesis.speak(u)}catch(e){}};
+ window.__t={tab,page:id,end,found,total}}
+function tabs(keep){try{speechSynthesis.cancel()}catch(e){}document.querySelectorAll('[data-t]').forEach(b=>b.className='btn '+(b.dataset.t===tab?'':'white'));if(tab==='build')build();else{if(!keep)path=[ST.start];read()}}
+document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;tabs()});
+$('ex').onclick=()=>{const code=btoa(unescape(encodeURIComponent(JSON.stringify(ST))));Kit.modal(`<h2>📤 Share code</h2><p>Copy this code. Anyone can paste it into "Load code" to read or edit your story.</p><textarea style="width:100%;height:140px" readonly onclick="this.select()">${code}</textarea>`);navigator.clipboard&&navigator.clipboard.writeText(code).catch(()=>{})};
+$('im').onclick=()=>{const c=prompt('Paste a story code:');if(!c)return;try{const s=JSON.parse(decodeURIComponent(escape(atob(c.trim()))));if(!s.s)throw 0;ST=s;sel=ST.start;save();tab='build';tabs()}catch(e){alert('That code didn\'t work.')}};
+$('nw').onclick=()=>{if(confirm('Start a new story? (Share the code of this one first to keep it!)')){ST={title:'My Story',start:1,nid:2,s:{1:{t:'Once upon a time…',e:'🏰',bg:0,x:'',c:[]}}};sel=1;ends.clear();Kit.set('is-ends',[]);save();tab='build';tabs()}};
+window.__s={go:i=>document.querySelectorAll('#cs [data-go]')[i].click(),st:()=>ST};
+tabs();
+</script>
+</body></html>

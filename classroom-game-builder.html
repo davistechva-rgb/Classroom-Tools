@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Classroom Game Builder</title>
+<style>
+main{max-width:1500px}
+.gb-lib{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.gb-g{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:8px;box-shadow:5px 5px 0 var(--ink)}
+.gb-g h3{margin:0;display:flex;gap:8px;align-items:center}.gb-g h3 span{font-size:2rem}
+.gb-g .row{gap:6px}
+.gb-new{display:grid;place-items:center;border-style:dashed;cursor:pointer;font-weight:900;font-size:1.3rem;min-height:150px;background:rgba(255,255,255,.6)}
+.gb-ed{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:14px;display:grid;gap:12px}
+.gb-ed .lb{font-weight:800}
+.gb-ed input,.gb-ed textarea{font:inherit;font-weight:600;padding:7px 10px;border:3px solid var(--ink);border-radius:12px;width:100%;display:block;margin-top:4px}
+.gb-ed textarea{font-family:ui-monospace,Menlo,monospace;min-height:0}
+.gb-pick{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
+.gb-pick button{font:inherit;border:4px solid var(--ink);border-radius:16px;padding:10px;background:#fff;cursor:pointer;text-align:left;color:var(--ink)}
+.gb-pick button.on{background:var(--sun)}.gb-pick button b{display:block;font-size:1.1rem}.gb-pick button span{font-size:2rem}
+.gb-stage{background:#fff;border:6px solid var(--ink);border-radius:26px;box-shadow:8px 8px 0 var(--ink);padding:14px;display:grid;gap:12px;min-height:420px}
+.gb-teams{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.gb-team{border:4px solid var(--ink);border-radius:16px;padding:4px 12px;font-weight:900;background:var(--tc);opacity:.55}
+.gb-team.on{opacity:1;transform:scale(1.08);box-shadow:0 5px 0 var(--ink)}
+.gb-track{display:grid;gap:6px}
+.gb-lane{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:3px;background:#E3E8F2;border-radius:12px;padding:4px;position:relative}
+.gb-lane i{height:52px;border-radius:8px;background:#fff;display:grid;place-items:center;font-style:normal;font-size:clamp(1.2rem,3vw,2rem);border:2px solid #C3CBDB}
+.gb-lane i.fin{background:repeating-conic-gradient(#1D2B53 0 25%,#fff 0 50%) 0 0/16px 16px}
+.gb-ttt{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;max-width:min(460px,90vw);margin:0 auto;width:100%}
+.gb-ttt button{aspect-ratio:1;border:5px solid var(--ink);border-radius:18px;background:#F4FAFF;font-size:clamp(2.5rem,9vw,4.5rem);cursor:pointer;display:grid;place-items:center;color:var(--ink);font-weight:900}
+.gb-ttt button.win{background:#8BE09A}
+.gb-towers{display:flex;gap:14px;justify-content:center;align-items:flex-end;min-height:360px;border-bottom:8px solid #8B5A2B}
+.gb-tw{display:flex;flex-direction:column-reverse;align-items:center;gap:2px;width:min(120px,20vw)}
+.gb-tw i{width:100%;height:36px;border:3px solid var(--ink);border-radius:8px;background:var(--tc);animation:pop .3s}
+@keyframes pop{0%{transform:translateY(-40px);opacity:0}}
+.gb-tw .goal{border-top:4px dashed #E5533F;width:140%;height:0}
+.gb-ov{position:fixed;inset:0;background:rgba(15,22,45,.6);display:grid;place-items:center;z-index:40;padding:14px}
+.gb-q{background:#fff;border:6px solid var(--ink);border-radius:24px;box-shadow:8px 8px 0 var(--ink);padding:18px;max-width:720px;width:100%;display:grid;gap:12px;text-align:center}
+.gb-q .qt{font-size:clamp(1.3rem,3.4vw,2rem);font-weight:800}
+.gb-q .ch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+@media (max-width:560px){.gb-q .ch{grid-template-columns:1fr}}
+.gb-q .ch button{font:800 1.2rem Fredoka,sans-serif;border:4px solid var(--ink);border-radius:14px;padding:10px;background:#fff;cursor:pointer;color:var(--ink)}
+.gb-q .ch button.yes{background:#8BE09A}.gb-q .ch button.no{background:#FFB3AA}
+.gb-msg{text-align:center;font-weight:900;font-size:1.3rem;min-height:1.4em}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🎮", "Classroom Game Builder");
+const $=id=>document.getElementById(id);
+const TYPES={race:['🏁','Race track','Answer right to move ahead. First to the finish wins!'],ttt:['⭕','Tic-tac-toe','Pick a square, answer the question to claim it.'],tower:['🗼','Tower climb','Right answers add a block. Wrong answers knock one off!']};
+const THEMES={cars:['🚗','🚕','🚙','🛻'],animals:['🐶','🐱','🐰','🦊'],space:['🚀','🛸','🛰️','☄️'],sea:['🐠','🐙','🐬','🦀'],dinos:['🦖','🦕','🐊','🐢']};
+const TC=['#FFB3AA','#9FD8FF','#B8F59A','#D6C2FF'];
+const QS=`What is 7 × 6? | 42 | 36 | 48 | 13
+Which planet is known as the Red Planet? | Mars | Venus | Jupiter | Mercury
+What do bees make? | Honey | Milk | Silk | Wax paper
+How many days are in a week? | 7 | 5 | 10 | 6
+What is the opposite of "ancient"? | Modern | Old | Tiny | Slow
+Which is a noun? | Pencil | Quickly | Jump | Happy
+What is half of 50? | 25 | 20 | 30 | 15
+What is frozen water called? | Ice | Steam | Fog | Dew
+Which shape has 3 sides? | Triangle | Square | Circle | Pentagon
+What is the largest ocean? | Pacific | Atlantic | Indian | Arctic`;
+let LIB=Kit.get('gb-lib',null)||[{name:'Mixed review race',type:'race',theme:'cars',teams:2,qs:QS},{name:'Tic-tac-know',type:'ttt',theme:'animals',teams:2,qs:QS}],view='lib',ed=null,G=null;
+function save(){Kit.set('gb-lib',LIB)}
+const parseQ=t=>Kit.lines(t).map(l=>l.split('|').map(s=>s.trim())).filter(p=>p[0]&&p[1]);
+function lib(){view='lib';document.querySelector('main').innerHTML=`<div class="gb-lib">${LIB.map((g,i)=>`<div class="gb-g"><h3><span>${TYPES[g.type][0]}</span>${Kit.esc(g.name)}</h3><div class="muted" style="font-weight:700">${TYPES[g.type][1]} · ${g.teams} teams · ${parseQ(g.qs).length} questions · ${THEMES[g.theme].slice(0,g.teams).join('')}</div><div class="row"><button class="btn green small" data-play="${i}">▶ Play</button><button class="btn white small" data-edit="${i}">✏️ Edit</button><button class="btn white small" data-dup="${i}">📄 Copy</button><button class="btn white small" data-del="${i}">🗑️</button></div></div>`).join('')}<div class="gb-g gb-new" id="nw">➕ Build a new game</div></div>
+ <div class="row" style="justify-content:center;margin-top:12px;gap:6px"><button class="btn white small" id="ex">📤 Share all games</button><button class="btn white small" id="im">📥 Load a shared game</button></div>`;
+ document.querySelector('main').onclick=e=>{const b=e.target.closest('button,[id=nw]');if(!b)return;const d=b.dataset;if(d.play)play(+d.play);if(d.edit)edit(+d.edit);if(d.dup){LIB.splice(+d.dup+1,0,{...LIB[+d.dup],name:LIB[+d.dup].name+' (copy)'});save();lib()}if(d.del&&confirm(`Delete "${LIB[+d.del].name}"?`)){LIB.splice(+d.del,1);save();lib()}
+  if(b.id==='nw'){LIB.push({name:'My new game',type:'race',theme:'cars',teams:2,qs:''});save();edit(LIB.length-1)}
+  if(b.id==='ex'){const c=btoa(unescape(encodeURIComponent(JSON.stringify(LIB))));Kit.modal(`<h2>📤 Share code</h2><p>Paste this into "Load a shared game" on another computer.</p><textarea style="width:100%;height:140px" readonly onclick="this.select()">${c}</textarea>`)}
+  if(b.id==='im'){const c=prompt('Paste a game code:');if(!c)return;try{const g=JSON.parse(decodeURIComponent(escape(atob(c.trim()))));(Array.isArray(g)?g:[g]).forEach(x=>{if(x.type&&x.qs!=null)LIB.push(x)});save();lib()}catch(err){alert('That code didn\'t work.')}}};window.__t={view,games:LIB.length}}
+function edit(i){document.querySelector('main').onclick=null;view='edit';ed=i;const g=LIB[i];document.querySelector('main').innerHTML=`<div class="gb-ed"><label class="lb">🏷️ Game name<input id="nm" value="${Kit.esc(g.name)}"></label>
+ <div class="lb">🎮 Kind of game</div><div class="gb-pick" id="tp">${Object.entries(TYPES).map(([k,t])=>`<button data-k="${k}" class="${g.type===k?'on':''}"><span>${t[0]}</span><b>${t[1]}</b>${t[2]}</button>`).join('')}</div>
+ <div class="lb">🎨 Team pieces</div><div class="gb-pick" id="th">${Object.entries(THEMES).map(([k,t])=>`<button data-th="${k}" class="${g.theme===k?'on':''}" style="font-size:1.6rem;text-align:center">${t.join(' ')}</button>`).join('')}</div>
+ <div class="lb">👥 Teams: <select id="tn" style="width:auto">${[2,3,4].map(n=>`<option ${g.teams===n?'selected':''}>${n}</option>`).join('')}</select> ${g.type==='ttt'?'<span class="muted">(tic-tac-toe always uses 2)</span>':''}</div>
+ <label class="lb">❓ Questions <span class="muted" style="font-weight:600">(one per line: question | right answer | wrong | wrong | wrong. Leave out the wrong answers and the teacher decides if it's right.)</span><textarea id="qs" rows="10">${Kit.esc(g.qs)}</textarea></label><div class="muted" id="qc" style="font-weight:800"></div>
+ <div class="row" style="gap:6px"><button class="btn green" id="pl">▶ Save & play</button><button class="btn white" id="bk">⬅ Back to my games</button><button class="btn white small" id="smp">📋 Use sample questions</button></div></div>`;
+ const cnt=()=>{const n=parseQ($('qs').value).length;$('qc').textContent=`${n} question${n===1?'':'s'} ready${n<5?' (add at least 5)':''}`};cnt();
+ const keep=()=>{g.name=$('nm').value||'My game';g.teams=+$('tn').value;g.qs=$('qs').value;save();cnt()};['nm','tn','qs'].forEach(id=>$(id).oninput=keep);
+ $('tp').onclick=e=>{const b=e.target.closest('[data-k]');if(b){keep();g.type=b.dataset.k;save();edit(i)}};$('th').onclick=e=>{const b=e.target.closest('[data-th]');if(b){keep();g.theme=b.dataset.th;save();edit(i)}};
+ $('smp').onclick=()=>{$('qs').value=QS;keep()};$('bk').onclick=()=>{keep();lib()};$('pl').onclick=()=>{keep();if(parseQ(g.qs).length<5){$('qc').textContent='⚠️ Add at least 5 questions first.';return}play(i)};window.__t={view,type:g.type}}
+function play(i){document.querySelector('main').onclick=null;view='play';const g=LIB[i],qs=parseQ(g.qs);if(qs.length<1)return edit(i);const n=g.type==='ttt'?2:g.teams;G={g,i,n,qs,bag:[],turn:0,pos:Array(n).fill(0),tw:Array(n).fill(0),board:Array(9).fill(-1),over:false,len:10,goal:8};draw()}
+function nextQ(){if(!G.bag.length)G.bag=Kit.shuffle(G.qs);return G.bag.pop()}
+function draw(){const g=G.g,pcs=THEMES[g.theme];let body='';
+ if(g.type==='race')body=`<div class="gb-track">${G.pos.map((p,t)=>`<div class="gb-lane" style="--n:${G.len+1};background:${TC[t]}">${Array.from({length:G.len+1},(_,k)=>`<i class="${k===G.len?'fin':''}">${k===p?pcs[t]:''}</i>`).join('')}</div>`).join('')}</div><div class="row" style="justify-content:center"><button class="btn green big" id="ask">❓ ${pcs[G.turn]} Question!</button></div>`;
+ if(g.type==='ttt')body=`<div class="gb-ttt" id="tt">${G.board.map((v,k)=>`<button data-k="${k}" class="${G.win&&G.win.includes(k)?'win':''}">${v<0?'':pcs[v]}</button>`).join('')}</div>`;
+ if(g.type==='tower')body=`<div class="gb-towers">${G.tw.map((h,t)=>`<div class="gb-tw" style="--tc:${TC[t]}">${Array.from({length:h},()=>'<i></i>').join('')}<span style="font-size:2rem">${pcs[t]}</span></div>`).join('')}</div><div class="muted" style="text-align:center;font-weight:800">🎯 First tower to ${G.goal} blocks wins</div><div class="row" style="justify-content:center"><button class="btn green big" id="ask">❓ ${pcs[G.turn]} Question!</button></div>`;
+ document.querySelector('main').innerHTML=`<div class="gb-stage"><div class="row" style="justify-content:space-between"><b style="font-size:1.3rem">${TYPES[g.type][0]} ${Kit.esc(g.name)}</b><span class="row" style="gap:6px"><button class="btn white small" id="rs">🔁 Restart</button><button class="btn white small" id="bk">⬅ My games</button></span></div>
+ <div class="gb-teams">${Array.from({length:G.n},(_,t)=>`<div class="gb-team ${t===G.turn&&!G.over?'on':''}" style="--tc:${TC[t]}">${pcs[t]} Team ${t+1}</div>`).join('')}</div>${body}<div class="gb-msg" id="msg">${G.msg||''}</div></div>`;
+ $('rs').onclick=()=>play(G.i);$('bk').onclick=lib;if($('ask'))$('ask').onclick=()=>{if(!G.over)ask(r=>result(r))};
+ if($('tt'))$('tt').onclick=e=>{const b=e.target.closest('[data-k]');if(!b||G.over)return;const k=+b.dataset.k;if(G.board[k]>=0)return;ask(r=>{if(r)G.board[k]=G.turn;result(r,k)})};
+ window.__t={view,type:g.type,turn:G.turn,pos:[...G.pos],tw:[...G.tw],board:[...G.board],over:G.over}}
+function ask(done){const q=nextQ(),choices=q.slice(2).filter(Boolean),ov=document.createElement('div');ov.className='gb-ov';const pcs=THEMES[G.g.theme];
+ ov.innerHTML=`<div class="gb-q"><div style="font-size:2.4rem">${pcs[G.turn]}</div><div class="qt">${Kit.esc(q[0])}</div>${choices.length?`<div class="ch">${Kit.shuffle([q[1],...choices]).map(c=>`<button data-c="${Kit.esc(c)}">${Kit.esc(c)}</button>`).join('')}</div>`:`<button class="btn white" id="rv">👀 Show the answer</button><div id="an" hidden style="font-size:1.5rem;font-weight:900">${Kit.esc(q[1])}</div><div class="row" style="justify-content:center;gap:8px" id="jd" hidden><button class="btn green" data-j="1">✅ They got it</button><button class="btn white" data-j="0">❌ Not quite</button></div>`}<div id="fb" style="font-weight:800;min-height:1.3em"></div></div>`;
+ document.body.appendChild(ov);window.__q=q[1];let doneOnce=false;const fin=r=>{if(doneOnce)return;doneOnce=true;setTimeout(()=>{ov.remove();done(r)},window.__fast?0:1100)};
+ ov.onclick=e=>{const c=e.target.closest('[data-c]'),j=e.target.closest('[data-j]');if(e.target.id==='rv'){$('an').hidden=false;$('jd').hidden=false;e.target.remove()}
+  if(c&&!doneOnce){const ok=c.dataset.c===q[1];c.classList.add(ok?'yes':'no');if(!ok)[...ov.querySelectorAll('[data-c]')].find(x=>x.dataset.c===q[1]).classList.add('yes');ok?Kit.ding():Kit.tone(200,.25,'triangle',.15);$('fb').textContent=ok?'✅ Correct!':`The answer is ${q[1]}.`;fin(ok)}
+  if(j)fin(j.dataset.j==='1')}}
+function result(ok,k){const g=G.g,pcs=THEMES[g.theme],t=G.turn;G.msg='';
+ if(g.type==='race'&&ok){const roll=Kit.rand(1,3);G.pos[t]=Math.min(G.len,G.pos[t]+roll);G.msg=`${pcs[t]} zooms ahead ${roll} space${roll>1?'s':''}!`;if(G.pos[t]>=G.len){G.over=true;G.msg=`🏆 Team ${t+1} ${pcs[t]} wins the race!`}}
+ if(g.type==='tower'){if(ok){G.tw[t]++;G.msg=`${pcs[t]} adds a block!`;if(G.tw[t]>=G.goal){G.over=true;G.msg=`🏆 Team ${t+1} ${pcs[t]} built the tallest tower!`}}else if(G.tw[t]>0){G.tw[t]--;G.msg=`💥 Oops! ${pcs[t]}'s tower lost a block.`}}
+ if(g.type==='ttt'){const L=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]],w=L.find(l=>l.every(x=>G.board[x]===t));if(ok&&w){G.over=true;G.win=w;G.msg=`🏆 Team ${t+1} ${pcs[t]} gets three in a row!`}else if(G.board.every(v=>v>=0)){G.over=true;G.msg='🤝 It\'s a tie!'}else if(!ok)G.msg='No square this time!'}
+ if(!ok&&!G.msg)G.msg='Not this time!';if(G.over){Kit.tada();Kit.confetti(90)}else G.turn=(t+1)%G.n;draw()}
+window.__g={play,answer:right=>{const bs=[...document.querySelectorAll('.gb-ov [data-c]')];const b=bs.find(x=>right?x.dataset.c===window.__q:x.dataset.c!==window.__q);if(b)b.click();else document.querySelector(`.gb-ov [data-j="${right?1:0}"]`)?.click()}};
+lib();
+</script>
+</body></html>

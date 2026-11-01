@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Escape Room Generator</title>
+<style>
+main{max-width:1500px}
+.eg-tabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
+.eg-card{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:14px;display:grid;gap:10px;margin-bottom:12px}
+.eg-card label{font-weight:800;display:block}
+.eg-card input,.eg-card textarea,.eg-card select{font:inherit;font-weight:600;padding:7px 10px;border:3px solid var(--ink);border-radius:12px;width:100%}
+.eg-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.eg-lock{border:4px solid var(--ink);border-radius:16px;padding:10px;display:grid;gap:8px;background:#F4FAFF;position:relative}
+.eg-lock label{display:block}.eg-lock input{display:block;width:100%;margin-top:4px;font:inherit;font-weight:600;padding:7px 10px;border:3px solid var(--ink);border-radius:12px;background:#fff}
+.eg-lock h4{margin:0;display:flex;gap:8px;align-items:center}
+.eg-lock .x{position:absolute;right:8px;top:8px}
+.eg-dirs,.eg-cols{display:flex;gap:4px;flex-wrap:wrap}.eg-dirs button,.eg-cols button{font-size:1.3rem;width:44px;height:44px;border:3px solid var(--ink);border-radius:10px;background:#fff;cursor:pointer}
+.eg-cols button{background:var(--c)}
+.eg-seq{display:flex;gap:4px;flex-wrap:wrap;min-height:30px;align-items:center;font-size:1.4rem}
+.eg-scene{border:6px solid var(--ink);border-radius:26px;box-shadow:8px 8px 0 var(--ink);padding:16px;background:var(--bg);min-height:420px;position:relative;display:grid;gap:12px;justify-items:center;text-align:center;color:#fff}
+.eg-scene h2{margin:0;text-shadow:3px 3px 0 var(--ink);font-size:clamp(1.4rem,3.5vw,2.2rem)}
+.eg-story{background:rgba(255,255,255,.92);color:var(--ink);border:4px solid var(--ink);border-radius:16px;padding:8px 14px;font-weight:700;max-width:760px}
+.eg-door{width:min(520px,94%);background:#8B5A2B;border:7px solid var(--ink);border-radius:120px 120px 16px 16px;padding:40px 18px 24px;display:flex;flex-wrap:wrap;gap:12px;justify-content:center;box-shadow:inset 0 0 0 8px #6E4520;transition:transform 1s;transform-origin:left}
+.eg-door.open{transform:perspective(900px) rotateY(-75deg)}
+.eg-pad{font-size:2.8rem;background:#FFD84D;border:5px solid var(--ink);border-radius:20px;padding:8px 12px;cursor:pointer;box-shadow:0 6px 0 var(--ink);position:relative;color:var(--ink)}
+.eg-pad b{position:absolute;right:-8px;top:-10px;font-size:.9rem;background:#fff;border:3px solid var(--ink);border-radius:99px;padding:0 7px}
+.eg-pad.done{background:#8BE09A;cursor:default}
+.eg-hud{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.eg-hud span{background:#fff;color:var(--ink);border:4px solid var(--ink);border-radius:99px;padding:3px 14px;font-weight:900;font-size:1.15rem}
+.eg-hud span.low{background:#FFB3AA;animation:pulse 1s infinite}@keyframes pulse{50%{transform:scale(1.06)}}
+.eg-ov{position:fixed;inset:0;background:rgba(15,22,45,.65);display:grid;place-items:center;z-index:40;padding:14px}
+.eg-box{background:#fff;border:6px solid var(--ink);border-radius:24px;box-shadow:8px 8px 0 var(--ink);padding:18px;max-width:640px;width:100%;display:grid;gap:12px;text-align:center;color:var(--ink);max-height:94vh;overflow:auto}
+.eg-box.shake{animation:sh .35s}@keyframes sh{25%{transform:translateX(-10px)}75%{transform:translateX(10px)}}
+.eg-clue{font-size:clamp(1.2rem,3vw,1.7rem);font-weight:800}
+.eg-in{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+.eg-in .slot{min-width:46px;height:56px;border:4px solid var(--ink);border-radius:12px;display:grid;place-items:center;font-size:1.6rem;font-weight:900;background:#F4FAFF}
+.eg-kp{display:grid;grid-template-columns:repeat(3,64px);gap:6px;justify-content:center}
+.eg-kp button{height:56px;font:900 1.5rem Fredoka,sans-serif;border:4px solid var(--ink);border-radius:14px;background:#fff;cursor:pointer;color:var(--ink)}
+.eg-hint{background:#FFF6C9;border:3px dashed var(--ink);border-radius:12px;padding:6px 10px;font-weight:700}
+.eg-card label>input,.eg-card label>textarea,.eg-card label>select,.is-ed label>input,.is-ed label>textarea,.tb-form label>input,.tb-form label>select{display:block;margin-top:4px}
+.eg-card textarea,.is-ed textarea{min-height:0}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🔐", "Escape Room Generator");
+const $=id=>document.getElementById(id);
+const THEMES={castle:['🏰 Castle','linear-gradient(#6B5B95,#3E3263)','🗝️'],space:['🚀 Space station','linear-gradient(#1D2B53,#3B1E6E)','🛸'],ocean:['🌊 Underwater','linear-gradient(#22C3E6,#1E5FA8)','🐙'],lab:['🧪 Science lab','linear-gradient(#5DC66E,#2E7D4F)','⚗️'],jungle:['🌴 Jungle temple','linear-gradient(#8BC34A,#4E6B22)','🐒'],class:['🏫 Locked classroom','linear-gradient(#FF9F43,#C2551F)','📚']};
+const TYPES={num:['🔢 Number code','Kids type digits on a keypad'],word:['🔤 Word','Kids type a word'],dir:['🧭 Arrows','Kids tap a sequence of arrows'],col:['🎨 Colors','Kids tap a sequence of colors']};
+const CL=[['🔴','#E5533F'],['🟡','#FFC93C'],['🟢','#5DC66E'],['🔵','#1E7FD0'],['🟣','#9B6BF2'],['🟠','#FF9F43']];
+const SAMPLE={name:'The Locked Library',theme:'class',mins:15,story:'The librarian locked the library and left five clues. Solve every lock to get out before the bell rings!',end:'You escaped! The librarian left you a prize: 5 extra minutes of free reading. 📚',locks:[
+ {t:'num',q:'How many legs do 3 spiders have? (Each spider has 8 legs.)',a:'24',h:'8 + 8 + 8'},{t:'word',q:'Unscramble these letters: K O O B',a:'BOOK',h:'You read it!'},
+ {t:'dir',q:'Follow the treasure map: up, up, right, down.',a:'UURD',h:'⬆️ ⬆️ ➡️ ⬇️'},{t:'col',q:'Rainbow order: tap the first three colors of the rainbow.',a:'red,orange,yellow',h:'ROY G BIV'},{t:'num',q:'What year comes 10 years after 2015?',a:'2025',h:'2015 + 10'}]};
+let R=Kit.get('eg-room',null)||JSON.parse(JSON.stringify(SAMPLE)),tab='build',G=null,timer=0;
+const DIR={U:'⬆️',D:'⬇️',L:'⬅️',R:'➡️'},CN={red:0,yellow:1,green:2,blue:3,purple:4,orange:5};
+document.querySelector('main').innerHTML=`<div class="eg-tabs"><button class="btn" data-t="build">🛠️ Build the room</button><button class="btn white" data-t="play">▶️ Play</button><button class="btn white small" id="ex">📤 Share code</button><button class="btn white small" id="im">📥 Load code</button><button class="btn white small" id="nw">🆕 New room</button></div><div id="bd"></div>`;
+function save(){Kit.set('eg-room',R)}
+function build(){$('bd').innerHTML=`<div class="eg-card"><div class="eg-row"><label>🏷️ Room name<input id="rn" value="${Kit.esc(R.name)}"></label><label>🎨 Theme<select id="th">${Object.entries(THEMES).map(([k,t])=>`<option value="${k}" ${R.theme===k?'selected':''}>${t[0]}</option>`).join('')}</select></label><label>⏱️ Minutes<input id="mn" type="number" min="1" max="90" value="${R.mins}"></label></div>
+<label>📖 Story at the start<textarea id="st" rows="2">${Kit.esc(R.story)}</textarea></label><label>🎉 Message when they escape<textarea id="en" rows="2">${Kit.esc(R.end)}</textarea></label></div>
+<div id="lk"></div><div class="row" style="justify-content:center;gap:6px">${Object.entries(TYPES).map(([k,t])=>`<button class="btn white" data-add="${k}">➕ ${t[0]}</button>`).join('')}</div>`;
+ ['rn','th','mn','st','en'].forEach(id=>$(id).oninput=()=>{R.name=$('rn').value;R.theme=$('th').value;R.mins=Math.max(1,Math.min(90,+$('mn').value||10));R.story=$('st').value;R.end=$('en').value;save()});locks()}
+function locks(){$('lk').innerHTML=R.locks.map((l,i)=>`<div class="eg-lock" data-i="${i}"><h4>🔒 Lock ${i+1}: ${TYPES[l.t][0]}</h4><button class="btn white small x" data-del="${i}">✖</button><label style="font-weight:800">❓ Clue or question<input data-k="q" value="${Kit.esc(l.q)}"></label>
+ ${l.t==='num'?`<label style="font-weight:800">✅ Answer (numbers only)<input data-k="a" inputmode="numeric" value="${Kit.esc(l.a)}"></label>`:l.t==='word'?`<label style="font-weight:800">✅ Answer word<input data-k="a" value="${Kit.esc(l.a)}"></label>`:l.t==='dir'?`<div><b>✅ Answer arrows:</b> <span class="eg-seq">${l.a.split('').map(c=>DIR[c]).join(' ')||'<span class="muted">tap arrows</span>'}</span><div class="eg-dirs">${Object.entries(DIR).map(([k,e])=>`<button data-dir="${k}">${e}</button>`).join('')}<button data-dir="x" style="font-size:.9rem">⌫</button></div></div>`:`<div><b>✅ Answer colors:</b> <span class="eg-seq">${l.a?l.a.split(',').map(c=>CL[CN[c]][0]).join(' '):'<span class="muted">tap colors</span>'}</span><div class="eg-cols">${CL.map((c,k)=>`<button data-col="${Object.keys(CN)[k]}" style="--c:${c[1]}"></button>`).join('')}<button data-col="x" style="font-size:.9rem;background:#fff">⌫</button></div></div>`}
+ <label style="font-weight:800">💡 Hint (optional)<input data-k="h" value="${Kit.esc(l.h||'')}"></label></div>`).join('')||'<div class="eg-card" style="text-align:center;font-weight:800">Add some locks below!</div>';window.__t={tab,locks:R.locks.length}}
+$('bd').addEventListener('input',e=>{const k=e.target.dataset.k,box=e.target.closest('[data-i]');if(!k||!box)return;const l=R.locks[+box.dataset.i];l[k]=k==='a'&&l.t==='num'?e.target.value.replace(/\D/g,''):k==='a'?e.target.value.toUpperCase().replace(/[^A-Z]/g,''):e.target.value;if(k==='a')e.target.value=l.a;save()});
+$('bd').addEventListener('click',e=>{const a=e.target.closest('[data-add]'),d=e.target.closest('[data-del]'),dr=e.target.closest('[data-dir]'),co=e.target.closest('[data-col]'),box=e.target.closest('[data-i]');
+ if(a){if(R.locks.length>=10)return;R.locks.push({t:a.dataset.add,q:'',a:'',h:''});save();locks();return}if(d){R.locks.splice(+d.dataset.del,1);save();locks();return}
+ if(dr&&box){const l=R.locks[+box.dataset.i];l.a=dr.dataset.dir==='x'?l.a.slice(0,-1):(l.a+dr.dataset.dir).slice(0,8);save();locks()}
+ if(co&&box){const l=R.locks[+box.dataset.i],arr=l.a?l.a.split(','):[];if(co.dataset.col==='x')arr.pop();else if(arr.length<6)arr.push(co.dataset.col);l.a=arr.join(',');save();locks()}});
+function problems(){const p=[];if(!R.locks.length)p.push('Add at least one lock.');R.locks.forEach((l,i)=>{if(!l.a)p.push(`Lock ${i+1} needs an answer.`);if(!l.q.trim())p.push(`Lock ${i+1} needs a clue.`)});return p}
+function play(){clearInterval(timer);const p=problems();if(p.length){$('bd').innerHTML=`<div class="eg-card" style="text-align:center"><h2>🛠️ Almost ready!</h2>${p.map(x=>`<div style="font-weight:700">• ${x}</div>`).join('')}</div>`;return}
+ const T=THEMES[R.theme]||THEMES.class;G={open:new Set(),left:R.mins*60,hints:0,tries:0,done:false};
+ $('bd').innerHTML=`<div class="eg-scene" style="--bg:${T[1]}"><h2>${T[2]} ${Kit.esc(R.name)}</h2><div class="eg-hud"><span id="ck"></span><span>🔓 <b id="oc">0</b> / ${R.locks.length}</span><span>💡 <b id="hc">0</b></span></div><div class="eg-story" id="sy">${Kit.esc(R.story)}</div><div class="eg-door" id="dr">${R.locks.map((l,i)=>`<button class="eg-pad" data-l="${i}">🔒<b>${i+1}</b></button>`).join('')}</div><button class="btn white" id="go">▶ Start the clock</button></div>`;
+ clock();$('go').onclick=()=>{$('go').remove();timer=setInterval(()=>{if(G.done)return;G.left--;clock();if(G.left<=0){clearInterval(timer);G.done=true;Kit.alarm&&Kit.alarm();$('sy').innerHTML='⏰ Time\'s up! The door stayed locked… Try again?';}},1000)};
+ $('dr').onclick=e=>{const b=e.target.closest('[data-l]');if(b&&!G.done&&!G.open.has(+b.dataset.l))openLock(+b.dataset.l)};window.__t={tab,playing:true,open:0}}
+function clock(){const m=Math.floor(Math.max(0,G.left)/60),s=Math.max(0,G.left)%60;$('ck').textContent=`⏱️ ${m}:${String(s).padStart(2,'0')}`;$('ck').classList.toggle('low',G.left<=60)}
+function openLock(i){const l=R.locks[i];let entry=[];const ov=document.createElement('div');ov.className='eg-ov';document.body.appendChild(ov);
+ const ui=()=>{const shown=l.t==='num'||l.t==='word'?entry.join(''):'';
+  ov.innerHTML=`<div class="eg-box" id="bx"><div style="font-size:2.6rem">🔒</div><div class="eg-clue">${Kit.esc(l.q)}</div>
+  ${l.t==='num'?`<div class="eg-in">${Array.from({length:l.a.length},(_,k)=>`<div class="slot">${entry[k]??''}</div>`).join('')}</div><div class="eg-kp">${[1,2,3,4,5,6,7,8,9,'⌫',0,'✓'].map(k=>`<button data-k="${k}">${k}</button>`).join('')}</div>`:
+   l.t==='word'?`<input id="wd" maxlength="20" autocomplete="off" style="font:900 1.6rem Fredoka,sans-serif;text-align:center;text-transform:uppercase;letter-spacing:.2em;padding:8px;border:4px solid var(--ink);border-radius:14px" value="${shown}"><div class="muted" style="font-weight:700">${l.a.length} letters</div><button class="btn green" data-k="✓">🔓 Try it</button>`:
+   l.t==='dir'?`<div class="eg-in">${Array.from({length:l.a.length},(_,k)=>`<div class="slot">${entry[k]?DIR[entry[k]]:''}</div>`).join('')}</div><div class="eg-dirs" style="justify-content:center">${Object.entries(DIR).map(([k,e])=>`<button data-k="${k}">${e}</button>`).join('')}<button data-k="⌫" style="font-size:1rem">⌫</button></div>`:
+   `<div class="eg-in">${Array.from({length:l.a.split(',').length},(_,k)=>`<div class="slot">${entry[k]?CL[CN[entry[k]]][0]:''}</div>`).join('')}</div><div class="eg-cols" style="justify-content:center">${CL.map((c,k)=>`<button data-k="${Object.keys(CN)[k]}" style="--c:${c[1]}"></button>`).join('')}<button data-k="⌫" style="font-size:1rem;background:#fff">⌫</button></div>`}
+  <div id="hn">${l.h?'<button class="btn white small" id="hb">💡 Hint (costs 1 minute)</button>':''}</div><div id="fb" style="font-weight:800;min-height:1.3em"></div><button class="btn white small" id="cx">✖ Close</button></div>`;
+  if($('wd')){$('wd').focus();$('wd').oninput=()=>entry=$('wd').value.toUpperCase().replace(/[^A-Z]/g,'').split('');$('wd').onkeydown=e=>{if(e.key==='Enter')tryIt()}}
+  if($('hb'))$('hb').onclick=()=>{G.hints++;G.left=Math.max(1,G.left-60);clock();$('hc').textContent=G.hints;$('hn').innerHTML=`<div class="eg-hint">💡 ${Kit.esc(l.h)}</div>`};$('cx').onclick=()=>ov.remove()};
+ const need=()=>l.t==='col'?l.a.split(',').length:l.a.length,ans=()=>l.t==='col'?entry.join(','):entry.join('');
+ function tryIt(){G.tries++;if(ans()===l.a){G.open.add(i);Kit.ding();ov.remove();const b=$('dr').querySelector(`[data-l="${i}"]`);b.classList.add('done');b.innerHTML=`🔓<b>${i+1}</b>`;$('oc').textContent=G.open.size;window.__t.open=G.open.size;
+   if(G.open.size===R.locks.length){G.done=true;clearInterval(timer);$('dr').classList.add('open');Kit.tada();Kit.confetti(120);const used=R.mins*60-G.left;$('sy').innerHTML=`🎉 ${Kit.esc(R.end)}<br><small>Escaped in ${Math.floor(used/60)}:${String(used%60).padStart(2,'0')} with ${G.hints} hint${G.hints===1?'':'s'}.</small>`;window.__t.escaped=true}}
+  else{Kit.tone(160,.3,'sawtooth',.1);$('bx').classList.remove('shake');void $('bx').offsetWidth;$('bx').classList.add('shake');$('fb').textContent='❌ The lock didn\'t open. Check the clue again!';entry=[];if(!$('wd'))setTimeout(()=>{ui();$('fb').textContent='❌ Try again!'},400);else $('wd').value=''}}
+ ov.addEventListener('click',e=>{const k=e.target.closest('[data-k]');if(!k)return;const v=k.dataset.k;if(v==='✓'){if(l.t==='word')entry=$('wd').value.toUpperCase().replace(/[^A-Z]/g,'').split('');tryIt();return}if(v==='⌫')entry.pop();else if(entry.length<need())entry.push(String(v));Kit.tick();
+  const fb=$('fb').textContent;ui();if(fb)$('fb').textContent='';if(l.t!=='num'&&l.t!=='word'&&entry.length===need())tryIt();if(l.t==='num'&&entry.length===need())tryIt()});ui()}
+$('ex').onclick=()=>{const code=btoa(unescape(encodeURIComponent(JSON.stringify(R))));Kit.modal?Kit.modal(`<h2>📤 Share code</h2><p>Copy this code. Another teacher can paste it into "Load code" to get your room.</p><textarea style="width:100%;height:140px" readonly onclick="this.select()">${code}</textarea>`):prompt('Copy this code:',code);navigator.clipboard&&navigator.clipboard.writeText(code).catch(()=>{})};
+$('im').onclick=()=>{const c=prompt('Paste a room code:');if(!c)return;try{const r=JSON.parse(decodeURIComponent(escape(atob(c.trim()))));if(!r.locks)throw 0;R=r;save();tab='build';tabs();Kit.ding()}catch(e){alert('That code didn\'t work. Make sure you copied all of it.')}};
+$('nw').onclick=()=>{if(confirm('Start a new empty room? (Your current room will be replaced. Share its code first to keep it!)')){R={name:'My Escape Room',theme:'castle',mins:15,story:'',end:'You escaped!',locks:[]};save();tab='build';tabs()}};
+function tabs(){clearInterval(timer);document.querySelectorAll('.eg-ov').forEach(o=>o.remove());document.querySelectorAll('[data-t]').forEach(b=>b.className='btn '+(b.dataset.t===tab?'':'white'));tab==='build'?build():play()}
+document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;tabs()});
+window.__e={room:()=>R};
+tabs();
+</script>
+</body></html>

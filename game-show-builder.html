@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Game Show Builder</title>
+<style>
+main{max-width:1500px}
+.gs-tabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
+.gs-card{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:14px;display:grid;gap:10px;margin-bottom:12px}
+.gs-card textarea{font:600 1rem ui-monospace,Menlo,monospace;width:100%;border:3px solid var(--ink);border-radius:12px;padding:8px}
+.gs-stage{background:radial-gradient(circle at 50% 0%,#3B4C8A,#141C3A 70%);border:6px solid var(--ink);border-radius:28px;box-shadow:8px 8px 0 var(--ink);padding:16px;color:#fff;min-height:480px;position:relative;overflow:hidden}
+.gs-stage::before{content:"";position:absolute;inset:0;background:repeating-conic-gradient(from 0deg at 50% -10%,rgba(255,255,255,.05) 0 6deg,transparent 6deg 12deg);pointer-events:none}
+.gs-lad{display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:16px;position:relative}
+@media (max-width:860px){.gs-lad{grid-template-columns:1fr}}
+.gs-q{background:linear-gradient(#24346B,#18224A);border:4px solid #7FA8FF;border-radius:999px;padding:14px 26px;font-size:clamp(1.2rem,3vw,1.9rem);font-weight:800;text-align:center;box-shadow:0 0 24px rgba(127,168,255,.4)}
+.gs-ans{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}
+@media (max-width:600px){.gs-ans{grid-template-columns:1fr}}
+.gs-ans button{font:800 clamp(1rem,2.4vw,1.35rem) Fredoka,sans-serif;background:linear-gradient(#24346B,#18224A);color:#fff;border:4px solid #7FA8FF;border-radius:999px;padding:12px 18px;cursor:pointer;text-align:left;transition:.2s}
+.gs-ans button b{color:#FFC93C;margin-right:8px}
+.gs-ans button.lock{background:#FF9F43;border-color:#FFD27F}.gs-ans button.yes{background:#2E9E47;border-color:#8BE09A}.gs-ans button.no{background:#B23A2B}.gs-ans button.gone{visibility:hidden}
+.gs-steps{display:flex;flex-direction:column-reverse;gap:3px}
+.gs-steps div{display:flex;justify-content:space-between;padding:3px 12px;border-radius:99px;font-weight:800;color:#9FB2DA}
+.gs-steps div.safe{color:#fff}.gs-steps div.on{background:#FFC93C;color:var(--ink)}.gs-steps div.past{color:#8BE09A}
+.gs-life{display:flex;gap:8px;justify-content:center;margin-bottom:12px;flex-wrap:wrap}
+.gs-life button{font:800 1rem Fredoka,sans-serif;border:3px solid #7FA8FF;background:#18224A;color:#fff;border-radius:99px;padding:6px 14px;cursor:pointer}
+.gs-life button:disabled{opacity:.3;text-decoration:line-through}
+.gs-poll{display:flex;gap:10px;justify-content:center;align-items:flex-end;height:130px;margin-top:10px}
+.gs-poll div{width:50px;background:#7FA8FF;border-radius:8px 8px 0 0;position:relative;transition:height .8s}
+.gs-poll div span{position:absolute;bottom:-22px;left:0;right:0;text-align:center;font-weight:900}
+.gs-poll div i{position:absolute;top:-22px;left:0;right:0;text-align:center;font-style:normal;font-weight:800;font-size:.85rem}
+.gs-board{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:16px auto;max-width:900px;position:relative}
+@media (max-width:600px){.gs-board{grid-template-columns:1fr}}
+.gs-slot{height:64px;perspective:600px;cursor:pointer}
+.gs-slot .in{position:relative;height:100%;transition:transform .5s;transform-style:preserve-3d}
+.gs-slot.up .in{transform:rotateX(180deg)}
+.gs-slot .f,.gs-slot .b{position:absolute;inset:0;backface-visibility:hidden;border:4px solid #7FA8FF;border-radius:14px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;font-weight:900;font-size:1.3rem}
+.gs-slot .f{background:linear-gradient(#2B4BB8,#1A2E7A)}.gs-slot .f span{background:#1D2B53;border-radius:50%;width:40px;height:40px;display:grid;place-items:center;margin:auto}
+.gs-slot .b{background:linear-gradient(#FFF,#DDE6FF);color:var(--ink);transform:rotateX(180deg)}.gs-slot .b b{background:#1E7FD0;color:#fff;border-radius:10px;padding:0 10px}
+.gs-x{position:fixed;inset:0;display:grid;place-items:center;font-size:30vmin;color:#E5533F;text-shadow:0 0 30px #000;pointer-events:none;z-index:50;animation:xx .9s forwards}@keyframes xx{0%{transform:scale(.3)}30%{transform:scale(1.1)}100%{opacity:0}}
+.gs-teams{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;position:relative}
+.gs-team{background:#18224A;border:4px solid #7FA8FF;border-radius:16px;padding:6px 16px;text-align:center;font-weight:900;cursor:pointer;min-width:130px}
+.gs-team.on{border-color:#FFC93C;box-shadow:0 0 18px #FFC93C}
+.gs-team b{display:block;font-size:1.8rem;color:#FFC93C}
+.gs-strikes{text-align:center;font-size:2rem;min-height:1.3em;letter-spacing:.2em;position:relative}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🏆", "Game Show Builder");
+const $=id=>document.getElementById(id);
+const L0=`What is the largest planet in our solar system? | Jupiter | Saturn | Earth | Mars
+How many sides does a hexagon have? | 6 | 5 | 8 | 7
+Which animal is a mammal? | Dolphin | Shark | Penguin | Frog
+What is 12 × 12? | 144 | 124 | 142 | 132
+Which gas do plants take in from the air? | Carbon dioxide | Oxygen | Helium | Nitrogen
+Who wrote "Charlotte's Web"? | E. B. White | Roald Dahl | Dr. Seuss | Beverly Cleary
+What is the capital of Canada? | Ottawa | Toronto | Vancouver | Montreal
+How many continents are there? | 7 | 5 | 6 | 8
+What is the freezing point of water in Fahrenheit? | 32° | 0° | 100° | 212°
+Which is the longest river in Africa? | Nile | Congo | Niger | Zambezi`;
+const S0=`Name something you take to the beach | Towel 32 | Sunscreen 25 | Bucket 15 | Snacks 12 | Umbrella 9 | Ball 7
+Name a fruit that is yellow | Banana 45 | Lemon 30 | Pineapple 12 | Mango 8 | Pear 5
+Name something you find in a classroom | Desk 30 | Pencil 25 | Whiteboard 18 | Books 15 | Clock 12
+Name an animal with stripes | Zebra 50 | Tiger 30 | Skunk 10 | Bee 6 | Chipmunk 4`;
+let ladder=[],survey=[],tab='ladder',L=null,Sv=null;
+function parse(){ladder=Kit.lines(Kit.get('ed:show-ladder',L0)).map(l=>l.split('|').map(s=>s.trim())).filter(p=>p.length>=3);survey=Kit.lines(Kit.get('ed:show-survey',S0)).map(l=>{const p=l.split('|').map(s=>s.trim());return {q:p[0],a:p.slice(1).map(x=>{const m=x.match(/^(.*?)\s+(\d+)$/);return m?[m[1],+m[2]]:[x,0]}).filter(x=>x[0])}}).filter(s=>s.a.length>=2)}
+Kit.editable({key:'show-ladder',title:'🪜 Climb-the-ladder questions (easiest first)',help:'(one per line: question | right answer | wrong | wrong | wrong)',def:L0,onSave:()=>{parse();if(tab==='ladder')startLadder()}});
+Kit.editable({key:'show-survey',title:'📊 Survey board questions',help:'(one per line: question | answer points | answer points … e.g. "Name a pet | Dog 40 | Cat 30")',def:S0,onSave:()=>{parse();if(tab==='survey')startSurvey()}});
+document.querySelector('main').innerHTML=`<div class="gs-tabs"><button class="btn" data-t="ladder">🪜 Climb the ladder</button><button class="btn white" data-t="survey">📊 Survey board</button><span class="ln-pill" style="background:#fff">✏️ Tap the pencil (top right) to write your own questions</span></div><div id="bd"></div>`;
+// ----- ladder: each right answer climbs a step; safe steps keep your points -----
+const STEPS=[100,200,300,500,1000,2000,4000,8000,16000,32000,64000,125000,250000,500000,1000000];
+function startLadder(){const qs=ladder.slice(0,15);L={qs,i:0,life:{ff:true,poll:true,hint:true},lock:null,over:false,safe:0};
+ const steps=STEPS.slice(0,qs.length),safeAt=new Set([Math.floor(qs.length/3)-1,Math.floor(qs.length*2/3)-1].filter(x=>x>=0));L.steps=steps;L.safeAt=safeAt;drawLadder()}
+function drawLadder(){const q=L.qs[L.i];if(!q){$('bd').innerHTML='<div class="gs-card">Add questions with the ✏️ button first.</div>';return}
+ const opts=L.opts||(L.opts=Kit.shuffle(q.slice(1,5).filter(Boolean)));
+ $('bd').innerHTML=`<div class="gs-stage"><div class="gs-lad"><div><div class="gs-life"><button id="ff" ${L.life.ff?'':'disabled'}>✂️ 50:50</button><button id="po" ${L.life.poll?'':'disabled'}>📊 Ask the class</button><button id="hi" ${L.life.hint?'':'disabled'}>📞 Ask a friend</button><button id="wa" style="border-color:#8BE09A">💰 Walk away</button></div>
+ <div class="gs-q">${Kit.esc(q[0])}</div><div class="gs-ans" id="an">${opts.map((o,k)=>`<button data-a="${Kit.esc(o)}"><b>${'ABCD'[k]}:</b>${Kit.esc(o)}</button>`).join('')}</div><div id="ex" style="text-align:center;margin-top:12px;font-weight:800;position:relative;min-height:1.4em"></div><div class="row" style="justify-content:center;margin-top:10px;position:relative"><button class="btn green" id="fa" hidden>🔒 Final answer!</button><button class="btn green" id="nx" hidden>Next question ➜</button><button class="btn white" id="ag" hidden>🔁 Play again</button></div></div>
+ <div class="gs-steps">${L.steps.map((s,k)=>`<div class="${k===L.i?'on':k<L.i?'past':''} ${L.safeAt.has(k)?'safe':''}"><span>${k+1}</span><span>${L.safeAt.has(k)?'🛟 ':''}${s.toLocaleString()}</span></div>`).join('')}</div></div></div>`;
+ $('an').onclick=e=>{const b=e.target.closest('[data-a]');if(!b||L.over||L.revealed)return;[...$('an').children].forEach(x=>x.classList.remove('lock'));b.classList.add('lock');L.lock=b.dataset.a;$('fa').hidden=false;Kit.tick()};
+ $('fa').onclick=()=>{if(!L.lock)return;L.revealed=true;$('fa').hidden=true;Kit.tone(220,.6,'sine',.08);setTimeout(()=>{const right=q[1],ok=L.lock===right;[...$('an').children].forEach(x=>{if(x.dataset.a===right)x.classList.add('yes');else if(x.dataset.a===L.lock)x.classList.add('no')});
+   if(ok){if(L.safeAt.has(L.i))L.safe=L.steps[L.i];Kit.tada();if(L.i===L.qs.length-1){L.over=true;Kit.confetti(150);$('ex').textContent=`🏆 You climbed the whole ladder! ${L.steps[L.i].toLocaleString()} points!`;$('ag').hidden=false}else{$('ex').textContent=`✅ Correct! ${L.steps[L.i].toLocaleString()} points.`;$('nx').hidden=false}}
+   else{L.over=true;Kit.tone(140,.6,'sawtooth',.1);$('ex').textContent=`❌ The answer was ${right}. You leave with ${L.safe.toLocaleString()} points.`;$('ag').hidden=false}window.__t={tab,i:L.i,over:L.over,ok}},window.__fast?0:1400)};
+ $('nx').onclick=()=>{L.i++;L.opts=null;L.lock=null;L.revealed=false;drawLadder()};$('ag').onclick=startLadder;
+ $('wa').onclick=()=>{if(L.over)return;L.over=true;const got=L.i?L.steps[L.i-1]:0;$('ex').textContent=`💰 You walked away with ${got.toLocaleString()} points!`;$('ag').hidden=false;[...$('an').children].forEach(x=>x.dataset.a===q[1]&&x.classList.add('yes'))};
+ $('ff').onclick=()=>{L.life.ff=false;$('ff').disabled=true;const wrong=[...$('an').children].filter(x=>x.dataset.a!==q[1]);Kit.shuffle(wrong).slice(0,Math.max(0,wrong.length-1)).forEach(x=>x.classList.add('gone'))};
+ $('po').onclick=()=>{L.life.poll=false;$('po').disabled=true;const vis=[...$('an').children].filter(x=>!x.classList.contains('gone'));let pct=vis.map(x=>x.dataset.a===q[1]?40+Math.random()*30:Math.random()*25);const sum=pct.reduce((a,b)=>a+b,0);pct=pct.map(p=>Math.round(p/sum*100));
+  $('ex').innerHTML=`<div class="gs-poll">${vis.map((x,k)=>`<div style="height:${pct[k]}%"><i>${pct[k]}%</i><span>${x.querySelector('b').textContent.replace(':','')}</span></div>`).join('')}</div><div style="margin-top:26px">Or poll the real class! ✋</div>`};
+ $('hi').onclick=()=>{L.life.hint=false;$('hi').disabled=true;const sure=Math.random()<.8;const guess=sure?q[1]:Kit.pick(q.slice(2,5).filter(Boolean));$('ex').textContent=`📞 "Hmm… I'm ${sure?'pretty sure':'not totally sure, but I think'} it's ${guess}."`};
+ window.__t={tab,i:L.i,over:L.over,ans:q[1]}}
+// ----- survey board: hidden answers ranked by points, three strikes -----
+function startSurvey(n){if(!survey.length){$('bd').innerHTML='<div class="gs-card">Add survey questions with the ✏️ button first.</div>';return}const k=n??(Sv?(Sv.k+1)%survey.length:0);const keep=Sv?Sv.score:[0,0],names=Sv?Sv.names:['Team 1','Team 2'];Sv={k,q:survey[k],up:new Set(),strikes:0,turn:Sv?Sv.turn:0,score:keep,names,pot:0};drawSurvey()}
+function drawSurvey(){const s=Sv,ans=[...s.q.a].sort((a,b)=>b[1]-a[1]);
+ $('bd').innerHTML=`<div class="gs-stage"><div class="gs-teams">${[0,1].map(t=>`<div class="gs-team ${s.turn===t?'on':''}" data-team="${t}"><span contenteditable="true" data-nm="${t}">${Kit.esc(s.names[t])}</span><b>${s.score[t]}</b></div>`).join('')}<div class="gs-team" style="cursor:default">🏦 Points in play<b id="pot">${s.pot}</b></div></div>
+ <div class="gs-q" style="margin-top:14px;position:relative">${Kit.esc(s.q.q)}</div><div class="gs-board">${ans.map((a,i)=>`<div class="gs-slot ${s.up.has(i)?'up':''}" data-i="${i}"><div class="in"><div class="f"><span>${i+1}</span></div><div class="b"><span>${Kit.esc(a[0])}</span><b>${a[1]}</b></div></div></div>`).join('')}</div>
+ <div class="gs-strikes">${'❌'.repeat(s.strikes)}</div><div class="row" style="justify-content:center;gap:8px;position:relative"><button class="btn white" id="wr">❌ Wrong answer</button><button class="btn white" id="bk">🏦 Give points to the team</button><button class="btn white" id="sw">🔄 Switch team</button><button class="btn green" id="nq">➡️ Next question</button></div><p style="text-align:center;font-weight:700;color:#C9D6F0;position:relative">Tap an answer to reveal it when a team says it.</p></div>`;
+ $('bd').querySelector('.gs-board').onclick=e=>{const sl=e.target.closest('[data-i]');if(!sl)return;const i=+sl.dataset.i;if(s.up.has(i))return;s.up.add(i);s.pot+=ans[i][1];Kit.ding();sl.classList.add('up');$('pot').textContent=s.pot;if(s.up.size===ans.length)Kit.tada();window.__t={tab,up:s.up.size,pot:s.pot,score:[...s.score]}};
+ $('wr').onclick=()=>{s.strikes=Math.min(3,s.strikes+1);const x=document.createElement('div');x.className='gs-x';x.textContent='✖';document.body.appendChild(x);setTimeout(()=>x.remove(),900);Kit.tone(110,.5,'square',.1);drawSurvey();if(s.strikes===3){$('bd').querySelector('.gs-strikes').innerHTML+=` <span style="font-size:1.1rem;letter-spacing:0">Three strikes! The other team can steal with one answer.</span>`}};
+ $('bk').onclick=()=>{s.score[s.turn]+=s.pot;s.pot=0;Kit.tada();drawSurvey();window.__t={tab,up:s.up.size,pot:0,score:[...s.score]}};$('sw').onclick=()=>{s.turn=1-s.turn;drawSurvey()};
+ $('nq').onclick=()=>{s.up=new Set(ans.map((_,i)=>i));drawSurvey();setTimeout(()=>{Sv.turn=1-Sv.turn;startSurvey()},window.__fast?0:1500)};
+ $('bd').querySelectorAll('[data-team]').forEach(t=>t.onclick=e=>{if(e.target.closest('[data-nm]'))return;s.turn=+t.dataset.team;drawSurvey()});$('bd').querySelectorAll('[data-nm]').forEach(n=>n.oninput=()=>s.names[+n.dataset.nm]=n.textContent.slice(0,20));
+ window.__t={tab,up:s.up.size,pot:s.pot,score:[...s.score]}}
+document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;document.querySelectorAll('[data-t]').forEach(x=>x.className='btn '+(x.dataset.t===tab?'':'white'));tab==='ladder'?startLadder():startSurvey(0)});
+parse();startLadder();
+</script>
+</body></html>

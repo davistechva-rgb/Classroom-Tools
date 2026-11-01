@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Custom Card Deck Generator</title>
+<style>
+main{max-width:1600px}
+.cd{display:grid;grid-template-columns:340px minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:960px){.cd{grid-template-columns:minmax(0,1fr)}}
+.cd-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:14px;display:grid;gap:10px}
+.cd-p .lb{font-weight:800}
+.cd-p textarea,.cd-p input,.cd-p select{font:inherit;font-weight:600;padding:7px 10px;border:3px solid var(--ink);border-radius:12px;width:100%;display:block;margin-top:4px}
+.cd-p textarea{font-family:ui-monospace,Menlo,monospace;min-height:0}
+.cd-seg{display:flex;gap:4px;flex-wrap:wrap}.cd-seg button{font:inherit;font-weight:800;border:3px solid var(--ink);border-radius:10px;padding:4px 9px;background:#fff;cursor:pointer;color:var(--ink);font-size:.9rem}.cd-seg button.on{background:var(--sun)}
+.cd-cols{display:flex;gap:5px;flex-wrap:wrap}.cd-cols button{width:32px;height:32px;border-radius:8px;border:3px solid var(--ink);background:var(--c);cursor:pointer}.cd-cols button.on{outline:4px solid var(--sun);outline-offset:2px}
+.cd-sheet{background:#fff;border:5px solid var(--ink);border-radius:16px;padding:14px;box-shadow:6px 6px 0 var(--ink);margin-bottom:14px}
+.cd-sheet h3{margin:0 0 8px;display:flex;justify-content:space-between}
+.cd-grid{display:grid;grid-template-columns:repeat(var(--per),minmax(0,1fr));gap:0;border:1px dashed #9FA9C4}
+.cd-card{aspect-ratio:var(--ar);border:1px dashed #9FA9C4;padding:8px;display:grid;place-items:center}
+.cd-in{width:100%;height:100%;border:var(--bw) solid var(--cc);border-radius:var(--br);background:var(--bgc);display:grid;align-content:center;justify-items:center;text-align:center;padding:8px;position:relative;overflow:hidden;color:#1D2B53}
+.cd-in .ic{font-size:calc(var(--fs)*1.6)}
+.cd-in .tx{font-weight:800;font-size:var(--fs);line-height:1.15;word-break:break-word}
+.cd-in .sm{font-weight:600;font-size:calc(var(--fs)*.55);line-height:1.2;margin-top:4px}
+.cd-in .cn{position:absolute;font-weight:900;font-size:calc(var(--fs)*.6);color:var(--cc)}
+.cd-in .tl{left:6px;top:4px}.cd-in .br{right:6px;bottom:4px;transform:rotate(180deg)}
+.cd-in .num{position:absolute;left:6px;top:4px;background:var(--cc);color:#fff;border-radius:99px;padding:0 7px;font-weight:900;font-size:calc(var(--fs)*.5)}
+.cd-back .cd-in{background:var(--cc);background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.18) 0 10px,transparent 10px 20px);color:#fff}
+@media print{header,.cd-p,.cd-noprint{display:none!important}.cd{display:block}.cd-sheet{border:0;box-shadow:none;padding:0;margin:0;break-after:page}.cd-sheet h3{display:none}}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🃏", "Custom Card Deck Generator");
+const $=id=>document.getElementById(id);
+const COLS=['#E5533F','#FF9F43','#FFC93C','#5DC66E','#22C3E6','#1E7FD0','#9B6BF2','#FF6B9A','#1D2B53'];
+const STY={vocab:['🔤 Vocabulary','Word on the front, meaning on the back'],flash:['⚡ Flashcards','Question front, answer back'],play:['🂡 Playing card','Corner labels like real cards'],task:['🎯 Task cards','Numbered challenge cards'],tag:['🏷️ Labels & name tags','One side, big and clear']};
+const D0={vocab:`habitat | the natural home of a plant or animal
+predator | an animal that hunts other animals
+camouflage | colors or patterns that help an animal hide
+adapt | to change to fit a new place
+extinct | when a kind of animal no longer exists
+migrate | to move to a new place when seasons change`,flash:`7 × 8 | 56
+9 × 6 | 54
+12 × 3 | 36
+8 × 8 | 64
+6 × 7 | 42
+11 × 4 | 44`,play:`🍎 | Apple
+🍌 | Banana
+🍇 | Grapes
+🍓 | Strawberry`,task:`Find 3 words that rhyme with "cat".
+Write a sentence using the word "enormous".
+Draw a shape with 5 sides.
+Count by 5s to 100.
+Name 4 animals that live in the ocean.
+Measure your desk in hand-spans.`,tag:`Ava
+Ben
+Carlos
+Diya
+Eli
+Fatima`};
+let S=Kit.get('cd-deck',null)||{style:'vocab',text:D0.vocab,title:'Animal words',col:5,icon:'🐾',size:9,backs:true,fs:22,round:true};
+document.querySelector('main').innerHTML=`<div class="cd"><div class="cd-p"><div class="lb">🎨 Card style</div><div class="cd-seg" id="st">${Object.entries(STY).map(([k,s])=>`<button data-s="${k}">${s[0]}</button>`).join('')}</div><div class="muted" id="sd" style="font-weight:700"></div>
+<label class="lb">🏷️ Deck name (printed on the backs)<input id="ti"></label><label class="lb">📝 Cards <span class="muted" style="font-weight:600" id="hp"></span><textarea id="tx" rows="8"></textarea></label>
+<div class="lb">🌈 Color</div><div class="cd-cols" id="cl">${COLS.map((c,i)=>`<button data-c="${i}" style="--c:${c}"></button>`).join('')}</div>
+<label class="lb">✨ Icon<input id="ic" maxlength="4"></label>
+<div class="lb">📐 Cards per page</div><div class="cd-seg" id="sz">${[[4,'4 big'],[6,'6'],[9,'9'],[12,'12 small']].map(([n,t])=>`<button data-z="${n}">${t}</button>`).join('')}</div>
+<div class="lb">🔠 Text size</div><input type="range" id="fs" min="12" max="40">
+<label class="lb" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="bk" style="width:auto;display:inline"> Print back sides (for two-sided printing)</label><label class="lb" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="rd" style="width:auto;display:inline"> Rounded corners</label>
+<button class="btn green big" id="pr">🖨️ Print cards</button><div class="muted" style="font-weight:700;font-size:.85rem">Tip: back pages are mirrored so they line up when you print on both sides (flip on the long edge).</div></div><div id="out"></div></div>`;
+function save(){Kit.set('cd-deck',S)}
+const cards=()=>Kit.lines(S.text).map(l=>{const p=l.split('|').map(s=>s.trim());return [p[0],p[1]||'']});
+function face(c,i,back){const st=S.style;if(back){if(st==='flash'||st==='vocab')return `<div class="tx">${Kit.esc(c[1]||'')}</div>`;return `<div class="ic">${Kit.esc(S.icon)}</div><div class="tx" style="font-size:calc(var(--fs)*.8)">${Kit.esc(S.title)}</div>`}
+ if(st==='play'){const emo=/\p{Extended_Pictographic}/u.test(c[0]);return `<span class="cn tl">${Kit.esc(emo?c[0]:c[0].slice(0,2))}</span><span class="cn br">${Kit.esc(emo?c[0]:c[0].slice(0,2))}</span><div class="ic" style="font-size:calc(var(--fs)*2.6)">${emo?Kit.esc(c[0]):Kit.esc(S.icon)}</div><div class="tx">${Kit.esc(c[1]||(!emo?c[0]:''))}</div>`}
+ if(st==='task')return `<span class="num">${i+1}</span><div class="ic">${Kit.esc(S.icon)}</div><div class="tx" style="font-size:calc(var(--fs)*.75)">${Kit.esc(c[0])}</div>`;
+ if(st==='tag')return `<div class="ic">${Kit.esc(S.icon)}</div><div class="tx" style="font-size:calc(var(--fs)*1.4)">${Kit.esc(c[0])}</div>${c[1]?`<div class="sm">${Kit.esc(c[1])}</div>`:''}`;
+ return `<div class="ic">${Kit.esc(S.icon)}</div><div class="tx">${Kit.esc(c[0])}</div>${st==='vocab'&&!S.backs&&c[1]?`<div class="sm">${Kit.esc(c[1])}</div>`:''}`}
+function draw(){const per=S.size,cols=per===4?2:per===6?2:per===9?3:3,C=cards(),ar=per===12?'1/0.72':per===6?'1.25/1':'5/7',pages=[];for(let i=0;i<C.length;i+=per)pages.push(C.slice(i,i+per));
+ const vars=`--per:${cols};--ar:${per===12||per===6?'1.4/1':'5/7'};--cc:${COLS[S.col]};--bgc:${S.style==='tag'?'#fff':'#FFFDF6'};--fs:min(${S.fs}px,${(S.fs/7).toFixed(2)}vw);--bw:${S.style==='play'?'4px':'6px'};--br:${S.round?'14px':'2px'}`;
+ const sheet=(cs,p,back)=>{let row=[];const cells=[];for(let k=0;k<per;k++)cells.push(cs[k]);// mirror each row for backs so they line up
+  const ordered=back?[].concat(...Array.from({length:Math.ceil(per/cols)},(_,r)=>cells.slice(r*cols,r*cols+cols).reverse())):cells;
+  return `<div class="cd-sheet ${back?'cd-back':''}"><h3><span>📄 Page ${p+1} · ${back?'backs':'fronts'}</span><span class="muted">${cs.length} cards</span></h3><div class="cd-grid" style="${vars}">${ordered.map((c,k)=>`<div class="cd-card">${c?`<div class="cd-in">${face(c,p*per+cells.indexOf(c),back)}</div>`:''}</div>`).join('')}</div></div>`};
+ $('out').innerHTML=pages.map((cs,p)=>sheet(cs,p,false)+(S.backs?sheet(cs,p,true):'')).join('')||'<div class="cd-sheet">Type some cards on the left!</div>';
+ document.querySelectorAll('[data-s]').forEach(b=>b.classList.toggle('on',b.dataset.s===S.style));document.querySelectorAll('[data-c]').forEach(b=>b.classList.toggle('on',+b.dataset.c===S.col));document.querySelectorAll('[data-z]').forEach(b=>b.classList.toggle('on',+b.dataset.z===S.size));
+ $('sd').textContent=STY[S.style][1];$('hp').textContent=S.style==='task'||S.style==='tag'?'(one per line)':'(one per line: front | back)';window.__t={cards:C.length,pages:pages.length,sheets:document.querySelectorAll('.cd-sheet').length,style:S.style}}
+function fill(){$('ti').value=S.title;$('tx').value=S.text;$('ic').value=S.icon;$('fs').value=S.fs;$('bk').checked=S.backs;$('rd').checked=S.round;draw()}
+$('st').onclick=e=>{const b=e.target.closest('[data-s]');if(!b)return;const was=S.style;S.style=b.dataset.s;if(S.text.trim()===D0[was].trim()||!S.text.trim())S.text=D0[S.style];S.backs=S.style==='vocab'||S.style==='flash';save();fill()};
+$('cl').onclick=e=>{const b=e.target.closest('[data-c]');if(b){S.col=+b.dataset.c;save();draw()}};$('sz').onclick=e=>{const b=e.target.closest('[data-z]');if(b){S.size=+b.dataset.z;save();draw()}};
+$('ti').oninput=()=>{S.title=$('ti').value;save();draw()};$('tx').oninput=()=>{S.text=$('tx').value;save();draw()};$('ic').oninput=()=>{S.icon=$('ic').value;save();draw()};$('fs').oninput=()=>{S.fs=+$('fs').value;save();draw()};
+$('bk').onchange=()=>{S.backs=$('bk').checked;save();draw()};$('rd').onchange=()=>{S.round=$('rd').checked;save();draw()};$('pr').onclick=()=>print();
+fill();
+</script>
+</body></html>

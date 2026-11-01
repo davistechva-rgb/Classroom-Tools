@@ -23,10 +23,12 @@ main{max-width:1600px}
 .tb-ev.sel .c{outline:5px solid var(--sun);outline-offset:2px}
 .tb-form{display:grid;grid-template-columns:110px 130px minmax(0,1fr) 80px auto;gap:8px;align-items:end;background:#fff;border:5px solid var(--ink);border-radius:18px;padding:10px;margin-top:14px}
 @media (max-width:760px){.tb-form{grid-template-columns:1fr 1fr}.tb-form .wide{grid-column:1/-1}}
-.tb-form label{font-weight:800;font-size:.85rem;display:grid;gap:3px}
+.tb-form label{font-weight:800;font-size:.85rem;display:block}
 .tb-cols{display:flex;gap:4px;flex-wrap:wrap}.tb-cols button{width:30px;height:30px;border-radius:50%;border:3px solid var(--ink);background:var(--c);cursor:pointer}.tb-cols button.on{outline:3px solid var(--ink);outline-offset:2px}
 .tb-empty{position:absolute;inset:0;display:grid;place-items:center;font-weight:800;color:#55607E;font-size:1.2rem;text-align:center;padding:20px}
 @media print{header,.tb-top,.tb-form{display:none!important}.tb-wrap{box-shadow:none;overflow:visible}}
+.eg-card label>input,.eg-card label>textarea,.eg-card label>select,.is-ed label>input,.is-ed label>textarea,.tb-form label>input,.tb-form label>select{display:block;margin-top:4px}
+.eg-card textarea,.is-ed textarea{min-height:0}
 </style></head>
 <body>
 <main></main>

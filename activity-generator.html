@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Activity Generator</title>
+<style>
+main{max-width:1400px}
+.ag{display:grid;grid-template-columns:320px minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.ag{grid-template-columns:minmax(0,1fr)}}
+.ag-f{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:14px;display:grid;gap:10px}
+.ag-f .lb{font-weight:800}
+.ag-seg{display:flex;gap:4px;flex-wrap:wrap}.ag-seg button{font:inherit;font-weight:800;border:3px solid var(--ink);border-radius:10px;padding:4px 9px;background:#fff;cursor:pointer;color:var(--ink);font-size:.92rem}.ag-seg button.on{background:var(--sun)}
+.ag-card{background:#fff;border:6px solid var(--ink);border-radius:26px;box-shadow:8px 8px 0 var(--ink);padding:18px;display:grid;gap:12px;animation:pop .4s}
+@keyframes pop{0%{transform:scale(.9) rotate(-2deg);opacity:0}}
+.ag-card h2{margin:0;font-size:clamp(1.5rem,3.5vw,2.3rem);display:flex;gap:10px;align-items:center}.ag-card h2 span{font-size:3rem}
+.ag-tags{display:flex;gap:6px;flex-wrap:wrap}.ag-tags span{border:3px solid var(--ink);border-radius:99px;padding:1px 10px;font-weight:800;background:#F4FAFF;font-size:.9rem}
+.ag-card ol{margin:0;padding-left:1.4em;font-size:1.15rem;font-weight:600;line-height:1.5}
+.ag-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;margin-top:14px}
+.ag-list button{font:inherit;font-weight:800;border:3px solid var(--ink);border-radius:14px;padding:8px;background:#fff;cursor:pointer;text-align:left;color:var(--ink)}
+.ag-list button small{display:block;font-weight:600;color:#55607E}
+.ag-none{background:#fff;border:5px dashed var(--ink);border-radius:20px;padding:24px;text-align:center;font-weight:800}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🧠", "Activity Generator");
+const $=id=>document.getElementById(id);
+// [emoji, name, minutes, energy (1 calm, 2 medium, 3 active), group (s solo, p pairs, g groups, w whole class), needs, subjects, steps]
+const A=[['🗣️','Would You Rather',5,2,'w','nothing','talk',['Read a "would you rather" question out loud.','Students move to one side of the room for each choice.','Ask a few kids on each side to explain why.']],
+['🔤','Alphabet Chain',5,1,'w','nothing','words',['Pick a topic, like animals or food.','Go around the room: each person says a word for the next letter of the alphabet.','If someone gets stuck, the class can help with a clue.']],
+['🤸','Simon Says Math',5,3,'w','nothing','math,move',['"Simon says: jump the answer to 3 + 2!"','Kids do the action the right number of times.','Leave out "Simon says" sometimes to keep everyone listening.']],
+['✏️','Quick Write',8,1,'s','paper','writing',['Show a fun prompt, like "If my pencil could talk…".','Everyone writes without stopping for 5 minutes.','Volunteers share their favorite sentence.']],
+['🧩','Human Number Line',10,2,'w','cards','math',['Give each student a card with a number or fraction.','Without talking, they line up from smallest to biggest.','Check the line together and fix any mix-ups.']],
+['🎭','Charades Review',10,3,'g','nothing','review,move',['Write review words on slips of paper.','One student acts out a word without talking.','Their team guesses before the timer runs out.']],
+['🔍','I Spy Shapes',5,1,'w','nothing','math',['"I spy something shaped like a cylinder…"','Students look around the room and guess.','Whoever guesses right gives the next clue.']],
+['🧠','Brain Dump',5,1,'s','paper','review',['Students write everything they remember about today\'s topic.','Set a timer for 3 minutes.','Pairs compare lists and add anything they missed.']],
+['🎵','Freeze Dance Facts',8,3,'w','music','move,review',['Play music while kids dance.','Stop the music: everyone freezes.','Ask a review question. Kids answer while frozen!']],
+['🤝','Think, Pair, Share',8,1,'p','nothing','talk',['Ask an open question.','Everyone thinks quietly for 1 minute.','Talk with a partner, then a few pairs share with the class.']],
+['📦','Mystery Bag',10,1,'w','bag','science,words',['Put an object in a bag.','A volunteer feels it and describes it without saying what it is.','The class asks yes-or-no questions to guess.']],
+['🏃','Four Corners',8,3,'w','nothing','review,move',['Label the corners A, B, C and D.','Read a multiple-choice question.','Students walk to the corner of their answer.']],
+['🃏','Vocabulary Pictionary',12,2,'g','whiteboard','words',['A student draws a vocabulary word.','No letters or numbers allowed!','Their team has 1 minute to guess.']],
+['🌀','Two Truths and a Lie',8,1,'w','nothing','talk',['A student says three facts about themselves (or the topic). One is false.','The class votes on which one is the lie.','Reveal the answer!']],
+['🧮','Around the World',12,2,'w','flashcards','math,review',['Two students stand. Show a flashcard.','The first to answer moves to the next student.','Try to make it all the way around the room!']],
+['🎨','Draw It Back',10,1,'p','paper','talk',['Sit back to back with a partner.','One describes a simple picture; the other draws it.','Compare drawings and switch roles.']],
+['🔢','Buzz',6,2,'w','nothing','math',['Count around the room.','Instead of multiples of a number (like 3), say "BUZZ".','Make a mistake? Sit down and help catch the next one.']],
+['📖','Story Circle',10,1,'w','nothing','writing,talk',['Start a story with one sentence.','Each student adds one sentence.','The last person must give it an ending!']],
+['⚽','Ball Toss Questions',8,2,'w','soft ball','review',['Toss a soft ball to a student.','They answer a question, then toss it to someone new.','Everyone should get a turn.']],
+['🧘','Calm-Down Breathing',3,1,'w','nothing','calm',['Breathe in for 4 counts like smelling a flower.','Hold for 4 counts.','Breathe out for 4 counts like blowing out a candle. Repeat 4 times.']],
+['🔗','Word Association Toss',5,2,'w','nothing','words',['Say a word.','The next person says the first related word they think of.','Keep the chain going as fast as you can.']],
+['🗺️','Scavenger Hunt',15,3,'g','list','science,review',['Give teams a list: "something smooth", "a word with 3 syllables"…','Teams find or write down each item.','First team back with a full list wins.']],
+['🏗️','Spaghetti Tower',20,2,'g','spaghetti & tape','science',['Each team gets 20 pieces of spaghetti and some tape.','Build the tallest tower that can stand by itself.','Measure the towers and talk about what worked.']],
+['🤔','Riddle Time',5,1,'w','nothing','fun',['Read a riddle out loud.','Students whisper answers to a partner.','Reveal the answer and share another riddle.']],
+['🎲','Roll and Retell',10,1,'p','die','reading',['Roll a die.','1: characters, 2: setting, 3: problem, 4: solution, 5: favorite part, 6: your choice.','Tell your partner about the book you\'re reading.']],
+['🚦','Red Light, Green Light Facts',8,3,'w','nothing','move,review',['Students line up on one side.','Answer a question correctly to take a step on "green light".','First to the other side wins.']],
+['📏','Estimation Station',8,1,'w','jar or objects','math',['Show a jar of objects or a picture.','Everyone writes an estimate.','Count together and see who was closest.']],
+['💬','Compliment Circle',6,1,'w','nothing','calm,talk',['Sit in a circle.','Say one kind thing about the person on your left.','Go all the way around.']],
+['🔤','Spelling Shuffle',10,2,'g','letter cards','words',['Give each team a set of letter cards.','Call out a word.','Teams race to hold up the letters in order.']],
+['🕵️','Who Am I?',10,2,'w','sticky notes','review',['Put a sticky note with a famous person or animal on a student\'s back.','They ask yes-or-no questions to guess who they are.','Switch and play again.']],
+['🌡️','Opinion Line',8,2,'w','nothing','talk',['One wall is "strongly agree", the other "strongly disagree".','Read a statement.','Students stand where they feel and explain why.']],
+['🧽','Desk Clean-up Race',5,3,'w','nothing','calm',['Set a 2-minute timer.','Everyone tidies their space.','Celebrate the cleanest room ever!']],
+['📊','Class Survey',15,2,'p','paper','math',['Pairs choose a survey question.','They ask classmates and tally answers.','Make a quick bar graph to share.']],
+['🎤','Fact Rap',15,2,'g','nothing','review,music',['Teams pick 3 facts from today\'s lesson.','Turn them into a short rap, chant or song.','Perform for the class!']],
+['🪄','Magic Number',5,1,'w','nothing','math',['Think of a number from 1 to 100.','The class asks "higher or lower" questions.','Can they find it in 7 guesses or less?']],
+['🦁','Animal Moves',4,3,'w','nothing','move',['Call out an animal.','Everyone moves like that animal for 20 seconds.','Freeze, then call out a new animal.']],
+['🧑‍🏫','Be the Teacher',10,2,'p','nothing','review',['Each partner picks one idea from today.','Teach it to your partner in 1 minute.','Your partner asks one question at the end.']],
+['📝','Exit Ticket Doodle',5,1,'s','paper','review',['Draw a picture that shows what you learned today.','Add a one-sentence caption.','Hand it in on the way out.']],
+['🔁','Pass the Problem',12,2,'g','paper','math,writing',['Each team starts a problem or story on a paper.','After 2 minutes, pass it to the next team to continue.','Rotate until every paper is finished.']],
+['🎯','Target Number',8,1,'g','nothing','math',['Give 4 numbers and a target, like 2, 3, 5, 8 → 24.','Teams use +, −, ×, ÷ to hit the target.','Share different solutions.']]];
+const EN={1:'😌 Calm',2:'🙂 Medium',3:'⚡ Active'},GR={s:'🧑 Solo',p:'👯 Partners',g:'👨‍👩‍👧 Groups',w:'🏫 Whole class'};
+let F=Kit.get('ag-f',{t:10,e:0,g:'',m:false,s:''}),fav=new Set(Kit.get('ag-fav',[])),cur=null;
+const SUB=[...new Set(A.flatMap(a=>a[6].split(',')))].sort();
+document.querySelector('main').innerHTML=`<div class="ag"><div class="ag-f"><div class="lb">⏱️ I have about…</div><div class="ag-seg" id="ft">${[5,10,15,20].map(m=>`<button data-t="${m}">${m} min</button>`).join('')}</div>
+<div class="lb">⚡ Energy</div><div class="ag-seg" id="fe"><button data-e="0">Any</button>${Object.entries(EN).map(([k,v])=>`<button data-e="${k}">${v}</button>`).join('')}</div>
+<div class="lb">👥 Groups</div><div class="ag-seg" id="fg"><button data-g="">Any</button>${Object.entries(GR).map(([k,v])=>`<button data-g="${k}">${v}</button>`).join('')}</div>
+<div class="lb">📚 Topic</div><div class="ag-seg" id="fs"><button data-s="">Any</button>${SUB.map(s=>`<button data-s="${s}">${s}</button>`).join('')}</div>
+<label style="font-weight:800"><input type="checkbox" id="fm" ${F.m?'checked':''}> 🚫 No supplies needed</label><label style="font-weight:800"><input type="checkbox" id="ff"> ⭐ Only my favorites</label>
+<button class="btn green big" id="go">🎲 Find an activity!</button></div><div><div id="cd"></div><div class="ag-list" id="ls"></div></div></div>`;
+function match(){return A.filter(a=>a[2]<=F.t&&(!+F.e||a[3]===+F.e)&&(!F.g||a[4]===F.g)&&(!F.s||a[6].split(',').includes(F.s))&&(!F.m||a[5]==='nothing')&&(!$('ff').checked||fav.has(a[1])))}
+function seg(){document.querySelectorAll('[data-t]').forEach(b=>b.classList.toggle('on',+b.dataset.t===F.t));document.querySelectorAll('[data-e]').forEach(b=>b.classList.toggle('on',b.dataset.e==String(F.e)));document.querySelectorAll('[data-g]').forEach(b=>b.classList.toggle('on',b.dataset.g===F.g));document.querySelectorAll('[data-s]').forEach(b=>b.classList.toggle('on',b.dataset.s===F.s));
+ const m=match();$('ls').innerHTML=m.length?`<div style="grid-column:1/-1;color:#fff;font-weight:900;text-shadow:1px 1px 0 var(--ink)">${m.length} activities fit:</div>`+m.map(a=>`<button data-a="${Kit.esc(a[1])}">${a[0]} ${Kit.esc(a[1])}${fav.has(a[1])?' ⭐':''}<small>${a[2]} min · ${EN[a[3]]} · ${GR[a[4]]}</small></button>`).join(''):'';Kit.set('ag-f',F);window.__t={matches:m.length,cur:cur&&cur[1]}}
+function show(a){cur=a;if(!a){$('cd').innerHTML='<div class="ag-none">😕 Nothing matches all of that. Try more minutes or "Any".</div>';return}
+ $('cd').innerHTML=`<div class="ag-card"><h2><span>${a[0]}</span>${Kit.esc(a[1])}</h2><div class="ag-tags"><span>⏱️ ${a[2]} min</span><span>${EN[a[3]]}</span><span>${GR[a[4]]}</span><span>🧰 ${a[5]==='nothing'?'No supplies':Kit.esc(a[5])}</span></div><ol>${a[7].map(s=>`<li>${Kit.esc(s)}</li>`).join('')}</ol>
+ <div class="row" style="gap:8px"><button class="btn green" id="an">🎲 Another one</button><button class="btn white" id="fv">${fav.has(a[1])?'⭐ Favorite':'☆ Add to favorites'}</button><button class="btn white" id="tm">⏱️ Start a ${a[2]}-minute timer</button></div><div id="tt" style="font-size:2rem;font-weight:900;text-align:center"></div></div>`;
+ $('an').onclick=pick;$('fv').onclick=()=>{fav.has(a[1])?fav.delete(a[1]):fav.add(a[1]);Kit.set('ag-fav',[...fav]);show(a);seg()};
+ $('tm').onclick=()=>{clearInterval(window.__agT);let l=a[2]*60;const tk=()=>{$('tt')&&($('tt').textContent=`⏱️ ${Math.floor(l/60)}:${String(l%60).padStart(2,'0')}`)};tk();window.__agT=setInterval(()=>{l--;tk();if(l<=0){clearInterval(window.__agT);Kit.alarm?Kit.alarm():Kit.tada()}},1000)};window.__t.cur=a[1]}
+function pick(){const m=match();const opts=m.length>1&&cur?m.filter(a=>a!==cur):m;Kit.tick();show(opts.length?Kit.pick(opts):null);seg()}
+document.querySelector('.ag-f').onclick=e=>{const b=e.target.closest('button');if(!b||b.id==='go')return;const d=b.dataset;if(d.t)F.t=+d.t;if(d.e!=null)F.e=+d.e;if(d.g!=null)F.g=d.g;if(d.s!=null)F.s=d.s;seg()};
+$('fm').onchange=()=>{F.m=$('fm').checked;seg()};$('ff').onchange=seg;$('go').onclick=pick;$('ls').onclick=e=>{const b=e.target.closest('[data-a]');if(b){show(A.find(a=>a[1]===b.dataset.a));seg();scrollTo({top:0,behavior:'smooth'})}};
+seg();pick();
+</script>
+</body></html>

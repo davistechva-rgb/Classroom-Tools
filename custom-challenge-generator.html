@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Custom Challenge Generator</title>
+<style>
+main{max-width:1400px}
+.cg-machine{background:linear-gradient(#E5533F,#B23A2B);border:7px solid var(--ink);border-radius:30px;box-shadow:9px 9px 0 var(--ink);padding:18px;max-width:1000px;margin:0 auto;display:grid;gap:14px}
+.cg-top{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+.cg-top label{background:#fff;border:4px solid var(--ink);border-radius:14px;padding:4px 10px;font-weight:800;display:flex;gap:6px;align-items:center}
+.cg-top select{font:inherit;font-weight:800;border:0;background:transparent}
+.cg-reels{display:grid;grid-template-columns:1fr 2.2fr 1fr;gap:10px}
+@media (max-width:700px){.cg-reels{grid-template-columns:minmax(0,1fr)}}
+.cg-reel{background:#FFFDF6;border:5px solid var(--ink);border-radius:18px;height:150px;overflow:hidden;position:relative;box-shadow:inset 0 10px 14px rgba(0,0,0,.18),inset 0 -10px 14px rgba(0,0,0,.18)}
+.cg-reel .lb{position:absolute;top:4px;left:0;right:0;text-align:center;font-weight:900;font-size:.8rem;color:#9FA9C4;letter-spacing:.1em;z-index:2}
+.cg-strip{position:absolute;left:0;right:0;top:0}
+.cg-strip div{height:150px;display:grid;place-items:center;text-align:center;padding:22px 12px 8px;font-weight:900;font-size:clamp(.95rem,2.2vw,1.35rem);line-height:1.2}
+@media (max-width:700px){.cg-reel{height:120px}.cg-strip div{height:120px;padding-top:18px}}
+.cg-strip div span{font-size:2.2rem;display:block}
+.cg-lever{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+.cg-card{background:#fff;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);padding:16px;max-width:1000px;margin:16px auto 0;display:grid;gap:10px;text-align:center}
+.cg-time{font-size:clamp(2.4rem,7vw,4rem);font-weight:900;font-variant-numeric:tabular-nums}
+.cg-time.low{color:#E5533F;animation:p 1s infinite}@keyframes p{50%{transform:scale(1.08)}}
+.cg-bar{height:16px;border:4px solid var(--ink);border-radius:99px;overflow:hidden;background:#E3E8F2}.cg-bar i{display:block;height:100%;background:#5DC66E;transition:width 1s linear}
+.cg-log{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.cg-log span{background:#fff;border:3px solid var(--ink);border-radius:99px;padding:2px 10px;font-weight:800;font-size:.85rem}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🎯", "Custom Challenge Generator");
+const $=id=>document.getElementById(id);
+const WHO=[['🙋','One volunteer'],['👯','Partners'],['👨‍👩‍👧','Your table'],['🏫','The whole class'],['🎲','Teacher picks'],['👦👧','Boys vs girls']].map(x=>x.join('|'));
+const TIME=[['⏱️','30 seconds',30],['⏲️','1 minute',60],['⏰','2 minutes',120],['🕐','3 minutes',180]];
+const BANK={'🧠 Brain':['Name {n} animals that live in the ocean','List {n} words that rhyme with "{rhyme}"','Name {n} things that are {color}','Think of {n} words that start with "{letter}"','Name {n} countries','Count backwards from {big} by {step}s','Name {n} things you can find in a kitchen'],
+ '➗ Math':['Count by {step}s up to {big}','Make {target} using only addition, three different ways','Name {n} shapes and how many sides each has','Find {n} things in the room that are rectangles','What is {a} × {b}? Explain how you know','Say the doubles from 1 + 1 to {n} + {n}'],
+ '🔤 Words':['Spell "{word}" backwards','Make as many words as you can from the letters in "{long}"','Use "{word}" in a silly sentence','Tell a story where every sentence starts with "{letter}"','Act out the word "{verb}" without talking'],
+ '🏃 Move':['Do {n} jumping jacks while counting by {step}s','Balance on one foot while saying the alphabet','Do {n} squats, spelling "{word}" one letter each','Walk like a {animal} to the door and back','Freeze like a statue of a {animal}'],
+ '🎨 Create':['Invent a new animal by mixing a {animal} and a {animal2}','Draw a {color} {animal} in 4 shapes','Make up a new holiday and its rules','Design a robot that cleans {room}','Invent a new sport using only a {thing}']};
+const FILL={n:()=>Kit.rand(3,8),rhyme:()=>Kit.pick(['cat','bake','light','sing','bee','cool','tree','rain']),color:()=>Kit.pick(['red','blue','green','yellow','orange','purple']),letter:()=>Kit.pick('BCDFGHLMPRST'.split('')),big:()=>Kit.pick([50,60,100,120]),step:()=>Kit.pick([2,3,5,10]),target:()=>Kit.rand(10,30),a:()=>Kit.rand(3,9),b:()=>Kit.rand(3,9),
+ word:()=>Kit.pick(['planet','rocket','garden','pencil','dragon','window','happy','school']),long:()=>Kit.pick(['butterfly','classroom','dinosaur','computer','rainbow']),verb:()=>Kit.pick(['swim','sneeze','tiptoe','juggle','surf','melt']),
+ animal:()=>Kit.pick(['penguin','frog','crab','elephant','kangaroo','snake','monkey']),animal2:()=>Kit.pick(['owl','shark','giraffe','turtle','cheetah','bat']),room:()=>Kit.pick(['the classroom','your bedroom','the lunchroom','a zoo']),thing:()=>Kit.pick(['pillow','balloon','spoon','sock','paper cup'])};
+let subj=Kit.get('cg-subj','🧠 Brain'),spinning=false,timer=0,left=0,total=0,log=Kit.get('cg-log',[]),cur=null;
+function mine(){return Kit.lines(Kit.get('ed:challenges',''))}
+Kit.editable({key:'challenges',title:'My challenges',help:'(one per line. You can use {n} {color} {letter} {word} {animal} {step} {big} to fill in random things.)',def:`Name {n} things that are {color}
+Teach the class a fun fact in 30 seconds
+Make up a handshake with your partner`,onSave:()=>{fillSubj();}});
+document.querySelector('main').innerHTML=`<div class="cg-machine"><div class="cg-top"><label>📚 <select id="sb"></select></label><label>⏱️ <select id="tm"><option value="spin">🎰 Spin it</option>${TIME.map((t,i)=>`<option value="${i}">${t[1]}</option>`).join('')}</select></label></div>
+<div class="cg-reels"><div class="cg-reel"><div class="lb">WHO</div><div class="cg-strip" id="r0"></div></div><div class="cg-reel"><div class="lb">CHALLENGE</div><div class="cg-strip" id="r1"></div></div><div class="cg-reel"><div class="lb">TIME</div><div class="cg-strip" id="r2"></div></div></div>
+<div class="cg-lever"><button class="btn big" id="go" style="background:var(--sun)">🎰 Pull the lever!</button></div></div>
+<div class="cg-card" id="cd" hidden><div style="font-weight:900;font-size:1.3rem" id="cw"></div><div class="cg-time" id="ct">0:00</div><div class="cg-bar"><i id="cb"></i></div><div class="row" style="justify-content:center;gap:8px"><button class="btn green" id="st">▶ Start timer</button><button class="btn white" id="ok">✅ Challenge done!</button><button class="btn white" id="sk">⏭️ Skip</button></div></div>
+<div style="text-align:center;margin-top:14px;color:#fff;font-weight:900;text-shadow:2px 2px 0 var(--ink)">🏆 Challenges completed: <span id="lc">0</span> <button class="btn white small" id="lr">↺</button></div><div class="cg-log" id="lg"></div>`;
+function fillSubj(){const subs=[...Object.keys(BANK),'🎲 Mix','✏️ My own'];$('sb').innerHTML=subs.map(s=>`<option ${s===subj?'selected':''}>${s}</option>`).join('')}
+const fill=t=>t.replace(/\{(\w+)\}/g,(m,k)=>FILL[k]?FILL[k]():m);
+function pool(){if(subj==='✏️ My own')return mine().length?mine():BANK['🧠 Brain'];if(subj==='🎲 Mix')return Object.values(BANK).flat().concat(mine());return BANK[subj]}
+function cell(t,big){const [e,...r]=t.split('|');return r.length?`<div><span>${e}</span>${Kit.esc(r.join(''))}</div>`:`<div>${Kit.esc(t)}</div>`}
+async function spin(){if(spinning)return;spinning=true;clearInterval(timer);$('cd').hidden=true;Kit.tick();
+ const who=Kit.pick(WHO),what=fill(Kit.pick(pool())),ti=$('tm').value==='spin'?Kit.pick(TIME):TIME[+$('tm').value];cur={who,what,time:ti};
+ const reels=[[WHO,who],[pool().map(fill),what],[TIME.map(t=>`${t[0]}|${t[1]}`),`${ti[0]}|${ti[1]}`]];
+ await Promise.all(reels.map(async([items,final],r)=>{const el=$('r'+r),seq=[...Array(14+r*6)].map(()=>Kit.pick(items)).concat([final]);el.innerHTML=seq.map(x=>cell(x)).join('');el.style.transition='none';el.style.transform='translateY(0)';void el.offsetHeight;
+  el.style.transition=`transform ${window.__fast?.01:1.2+r*.5}s cubic-bezier(.15,.7,.25,1)`;el.style.transform=`translateY(-${(seq.length-1)*el.firstChild.offsetHeight}px)`;await Kit.sleep(window.__fast?20:1250+r*500);Kit.tone(500+r*150,.08,'square',.1)}));
+ spinning=false;total=ti[2];left=total;$('cd').hidden=false;$('cw').innerHTML=`${who.split('|')[0]} ${Kit.esc(who.split('|')[1])}: ${Kit.esc(what)}`;show();Kit.ding();window.__t={who,what,time:ti[2],done:log.length}}
+function show(){$('ct').textContent=`${Math.floor(left/60)}:${String(left%60).padStart(2,'0')}`;$('cb').style.width=(left/total*100)+'%';$('ct').classList.toggle('low',left<=10&&left>0)}
+$('st').onclick=()=>{clearInterval(timer);if(left<=0)left=total;timer=setInterval(()=>{left--;show();if(left<=5&&left>0)Kit.tick();if(left<=0){clearInterval(timer);Kit.alarm?Kit.alarm():Kit.tada();$('ct').textContent='⏰ Time!'}},1000)};
+$('ok').onclick=()=>{if(!cur)return;clearInterval(timer);log.unshift(cur.what);log=log.slice(0,30);Kit.set('cg-log',log);Kit.tada();Kit.confetti(50);$('cd').hidden=true;cur=null;logs()};$('sk').onclick=spin;
+function logs(){$('lc').textContent=log.length;$('lg').innerHTML=log.slice(0,10).map(x=>`<span>✅ ${Kit.esc(x)}</span>`).join('');if(window.__t)window.__t.done=log.length}
+$('lr').onclick=()=>{log=[];Kit.set('cg-log',log);logs()};$('go').onclick=spin;$('sb').onchange=()=>{subj=$('sb').value;Kit.set('cg-subj',subj)};
+fillSubj();[0,1,2].forEach(r=>$('r'+r).innerHTML=cell(r===0?'🙋|Who?':r===1?'🎯|Pull the lever for a challenge!':'⏱️|How long?'));logs();
+</script>
+</body></html>

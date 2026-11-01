@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Custom Game Board Generator</title>
+<style>
+main{max-width:1600px}
+.bg-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:10px}
+.bg{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:960px){.bg{grid-template-columns:minmax(0,1fr)}}
+.bg-board{background:var(--bb);border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);padding:10px}
+.bg-board svg{width:100%;display:block}
+.bg-sp rect{stroke:#1D2B53;stroke-width:3}
+.bg-sp text{text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.bg-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:14px;display:grid;gap:10px}
+.bg-teams{display:grid;gap:6px}
+.bg-tm{display:flex;align-items:center;gap:8px;border:4px solid var(--ink);border-radius:14px;padding:4px 10px;font-weight:900;background:var(--tc);opacity:.55}
+.bg-tm.on{opacity:1;box-shadow:0 4px 0 var(--ink)}
+.bg-tm span{font-size:1.6rem}
+.bg-die{font-size:4rem;text-align:center;line-height:1;cursor:pointer;user-select:none}
+.bg-die.roll{animation:rl .6s}@keyframes rl{0%{transform:rotate(0)}100%{transform:rotate(720deg)}}
+.bg-msg{font-weight:800;min-height:2.6em;text-align:center}
+.bg-key{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;font-weight:700;font-size:.9rem}
+.bg-ov{position:fixed;inset:0;background:rgba(15,22,45,.6);display:grid;place-items:center;z-index:40;padding:14px}
+.bg-q{background:#fff;border:6px solid var(--ink);border-radius:24px;box-shadow:8px 8px 0 var(--ink);padding:18px;max-width:600px;width:100%;display:grid;gap:12px;text-align:center}
+.bg-q .qt{font-size:clamp(1.3rem,3.2vw,1.8rem);font-weight:800}
+@media print{header,.bg-top,.bg-p{display:none!important}.bg{display:block}.bg-board{box-shadow:none}}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🎲", "Custom Game Board Generator");
+const $=id=>document.getElementById(id);
+const TH={rainbow:['🌈 Rainbow','#9FD8FF',['#FFB3AA','#FFD27F','#FFF27A','#B8F59A','#9FE6FF','#D6C2FF']],jungle:['🌴 Jungle','#7BC86C',['#C9E58A','#A6DD88','#FFF27A','#E8C38A']],space:['🚀 Space','#1D2B53',['#3B4C8A','#5B3B8F','#2B6CB0','#4A5A8A']],candy:['🍭 Candy','#FFD1E8',['#FFB3D1','#FFFFFF','#B8F0E6','#FFE58F']],ocean:['🌊 Ocean','#22C3E6',['#9FE6FF','#B8F0E6','#FFFFFF','#7FD4F0']]};
+const SPECIAL={q:['❓','Answer a question to stay'],up:['🪜','Climb up!'],down:['🐍','Slide down!'],star:['⭐','Bonus: roll again'],swap:['🔄','Swap places with the leader'],skip:['😴','Lose a turn']};
+const TOK=['🔴','🔵','🟢','🟡'],TC=['#FFB3AA','#9FD8FF','#B8F59A','#FFF27A'];
+const Q0=`What is 9 + 8? | 17
+Name a mammal that lives in the ocean. | Whale or dolphin
+Spell "friend". | F-R-I-E-N-D
+What is 5 × 6? | 30
+Name the 3 states of matter. | Solid, liquid, gas
+What is the opposite of "cold"? | Hot
+How many minutes are in an hour? | 60
+Name a planet. | Any planet!`;
+Kit.editable({key:'board-questions',title:'Question cards',help:'(one per line: question | answer)',def:Q0});
+const qs=()=>Kit.lines(Kit.get('ed:board-questions',Q0)).map(l=>l.split('|').map(s=>s.trim()));
+let C=Kit.get('bg-cfg',{n:30,shape:'snake',theme:'rainbow',teams:2,mix:{q:4,up:3,down:3,star:2,swap:1,skip:1},seed:1}),B=null,G=null,busy=false;
+document.querySelector('main').innerHTML=`<div class="bg-top"><select id="nn" style="width:auto">${[20,30,40,50].map(n=>`<option value="${n}">${n} spaces</option>`).join('')}</select><select id="sh" style="width:auto"><option value="snake">🐍 Zig-zag</option><option value="spiral">🌀 Spiral</option><option value="loop">⭕ Loop</option></select><select id="th" style="width:auto">${Object.entries(TH).map(([k,t])=>`<option value="${k}">${t[0]}</option>`).join('')}</select><select id="tn" style="width:auto">${[2,3,4].map(n=>`<option value="${n}">${n} teams</option>`).join('')}</select><button class="btn green" id="gn">🎲 Make a new board</button><button class="btn white small" id="pr">🖨️ Print</button></div>
+<div class="bg"><div class="bg-board" id="bb"><svg id="sv"></svg></div><div class="bg-p"><div class="bg-teams" id="tm"></div><div class="bg-die" id="die" title="Roll">🎲</div><button class="btn green big" id="rl">🎲 Roll the die</button><div class="bg-msg" id="msg"></div><b>🔑 Special spaces</b><div class="bg-key">${Object.values(SPECIAL).map(s=>`<div>${s[0]} ${s[1]}</div>`).join('')}</div><button class="btn white small" id="rs">🔁 Restart game</button></div></div>`;
+function rng(s){return()=>{s=(s*16807)%2147483647;return (s-1)/2147483646}}
+function gen(){const n=C.n,r=rng(C.seed);let pos=[];
+ if(C.shape==='snake'){const cols=n<=20?5:n<=30?6:n<=40?8:10,rows=Math.ceil(n/cols);for(let i=0;i<n;i++){const row=Math.floor(i/cols),c=i%cols;pos.push([row%2?cols-1-c:c,rows-1-row])}B={W:cols,H:rows}}
+ else if(C.shape==='spiral'){const s=Math.ceil(Math.sqrt(n))+1;let x=0,y=0,dx=1,dy=0,minX=0,maxX=s-1,minY=0,maxY=s-1;const seen=new Set();for(let i=0;i<n;i++){pos.push([x,y]);seen.add(x+','+y);let nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=s||ny>=s||seen.has(nx+','+ny)){[dx,dy]=[-dy,dx];nx=x+dx;ny=y+dy}x=nx;y=ny}B={W:s,H:s}}
+ else{const w=Math.ceil(n/4)+1,h=Math.max(3,Math.floor(n/2)-w+2);const ring=[];for(let x=0;x<w;x++)ring.push([x,h-1]);for(let y=h-2;y>=0;y--)ring.push([w-1,y]);for(let x=w-2;x>=0;x--)ring.push([x,0]);for(let y=1;y<h-1;y++)ring.push([0,y]);pos=ring.slice(0,n);B={W:w,H:h}}
+ B.pos=pos;B.sp=Array(n).fill(null);B.jump={};const free=[...Array(n).keys()].slice(2,n-2);const take=()=>free.splice(Math.floor(r()*free.length),1)[0];
+ Object.entries(C.mix).forEach(([k,c])=>{for(let i=0;i<Math.round(c*n/30);i++){if(!free.length)break;const at=take();B.sp[at]=k;if(k==='up')B.jump[at]=Math.min(n-2,at+3+Math.floor(r()*Math.max(3,n/6)));if(k==='down')B.jump[at]=Math.max(1,at-3-Math.floor(r()*Math.max(3,n/6)))}});draw()}
+function draw(){const S=70,T=TH[C.theme],n=C.n;$('bb').style.setProperty('--bb',T[1]);$('sv').setAttribute('viewBox',`-6 -6 ${B.W*S+12} ${B.H*S+12}`);const X=i=>B.pos[i][0]*S+S/2,Y=i=>B.pos[i][1]*S+S/2;
+ let h='';for(let i=0;i<n-1;i++)h+=`<line x1="${X(i)}" y1="${Y(i)}" x2="${X(i+1)}" y2="${Y(i+1)}" stroke="rgba(255,255,255,.6)" stroke-width="22" stroke-linecap="round"/>`;
+ B.pos.forEach((p,i)=>{const sp=B.sp[i];h+=`<g class="bg-sp"><rect x="${p[0]*S+4}" y="${p[1]*S+4}" width="${S-8}" height="${S-8}" rx="14" fill="${i===0?'#8BE09A':i===n-1?'#FFD84D':T[2][i%T[2].length]}"/><text x="${p[0]*S+16}" y="${p[1]*S+17}" font-size="12" font-weight="900" fill="#1D2B53">${i===0?'':i}</text><text x="${X(i)}" y="${Y(i)+4}" font-size="${i===0||i===n-1?18:28}" font-weight="900">${i===0?'START':i===n-1?'🏁':sp?SPECIAL[sp][0]:''}</text></g>`});
+ Object.entries(B.jump).forEach(([a,b])=>{a=+a;const up=b>a;h+=`<path d="M${X(a)},${Y(a)} Q${(X(a)+X(b))/2+40},${(Y(a)+Y(b))/2} ${X(b)},${Y(b)}" fill="none" stroke="${up?'#8B5A2B':'#2E9E47'}" stroke-width="7" stroke-dasharray="${up?'2 10':'0'}" stroke-linecap="round" opacity=".75"/>`});
+ if(G)G.pos.forEach((p,t)=>{const off=[[-12,-12],[12,-12],[-12,12],[12,12]][t];h+=`<text x="${X(p)+off[0]}" y="${Y(p)+off[1]+6}" font-size="26" text-anchor="middle">${TOK[t]}</text>`});
+ $('sv').innerHTML=h;if(G)$('tm').innerHTML=G.pos.map((p,t)=>`<div class="bg-tm ${t===G.turn&&!G.over?'on':''}" style="--tc:${TC[t]}"><span>${TOK[t]}</span>Team ${t+1}<span style="margin-left:auto;font-size:1rem">space ${p}${G.skip[t]?' 😴':''}</span></div>`).join('');
+ ['nn','sh','th','tn'].forEach(id=>$(id).value=String({nn:C.n,sh:C.shape,th:C.theme,tn:C.teams}[id]));window.__t={n,pos:G?[...G.pos]:[],turn:G&&G.turn,over:G&&G.over,special:B.sp.filter(Boolean).length}}
+function start(){G={pos:Array(C.teams).fill(0),turn:0,over:false,skip:Array(C.teams).fill(false)};$('msg').textContent=`${TOK[0]} Team 1, roll the die!`;draw()}
+async function roll(forced){if(busy||G.over)return;busy=true;const t=G.turn;const v=forced||Kit.rand(1,6);$('die').classList.remove('roll');void $('die').offsetWidth;$('die').classList.add('roll');Kit.tone(300,.05,'square',.08);await Kit.sleep(window.__fast?1:600);$('die').textContent=['⚀','⚁','⚂','⚃','⚄','⚅'][v-1];
+ const goal=C.n-1;for(let k=0;k<v&&G.pos[t]<goal;k++){G.pos[t]++;draw();Kit.tick();await Kit.sleep(window.__fast?1:200)}
+ let again=false;const at=G.pos[t],sp=B.sp[at];let m=`${TOK[t]} rolled ${v}.`;
+ if(at>=goal){G.over=true;m=`🏆 Team ${t+1} ${TOK[t]} wins!`;Kit.tada();Kit.confetti(100)}
+ else if(sp==='up'||sp==='down'){await Kit.sleep(window.__fast?1:300);G.pos[t]=B.jump[at];m+=sp==='up'?` 🪜 Climbed up to ${B.jump[at]}!`:` 🐍 Slid down to ${B.jump[at]}!`;sp==='up'?Kit.ding():Kit.tone(220,.3,'triangle',.12)}
+ else if(sp==='star'){again=true;m+=' ⭐ Roll again!';Kit.ding()}
+ else if(sp==='skip'){G.skip[t]=true;m+=' 😴 Lose your next turn.'}
+ else if(sp==='swap'){const lead=G.pos.indexOf(Math.max(...G.pos));if(lead!==t){[G.pos[t],G.pos[lead]]=[G.pos[lead],G.pos[t]];m+=` 🔄 Swapped with Team ${lead+1}!`}else m+=' 🔄 You\'re already the leader!'}
+ else if(sp==='q'){const ok=await ask(t);if(!ok){G.pos[t]=Math.max(0,at-v);m+=` ❓ Not quite, back to ${G.pos[t]}.`}else m+=' ❓ Correct! You stay.'}
+ if(!G.over&&!again){let nx=(t+1)%C.teams,g=0;while(G.skip[nx]&&g++<5){G.skip[nx]=false;m+=` Team ${nx+1} skips.`;nx=(nx+1)%C.teams}G.turn=nx;m+=` Now ${TOK[G.turn]} Team ${G.turn+1}.`}
+ $('msg').textContent=m;draw();busy=false}
+function ask(t){return new Promise(res=>{const all=qs();const q=all.length?Kit.pick(all):['Tell the class one thing you learned today!',''];const ov=document.createElement('div');ov.className='bg-ov';
+ ov.innerHTML=`<div class="bg-q"><div style="font-size:2.6rem">${TOK[t]} ❓</div><div class="qt">${Kit.esc(q[0])}</div>${q[1]?`<button class="btn white" id="sa">👀 Show answer</button><div id="aa" hidden style="font-size:1.4rem;font-weight:900">${Kit.esc(q[1])}</div>`:''}<div class="row" style="justify-content:center;gap:8px"><button class="btn green" data-r="1">✅ Got it</button><button class="btn white" data-r="0">❌ Not quite</button></div></div>`;
+ document.body.appendChild(ov);ov.onclick=e=>{if(e.target.id==='sa'){$('aa').hidden=false;e.target.remove()}const b=e.target.closest('[data-r]');if(b){ov.remove();res(b.dataset.r==='1')}}})}
+$('gn').onclick=()=>{C.seed=Kit.rand(1,1e9);Kit.set('bg-cfg',C);gen();start()};['nn','sh','th','tn'].forEach(id=>$(id).onchange=()=>{C.n=+$('nn').value;C.shape=$('sh').value;C.theme=$('th').value;C.teams=+$('tn').value;Kit.set('bg-cfg',C);gen();start()});
+$('rl').onclick=()=>roll();$('die').onclick=()=>roll();$('rs').onclick=start;$('pr').onclick=()=>{const g=G;G=null;draw();setTimeout(()=>{print();G=g;draw()},100)};
+window.__g={roll,answer:ok=>document.querySelector(`.bg-ov [data-r="${ok?1:0}"]`)?.click(),board:()=>({sp:B.sp,jump:B.jump})};
+gen();start();
+</script>
+</body></html>

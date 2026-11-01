@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Classroom City Builder</title>
+<style>
+main{max-width:1600px}
+.cc2{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:960px){.cc2{grid-template-columns:minmax(0,1fr)}}
+.cc2-hud{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:10px}
+@media (max-width:600px){.cc2-hud{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.cc2-hud div{background:#fff;border:4px solid var(--ink);border-radius:16px;padding:4px 8px;text-align:center;font-weight:800}
+.cc2-hud b{display:block;font-size:1.5rem}
+.cc2-map{display:grid;grid-template-columns:repeat(12,1fr);border:6px solid var(--ink);border-radius:22px;overflow:hidden;box-shadow:7px 7px 0 var(--ink);background:#8BCB6A}
+.cc2-t{aspect-ratio:1;display:grid;place-items:center;font-size:clamp(1rem,2.7vw,2.1rem);border:1px solid rgba(0,0,0,.07);cursor:pointer;position:relative}
+.cc2-t.road{background:#9AA3B5}.cc2-t.water{background:#4FA7E6;cursor:default}
+.cc2-t:hover{outline:3px solid #fff;outline-offset:-3px}
+.cc2-t.ok{box-shadow:inset 0 0 0 3px #FFD84D}
+.cc2-t.new{animation:pop .5s}@keyframes pop{0%{transform:scale(.2)}70%{transform:scale(1.25)}}
+.cc2-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:10px}
+.cc2-coins{display:flex;gap:6px;flex-wrap:wrap}
+.cc2-shop{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.cc2-shop button{font:inherit;font-weight:800;border:3px solid var(--ink);border-radius:12px;padding:5px 7px;background:#fff;cursor:pointer;text-align:left;color:var(--ink);line-height:1.15;display:flex;gap:6px;align-items:center}
+.cc2-shop button span{font-size:1.5rem}.cc2-shop button small{display:block;font-weight:600;font-size:.72rem;color:#55607E}
+.cc2-shop button.on{background:var(--sun)}.cc2-shop button:disabled{opacity:.4;cursor:not-allowed}
+.cc2-log{max-height:150px;overflow:auto;font-weight:700;font-size:.9rem;display:grid;gap:3px}
+.cc2-log div{background:#F4FAFF;border-radius:8px;padding:2px 8px}
+.cc2-lvl{font-size:1.3rem;font-weight:900;text-align:center}
+.cc2-bar{height:16px;border:3px solid var(--ink);border-radius:99px;overflow:hidden;background:#E3E8F2}.cc2-bar i{display:block;height:100%;background:#5DC66E}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🏙️", "Classroom City Builder");
+const $=id=>document.getElementById(id);
+const GW=12,GH=8;
+// [emoji, name, cost, people, happiness, unlocks at population, special]
+const BLD={road:['⬛','Road',1,0,0,0],house:['🏠','House',5,4,0,0],tree:['🌳','Tree',2,0,1,0],park:['⛲','Park',8,0,4,0],shop:['🏪','Shop',12,0,1,8,'+2 coins each payday'],school:['🏫','School',20,0,3,12],library:['📚','Library',18,0,3,16],apt:['🏢','Apartments',25,12,-1,20],fire:['🚒','Fire station',22,0,2,24],hosp:['🏥','Hospital',30,0,3,30],museum:['🏛️','Museum',35,0,5,40],fair:['🎡','Fair',45,0,8,50],stadium:['🏟️','Stadium',60,0,10,70],castle:['🏰','Castle',90,0,15,90],rocket:['🚀','Rocket base',120,0,20,120]};
+const LV=[[0,'🏕️ Campsite'],[10,'🏡 Village'],[30,'🏘️ Town'],[60,'🏙️ City'],[100,'🌆 Big city'],[160,'🌃 Mega city']];
+const REASONS=['Great teamwork','Everyone on time','Quiet hallway','Finished the goal','Kindness spotted','Clean classroom','Great effort'];
+let S=Kit.get('cc2-city',null),sel='house',bull=false;
+if(!S){S={coins:20,map:Array(GW*GH).fill(null),log:[],name:'Our Class City'};// a river runs across one corner
+ for(let y=0;y<GH;y++){const x=GW-2+Math.round(Math.sin(y/1.5));S.map[y*GW+Math.max(0,Math.min(GW-1,x))]='water'}}
+document.querySelector('main').innerHTML=`<div class="cc2-hud"><div>🪙 Coins<b id="co"></b></div><div>👥 People<b id="pp"></b></div><div>😊 Happiness<b id="hp"></b></div><div>🏗️ Buildings<b id="nb"></b></div></div>
+<div class="cc2"><div><input id="nm" style="font:900 1.4rem Fredoka,sans-serif;text-align:center;width:100%;border:4px solid var(--ink);border-radius:14px;padding:6px;margin-bottom:10px"><div class="cc2-map" id="mp"></div><p style="color:#fff;font-weight:800;text-align:center;text-shadow:1px 1px 0 var(--ink)">Pick a building, then tap an empty spot. Pick 🚜 to remove one (you get half the coins back).</p></div>
+<div class="cc2-p"><div class="cc2-lvl" id="lv"></div><div class="cc2-bar"><i id="lb"></i></div><div class="muted" id="ln" style="font-weight:700;text-align:center"></div>
+<b>🪙 The class earned coins!</b><select id="rs" style="width:100%">${REASONS.map(r=>`<option>${r}</option>`).join('')}</select><div class="cc2-coins">${[1,2,5,10].map(n=>`<button class="btn green small" data-c="${n}">+${n} 🪙</button>`).join('')}<button class="btn white small" id="pd">💰 Payday (shops)</button></div>
+<b>🏗️ Build</b><div class="cc2-shop" id="sh"></div><b>📜 City news</b><div class="cc2-log" id="lg"></div><button class="btn white small" id="rst">🗑️ Start a new city</button></div></div>`;
+function save(){Kit.set('cc2-city',S)}
+function stats(){let pop=0,hap=0,n=0;S.map.forEach((k,i)=>{if(!k||k==='water'||k==='road')return;const b=BLD[k];n++;pop+=b[3];hap+=b[4]});const houses=S.map.filter(k=>k==='house'||k==='apt').length;return {pop,hap:Math.max(0,hap+Math.min(houses,S.map.filter(k=>k==='road').length>0?2:0)),n}}
+function level(p){let i=0;LV.forEach((l,k)=>{if(p>=l[0])i=k});return i}
+function news(t){S.log.unshift(t);S.log=S.log.slice(0,40)}
+function draw(newAt=-1){const st=stats(),li=level(st.pop),nxt=LV[li+1];$('co').textContent=S.coins;$('pp').textContent=st.pop;$('hp').textContent=st.hap;$('nb').textContent=st.n;$('nm').value=S.name;
+ $('lv').textContent=LV[li][1];$('lb').style.width=nxt?((st.pop-LV[li][0])/(nxt[0]-LV[li][0])*100)+'%':'100%';$('ln').textContent=nxt?`${nxt[0]-st.pop} more people to become a ${nxt[1].replace(/^\S+ /,'')}`:'The biggest city ever!';
+ const b=BLD[sel];$('mp').innerHTML=S.map.map((k,i)=>`<div class="cc2-t ${k==='water'?'water':k==='road'?'road':''} ${!k&&!bull&&b&&S.coins>=b[2]?'ok':''} ${i===newAt?'new':''}" data-i="${i}">${k==='water'?'〰️':k&&k!=='road'?BLD[k][0]:''}</div>`).join('');
+ $('sh').innerHTML=`<button data-b="bull" class="${bull?'on':''}"><span>🚜</span><div>Remove<small>half back</small></div></button>`+Object.entries(BLD).map(([k,v])=>{const lock=st.pop<v[5];return `<button data-b="${k}" class="${!bull&&sel===k?'on':''}" ${lock?'disabled':''}><span>${lock?'🔒':v[0]}</span><div>${v[1]}<small>${lock?`needs ${v[5]} people`:`🪙 ${v[2]}${v[3]?` · +${v[3]} 👥`:''}${v[4]?` · ${v[4]>0?'+':''}${v[4]} 😊`:''}${v[6]?` · ${v[6]}`:''}`}</small></div></button>`}).join('');
+ $('lg').innerHTML=S.log.map(l=>`<div>${Kit.esc(l)}</div>`).join('')||'<div>Welcome to your new city! 🎉</div>';window.__t={coins:S.coins,...st,level:LV[li][1]}}
+$('mp').onclick=e=>{const t=e.target.closest('[data-i]');if(!t)return;const i=+t.dataset.i,k=S.map[i];if(k==='water')return;
+ if(bull){if(!k)return;const back=Math.floor(BLD[k][2]/2);S.coins+=back;S.map[i]=null;news(`🚜 Removed a ${BLD[k][1].toLowerCase()} (+${back} 🪙)`);Kit.tone(200,.15,'triangle',.12);save();draw();return}
+ if(k){Kit.tone(220,.12,'triangle',.1);return}const b=BLD[sel];if(S.coins<b[2]){Kit.tone(200,.2,'triangle',.15);news(`Not enough coins for a ${b[1].toLowerCase()} (needs ${b[2]} 🪙)`);draw();return}
+ const before=level(stats().pop);S.coins-=b[2];S.map[i]=sel;if(sel!=='road')news(`${b[0]} Built a ${b[1].toLowerCase()}!`);Kit.ding();const after=level(stats().pop);if(after>before){news(`🎉 Our city grew into a ${LV[after][1]}!`);Kit.tada();Kit.confetti(90)}save();draw(i)};
+$('sh').onclick=e=>{const b=e.target.closest('[data-b]');if(!b||b.disabled)return;if(b.dataset.b==='bull'){bull=!bull}else{bull=false;sel=b.dataset.b}draw()};
+document.querySelector('.cc2-coins').onclick=e=>{const b=e.target.closest('[data-c]');if(!b)return;const n=+b.dataset.c;S.coins+=n;news(`🪙 +${n}: ${$('rs').value}`);Kit.tone(880,.08,'triangle',.12);save();draw()};
+$('pd').onclick=()=>{const shops=S.map.filter(k=>k==='shop').length;if(!shops){news('💰 No shops yet, so no payday. Build a shop!');draw();return}S.coins+=shops*2;news(`💰 Payday! ${shops} shop${shops>1?'s':''} earned ${shops*2} 🪙`);Kit.ding();save();draw()};
+$('nm').oninput=()=>{S.name=$('nm').value;save()};$('rst').onclick=()=>{if(confirm('Bulldoze everything and start a brand new city?')){localStorage.removeItem('ct:cc2-city');location.reload()}};
+window.__c={coins:n=>{S.coins+=n;save();draw()},build:(k,i)=>{sel=k;bull=false;$('mp').children[i].click()},free:()=>S.map.findIndex(k=>!k),map:()=>S.map};
+draw();
+</script>
+</body></html>
