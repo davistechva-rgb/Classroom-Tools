@@ -1,0 +1,71 @@
+{
+  "name": "classroom-tools",
+  "productName": "Classroom Tools",
+  "version": "1.38.0",
+  "description": "Classroom Tools by Davis Tech Support",
+  "author": "Davis Tech Support",
+  "homepage": "https://davis-tech-support.com",
+  "license": "MIT",
+  "main": "main.js",
+  "scripts": {
+    "prep": "node prep.js",
+    "start": "node prep.js && electron .",
+    "dist": "./build-windows.sh"
+  },
+  "devDependencies": {
+    "@fontsource/fredoka": "^5.3.0",
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8",
+    "png-to-ico": "^2.1.8",
+    "resedit": "^2.0.3",
+    "sharp": "^0.33.5"
+  },
+  "build": {
+    "appId": "com.davistechsupport.classroomtools",
+    "productName": "Classroom Tools",
+    "copyright": "© Davis Tech Support",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "build/icon.png",
+      "app/**/*"
+    ],
+    "afterPack": "./afterpack.js",
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Classroom Tools",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "artifactName": "Classroom-Tools-Setup-${version}.exe"
+    },
+    "portable": {
+      "artifactName": "Classroom-Tools-Portable-${version}.exe"
+    }
+  }
+}
