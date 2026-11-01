@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Number Rocket</title>
+<style>
+main{max-width:1500px}
+.nr-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:12px}
+.nr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.6fr);gap:16px;align-items:stretch}
+@media (max-width:860px){.nr{grid-template-columns:minmax(0,1fr)}}
+.nr-pad{background:linear-gradient(#0B1030,#2A2F6B);border:6px solid var(--ink);border-radius:28px;box-shadow:8px 8px 0 var(--ink);position:relative;overflow:hidden;min-height:420px;display:grid;place-items:end center;padding-bottom:20px}
+.nr-stars{position:absolute;inset:0;background:radial-gradient(circle,#fff 0 1px,transparent 2px) 0 0/50px 50px,radial-gradient(circle,#fff8 0 1px,transparent 2px) 25px 25px/50px 50px}
+.nr-rocket{position:relative;display:grid;justify-items:center;transition:transform 2.6s cubic-bezier(.6,0,.9,.4)}
+.nr-rocket.go{transform:translateY(-140vh)}
+.nr-rocket .r{font-size:clamp(6rem,16vw,9rem);line-height:1;transform:rotate(-45deg)}
+.nr-fuel{width:46px;height:180px;border:5px solid #fff;border-radius:14px;position:absolute;left:14px;bottom:20px;overflow:hidden;background:#fff2}
+.nr-fuel i{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(#FFC93C,#E5533F);transition:height .4s}
+.nr-flame{font-size:3rem;opacity:0;margin-top:-20px}.nr-rocket.go .nr-flame,.nr-rocket.lit .nr-flame{opacity:1;animation:fl .1s infinite alternate}@keyframes fl{to{transform:scaleY(1.3)}}
+.nr-cd{position:absolute;top:30%;left:0;right:0;text-align:center;font:900 clamp(4rem,12vw,8rem) Fredoka,sans-serif;color:#FFC93C;text-shadow:5px 5px 0 #000}
+.nr-board{background:#fff;border:6px solid var(--ink);border-radius:28px;box-shadow:8px 8px 0 var(--ink);padding:14px;display:grid;gap:12px;align-content:start}
+.nr-seq{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.nr-seq span{min-width:54px;height:54px;border:4px dashed #9AA6C0;border-radius:14px;display:grid;place-items:center;font:900 1.5rem Fredoka,sans-serif;color:#9AA6C0;padding:0 4px}
+.nr-seq span.f{border-style:solid;border-color:var(--ink);background:#FFC93C;color:var(--ink);animation:pop .3s}@keyframes pop{50%{transform:scale(1.2)}}
+.nr-cells{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.nr-cell{font:900 clamp(1.4rem,4vw,2rem) Fredoka,sans-serif;min-width:clamp(64px,13vw,84px);height:clamp(64px,13vw,84px);border:5px solid var(--ink);border-radius:18px 18px 10px 10px;background:linear-gradient(#9FD8FF,#5BB8F0);cursor:pointer;color:var(--ink);box-shadow:0 5px 0 var(--ink)}
+.nr-cell.no{animation:sh .35s;background:#FFD3CC}@keyframes sh{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.nr-cell.used{visibility:hidden}
+.nr-msg{text-align:center;font-weight:900;font-size:1.25rem;min-height:1.5em}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🚀", "Number Rocket");
+const $=id=>document.getElementById(id);
+const MODES={up:'⬆️ Count up',down:'⬇️ Count down',by2:'2️⃣ Count by 2s',by5:'5️⃣ Count by 5s',by10:'🔟 Count by 10s'};
+let mode=Kit.get('nr-mode','up'),seq=[],next=0,cells=[],launches=Kit.get('nr-launch',0),busy=false;
+const say=t=>{try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(String(t));u.rate=.95;speechSynthesis.speak(u)}catch(e){}};
+function build(){busy=false;const n=8;let s;
+ if(mode==='up'){const a=Kit.rand(1,12);s=Array.from({length:n},(_,i)=>a+i)}if(mode==='down'){const a=Kit.rand(8,20);s=Array.from({length:n},(_,i)=>a-i)}
+ if(mode==='by2'){const a=Kit.rand(0,5)*2;s=Array.from({length:n},(_,i)=>a+i*2)}if(mode==='by5'){const a=Kit.rand(0,4)*5;s=Array.from({length:n},(_,i)=>a+i*5)}if(mode==='by10'){const a=Kit.rand(0,3)*10;s=Array.from({length:n},(_,i)=>a+i*10)}
+ seq=s;next=0;const step=s[1]-s[0];const decoys=[s[0]-step,s[n-1]+step,s[3]+Math.sign(step)].filter(v=>v>=0&&!s.includes(v)).slice(0,2);cells=Kit.shuffle([...s,...decoys]).map(v=>({v,used:false}));
+ $('rk').classList.remove('go','lit');$('cd').textContent='';draw();$('mg').textContent=`Tap the fuel cells in order! Start with ${s[0]}.`}
+document.querySelector('main').innerHTML=`<div class="nr-top"><select id="md" style="width:auto">${Object.entries(MODES).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select><button class="btn green" id="nw">🔄 New numbers</button><b style="color:#fff;text-shadow:2px 2px 0 var(--ink)" id="ln"></b></div>
+<div class="nr"><div class="nr-pad"><div class="nr-stars"></div><div class="nr-fuel"><i id="fu"></i></div><div class="nr-cd" id="cd"></div><div class="nr-rocket" id="rk"><span class="r">🚀</span><span class="nr-flame">🔥</span></div></div>
+<div class="nr-board"><b style="font-size:1.2rem">⛽ Fuel the rocket</b><div class="nr-seq" id="sq"></div><div class="nr-cells" id="cl"></div><div class="nr-msg" id="mg"></div></div></div>`;
+function draw(){$('md').value=mode;$('ln').textContent=`🚀 Launches: ${launches}`;$('fu').style.height=(next/seq.length*100)+'%';
+ $('sq').innerHTML=seq.map((v,i)=>`<span class="${i<next?'f':''}">${i<next?v:'?'}</span>`).join('');
+ $('cl').innerHTML=cells.map((c,i)=>`<button class="nr-cell ${c.used?'used':''}" data-i="${i}">${c.v}</button>`).join('');window.__t={mode,seq:[...seq],next,launches}}
+$('cl').onclick=async e=>{const b=e.target.closest('[data-i]');if(!b||busy)return;const c=cells[+b.dataset.i];
+ if(c.v===seq[next]){c.used=true;next++;Kit.tone(300+next*60,.12,'triangle',.12);if(!window.__fast)say(c.v);draw();
+  if(next===seq.length){busy=true;$('mg').textContent='⛽ Full tank! Get ready…';$('rk').classList.add('lit');for(const k of [5,4,3,2,1]){$('cd').textContent=k;Kit.tone(440,.15,'square',.08);if(!window.__fast)say(k);await Kit.sleep(window.__fast?1:800)}
+   $('cd').textContent='BLAST OFF!';Kit.tone(880,.4,'square',.1);$('rk').classList.add('go');Kit.confetti(150);launches++;Kit.set('nr-launch',launches);$('mg').textContent='🎉 Blast off!';window.__t.launches=launches;await Kit.sleep(window.__fast?1:3000);build()}else $('mg').textContent=`✅ ${c.v}! What comes next?`}
+ else{b.classList.remove('no');void b.offsetWidth;b.classList.add('no');Kit.tone(180,.25,'sawtooth',.08);$('mg').textContent=next?`🤔 Not ${c.v}. What comes after ${seq[next-1]}?`:`🤔 Not ${c.v}. Start with ${seq[0]}!`}};
+$('md').onchange=()=>{mode=$('md').value;Kit.set('nr-mode',mode);build()};$('nw').onclick=build;
+build();
+</script>
+</body></html>

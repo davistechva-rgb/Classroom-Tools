@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Dinosaur Counting</title>
+<style>
+main{max-width:1400px}
+.dc-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:12px}
+.dc-land{background:linear-gradient(#FFE6B0 0 30%,#B8E08A 30%,#7CC86B);border:6px solid var(--ink);border-radius:28px;box-shadow:8px 8px 0 var(--ink);padding:16px;display:grid;gap:14px;justify-items:center;position:relative;overflow:hidden}
+.dc-deco{position:absolute;font-size:clamp(2.4rem,6vw,4rem);pointer-events:none;opacity:.9}
+.dc-goal{display:flex;gap:12px;align-items:center;font-weight:900;font-size:clamp(1.3rem,3.4vw,1.9rem);background:#fff;border:5px solid var(--ink);border-radius:20px;padding:8px 18px;z-index:1;flex-wrap:wrap;justify-content:center}
+.dc-goal .big{font:900 clamp(2.6rem,8vw,4rem) Fredoka,sans-serif;line-height:1;color:#E5533F}
+.dc-frames{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;z-index:1;width:100%}
+.dc-frame{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;background:#8B5A2B;border:6px solid #3B2A1A;border-radius:18px;padding:8px;width:min(460px,100%);box-sizing:border-box}
+.dc-slot{aspect-ratio:1;border-radius:50%;background:#C9965A;border:4px solid #6B4220;display:grid;place-items:center;cursor:pointer;font-size:clamp(1.6rem,6vw,2.8rem);line-height:1;padding:0}
+.dc-slot.e{background:radial-gradient(circle at 40% 35%,#fff,#F2E6CC);border-color:#3B2A1A}
+.dc-slot.e span{display:block;animation:pl .25s}@keyframes pl{0%{transform:scale(.3)}}
+.dc-slot.h span{animation:hatch .6s}@keyframes hatch{0%{transform:scale(.4) rotate(-20deg)}60%{transform:scale(1.3)}}
+.dc-slot.a{background:radial-gradient(circle at 40% 35%,#fff,#CDE8FF)}
+.dc-nests{display:flex;gap:20px;align-items:center;flex-wrap:wrap;justify-content:center;z-index:1}
+.dc-nest{background:#A06A3A;border:5px solid #3B2A1A;border-radius:50% 50% 45% 45%/30% 30% 70% 70%;padding:14px 18px 22px;min-width:120px;display:flex;flex-wrap:wrap;gap:4px;justify-content:center;max-width:220px;font-size:2rem}
+.dc-op{font:900 3rem Fredoka,sans-serif;color:#fff;text-shadow:3px 3px 0 var(--ink)}
+.dc-pick{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;z-index:1}
+.dc-pick button{font:900 1.6rem Fredoka,sans-serif;min-width:56px;height:56px;border:4px solid var(--ink);border-radius:14px;background:#fff;cursor:pointer;color:var(--ink);box-shadow:0 4px 0 var(--ink)}
+.dc-pick button.no{background:#FFD3CC}
+.dc-msg{font-weight:900;font-size:1.3rem;min-height:1.5em;text-align:center;z-index:1;background:#fff8;border-radius:12px;padding:2px 12px}
+.dc-stomp{position:absolute;font-size:5rem;bottom:4%;animation:stomp 2.4s linear forwards;z-index:2}@keyframes stomp{0%{left:-15%}100%{left:110%}}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🦖", "Dinosaur Counting");
+const $=id=>document.getElementById(id);
+const BABY=['🦕','🦖','🐊','🐉','🦎'];
+let mode=Kit.get('dc-mode','show'),max=Kit.get('dc-max',10),n=0,a=0,b=0,eggs=[],score=Kit.get('dc-score',0),done=false;
+const say=t=>{try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(String(t));u.rate=.9;speechSynthesis.speak(u)}catch(e){}};
+const WORD=['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen','twenty'];
+function newRound(){done=false;const slots=max>10?20:10;eggs=Array(slots).fill(0);
+ if(mode==='show')n=Kit.rand(1,max);if(mode==='add'){n=Kit.rand(2,max);a=Kit.rand(1,n-1);b=n-a}
+ if(mode==='read'){n=Kit.rand(1,max);const idx=[...Array(slots).keys()].slice(0,n);idx.forEach(i=>eggs[i]=1)}
+ draw();$('mg').textContent=mode==='show'?`Tap the nest spots to lay ${n} egg${n>1?'s':''}!`:mode==='add'?'Put all the eggs from both nests in the frame. How many in all?':'How many eggs are in the frame?'}
+document.querySelector('main').innerHTML=`<div class="dc-top"><select id="md" style="width:auto"><option value="show">🥚 Make the number</option><option value="read">👀 How many eggs?</option><option value="add">➕ Put nests together</option></select><select id="mx" style="width:auto"><option value="5">Up to 5</option><option value="10">Up to 10</option><option value="20">Up to 20</option></select><b style="color:#fff;text-shadow:2px 2px 0 var(--ink)" id="sc"></b></div>
+<div class="dc-land" id="ld"><span class="dc-deco" style="left:2%;top:2%">🌋</span><span class="dc-deco" style="right:3%;top:4%">🌴</span><span class="dc-deco" style="left:6%;bottom:4%">🌿</span><div class="dc-goal" id="gl"></div><div id="ns"></div><div class="dc-frames" id="fr"></div><div class="dc-pick" id="pk"></div><div class="row" style="gap:6px;z-index:1" id="bt"></div><div class="dc-msg" id="mg"></div></div>`;
+function draw(){$('md').value=mode;$('mx').value=max;$('sc').textContent=`⭐ ${score}`;const have=eggs.filter(Boolean).length;
+ $('gl').innerHTML=mode==='show'?`Show <span class="big">${n}</span>`:mode==='add'?`<span class="big">${a}</span> + <span class="big">${b}</span> = ?`:`How many? 🥚`;
+ $('ns').innerHTML=mode==='add'?`<div class="dc-nests"><div class="dc-nest">${'🥚'.repeat(a)}</div><span class="dc-op">+</span><div class="dc-nest" style="filter:hue-rotate(20deg)">${'🥚'.repeat(b)}</div></div>`:'';
+ const fr=[];for(let f=0;f<eggs.length/10;f++)fr.push(`<div class="dc-frame">${eggs.slice(f*10,f*10+10).map((e,i)=>`<button class="dc-slot ${e?'e':''} ${e===2?'h':''}" data-s="${f*10+i}" aria-label="Nest spot">${e===2?`<span>${BABY[(f*10+i)%BABY.length]}</span>`:e?'<span>🥚</span>':''}</button>`).join('')}</div>`);$('fr').innerHTML=fr.join('');
+ $('pk').innerHTML=mode==='read'||mode==='add'?Array.from({length:max+1},(_,i)=>`<button data-n="${i}">${i}</button>`).join(''):'';
+ $('bt').innerHTML=mode==='show'?`<button class="btn green" id="ck">✅ Hatch them!</button><button class="btn white small" id="cl">🧽 Clear</button>`:mode==='add'?`<button class="btn white small" id="cl">🧽 Clear frame</button>`:'';
+ if($('ck'))$('ck').onclick=check;if($('cl'))$('cl').onclick=()=>{eggs=eggs.map(()=>0);draw()};
+ window.__t={mode,n,a,b,have,score,done}}
+async function win(){done=true;score++;Kit.set('dc-score',score);for(let i=0;i<eggs.length;i++)if(eggs[i]){eggs[i]=2}draw();Kit.tada();Kit.confetti(90);if(!window.__fast)say(`${WORD[n]}! Hooray!`);$('mg').textContent=`🎉 ${n}! The baby dinosaurs hatched!`;
+ const s=document.createElement('span');s.className='dc-stomp';s.textContent='🦕';$('ld').appendChild(s);setTimeout(()=>s.remove(),2500);window.__t.score=score;window.__t.done=true;await Kit.sleep(window.__fast?1:2600);newRound()}
+function check(){if(done)return;const have=eggs.filter(Boolean).length;if(have===n)win();else{Kit.tone(180,.25,'sawtooth',.08);$('mg').textContent=have<n?`You have ${have}. Lay ${n-have} more!`:`You have ${have}. That's ${have-n} too many!`}}
+$('fr').onclick=e=>{const s=e.target.closest('[data-s]');if(!s||done||mode==='read')return;const i=+s.dataset.s;eggs[i]=eggs[i]?0:1;const have=eggs.filter(Boolean).length;Kit.tone(300+have*30,.08,'triangle',.1);if(eggs[i]&&!window.__fast)say(have);draw();$('mg').textContent=`${have} egg${have===1?'':'s'}`};
+$('pk').onclick=e=>{const b2=e.target.closest('[data-n]');if(!b2||done)return;if(+b2.dataset.n===n)win();else{b2.classList.add('no');Kit.tone(180,.25,'sawtooth',.08);$('mg').textContent=mode==='add'?'Try filling the frame with all the eggs, then count!':'Count again! Remember, a full row is 5.'}};
+$('md').onchange=()=>{mode=$('md').value;Kit.set('dc-mode',mode);newRound()};$('mx').onchange=()=>{max=+$('mx').value;Kit.set('dc-max',max);newRound()};
+newRound();
+</script>
+</body></html>

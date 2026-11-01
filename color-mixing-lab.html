@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Color Mixing Lab</title>
+<style>
+main{max-width:1400px}
+.cm-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:12px}
+.cm{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.cm{grid-template-columns:minmax(0,1fr)}}
+.cm-lab{background:#FFF6E0;border:6px solid var(--ink);border-radius:28px;box-shadow:8px 8px 0 var(--ink);padding:16px;display:grid;gap:14px;justify-items:center}
+.cm-pots{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.cm-pot{width:clamp(64px,13vw,92px);aspect-ratio:1;border:5px solid var(--ink);border-radius:18px 18px 40% 40%;background:var(--c);cursor:pointer;box-shadow:0 6px 0 var(--ink);position:relative;font-weight:900;color:#fff;text-shadow:1px 1px 0 #0008;display:grid;place-items:end center;padding-bottom:6px;font-size:.85rem}
+.cm-pot:active{transform:translateY(4px);box-shadow:0 2px 0 var(--ink)}
+.cm-pot.w{color:#1D2B53;text-shadow:none}
+.cm-bowl{width:clamp(200px,40vw,280px);aspect-ratio:2/1.1;border:7px solid var(--ink);border-top:0;border-radius:0 0 999px 999px;background:#fff;position:relative;overflow:hidden;box-shadow:0 8px 0 var(--ink)}
+.cm-bowl i{position:absolute;inset:0;background:var(--mix);transition:background .6s}
+.cm-bowl.empty i{background:#fff}
+.cm-bowl .sw{position:absolute;inset:0;background:radial-gradient(circle at 30% 30%,#fff6,transparent 40%);animation:swirl 3s linear infinite}@keyframes swirl{to{transform:rotate(360deg)}}
+.cm-drops{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;min-height:30px}
+.cm-drops span{width:22px;height:22px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid var(--ink);background:var(--c)}
+.cm-p{background:#fff;border:5px solid var(--ink);border-radius:22px;padding:14px;display:grid;gap:12px;justify-items:center;text-align:center}
+.cm-goal{width:120px;height:120px;border-radius:50%;border:6px solid var(--ink);background:var(--g);box-shadow:0 6px 0 var(--ink)}
+.cm-cmp{display:flex;gap:16px;align-items:center;font-weight:900}
+.cm-cmp div{display:grid;justify-items:center;gap:4px}
+.cm-meter{width:100%;height:24px;border:4px solid var(--ink);border-radius:99px;overflow:hidden;background:#E3E8F2}.cm-meter i{display:block;height:100%;background:linear-gradient(90deg,#E5533F,#FFC93C,#5DC66E);transition:width .5s}
+.cm-msg{font-weight:900;font-size:1.25rem;min-height:1.5em}
+.cm-book{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.cm-book span{width:40px;height:40px;border-radius:50%;border:3px solid var(--ink);background:var(--c)}
+.cm-light{display:grid;justify-items:center;gap:12px;background:#0B1030;border-radius:22px;padding:16px;width:100%}
+.cm-light svg{width:min(340px,100%);height:auto}
+.cm-light label{color:#fff;font-weight:900;display:flex;align-items:center;gap:8px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🎨", "Color Mixing Lab");
+const $=id=>document.getElementById(id);
+// paint mixing (subtractive): average in a simple RYB-ish way using mixbox-like weights
+const PAINT={Red:[228,40,45],Yellow:[255,214,0],Blue:[24,90,200],White:[255,255,255],Black:[30,30,35]};
+const GOALS=[['Orange',['Red','Yellow']],['Green',['Yellow','Blue']],['Purple',['Red','Blue']],['Pink',['Red','White']],['Light blue',['Blue','White']],['Gray',['White','Black']],['Brown',['Red','Yellow','Blue']],['Light green',['Yellow','Blue','White']],['Dark red',['Red','Black']],['Peach',['Red','Yellow','White','White']]];
+let mode=Kit.get('cm-mode','goal'),drops=[],goal=null,book=Kit.get('cm-book',[]),light={r:true,g:false,b:false};
+// mix in "RYB" space so red+yellow=orange, yellow+blue=green, red+blue=purple
+function mix(D){if(!D.length)return null;const n=D.length,c=k=>D.filter(d=>d===k).length/n;let r=c('Red'),y=c('Yellow'),b=c('Blue'),w=c('White'),k=c('Black');const col=r+y+b;let rgb=[255,255,255];
+ if(col>0){const R=r/col,Y=y/col,B=b/col;// RYB → RGB (Gosset & Chen corners)
+  const C=[[255,255,255],[255,0,0],[255,255,0],[255,128,0],[0,0,255],[128,0,128],[0,168,51],[51,23,0]];const i=(a,b,t)=>a+(b-a)*t;const tri=(f)=>{const x0=i(i(C[0][f],C[1][f],R),i(C[2][f],C[3][f],R),Y),x1=i(i(C[4][f],C[5][f],R),i(C[6][f],C[7][f],R),Y);return i(x0,x1,B)};
+  // normalize so the strongest primary is fully saturated
+  const m=Math.max(R,Y,B),R2=R/m,Y2=Y/m,B2=B/m;const tri2=f=>{const x0=i(i(C[0][f],C[1][f],R2),i(C[2][f],C[3][f],R2),Y2),x1=i(i(C[4][f],C[5][f],R2),i(C[6][f],C[7][f],R2),Y2);return i(x0,x1,B2)};rgb=[0,1,2].map(tri2)}
+ const t=col;rgb=rgb.map(v=>v*t+255*w+30*k).map(v=>v/(t+w+k));return rgb.map(Math.round)}
+const css=c=>c?`rgb(${c.join(',')})`:'#fff';
+const dist=(a,b)=>Math.sqrt(a.reduce((s,v,i)=>s+(v-b[i])**2,0));
+function newGoal(){const g=Kit.pick(GOALS);goal={n:g[0],c:mix(g[1]),r:g[1]};drops=[];draw()}
+document.querySelector('main').innerHTML=`<div class="cm-top"><button class="btn" data-m="goal">🎯 Match the color</button><button class="btn white" data-m="free">🎨 Free mixing</button><button class="btn white" data-m="light">💡 Mixing light</button></div><div id="bd"></div>`;
+function draw(){document.querySelectorAll('[data-m]').forEach(b=>b.className='btn '+(b.dataset.m===mode?'':'white'));const m=mix(drops);
+ if(mode==='light'){const c=[light.r?255:0,light.g?255:0,light.b?255:0];$('bd').innerHTML=`<div class="cm"><div class="cm-light"><svg viewBox="0 0 300 280"><g style="mix-blend-mode:screen">${light.r?'<circle cx="110" cy="110" r="80" fill="#f00" style="mix-blend-mode:screen"/>':''}${light.g?'<circle cx="190" cy="110" r="80" fill="#0f0" style="mix-blend-mode:screen"/>':''}${light.b?'<circle cx="150" cy="180" r="80" fill="#00f" style="mix-blend-mode:screen"/>':''}</g></svg><div class="row" style="gap:14px;justify-content:center">${[['r','🔴 Red'],['g','🟢 Green'],['b','🔵 Blue']].map(([k,n])=>`<label><input type="checkbox" data-l="${k}" ${light[k]?'checked':''}> ${n} light</label>`).join('')}</div></div>
+  <div class="cm-p"><b>💡 Light is different from paint!</b><div style="font-weight:700">Shine colored flashlights together. Where they overlap you get new colors. All three together make <b>white</b>!</div><div class="cm-goal" style="--g:${css(c.every(v=>!v)?[0,0,0]:c)}"></div><div style="font-weight:900;font-size:1.3rem">${name(c)}</div></div></div>`;
+  $('bd').querySelectorAll('[data-l]').forEach(i=>i.onchange=()=>{light[i.dataset.l]=i.checked;Kit.tick();draw()});window.__t={mode,light:{...light}};return}
+ $('bd').innerHTML=`<div class="cm"><div class="cm-lab"><div class="cm-pots" id="pt">${Object.entries(PAINT).map(([n,c])=>`<button class="cm-pot ${n==='White'||n==='Yellow'?'w':''}" style="--c:${css(c)}" data-p="${n}">${n}</button>`).join('')}</div><div class="cm-drops">${drops.map(d=>`<span style="--c:${css(PAINT[d])}"></span>`).join('')}</div><div class="cm-bowl ${drops.length?'':'empty'}" style="--mix:${css(m)}"><i></i><span class="sw"></span></div><div class="row" style="gap:8px;justify-content:center"><button class="btn white small" id="un">↶ Take out last drop</button><button class="btn white small" id="em">🚿 Wash the bowl</button></div></div>
+ <div class="cm-p">${mode==='goal'?`<b style="font-size:1.3rem">🎯 Can you make ${goal.n.toLowerCase()}?</b><div class="cm-cmp"><div><div class="cm-goal" style="--g:${css(goal.c)}"></div>Goal</div><div style="font-size:2rem">↔️</div><div><div class="cm-goal" style="--g:${css(m)}"></div>Yours</div></div><div class="cm-meter"><i style="width:${m?Math.max(0,100-dist(m,goal.c)/2.2):0}%"></i></div><div class="cm-msg" id="mg"></div><div class="row" style="gap:6px;justify-content:center"><button class="btn green" id="ck">✅ Check</button><button class="btn white small" id="hn">💡 Hint</button><button class="btn white small" id="ng">🎲 New color</button></div>`:`<b style="font-size:1.3rem">🎨 Your color</b><div class="cm-goal" style="--g:${css(m)}"></div><div style="font-weight:900;font-size:1.2rem">${m?name(m):'Add some paint!'}</div><div style="font-weight:700">${recipe()}</div><button class="btn green small" id="sv">📒 Save to my color book</button><div class="cm-msg" id="mg"></div>`}<b>📒 My color book</b><div class="cm-book">${book.map(c=>`<span style="--c:${css(c)}" title="${css(c)}"></span>`).join('')||'<span class="muted" style="width:auto;height:auto;border:0">Colors you make go here.</span>'}</div></div></div>`;
+ $('pt').onclick=e=>{const b=e.target.closest('[data-p]');if(!b)return;if(drops.length>=12){$('mg').textContent='The bowl is full! Wash it out.';return}drops.push(b.dataset.p);Kit.tone(300+drops.length*40,.08,'sine',.12);draw()};
+ $('un').onclick=()=>{drops.pop();draw()};$('em').onclick=()=>{drops=[];Kit.tone(200,.3,'sine',.08);draw()};
+ if(mode==='goal'){$('ck').onclick=()=>{if(!m){$('mg').textContent='Add some paint first!';return}const d=dist(m,goal.c);if(d<28){$('mg').textContent=`🎉 You made ${goal.n.toLowerCase()}!`;Kit.tada();Kit.confetti(90);if(!book.some(c=>dist(c,m)<6)){book.push(m);Kit.set('cm-book',book)}window.__t.win=true}else{$('mg').textContent=d<70?'So close! Try one more drop of something.':'Not yet. Keep mixing!';Kit.tone(220,.2,'triangle',.1)}};
+  $('hn').onclick=()=>{$('mg').textContent=`💡 Try mixing ${[...new Set(goal.r)].map(x=>x.toLowerCase()).join(' and ')}.`};$('ng').onclick=newGoal}
+ else $('sv').onclick=()=>{if(!m)return;book.push(m);book=book.slice(-30);Kit.set('cm-book',book);Kit.ding();draw()};
+ window.__t={mode,drops:drops.length,mix:m,goal:goal&&goal.n,book:book.length}}
+function recipe(){const c={};drops.forEach(d=>c[d]=(c[d]||0)+1);return Object.entries(c).map(([k,v])=>`${v} ${k.toLowerCase()}`).join(' + ')}
+function name(c){const [r,g,b]=c,mx=Math.max(r,g,b),mn=Math.min(r,g,b);if(mx-mn<25)return mx>220?'White':mx<60?'Black':'Gray';let h=0;const d=mx-mn;if(mx===r)h=((g-b)/d)%6;else if(mx===g)h=(b-r)/d+2;else h=(r-g)/d+4;h=(h*60+360)%360;const light=mn>150;
+ const n=h<15||h>=345?'Red':h<40?(mx<170?'Brown':'Orange'):h<65?'Yellow':h<160?'Green':h<200?'Cyan':h<255?'Blue':h<325?'Purple':'Pink';return (light&&n!=='Pink'?'Light ':'')+n}
+document.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{mode=b.dataset.m;Kit.set('cm-mode',mode);drops=[];if(mode==='goal')newGoal();else draw()});
+window.__c={goal:n=>{const g=GOALS.find(x=>x[0]===n);goal={n:g[0],c:mix(g[1]),r:g[1]};drops=[];draw()},mix};
+if(mode==='goal')newGoal();else draw();
+</script>
+</body></html>

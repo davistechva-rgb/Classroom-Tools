@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Underwater Counting</title>
+<style>
+main{max-width:1500px}
+.uw-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:12px}
+.uw-sea{position:relative;aspect-ratio:16/9;border:6px solid var(--ink);border-radius:28px;box-shadow:8px 8px 0 var(--ink);overflow:hidden;background:linear-gradient(#5FD0F0,#1E7FD0 60%,#0B4F8A);touch-action:manipulation}
+.uw-floor{position:absolute;left:0;right:0;bottom:0;height:12%;background:#F2D6A2;border-top:4px solid #C9A86B}
+.uw-deco{position:absolute;bottom:6%;font-size:clamp(2rem,5vw,3.5rem);pointer-events:none}
+.uw-c{position:absolute;font-size:clamp(2rem,5vw,3.4rem);line-height:1;cursor:pointer;user-select:none;transform:translate(-50%,-50%) scaleX(var(--d,1));will-change:left,top}
+.uw-c b{position:absolute;top:-14px;right:-10px;background:#FFC93C;border:3px solid var(--ink);border-radius:50%;width:30px;height:30px;display:grid;place-items:center;font:900 1rem Fredoka,sans-serif;transform:scaleX(var(--d,1));color:var(--ink)}
+.uw-bub{position:absolute;width:12px;height:12px;border-radius:50%;border:2px solid #fff9;animation:rise 4s linear infinite;pointer-events:none}@keyframes rise{to{transform:translateY(-500px)}}
+.uw-q{display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;margin:14px 0 8px;font-weight:900;font-size:clamp(1.3rem,3.4vw,1.9rem);color:#fff;text-shadow:2px 2px 0 var(--ink)}
+.uw-q .big{font-size:2.6em;line-height:1;text-shadow:none}
+.uw-pick{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+.uw-pick button{font:900 1.6rem Fredoka,sans-serif;min-width:58px;height:58px;border:4px solid var(--ink);border-radius:16px;background:#fff;cursor:pointer;color:var(--ink);box-shadow:0 4px 0 var(--ink)}
+.uw-pick button.ok{background:#C8F3D0}.uw-pick button.no{background:#FFD3CC}
+.uw-msg{text-align:center;font-weight:900;font-size:1.3rem;min-height:1.5em;color:#fff;text-shadow:2px 2px 0 var(--ink);margin-top:8px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🐠", "Underwater Counting");
+const $=id=>document.getElementById(id);
+const KINDS=['🐠','🐟','🐡','🦀','🐙','🐢','🦑','🐬','🦐','🪼'];
+let max=Kit.get('uw-max',10),mode=Kit.get('uw-mode','how'),C=[],target='🐠',other='🐟',marks=0,score=Kit.get('uw-score',0),done=false,raf=0,last=0;
+const say=t=>{try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(String(t));u.rate=.95;speechSynthesis.speak(u)}catch(e){}};
+function newSea(){done=false;marks=0;const ks=Kit.shuffle(KINDS);target=ks[0];other=ks[1];C=[];const n=Kit.rand(1,max);const add=(k,cnt)=>{for(let i=0;i<cnt;i++)C.push({k,x:Kit.rand(8,92),y:Kit.rand(12,80),vx:(Math.random()<.5?-1:1)*(k==='🦀'?.6:Kit.rand(4,10)/2),vy:(Math.random()-.5)*1.5,m:0})};
+ if(mode==='how'){add(target,n);add(ks[1],Kit.rand(1,Math.min(5,max)));add(ks[2],Kit.rand(0,3))}else{let a=Kit.rand(1,max),b=Kit.rand(1,max);while(a===b)b=Kit.rand(1,max);add(target,a);add(other,b)}
+ C.forEach(c=>{if(c.k==='🦀'){c.y=84;c.vy=0}});draw();$('mg').textContent=mode==='how'?'Tap each one to count it!':'Which group has MORE?'}
+document.querySelector('main').innerHTML=`<div class="uw-top"><select id="md" style="width:auto"><option value="how">🔢 How many?</option><option value="more">⚖️ Which has more?</option></select><select id="mx" style="width:auto"><option value="5">Up to 5</option><option value="10">Up to 10</option><option value="15">Up to 15</option></select><b style="color:#fff;text-shadow:2px 2px 0 var(--ink)" id="sc"></b></div>
+<div class="uw-sea" id="sea"><div class="uw-floor"></div><span class="uw-deco" style="left:4%">🪸</span><span class="uw-deco" style="left:80%">🌿</span><span class="uw-deco" style="left:55%;font-size:2rem">🐚</span>${Array.from({length:8},(_,i)=>`<span class="uw-bub" style="left:${8+i*12}%;bottom:-20px;animation-delay:${i*.5}s"></span>`).join('')}<div id="fish"></div></div>
+<div class="uw-q" id="q"></div><div class="uw-pick" id="pk"></div><div class="uw-msg" id="mg"></div>`;
+function draw(){$('md').value=mode;$('mx').value=max;$('sc').textContent=`⭐ ${score}`;
+ $('fish').innerHTML=C.map((c,i)=>`<span class="uw-c" data-i="${i}" style="left:${c.x}%;top:${c.y}%;--d:${c.vx>0?-1:1}">${c.k}${c.m?`<b>${c.m}</b>`:''}</span>`).join('');
+ $('q').innerHTML=mode==='how'?`How many <span class="big">${target}</span> ?`:`<span class="big">${target}</span> or <span class="big">${other}</span> ?`;
+ $('pk').innerHTML=mode==='how'?Array.from({length:max+1},(_,i)=>`<button data-n="${i}">${i}</button>`).join(''):`<button data-k="${target}" style="font-size:2.4rem;width:90px;height:76px">${target}</button><button data-k="${other}" style="font-size:2.4rem;width:90px;height:76px">${other}</button>`;
+ window.__t={mode,target,other,n:C.filter(c=>c.k===target).length,m:C.filter(c=>c.k===other).length,marks,score,done}}
+function frame(t){const dt=Math.min(.05,(t-(last||t))/1000);last=t;const els=$('fish').children;C.forEach((c,i)=>{c.x+=c.vx*dt;c.y+=c.vy*dt;if(c.x<5||c.x>95){c.vx*=-1;c.x=Math.max(5,Math.min(95,c.x))}if(c.k!=='🦀'&&(c.y<10||c.y>82)){c.vy*=-1;c.y=Math.max(10,Math.min(82,c.y))}const el=els[i];if(el){el.style.left=c.x+'%';el.style.top=c.y+'%';el.style.setProperty('--d',c.vx>0?-1:1)}});raf=requestAnimationFrame(frame)}
+$('fish').onpointerdown=e=>{const el=e.target.closest('[data-i]');if(!el||mode!=='how')return;const c=C[+el.dataset.i];if(c.k!==target){Kit.tone(200,.15,'triangle',.08);$('mg').textContent=`That's not ${target}!`;return}if(c.m)return;marks++;c.m=marks;Kit.tone(300+marks*50,.1,'triangle',.12);if(!window.__fast)say(marks);el.insertAdjacentHTML('beforeend',`<b>${marks}</b>`);$('mg').textContent=`${marks}…`;window.__t.marks=marks};
+$('pk').onclick=e=>{const b=e.target.closest('button');if(!b||done)return;const n=C.filter(c=>c.k===target).length,m=C.filter(c=>c.k===other).length;let ok;
+ if(mode==='how')ok=+b.dataset.n===n;else ok=b.dataset.k===(n>m?target:other);b.classList.add(ok?'ok':'no');
+ if(ok){done=true;score++;Kit.set('uw-score',score);Kit.tada();Kit.confetti(80);$('mg').textContent=mode==='how'?`🎉 Yes! ${n} ${target}!`:`🎉 Yes! ${Math.max(n,m)} is more than ${Math.min(n,m)}!`;window.__t.score=score;window.__t.done=true;setTimeout(newSea,window.__fast?1:2200)}
+ else{Kit.tone(180,.25,'sawtooth',.08);$('mg').textContent=mode==='how'?'Count again! Tap each one.':'Look again! Count each group.'}};
+$('md').onchange=()=>{mode=$('md').value;Kit.set('uw-mode',mode);newSea()};$('mx').onchange=()=>{max=+$('mx').value;Kit.set('uw-max',max);newSea()};
+window.__u={freeze:()=>C.forEach(c=>{c.vx=c.vx>0?.0001:-.0001;c.vy=0})};
+newSea();raf=requestAnimationFrame(frame);
+</script>
+</body></html>

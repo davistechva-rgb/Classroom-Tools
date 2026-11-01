@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Rainbow Builder</title>
+<style>
+main{max-width:1400px}
+.rb-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:12px}
+.rb-sky{position:relative;border:6px solid var(--ink);border-radius:28px;box-shadow:8px 8px 0 var(--ink);overflow:hidden;background:linear-gradient(#8FD3FF,#D9F1FF);padding:20px 10px 0}
+.rb-arch{position:relative;width:min(760px,100%);aspect-ratio:2/1;margin:0 auto}
+.rb-slot{position:absolute;left:50%;bottom:0;transform:translateX(-50%);border-radius:999px 999px 0 0;border:calc(var(--bw)) solid rgba(255,255,255,.55);border-bottom:0;box-sizing:border-box;display:flex;justify-content:center;cursor:pointer;transition:border-color .3s}
+.rb-slot:nth-child(even){border-color:rgba(255,255,255,.8)}.rb-slot.full{border-color:var(--c)}
+.rb-slot.hover{border-color:rgba(255,255,255,.95)}
+.rb-slot.bad{animation:bad .4s}@keyframes bad{50%{border-color:#E5533F}}
+.rb-slot span{position:absolute;top:calc(var(--bw)*-1);height:var(--bw);display:grid;place-items:center;font-weight:900;font-size:clamp(.6rem,1.8vw,.9rem);color:#fff;text-shadow:1px 1px 0 #0007}
+.rb-cloud{position:absolute;bottom:-14px;pointer-events:none;font-size:clamp(3rem,9vw,6rem);z-index:2}
+.rb-tray{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:14px 0}
+.rb-band{width:clamp(84px,14vw,120px);height:46px;border:4px solid var(--ink);border-radius:99px;background:var(--c);display:grid;place-items:center;font-weight:900;color:#fff;text-shadow:1px 1px 0 #0008;cursor:grab;touch-action:none;user-select:none;box-shadow:0 4px 0 var(--ink)}
+.rb-band.picked{outline:5px solid #fff;transform:translateY(-4px)}
+.dz-ghost{position:fixed;pointer-events:none;z-index:80;opacity:.9}
+.rb-msg{text-align:center;font-weight:900;font-size:clamp(1.1rem,2.8vw,1.5rem);min-height:1.5em;color:#fff;text-shadow:2px 2px 0 var(--ink)}
+.rb-roy{text-align:center;font:900 clamp(1.4rem,4vw,2.2rem) Fredoka,sans-serif;letter-spacing:.1em;color:#fff;text-shadow:2px 2px 0 var(--ink)}
+.rb-roy b{color:var(--c)}
+.rb-prism{background:#0B1030;border:6px solid var(--ink);border-radius:28px;box-shadow:8px 8px 0 var(--ink);padding:16px;display:grid;gap:12px;justify-items:center;color:#fff}
+.rb-prism svg{width:min(700px,100%);height:auto}
+.rb-sparkle{position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle,#fff8 0 2px,transparent 3px) 0 0/40px 40px;animation:tw 1s infinite alternate}@keyframes tw{to{opacity:.2}}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🌈", "Rainbow Builder");
+const $=id=>document.getElementById(id);
+const C=[['Red','#E5332A'],['Orange','#FF8A1F'],['Yellow','#FFD31A'],['Green','#3DBA4E'],['Blue','#2A7FE0'],['Indigo','#4B3BAE'],['Violet','#9B4BD8']];
+let mode='build',slots=Array(7).fill(null),tray=[],tries=0,best=Kit.get('rb-best',null),six=Kit.get('rb-six',false);
+const N=()=>six?6:7;const COLS=()=>six?C.filter(c=>c[0]!=='Indigo'):C;
+function newGame(){slots=Array(N()).fill(null);tray=Kit.shuffle(COLS().map((_,i)=>i));tries=0;draw();$('mg').textContent='Drag the colors onto the rainbow. Red goes on the outside!'}
+document.querySelector('main').innerHTML=`<div class="rb-top"><button class="btn" data-m="build">🌈 Build a rainbow</button><button class="btn white" data-m="prism">🔺 Light and prisms</button><label style="font-weight:800;color:#fff;text-shadow:1px 1px 0 var(--ink)"><input type="checkbox" id="sx"> 6 colors (no indigo)</label></div><div id="bd"></div>`;
+function draw(){document.querySelectorAll('[data-m]').forEach(b=>b.className='btn '+(b.dataset.m===mode?'':'white'));$('sx').checked=six;const K=COLS();
+ if(mode==='prism'){$('bd').innerHTML=`<div class="rb-prism"><svg viewBox="0 0 700 360"><line x1="0" y1="200" x2="290" y2="185" stroke="#fff" stroke-width="10"/><polygon points="350,60 230,300 470,300" fill="#9FD8FF44" stroke="#fff" stroke-width="5"/>${C.map((c,i)=>`<path d="M395 ${200+i*4} L700 ${110+i*30} L700 ${140+i*30} L395 ${204+i*4} Z" fill="${c[1]}" opacity=".95"></path>`).join('')}<text x="60" y="170" fill="#fff" font-size="20" font-weight="800">white light ➜</text></svg><div style="font-weight:800;font-size:1.2rem;text-align:center;max-width:620px">White sunlight is really ALL the colors mixed together. A prism (or a raindrop!) bends each color a different amount, so they spread out into a rainbow.</div><div class="rb-roy">${C.map(c=>`<b style="--c:${c[1]}">${c[0][0]}</b>`).join('')}</div><div style="font-weight:800">Remember: <b>ROY G BIV</b>!</div></div>`;window.__t={mode};return}
+ const n=N(),bw=`calc(min(760px,100vw - 60px) * ${0.5/(n+2.5)})`;
+ $('bd').innerHTML=`<div class="rb-sky" id="sk"><div class="rb-arch" id="ar">${slots.map((s,i)=>{const w=100-i*100/(n+2.5);return `<div class="rb-slot ${s!=null?'full':''}" data-s="${i}" style="width:${w}%;height:${w}%;--bw:${bw};--c:${s!=null?K[s][1]:'transparent'}">${s!=null?`<span>${K[s][0]}</span>`:''}</div>`}).join('')}<span class="rb-cloud" style="left:-2%">☁️</span><span class="rb-cloud" style="right:-2%">☁️</span></div></div><div class="rb-msg" id="mg"></div><div class="rb-tray" id="tr">${tray.map(i=>`<div class="rb-band" data-c="${i}" style="--c:${K[i][1]}">${K[i][0]}</div>`).join('')}</div><div class="rb-roy">${K.map(c=>`<b style="--c:${c[1]}">${c[0][0]}</b>`).join(' ')}</div>`;
+ window.__t={mode,slots:[...slots],tray:[...tray],tries}}
+Learn.drag(document.querySelector('main'),{item:'.rb-band',zone:'.rb-slot',drop(it,z){const c=+it.dataset.c,k=+z.dataset.s;tries++;
+ if(c===k){slots[k]=c;tray=tray.filter(x=>x!==c);Kit.tone([262,294,330,349,392,440,494][k],.2,'triangle',.12);draw();
+  if(!tray.length){$('mg').textContent=`🌈 Beautiful! You built the rainbow${tries===N()?' with no mistakes':''}!`;Kit.tada();Kit.confetti(180);$('sk').insertAdjacentHTML('beforeend','<div class="rb-sparkle"></div>');[262,330,392,523].forEach((f,i)=>setTimeout(()=>Kit.tone(f,.25,'triangle',.1),i*130))}
+  else $('mg').textContent=`✅ ${COLS()[c][0]}! What comes next?`}
+ else{Kit.tone(180,.25,'sawtooth',.08);z.classList.remove('bad');void z.offsetWidth;z.classList.add('bad');const want=slots.findIndex(s=>s==null);$('mg').textContent=k===0?'🤔 The outside band is always red.':`🤔 Not there. Think ROY G BIV!${want>=0?` The next one is ${COLS()[want][0].toLowerCase()}.`:''}`;window.__t.tries=tries}}});
+document.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{mode=b.dataset.m;mode==='build'?newGame():draw()});
+$('sx').onchange=()=>{six=$('sx').checked;Kit.set('rb-six',six);newGame()};
+newGame();
+</script>
+</body></html>

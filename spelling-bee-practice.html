@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Spelling Bee Practice</title>
+<style>
+main{max-width:1500px}
+.sb-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:12px}
+.sb{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.sb{grid-template-columns:minmax(0,1fr)}}
+.sb-stage{background:linear-gradient(#FFF3C4,#FFE08A);border:6px solid var(--ink);border-radius:28px;box-shadow:8px 8px 0 var(--ink);padding:18px;display:grid;gap:14px;justify-items:center;text-align:center}
+.sb-bee{font-size:clamp(4rem,11vw,6rem);line-height:1;animation:buzz 1.6s ease-in-out infinite}@keyframes buzz{25%{transform:translate(8px,-6px) rotate(6deg)}75%{transform:translate(-8px,4px) rotate(-6deg)}}
+.sb-hear{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.sb-tiles{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;min-height:62px}
+.sb-tiles span{width:clamp(40px,8vw,56px);height:clamp(48px,9vw,62px);border:4px solid var(--ink);border-radius:12px;background:#fff;display:grid;place-items:center;font:900 clamp(1.4rem,4vw,2rem) Fredoka,sans-serif;text-transform:uppercase}
+.sb-tiles span.ok{background:#C8F3D0}.sb-tiles span.no{background:#FFD3CC}.sb-tiles span.miss{background:#E3E8F2;color:#9AA6C0}
+.sb-in{font:900 clamp(1.6rem,5vw,2.4rem) Fredoka,sans-serif;text-align:center;width:min(420px,100%);border:5px solid var(--ink);border-radius:16px;padding:6px;letter-spacing:.12em;text-transform:lowercase}
+.sb-msg{font-weight:900;font-size:1.3rem;min-height:1.5em}
+.sb-p{background:#fff;border:5px solid var(--ink);border-radius:22px;padding:12px;display:grid;gap:10px}
+.sb-hive{display:flex;flex-wrap:wrap;gap:2px;justify-content:center;padding:6px}
+.sb-hive i{width:34px;height:38px;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:#F4E6B8;display:grid;place-items:center;font-style:normal;font-size:.7rem;font-weight:900}
+.sb-hive i.f{background:#FFB627}.sb-hive i.x{background:#E3E8F2}
+.sb-kids{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:5px}
+.sb-kids span{border:3px solid var(--ink);border-radius:12px;padding:3px 8px;font-weight:800;text-align:center}
+.sb-kids span.out{opacity:.35;text-decoration:line-through}.sb-kids span.now{background:var(--sun)}
+.sb-big{font:900 clamp(1.8rem,5vw,2.8rem) Fredoka,sans-serif}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🐝", "Spelling Bee Practice");
+const $=id=>document.getElementById(id);
+const W0=`cat | The cat sat on the mat.
+jump | I like to jump rope.
+green | Frogs are green.
+friend | My friend sits next to me.
+because | I smiled because I was happy.
+school | We read books at school.
+little | The little bird sang.
+again | Can you say it again?
+water | Plants need water.
+said | She said hello.
+house | My house has a red door.
+people | Many people came to the party.`;
+Kit.editable({key:'bee-words',title:'Spelling words',help:'(one per line: word | a sentence using it)',def:W0,onSave:()=>{list=words();newWord()}});
+const words=()=>Kit.lines(Kit.get('ed:bee-words',W0)).map(l=>{const p=l.split('|').map(s=>s.trim());return {w:p[0].toLowerCase(),s:p[1]||''}}).filter(x=>x.w);
+let list=words(),mode='practice',cur=null,queue=[],results=[],streak=0,best=Kit.get('sb-best',0),showTiles=false,rate=Kit.get('sb-rate',.8),bee={kids:[],out:[],turn:0};
+const say=(t,r=rate)=>{try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.rate=r;speechSynthesis.speak(u)}catch(e){}};
+function newWord(){if(!queue.length)queue=Kit.shuffle(list.map((_,i)=>i));cur=list[queue.pop()];showTiles=false;draw();setTimeout(()=>{if(!window.__fast)say(cur.w)},250)}
+document.querySelector('main').innerHTML=`<div class="sb-top"><button class="btn" data-m="practice">✏️ Practice</button><button class="btn white" data-m="bee">🏆 Class spelling bee</button><select id="rt" style="width:auto"><option value="0.6">🐢 Slow voice</option><option value="0.8">🙂 Normal voice</option><option value="1">🐇 Quick voice</option></select></div><div id="bd"></div>`;
+function hive(){return `<div class="sb-hive">${list.map((x,i)=>{const r=results.filter(q=>q.w===x.w);const last=r[r.length-1];return `<i class="${last?last.ok?'f':'x':''}" title="${last?x.w:''}">${last?last.ok?'🍯':'':''}</i>`}).join('')}</div>`}
+function draw(){document.querySelectorAll('[data-m]').forEach(b=>b.className='btn '+(b.dataset.m===mode?'':'white'));$('rt').value=String(rate);
+ if(mode==='practice'){const ok=results.filter(r=>r.ok).length;$('bd').innerHTML=`<div class="sb"><div class="sb-stage"><span class="sb-bee">🐝</span><div class="sb-hear"><button class="btn big" style="background:var(--sun)" id="hw">🔊 Hear the word</button><button class="btn white" id="hs">💬 Hear a sentence</button><button class="btn white" id="hl">🐢 Say it slowly</button></div><input class="sb-in" id="in" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="type it here" aria-label="Spell the word"><div class="sb-tiles" id="tl"></div><div class="row" style="gap:6px;justify-content:center"><button class="btn green" id="ck">✅ Check</button><button class="btn white small" id="nx">➡ Skip</button><button class="btn white small" id="hn">💡 First letter</button></div><div class="sb-msg" id="mg"></div></div>
+  <div class="sb-p"><b>🍯 Honeycomb</b>${hive()}<div style="font-weight:900">✅ ${ok} right · 🔥 Streak ${streak} · 🏅 Best ${best}</div><b>📋 Words so far</b><div style="display:flex;flex-wrap:wrap;gap:5px">${results.slice(-16).map(r=>`<span style="border:3px solid var(--ink);border-radius:99px;padding:1px 9px;font-weight:800;background:${r.ok?'#C8F3D0':'#FFD3CC'}">${Kit.esc(r.w)}</span>`).join('')||'<span class="muted">None yet.</span>'}</div><div class="muted" style="font-weight:700">✏️ Change the word list with the pencil button at the top.</div></div></div>`;
+  $('hw').onclick=()=>say(cur.w);$('hs').onclick=()=>say(cur.s||cur.w);$('hl').onclick=()=>say(cur.w.split('').join(' … '),.6);$('nx').onclick=()=>{results.push({w:cur.w,ok:false});streak=0;newWord()};
+  $('hn').onclick=()=>{$('mg').textContent=`💡 It starts with "${cur.w[0].toUpperCase()}" and has ${cur.w.length} letters.`;say(cur.w[0])};
+  $('ck').onclick=check;$('in').onkeydown=e=>{if(e.key==='Enter')check()};setTimeout(()=>$('in')&&$('in').focus(),50);window.__t={mode,word:cur.w,streak,ok,results:results.length};return}
+ // class bee
+ const K=bee.kids,alive=K.filter(k=>!bee.out.includes(k)),who=alive.length?alive[bee.turn%alive.length]:null;
+ $('bd').innerHTML=`<div class="sb"><div class="sb-stage">${!K.length?`<div class="sb-big">🏆 Class Spelling Bee</div><div style="font-weight:700">Everyone takes turns. Spell it wrong and you sit down. Last speller standing wins!</div><button class="btn big green" id="st">🐝 Start the bee</button>`:alive.length===1&&K.length>1?`<div class="sb-big">🏆 ${Kit.esc(alive[0])} wins the spelling bee!</div><button class="btn green" id="st">🔁 New bee</button>`:`<div style="font-weight:900;font-size:1.3rem">🎤 Up next</div><div class="sb-big">${Kit.esc(who)}</div><div class="sb-hear"><button class="btn big" style="background:var(--sun)" id="hw">🔊 Say the word</button><button class="btn white" id="hs">💬 Sentence</button></div><div style="font-weight:700">🧑‍🏫 Teacher only: <b id="sw" style="filter:blur(6px);cursor:pointer" title="Tap to show">${Kit.esc(cur.w)}</b></div><div class="row" style="gap:8px;justify-content:center"><button class="btn green big" id="yes">✅ Correct</button><button class="btn big" style="background:#FFD3CC" id="no">❌ Not quite</button></div>`}<div class="sb-msg" id="mg"></div></div>
+ <div class="sb-p"><b>🧒 Spellers</b><div class="sb-kids">${(K.length?K:Learn.roster()).map(k=>`<span class="${bee.out.includes(k)?'out':''} ${k===who?'now':''}">${Kit.esc(k)}</span>`).join('')}</div><div id="ro"></div></div></div>`;
+ if(!K.length||alive.length<=1&&K.length>1){$('st').onclick=()=>{bee={kids:Kit.shuffle(Learn.roster()),out:[],turn:0};newWord()};const r=$('ro');Learn.rosterEditor(r);r.addEventListener('roster',()=>draw())}
+ else{$('hw').onclick=()=>say(cur.w);$('hs').onclick=()=>say(cur.s||cur.w);$('sw').onclick=()=>$('sw').style.filter='none';
+  $('yes').onclick=()=>{Kit.ding();bee.turn++;newWord()};$('no').onclick=()=>{Kit.tone(180,.3,'sawtooth',.08);bee.out.push(who);const left=K.filter(k=>!bee.out.includes(k));if(left.length===1){Kit.tada();Kit.confetti(200)}newWord()}}
+ window.__t={mode,word:cur&&cur.w,who,alive:alive.length,out:bee.out.length}}
+function check(){const g=$('in').value.trim().toLowerCase();if(!g)return;const w=cur.w;const tiles=[];for(let i=0;i<Math.max(g.length,w.length);i++){tiles.push(`<span class="${g[i]===w[i]?'ok':g[i]==null?'miss':'no'}">${g[i]||w[i]}</span>`)}
+ if(g===w){results.push({w,ok:true});streak++;if(streak>best){best=streak;Kit.set('sb-best',best)}Kit.tada();if(streak%5===0)Kit.confetti(120);say(`${w}. Correct!`);draw();$('tl').innerHTML=w.split('').map(c=>`<span class="ok">${c}</span>`).join('');$('mg').textContent=`🎉 Correct! ${streak>1?`🔥 ${streak} in a row!`:''}`;setTimeout(newWord,window.__fast?1:1800)}
+ else{results.push({w,ok:false});streak=0;Kit.tone(180,.25,'sawtooth',.08);$('tl').innerHTML=tiles.join('');$('mg').textContent='Not quite! Green letters are right. Try again or skip.';$('in').select();window.__t.streak=0}window.__t.results=results.length}
+document.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{mode=b.dataset.m;draw()});$('rt').onchange=()=>{rate=+$('rt').value;Kit.set('sb-rate',rate)};
+window.__sb={word:()=>cur.w};
+newWord();
+</script>
+</body></html>

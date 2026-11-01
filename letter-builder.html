@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Letter Builder</title>
+<style>
+main{max-width:1400px}
+.lb-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:12px}
+.lb{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.lb{grid-template-columns:minmax(0,1fr)}}
+.lb-pad{background:#fff;border:6px solid var(--ink);border-radius:28px;box-shadow:8px 8px 0 var(--ink);padding:10px;position:relative}
+.lb-pad canvas{display:block;width:100%;height:auto;aspect-ratio:1;touch-action:none;border-radius:18px;background:repeating-linear-gradient(transparent 0 24.5%,#C9D9EE 24.5% 25%)}
+.lb-p{background:#fff;border:5px solid var(--ink);border-radius:22px;padding:14px;display:grid;gap:12px;justify-items:center;text-align:center}
+.lb-word{font-size:5rem;line-height:1}
+.lb-say{font:900 clamp(1.4rem,3.5vw,2rem) Fredoka,sans-serif}
+.lb-meter{width:100%;height:26px;border:4px solid var(--ink);border-radius:99px;overflow:hidden;background:#E3E8F2}.lb-meter i{display:block;height:100%;background:linear-gradient(90deg,#FFC93C,#5DC66E);transition:width .3s}
+.lb-stars{font-size:2.4rem;letter-spacing:4px;min-height:2.6rem}
+.lb-row{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;max-width:100%}
+.lb-row button{font:900 1.15rem Fredoka,sans-serif;width:40px;height:40px;border:3px solid var(--ink);border-radius:10px;background:#fff;cursor:pointer;color:var(--ink)}
+.lb-row button.on{background:var(--sun)}.lb-row button.done{background:#C8F3D0}
+.lb-colors{display:flex;gap:6px}.lb-colors button{width:36px;height:36px;border-radius:50%;border:4px solid var(--ink);background:var(--c);cursor:pointer}.lb-colors button.on{outline:4px solid var(--sun)}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🔤", "Letter Builder");
+const $=id=>document.getElementById(id);
+const WORDS={A:['🍎','apple'],B:['🐻','bear'],C:['🐱','cat'],D:['🐶','dog'],E:['🐘','elephant'],F:['🐟','fish'],G:['🍇','grapes'],H:['🏠','house'],I:['🍦','ice cream'],J:['🧃','juice'],K:['🪁','kite'],L:['🦁','lion'],M:['🐒','monkey'],N:['🪺','nest'],O:['🐙','octopus'],P:['🐷','pig'],Q:['👑','queen'],R:['🌈','rainbow'],S:['☀️','sun'],T:['🐯','tiger'],U:['☂️','umbrella'],V:['🎻','violin'],W:['🐋','whale'],X:['🦊','fox (it ends with x!)'],Y:['🪀','yo-yo'],Z:['🦓','zebra'],0:['🥚','zero'],1:['☝️','one'],2:['✌️','two'],3:['🥉','three'],4:['🍀','four'],5:['🖐️','five'],6:['🎲','six'],7:['🌈','seven'],8:['🐙','eight'],9:['⚾','nine']};
+const SETS={upper:'ABCDEFGHIJKLMNOPQRSTUVWXYZ',lower:'abcdefghijklmnopqrstuvwxyz',num:'0123456789'};
+const COLS=['#E5533F','#1E7FD0','#5DC66E','#9B6BF2','#FF9F43','#FF6B9A'];
+let set=Kit.get('lb-set','upper'),ch=SETS[set][0],done=Kit.get('lb-done',{}),col=COLS[0],strokes=[],mask=null,targets=[],hit=new Set(),off=0,total=0,finished=false;
+const S=600;
+const say=t=>{try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.rate=.8;speechSynthesis.speak(u)}catch(e){}};
+document.querySelector('main').innerHTML=`<div class="lb-top"><select id="st" style="width:auto"><option value="upper">🔠 Big letters</option><option value="lower">🔡 Small letters</option><option value="num">🔢 Numbers</option></select><div class="lb-colors" id="cl">${COLS.map(c=>`<button style="--c:${c}" data-c="${c}" aria-label="Crayon color"></button>`).join('')}</div></div>
+<div class="lb"><div class="lb-pad"><canvas id="cv" width="${S}" height="${S}"></canvas></div><div class="lb-p"><div class="lb-word" id="wd"></div><div class="lb-say" id="sy"></div><button class="btn white small" id="hr">🔊 Hear it</button><div class="lb-meter"><i id="mt"></i></div><div class="lb-stars" id="sr"></div><div class="row" style="gap:6px;justify-content:center"><button class="btn white small" id="er">🧽 Erase</button><button class="btn green" id="nx">➡ Next letter</button></div><div class="lb-row" id="rw"></div></div></div>`;
+const cv=$('cv'),x=cv.getContext('2d');
+function font(){return `900 ${ch.match(/[a-z]/)?420:440}px Fredoka, "Comic Sans MS", sans-serif`}
+function build(){// letter mask → sample target points inside the letter
+ const m=document.createElement('canvas');m.width=m.height=S;const c=m.getContext('2d');c.font=font();c.textAlign='center';c.textBaseline='alphabetic';c.fillStyle='#000';c.fillText(ch,S/2,ch.match(/[gjpqy]/)?400:470);
+ mask=c.getImageData(0,0,S,S).data;targets=[];for(let y=6;y<S;y+=14)for(let xx=6;xx<S;xx+=14)if(mask[(y*S+xx)*4+3]>128)targets.push([xx,y]);hit=new Set();off=0;total=0;strokes=[];finished=false}
+function inside(px,py){px=Math.round(px);py=Math.round(py);if(px<0||py<0||px>=S||py>=S)return false;return mask[(py*S+px)*4+3]>128}
+function paint(){x.clearRect(0,0,S,S);x.font=font();x.textAlign='center';x.textBaseline='alphabetic';const by=ch.match(/[gjpqy]/)?400:470;
+ x.fillStyle='#EEF2F8';x.fillText(ch,S/2,by);x.setLineDash([10,12]);x.lineWidth=5;x.strokeStyle='#9AA6C0';x.strokeText(ch,S/2,by);x.setLineDash([]);
+ // start dot
+ if(targets.length){const t=targets.reduce((a,b)=>b[1]<a[1]||b[1]===a[1]&&b[0]<a[0]?b:a);x.fillStyle='#5DC66E';x.beginPath();x.arc(t[0],t[1],14,0,7);x.fill();x.fillStyle='#fff';x.font='900 18px sans-serif';x.fillText('1',t[0],t[1]+6);x.font=font()}
+ x.lineCap=x.lineJoin='round';strokes.forEach(s=>{x.strokeStyle=s.c;x.lineWidth=34;x.beginPath();s.p.forEach((p,i)=>i?x.lineTo(...p):x.moveTo(...p));if(s.p.length===1)x.lineTo(s.p[0][0]+.1,s.p[0][1]);x.stroke()})}
+function score(){const cov=targets.length?hit.size/targets.length:0,stray=total?off/total:0;return {cov,stray}}
+function ui(){const {cov,stray}=score();$('mt').style.width=Math.min(100,cov/.8*100)+'%';const w=WORDS[ch.toUpperCase()]||['⭐',''];$('wd').textContent=w[0];$('sy').textContent=`${ch} is for ${w[1]}`;$('st').value=set;
+ const st=done[ch]||0;$('sr').textContent=st?'⭐'.repeat(st)+'☆'.repeat(3-st):'';document.querySelectorAll('[data-c]').forEach(b=>b.classList.toggle('on',b.dataset.c===col));
+ $('rw').innerHTML=[...SETS[set]].map(c=>`<button data-l="${c}" class="${c===ch?'on':''} ${done[c]?'done':''}">${c}</button>`).join('');window.__t={ch,cov:+cov.toFixed(2),stray:+stray.toFixed(2),stars:done[ch]||0,finished,targets:targets.length}}
+function check(){const {cov,stray}=score();if(finished||cov<.8)return;finished=true;const st=stray<.15?3:stray<.3?2:1;done[ch]=Math.max(done[ch]||0,st);Kit.set('lb-done',done);Kit.tada();Kit.confetti(st*40);say(`Great job! ${ch}`);ui()}
+let cur=null;
+function pos(e){const r=cv.getBoundingClientRect();return [(e.clientX-r.left)*S/r.width,(e.clientY-r.top)*S/r.height]}
+function mark(p){total++;if(!inside(...p)){let near=false;for(const [dx,dy] of [[12,0],[-12,0],[0,12],[0,-12]])if(inside(p[0]+dx,p[1]+dy))near=true;if(!near)off++}targets.forEach((t,i)=>{if((t[0]-p[0])**2+(t[1]-p[1])**2<26*26)hit.add(i)})}
+cv.onpointerdown=e=>{cv.setPointerCapture(e.pointerId);cur={c:col,p:[pos(e)]};strokes.push(cur);mark(cur.p[0]);paint();ui()};
+cv.onpointermove=e=>{if(!cur)return;const p=pos(e),l=cur.p[cur.p.length-1];const d=Math.hypot(p[0]-l[0],p[1]-l[1]);if(d<4)return;const n=Math.ceil(d/8);for(let k=1;k<=n;k++){const q=[l[0]+(p[0]-l[0])*k/n,l[1]+(p[1]-l[1])*k/n];mark(q)}cur.p.push(p);paint();ui()};
+cv.onpointerup=()=>{cur=null;check()};
+function go(c){ch=c;build();paint();ui();const w=WORDS[ch.toUpperCase()];if(!window.__fast)say(`${ch}. ${w?w[1]:''}`)}
+$('rw').onclick=e=>{const b=e.target.closest('[data-l]');if(b)go(b.dataset.l)};$('nx').onclick=()=>{const s=SETS[set];go(s[(s.indexOf(ch)+1)%s.length])};
+$('er').onclick=()=>{build();paint();ui()};$('hr').onclick=()=>{const w=WORDS[ch.toUpperCase()];say(`${ch}. ${ch} is for ${w?w[1]:''}`)};
+$('st').onchange=()=>{set=$('st').value;Kit.set('lb-set',set);go(SETS[set][0])};
+$('cl').onclick=e=>{const b=e.target.closest('[data-c]');if(b){col=b.dataset.c;ui()}};
+window.__lb={targets:()=>targets};
+(document.fonts?document.fonts.ready:Promise.resolve()).then(()=>{build();paint();ui()});build();paint();ui();
+</script>
+</body></html>

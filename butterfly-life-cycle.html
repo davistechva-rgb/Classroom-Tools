@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Butterfly Life Cycle</title>
+<style>
+main{max-width:1500px}
+.bf{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.bf{grid-template-columns:minmax(0,1fr)}}
+.bf-scene{position:relative;aspect-ratio:4/3;border:6px solid var(--ink);border-radius:28px;box-shadow:8px 8px 0 var(--ink);overflow:hidden;background:linear-gradient(#BFE8FF,#E9F9E3 70%,#9AD47F 70%)}
+.bf-branch{position:absolute;left:-5%;right:20%;top:38%;height:22px;background:#8B5A2B;border:4px solid #3B2A1A;border-radius:12px;transform:rotate(-4deg)}
+.bf-leaf{position:absolute;font-size:clamp(2.4rem,6vw,3.6rem);cursor:pointer;transition:transform .2s,opacity .4s;filter:drop-shadow(0 3px 0 rgba(0,0,0,.2))}
+.bf-leaf:hover{transform:scale(1.1) rotate(-6deg)}.bf-leaf.gone{opacity:0;transform:scale(.2);pointer-events:none}
+.bf-bug{position:absolute;left:38%;top:30%;transform:translate(-50%,-50%);transition:all .6s;cursor:pointer;line-height:1;user-select:none}
+.bf-bug.wig{animation:wig .4s 3}@keyframes wig{25%{transform:translate(-50%,-50%) rotate(-12deg)}75%{transform:translate(-50%,-50%) rotate(12deg)}}
+.bf-bug.flyaway{animation:fa 4s ease-in-out forwards}@keyframes fa{30%{left:60%;top:15%}60%{left:80%;top:45%}100%{left:70%;top:25%}}
+.bf-chomp{position:absolute;font-weight:900;font-size:1.6rem;color:#2E7D4F;pointer-events:none;animation:up 1s forwards}@keyframes up{to{transform:translateY(-50px);opacity:0}}
+.bf-label{position:absolute;left:12px;top:12px;background:#fff;border:4px solid var(--ink);border-radius:99px;padding:4px 14px;font-weight:900;font-size:clamp(1rem,2.4vw,1.25rem)}
+.bf-bar{position:absolute;left:12px;right:12px;bottom:12px;height:22px;border:4px solid var(--ink);border-radius:99px;background:#fff;overflow:hidden}.bf-bar i{display:block;height:100%;background:linear-gradient(90deg,#5DC66E,#FFC93C);transition:width .4s}
+.bf-p{background:#fff;border:5px solid var(--ink);border-radius:22px;padding:14px;display:grid;gap:12px}
+.bf-wheel{position:relative;width:min(300px,100%);aspect-ratio:1;margin:0 auto}
+.bf-wheel svg{position:absolute;inset:0;width:100%;height:100%}
+.bf-node{position:absolute;width:30%;aspect-ratio:1;border:5px solid var(--ink);border-radius:50%;background:#F4F6FA;display:grid;place-items:center;align-content:center;font-weight:900;font-size:.8rem;transform:translate(-50%,-50%);opacity:.45;transition:all .4s}
+.bf-node .e{font-size:2.2rem;line-height:1}
+.bf-node.on{opacity:1;background:#FFF6C9;transform:translate(-50%,-50%) scale(1.12)}.bf-node.done{opacity:1;background:#C8F3D0}
+.bf-msg{font-weight:900;font-size:1.15rem;min-height:2.6em}
+.bf-fact{background:#F4FAFF;border-radius:12px;padding:8px 10px;font-weight:700}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🦋", "Butterfly Life Cycle");
+const $=id=>document.getElementById(id);
+const ST=[['🥚','Egg','A butterfly laid a tiny egg on a leaf. Tap the egg to help it hatch!','Butterfly eggs are smaller than a grain of rice.'],['🐛','Caterpillar','The caterpillar is HUNGRY! Tap the leaves to feed it.','A caterpillar can grow 100 times bigger in two weeks!'],['🫘','Chrysalis','The caterpillar made a chrysalis. Inside, it is changing! Tap it to peek.','Inside the chrysalis the caterpillar turns into a butterfly. This is called metamorphosis.'],['🦋','Butterfly','A butterfly! Tap it to lay eggs and start the cycle again.','Butterflies taste with their feet!']];
+let st=0,food=0,taps=0,cycles=Kit.get('bf-cycles',0),busy=false;
+const LEAVES=[[62,22],[74,40],[56,52],[82,18],[68,62],[86,54],[48,24],[78,72]];
+document.querySelector('main').innerHTML=`<div class="bf"><div class="bf-scene" id="sc"></div><div class="bf-p"><div class="bf-wheel" id="wh"></div><div class="bf-msg" id="mg"></div><div class="bf-fact" id="fc"></div><div style="font-weight:900">🔁 Life cycles finished: <span id="cy"></span></div><button class="btn white small" id="rs">🥚 Start over</button></div></div>`;
+function wheel(){const P=[[50,16],[84,50],[50,84],[16,50]];$('wh').innerHTML=`<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="34" fill="none" stroke="#9AA6C0" stroke-width="2.5" stroke-dasharray="4 3"/>${[45,135,225,315].map(a=>{const r=a*Math.PI/180;return `<text x="${50+Math.cos(r-Math.PI/2)*34}" y="${50+Math.sin(r-Math.PI/2)*34+3}" font-size="9" text-anchor="middle" fill="#55607E" transform="rotate(${a} ${50+Math.cos(r-Math.PI/2)*34} ${50+Math.sin(r-Math.PI/2)*34})">➜</text>`}).join('')}</svg>`+ST.map((s,i)=>`<div class="bf-node ${i===st?'on':i<st?'done':''}" style="left:${P[i][0]}%;top:${P[i][1]}%"><span class="e">${s[0]}</span>${s[1]}</div>`).join('')}
+function draw(){const s=ST[st];let h=`<div class="bf-branch"></div><span class="bf-label">${s[0]} ${s[1]}</span>`;
+ if(st===1)h+=LEAVES.map((p,i)=>`<span class="bf-leaf ${i<food?'gone':''}" data-l="${i}" style="left:${p[0]}%;top:${p[1]}%">🍃</span>`).join('');
+ const size=st===0?3.6:st===1?2.4+food*.45:st===2?5:6;h+=`<span class="bf-bug" id="bug" style="font-size:${size}rem;${st===2?'top:46%;':''}">${st===2?'<span style="display:inline-block;transform:rotate(90deg)">🫘</span>':s[0]}</span>`;
+ if(st===1||st===2||st===0)h+=`<div class="bf-bar"><i style="width:${st===1?food/LEAVES.length*100:st===2?taps/5*100:taps/3*100}%"></i></div>`;
+ $('sc').innerHTML=h;wheel();$('mg').textContent=s[2];$('fc').textContent='💡 '+s[3];$('cy').textContent=cycles;window.__t={st,food,taps,cycles}}
+function next(){st=(st+1)%4;food=0;taps=0;Kit.tada();draw()}
+$('sc').onclick=e=>{if(busy)return;const l=e.target.closest('[data-l]');
+ if(l&&st===1){const i=+l.dataset.l;if(i<food)return;food++;l.classList.add('gone');const c=document.createElement('span');c.className='bf-chomp';c.textContent='munch!';c.style.left=l.style.left;c.style.top=l.style.top;$('sc').appendChild(c);setTimeout(()=>c.remove(),1000);Kit.tone(300+food*30,.06,'square',.06);
+  const bug=$('bug');bug.style.left=l.style.left;bug.style.top=l.style.top;bug.style.fontSize=(2.4+food*.45)+'rem';$('sc').querySelector('.bf-bar i').style.width=food/LEAVES.length*100+'%';
+  if(food%3===0&&food<LEAVES.length)$('mg').textContent='😮 The caterpillar got too big for its skin and shed it! Keep feeding!';
+  if(food>=LEAVES.length){busy=true;$('mg').textContent='😴 So full! The caterpillar hangs upside down…';setTimeout(()=>{busy=false;next()},window.__fast?1:1500)}window.__t.food=food;return}
+ const b=e.target.closest('#bug');if(!b)return;
+ if(st===0){taps++;b.classList.remove('wig');void b.offsetWidth;b.classList.add('wig');Kit.tick();if(taps>=3){busy=true;setTimeout(()=>{busy=false;next()},window.__fast?1:600)}else $('sc').querySelector('.bf-bar i').style.width=taps/3*100+'%';window.__t.taps=taps}
+ else if(st===2){taps++;b.classList.remove('wig');void b.offsetWidth;b.classList.add('wig');Kit.tone(200+taps*80,.1,'sine',.08);$('mg').textContent=['🫘 Something is happening in there…','🫘 It wiggled!','🫘 You can see colors through the chrysalis!','🫘 Almost ready…','🫘 It\'s cracking open!'][taps-1]||'';$('sc').querySelector('.bf-bar i').style.width=taps/5*100+'%';if(taps>=5){busy=true;setTimeout(()=>{busy=false;next();Kit.confetti(120);$('bug').classList.add('flyaway')},window.__fast?1:800)}window.__t.taps=taps}
+ else if(st===3){cycles++;Kit.set('bf-cycles',cycles);$('mg').textContent='🥚 The butterfly laid eggs on a leaf. The cycle starts again!';busy=true;setTimeout(()=>{busy=false;next()},window.__fast?1:1200)}};
+$('rs').onclick=()=>{st=0;food=0;taps=0;draw()};
+draw();
+</script>
+</body></html>

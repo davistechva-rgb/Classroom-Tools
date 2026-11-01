@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Animal Habitat Builder</title>
+<style>
+main{max-width:1700px}
+.ah-top{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:12px}
+.ah-top button.hb{font:inherit;font-weight:900;border:4px solid var(--ink);border-radius:99px;padding:6px 14px;background:#fff;cursor:pointer;color:var(--ink)}.ah-top button.hb.on{background:var(--sun)}
+.ah{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:960px){.ah{grid-template-columns:minmax(0,1fr)}}
+.ah-scene{position:relative;aspect-ratio:16/10;border:6px solid var(--ink);border-radius:26px;box-shadow:8px 8px 0 var(--ink);overflow:hidden;background:var(--bg)}
+.ah-scene.hover{outline:6px dashed #fff;outline-offset:-16px}
+.ah-deco{position:absolute;pointer-events:none;line-height:1}
+.ah-st{position:absolute;font-size:clamp(2rem,5vw,3.4rem);transform:translate(-50%,-50%);line-height:1;animation:land .5s;cursor:pointer;filter:drop-shadow(0 4px 0 rgba(0,0,0,.25))}
+@keyframes land{0%{transform:translate(-50%,-120%) scale(1.4)}60%{transform:translate(-50%,-45%) scale(.9)}}
+.ah-cnt{position:absolute;top:10px;left:12px;background:#fff;border:4px solid var(--ink);border-radius:99px;padding:3px 12px;font-weight:900}
+.ah-p{background:#fff;border:5px solid var(--ink);border-radius:22px;padding:12px;display:grid;gap:10px}
+.ah-tray{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px}
+.ah-it{border:4px solid var(--ink);border-radius:14px;background:#FFF6E0;display:grid;justify-items:center;padding:3px;cursor:grab;user-select:none;touch-action:none;box-shadow:0 3px 0 var(--ink)}
+.ah-it .e{font-size:2.1rem;line-height:1.1}.ah-it .n{font-size:.68rem;font-weight:800;text-align:center;display:block}
+.ah-it.picked{outline:4px solid var(--sun)}.ah-it.used{opacity:.25;pointer-events:none}
+.ah-it.no{animation:sh .35s}@keyframes sh{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.dz-ghost{position:fixed;pointer-events:none;z-index:80;opacity:.9}
+.ah-msg{font-weight:900;font-size:1.1rem;min-height:2.6em}
+.ah-fact{background:#F4FAFF;border-radius:12px;padding:8px 10px;font-weight:700}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🦁", "Animal Habitat Builder");
+const $=id=>document.getElementById(id);
+const H={ocean:{n:'🌊 Ocean',bg:'linear-gradient(#7FD3FF 0 18%,#2A8FD8 18%,#0B4F8A)',deco:[['🪸',8,88,4],['🪨',85,90,4],['🌿',30,92,3],['🫧',60,40,2],['🫧',20,55,1.5]],
+  yes:[['🐙','Octopus','Octopuses hide in rocks and squirt ink.'],['🐠','Fish','Fish breathe with gills.'],['🐋','Whale','Whales come up to the surface to breathe air.'],['🦈','Shark','Sharks have been around since before dinosaurs!'],['🐢','Sea turtle','Sea turtles swim thousands of miles.'],['🦀','Crab','Crabs walk sideways on the sea floor.'],['🪼','Jellyfish','Jellyfish have no brain and no bones.'],['🐬','Dolphin','Dolphins talk with clicks and whistles.']]},
+ desert:{n:'🏜️ Desert',bg:'linear-gradient(#FFD27F 0 45%,#F2B866 45%,#D9944A)',deco:[['☀️',85,12,5],['🌵',12,70,5],['🌵',70,62,4],['🪨',45,82,3]],
+  yes:[['🐪','Camel','Camels store fat in their humps for energy.'],['🦂','Scorpion','Scorpions glow under special light!'],['🦎','Lizard','Lizards warm up on hot rocks.'],['🐍','Snake','Some desert snakes move sideways on sand.'],['🦅','Hawk','Hawks spot food from high in the sky.'],['🌵','Cactus','Cactus stores water in its thick stem.'],['🦊','Fennec fox','Fennec foxes have big ears to stay cool.']]},
+ arctic:{n:'❄️ Arctic',bg:'linear-gradient(#BDE6FF 0 40%,#F4FBFF 40%,#DDEFFA)',deco:[['🏔️',15,32,6],['🏔️',75,30,5],['❄️',50,12,2],['🧊',85,80,4]],
+  yes:[['🐻‍❄️','Polar bear','Polar bears have black skin under white fur.'],['🐧','Penguin','Penguins live near the South Pole.'],['🦭','Seal','Seals have thick blubber to stay warm.'],['🐋','Whale','Some whales swim in icy water.'],['🦊','Arctic fox','Arctic fox fur turns white in winter.'],['🐟','Fish','Arctic fish have special blood that doesn\'t freeze.']]},
+ forest:{n:'🌲 Forest',bg:'linear-gradient(#A8E1FF 0 35%,#7CC86B 35%,#3F8C3A)',deco:[['🌲',8,45,7],['🌳',80,40,7],['🌲',55,38,5],['🍄',30,85,2.5],['🪵',65,85,3]],
+  yes:[['🦌','Deer','Deer eat leaves, grass and acorns.'],['🦉','Owl','Owls hunt at night.'],['🐿️','Squirrel','Squirrels bury nuts for winter.'],['🐻','Bear','Bears sleep through the winter.'],['🦔','Hedgehog','Hedgehogs roll into a spiky ball.'],['🍄','Mushroom','Mushrooms help break down dead leaves.'],['🐺','Wolf','Wolves live and hunt in packs.']]},
+ jungle:{n:'🌴 Rainforest',bg:'linear-gradient(#5FB86A,#1F6B3A)',deco:[['🌴',6,40,7],['🌿',85,70,5],['🌺',40,80,3],['🌴',75,30,6],['💧',55,20,1.5]],
+  yes:[['🐒','Monkey','Monkeys swing from tree to tree.'],['🦜','Parrot','Parrots can copy sounds.'],['🐆','Jaguar','Jaguars are great swimmers.'],['🦥','Sloth','Sloths move so slowly that plants grow on their fur!'],['🐸','Tree frog','Tree frogs have sticky toes.'],['🐍','Snake','Some snakes hang from branches.'],['🦋','Butterfly','Rainforests have thousands of kinds of butterflies.']]}};
+let hab=Kit.get('ah-hab','ocean'),placed=[],tray=[],free=Kit.get('ah-free',false);
+const NAME=(e)=>{for(const k in H){const f=H[k].yes.find(y=>y[0]===e);if(f)return f[1]}return ''};
+function newScene(){const me=H[hab].yes;const others=Object.entries(H).filter(([k])=>k!==hab).flatMap(([k,h])=>h.yes.filter(y=>!me.some(m=>m[0]===y[0])).map(y=>[...y,k]));
+ tray=Kit.shuffle([...me.map(y=>[...y,hab]),...Kit.shuffle(others).slice(0,6)]);placed=[];$('mg').textContent=free?'🎨 Free build: put anything anywhere!':`Drag the animals and plants that live in the ${H[hab].n.replace(/^\S+ /,'').toLowerCase()} into the picture.`;$('fc').textContent='';draw()}
+document.querySelector('main').innerHTML=`<div class="ah-top">${Object.entries(H).map(([k,h])=>`<button class="hb" data-h="${k}">${h.n}</button>`).join('')}<label style="font-weight:800;color:#fff;text-shadow:1px 1px 0 var(--ink)"><input type="checkbox" id="fr"> 🎨 Free build</label></div>
+<div class="ah"><div class="ah-scene" id="sc"></div><div class="ah-p"><b>🧺 Who lives here?</b><div class="ah-tray" id="tr"></div><div class="ah-msg" id="mg"></div><div class="ah-fact" id="fc"></div><button class="btn white small" id="rs">🔄 Start over</button></div></div>`;
+function draw(){const h=H[hab];document.querySelectorAll('[data-h]').forEach(b=>b.classList.toggle('on',b.dataset.h===hab));$('fr').checked=free;
+ const need=h.yes.length,got=placed.filter(p=>p.ok).length;
+ $('sc').style.setProperty('--bg',h.bg);$('sc').innerHTML=h.deco.map(([e,x,y,s])=>`<span class="ah-deco" style="left:${x}%;top:${y}%;font-size:${s}rem;transform:translate(-50%,-50%)">${e}</span>`).join('')+placed.map((p,i)=>`<span class="ah-st" data-pi="${i}" style="left:${p.x}%;top:${p.y}%">${p.e}</span>`).join('')+(free?'':`<span class="ah-cnt">${got} / ${need} found</span>`);
+ $('tr').innerHTML=tray.map((t,i)=>`<div class="ah-it ${!free&&t.used?'used':''}" data-i="${i}"><span class="e">${t[0]}</span><span class="n">${t[1]}</span></div>`).join('');
+ window.__t={hab,got,need,placed:placed.length,belong:tray.map(t=>t[3]===hab)}}
+Learn.drag(document.querySelector('main'),{item:'.ah-it',zone:'#sc',drop(it,z,cx,cy){const i=+it.dataset.i,t=tray[i],r=$('sc').getBoundingClientRect();let x=(cx-r.left)/r.width*100,y=(cy-r.top)/r.height*100;
+ if(!(x>=0&&x<=100&&y>=0&&y<=100)){x=Kit.rand(15,85);y=Kit.rand(25,85)}
+ if(free||t[3]===hab){placed.push({e:t[0],x,y,ok:t[3]===hab});t.used=true;Kit.ding();$('fc').textContent=`${t[0]} ${t[2]}`;const got=placed.filter(p=>p.ok).length;
+  if(!free&&got===H[hab].yes.length){$('mg').textContent='🎉 You found everyone who lives here!';Kit.tada();Kit.confetti(140)}else if(!free)$('mg').textContent=`✅ The ${t[1].toLowerCase()} lives here!`;draw()}
+ else{Kit.tone(180,.25,'sawtooth',.08);it.classList.remove('no');void it.offsetWidth;it.classList.add('no');$('mg').textContent=`🤔 A ${t[1].toLowerCase()} doesn't live here. It lives in the ${H[t[3]].n.replace(/^\S+ /,'').toLowerCase()}!`}}});
+$('sc').addEventListener('click',e=>{const s=e.target.closest('[data-pi]');if(s&&free){placed.splice(+s.dataset.pi,1);draw()}});
+document.querySelector('.ah-top').onclick=e=>{const b=e.target.closest('[data-h]');if(b){hab=b.dataset.h;Kit.set('ah-hab',hab);newScene()}};
+$('fr').onchange=()=>{free=$('fr').checked;Kit.set('ah-free',free);newScene()};$('rs').onclick=newScene;
+newScene();
+</script>
+</body></html>

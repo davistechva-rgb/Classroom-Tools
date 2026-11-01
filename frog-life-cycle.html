@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Frog Life Cycle</title>
+<style>
+main{max-width:1500px}
+.fg-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:12px}
+.fg{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.fg{grid-template-columns:minmax(0,1fr)}}
+.fg-pond{position:relative;border:6px solid var(--ink);border-radius:28px;box-shadow:8px 8px 0 var(--ink);overflow:hidden;background:radial-gradient(ellipse at 50% 60%,#5BC0C8,#2A7F8F 70%,#1E5F6B)}
+.fg-pond svg{display:block;width:100%;height:auto}
+.fg-c{cursor:pointer}.fg-c.found{opacity:.9}
+.fg-p{background:#fff;border:5px solid var(--ink);border-radius:22px;padding:14px;display:grid;gap:12px}
+.fg-task{text-align:center;font-weight:900;font-size:clamp(1.2rem,3vw,1.6rem)}
+.fg-key{display:grid;gap:6px}
+.fg-key div{display:grid;grid-template-columns:64px minmax(0,1fr);gap:8px;align-items:center;border:3px solid var(--ink);border-radius:14px;padding:4px 8px;font-weight:800;background:#F4F6FA}
+.fg-key div.on{background:#FFF6C9;box-shadow:0 0 0 3px var(--sun)}
+.fg-key svg{width:60px;height:44px}
+.fg-msg{font-weight:900;font-size:1.15rem;min-height:1.6em;text-align:center}
+.fg-grow{display:grid;gap:10px;justify-items:center}
+.fg-grow svg{width:min(420px,100%);height:auto;background:radial-gradient(#5BC0C8,#2A7F8F);border:5px solid var(--ink);border-radius:22px}
+.fg-grow input{width:100%}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🐸", "Frog Life Cycle");
+const $=id=>document.getElementById(id);
+const ST=[['Eggs','Frogs lay jelly-covered eggs called frogspawn.','eggs'],['Tadpole','Tadpoles hatch and breathe with gills, like fish.','tad'],['Tadpole with legs','Back legs grow first, then front legs.','legs'],['Froglet','A froglet has legs AND a little tail. It starts breathing air!','froglet'],['Frog','The tail is gone. The frog lives on land and in water. It will lay eggs too!','frog']];
+// draw a creature at stage k, centered at 0,0, about 60px wide
+function shape(k){if(k===0)return [[-14,-6],[0,-10],[13,-4],[-8,8],[7,9],[-2,0],[18,8],[-18,5]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="8" fill="#E9FFF5" fill-opacity=".85" stroke="#1D2B53" stroke-width="2"/><circle cx="${x}" cy="${y}" r="3" fill="#1D2B53"/>`).join('');
+ const body=(rx,ry,col)=>`<ellipse cx="0" cy="0" rx="${rx}" ry="${ry}" fill="${col}" stroke="#1D2B53" stroke-width="3"/>`;const eye=(x)=>`<circle cx="${x}" cy="-4" r="3.5" fill="#fff" stroke="#1D2B53" stroke-width="1.5"/><circle cx="${x+1}" cy="-4" r="1.6" fill="#1D2B53"/>`;
+ const tail=(len)=>`<path d="M-10 0 Q${-10-len/2} -10 ${-10-len} 0 Q${-10-len/2} 10 -10 0" fill="#3B3B2B" stroke="#1D2B53" stroke-width="2"/>`;
+ if(k===1)return tail(32)+body(14,11,'#3B3B2B')+eye(7);
+ if(k===2)return tail(30)+`<path d="M-6 8 l-6 12 l-6 0 M-6 -8 l-6 -12 l-6 0" stroke="#3B3B2B" stroke-width="4" fill="none" stroke-linecap="round"/>`+body(15,12,'#4A5A2B')+eye(8);
+ if(k===3)return tail(14)+`<path d="M-4 10 l-10 10 l-8 0 M-4 -10 l-10 -10 l-8 0 M8 10 l6 8 M8 -10 l6 -8" stroke="#3E8A3A" stroke-width="4.5" fill="none" stroke-linecap="round"/>`+body(16,13,'#5DC66E')+eye(9);
+ return `<path d="M-2 12 q-14 6 -20 14 l-6 0 M-2 -12 q-14 -6 -20 -14 l-6 0 M10 12 l8 10 M10 -12 l8 -10" stroke="#3E8A3A" stroke-width="6" fill="none" stroke-linecap="round"/>`+body(18,15,'#5DC66E')+`<circle cx="9" cy="-9" r="5" fill="#fff" stroke="#1D2B53" stroke-width="2"/><circle cx="9" cy="9" r="5" fill="#fff" stroke="#1D2B53" stroke-width="2"/><circle cx="10" cy="-9" r="2.2" fill="#1D2B53"/><circle cx="10" cy="9" r="2.2" fill="#1D2B53"/><path d="M16 -4 q4 4 0 8" stroke="#1D2B53" stroke-width="2" fill="none"/>`}
+const W=800,H=520;let C=[],task=0,found=0,need=0,mode='find',round=0,score=Kit.get('fg-score',0),week=0,raf=0,misses=0;
+function newPond(){C=[];for(let k=0;k<5;k++){const n=k===0?Kit.rand(2,3):Kit.rand(2,4);for(let i=0;i<n;i++)C.push({k,x:Kit.rand(60,W-60),y:Kit.rand(60,H-60),a:Math.random()*6.28,v:k===0?0:Kit.rand(12,30),f:false})}
+ task=Kit.rand(0,4);need=C.filter(c=>c.k===task).length;found=0;misses=0;draw()}
+document.querySelector('main').innerHTML=`<div class="fg-top"><button class="btn" data-m="find">🔍 Pond hunt</button><button class="btn white" data-m="grow">📅 Watch it grow</button></div><div id="bd"></div>`;
+function draw(){document.querySelectorAll('[data-m]').forEach(b=>b.className='btn '+(b.dataset.m===mode?'':'white'));cancelAnimationFrame(raf);
+ if(mode==='grow'){const k=week<1?0:week<3?1:week<8?2:week<12?3:4;$('bd').innerHTML=`<div class="fg"><div class="fg-p fg-grow"><svg viewBox="-60 -50 120 100"><g transform="scale(1.4)">${shape(k)}</g></svg><input type="range" min="0" max="16" step="1" value="${week}" id="wk" aria-label="Weeks"><div style="font-weight:900;font-size:1.4rem">Week ${week}: ${ST[k][0]}</div><div style="font-weight:700;text-align:center">${ST[k][1]}</div><button class="btn green" id="pl">▶ Play</button></div><div class="fg-p"><b>🐸 The frog life cycle</b><div class="fg-key">${ST.map((s,i)=>`<div class="${i===k?'on':''}"><svg viewBox="-34 -24 68 48">${shape(i)}</svg><span>${s[0]}<br><small style="font-weight:700;color:#55607E">${['Week 0','Weeks 1–2','Weeks 3–7','Weeks 8–11','Week 12+'][i]}</small></span></div>`).join('')}</div></div></div>`;
+  $('wk').oninput=()=>{week=+$('wk').value;draw()};$('pl').onclick=async()=>{for(week=0;week<=16&&mode==='grow';week++){draw();Kit.tone(300+week*30,.05,'triangle',.06);await Kit.sleep(window.__fast?1:450)}week=16};window.__t={mode,week,k};return}
+ $('bd').innerHTML=`<div class="fg"><div class="fg-pond"><svg viewBox="0 0 ${W} ${H}" id="sv"></svg></div><div class="fg-p"><div class="fg-task">Find all the<br>${ST[task][0].toLowerCase()}! <span id="ct">${found}/${need}</span></div><div class="fg-msg" id="mg"></div><div class="fg-key">${ST.map((s,i)=>`<div class="${i===task?'on':''}"><svg viewBox="-34 -24 68 48">${shape(i)}</svg><span>${s[0]}</span></div>`).join('')}</div><div class="row" style="gap:6px;justify-content:space-between"><b>⭐ ${score}</b><button class="btn green small" id="nx">🔁 New pond</button></div></div></div>`;
+ $('nx').onclick=newPond;let last=performance.now();
+ const sv=$('sv');const pads=[[120,90,60],[650,420,70],[700,110,50]].map(([x,y,r])=>`<ellipse cx="${x}" cy="${y}" rx="${r}" ry="${r*.7}" fill="#5DC66E" stroke="#2E7D4F" stroke-width="4"/>`).join('');
+ function frame(t){const dt=Math.min(.05,(t-last)/1000);last=t;C.forEach(c=>{if(c.f||!c.v)return;c.a+=(Math.random()-.5)*dt*2;c.x+=Math.cos(c.a)*c.v*dt;c.y+=Math.sin(c.a)*c.v*dt;if(c.x<40||c.x>W-40)c.a=Math.PI-c.a;if(c.y<40||c.y>H-40)c.a=-c.a;c.x=Math.max(40,Math.min(W-40,c.x));c.y=Math.max(40,Math.min(H-40,c.y))});
+  sv.innerHTML=pads+C.map((c,i)=>`<g class="fg-c ${c.f?'found':''}" data-c="${i}" transform="translate(${c.x.toFixed(1)} ${c.y.toFixed(1)}) rotate(${c.v?(c.a*180/Math.PI).toFixed(0):0}) scale(1.5)"><circle r="30" fill="transparent"/>${shape(c.k)}${c.f?'<circle r="28" fill="none" stroke="#FFC93C" stroke-width="5"/>':''}</g>`).join('');raf=requestAnimationFrame(frame)}
+ raf=requestAnimationFrame(frame);
+ sv.onpointerdown=e=>{const g=e.target.closest('[data-c]');if(!g)return;const c=C[+g.dataset.c];if(c.f)return;
+  if(c.k===task){c.f=true;found++;Kit.ding();$('ct').textContent=`${found}/${need}`;$('mg').textContent=`✅ ${ST[task][1]}`;if(found===need){if(!misses){score++;Kit.set('fg-score',score)}Kit.tada();Kit.confetti(100);$('mg').textContent=`🎉 You found all the ${ST[task][0].toLowerCase()}!`}}
+  else{misses++;Kit.tone(180,.25,'sawtooth',.08);$('mg').textContent=`🤔 That's a ${ST[c.k][0].toLowerCase()}. Look again!`}window.__t={mode,task,found,need,misses}};
+ window.__t={mode,task,found,need,misses}}
+document.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{mode=b.dataset.m;draw()});
+window.__fg={targets:()=>C.map((c,i)=>[i,c.k,c.x,c.y]).filter(c=>c[1]===task),others:()=>C.map((c,i)=>[i,c.k]).filter(c=>c[1]!==task),freeze:()=>C.forEach(c=>c.v=0)};
+newPond();
+</script>
+</body></html>

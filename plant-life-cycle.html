@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Plant Life Cycle</title>
+<style>
+main{max-width:1500px}
+.pl{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.pl{grid-template-columns:minmax(0,1fr)}}
+.pl-pot{position:relative;aspect-ratio:1/1;max-height:560px;border:6px solid var(--ink);border-radius:28px;box-shadow:8px 8px 0 var(--ink);overflow:hidden;background:linear-gradient(var(--sky,#9FD8FF) 0 62%,#8B5A2B 62%,#6B4220);transition:background 1s}
+.pl-pot svg{position:absolute;inset:0;width:100%;height:100%}
+.pl-sun{position:absolute;top:6%;right:8%;font-size:clamp(3rem,8vw,5rem);transition:opacity .6s,transform .6s}
+.pl-sun.off{opacity:.15;transform:scale(.7)}
+.pl-rain{position:absolute;inset:0 0 38% 0;pointer-events:none;overflow:hidden}
+.pl-rain i{position:absolute;top:-20px;width:4px;height:18px;border-radius:4px;background:#2A8FD8;animation:rain .7s linear forwards}@keyframes rain{to{transform:translateY(420px)}}
+.pl-bee{position:absolute;font-size:2.4rem;animation:fly 3s ease-in-out}@keyframes fly{0%{left:-10%;top:30%}50%{left:46%;top:24%}100%{left:110%;top:10%}}
+.pl-stage{position:absolute;left:12px;top:12px;background:#fff;border:4px solid var(--ink);border-radius:99px;padding:4px 14px;font-weight:900;font-size:clamp(1rem,2.4vw,1.25rem)}
+.pl-need{position:absolute;left:12px;bottom:12px;display:flex;gap:8px}
+.pl-need span{background:#fff;border:3px solid var(--ink);border-radius:12px;padding:2px 8px;font-weight:900;display:flex;gap:4px;align-items:center}
+.pl-need i{display:inline-block;width:50px;height:10px;border:2px solid var(--ink);border-radius:9px;background:linear-gradient(90deg,var(--c) var(--v),#fff var(--v))}
+.pl-p{background:#fff;border:5px solid var(--ink);border-radius:22px;padding:14px;display:grid;gap:12px}
+.pl-acts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.pl-acts button{font:inherit;font-weight:900;font-size:1.1rem;border:4px solid var(--ink);border-radius:16px;padding:10px 6px;background:var(--bc);cursor:pointer;color:var(--ink);box-shadow:0 4px 0 var(--ink)}
+.pl-acts button:disabled{opacity:.35;cursor:default}
+.pl-msg{font-weight:900;font-size:1.15rem;min-height:2.6em}
+.pl-tl{display:flex;gap:4px;justify-content:space-between}
+.pl-tl span{flex:1;text-align:center;font-size:1.6rem;border:3px solid var(--ink);border-radius:12px;padding:4px 0;background:#F4F6FA;opacity:.4}
+.pl-tl span.on{opacity:1;background:#C8F3D0}
+.pl-quiz{display:grid;gap:8px}
+.pl-cards{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.pl-card{width:76px;border:4px solid var(--ink);border-radius:14px;background:#FFF6E0;display:grid;justify-items:center;padding:4px;font-weight:800;font-size:.75rem;cursor:pointer;user-select:none;touch-action:none}
+.pl-card .e{font-size:2rem}.pl-card.picked{outline:4px solid var(--sun)}
+.pl-slots{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}
+.pl-slot{min-height:90px;border:4px dashed #9AA6C0;border-radius:14px;display:grid;place-items:center;font-weight:900;color:#9AA6C0;position:relative}
+.pl-slot.hover{border-color:var(--ink);background:#FFF6C9}
+.pl-slot .pl-card{width:100%;cursor:default}
+.dz-ghost{position:fixed;pointer-events:none;z-index:80;opacity:.9}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🌱", "Plant Life Cycle");
+const $=id=>document.getElementById(id);
+const ST=[['🌰','Seed','A seed is sleeping in the soil. It needs water to wake up!'],['🌱','Sprout','The seed cracked open! A root goes down and a tiny shoot comes up.'],['🌿','Seedling','Leaves catch sunlight to make food for the plant.'],['🪴','Young plant','The stem gets taller and stronger. More leaves!'],['🌸','Flower','A flower blooms! Bees come to visit and carry pollen.'],['🍎','Fruit and seeds','The flower became a fruit with new seeds inside. The cycle starts again!']];
+let stage=0,water=40,sun=50,growth=0,sunny=true,bees=0,day=1,ordered=Kit.get('pl-quiz',false),slots=[null,null,null,null,null],cards=[];
+function save(){}
+document.querySelector('main').innerHTML=`<div class="pl"><div class="pl-pot" id="pot"><svg viewBox="0 0 500 500" id="sv"></svg><span class="pl-sun" id="sn">☀️</span><div class="pl-rain" id="rn"></div><span class="pl-stage" id="sg"></span><div class="pl-need" id="nd"></div></div>
+<div class="pl-p"><b style="font-size:1.25rem">🧑‍🌾 Take care of your plant</b><div class="pl-acts"><button style="--bc:#9FD8FF" id="wt">💧 Water</button><button style="--bc:#FFE29A" id="su">☀️ Sunshine</button><button style="--bc:#C8F3D0" id="dy">🌙 Sleep a day</button><button style="--bc:#FFD3E5" id="be">🐝 Send a bee</button></div><div class="pl-msg" id="mg"></div><div class="pl-tl" id="tl"></div><button class="btn white small" id="rs">🌰 Plant a new seed</button>
+<hr style="width:100%"><b>🧩 Put the life cycle in order</b><div class="pl-cards" id="cd"></div><div class="pl-slots" id="sl"></div><div class="row" style="gap:6px"><button class="btn green small" id="ck">✅ Check order</button><span id="qm" style="font-weight:900"></span></div></div></div>`;
+function plantSVG(){const g=growth,s=stage;let h='';const base=310;
+ if(s===0)return `<ellipse cx="250" cy="${base+30}" rx="22" ry="14" fill="#8B5A2B" stroke="#3B2A1A" stroke-width="4"/>`;
+ // roots
+ h+=`<path d="M250 ${base+20} q-20 40 -40 70 M250 ${base+20} q10 50 30 80 M250 ${base+20} q-5 30 0 60" stroke="#F2D6A2" stroke-width="5" fill="none" stroke-linecap="round"/>`;
+ const H=[0,40,90,160,220,230][s]+g*0.4,top=base-H;h+=`<path d="M250 ${base+20} Q${246} ${base-H/2} 250 ${top}" stroke="#2E7D4F" stroke-width="${6+s*2}" fill="none" stroke-linecap="round"/>`;
+ const leaf=(y,dir,sz)=>`<path d="M250 ${y} q${dir*sz} ${-sz*.6} ${dir*sz*1.6} ${-sz*.1} q${-dir*sz*.6} ${sz*.5} ${-dir*sz*1.6} ${sz*.1}" fill="#5DC66E" stroke="#2E7D4F" stroke-width="3"/>`;
+ const n=[0,1,2,4,6,6][s];for(let i=0;i<n;i++)h+=leaf(base-H*(i+1)/(n+1),i%2?1:-1,18+s*5);
+ if(s>=4)h+=s===4?[0,72,144,216,288].map(a=>`<ellipse cx="${250+Math.cos(a*Math.PI/180)*22}" cy="${top+Math.sin(a*Math.PI/180)*22}" rx="18" ry="12" transform="rotate(${a} ${250+Math.cos(a*Math.PI/180)*22} ${top+Math.sin(a*Math.PI/180)*22})" fill="#FF8FC7" stroke="#C2407A" stroke-width="3"/>`).join('')+`<circle cx="250" cy="${top}" r="13" fill="#FFC93C" stroke="#C28A00" stroke-width="3"/>`:`<circle cx="250" cy="${top+12}" r="34" fill="#E5533F" stroke="#8B1E14" stroke-width="4"/><path d="M250 ${top-22} q8 -10 18 -6" stroke="#2E7D4F" stroke-width="5" fill="none"/><ellipse cx="238" cy="${top+2}" rx="8" ry="5" fill="#fff8"/>`;
+ return h}
+function draw(){$('sv').innerHTML=plantSVG();$('sn').classList.toggle('off',!sunny);$('pot').style.setProperty('--sky',sunny?'#9FD8FF':'#5F6E8F');
+ $('sg').textContent=`Day ${day} · ${ST[stage][0]} ${ST[stage][1]}`;$('nd').innerHTML=`<span>💧<i style="--c:#2A8FD8;--v:${water}%"></i></span><span>☀️<i style="--c:#FFC93C;--v:${sun}%"></i></span><span>📈<i style="--c:#5DC66E;--v:${growth}%"></i></span>`;
+ $('tl').innerHTML=ST.map((s,i)=>`<span class="${i<=stage?'on':''}" title="${s[1]}">${s[0]}</span>`).join('');$('be').disabled=stage!==4;
+ window.__t={stage,water,sun,growth,day}}
+function grow(){// a day passes: grows if water and sun are both okay
+ day++;const ok=water>=30&&water<=90&&sun>=30;if(stage===4){$('mg').textContent=bees?'':'🌸 The flower needs a bee to carry pollen before it can make fruit!';water=Math.max(0,water-20);sun=Math.max(0,sun-25);draw();return}
+ if(stage===5){$('mg').textContent='🍎 The fruit is ready. Plant a new seed to start again!';draw();return}
+ if(ok){growth+=50;if(growth>=100){growth=0;stage++;Kit.tada();if(stage===5)Kit.confetti(120);$('mg').textContent=`${ST[stage][0]} ${ST[stage][2]}`}else{$('mg').textContent='😴 Overnight the plant grew a little!';Kit.ding()}}
+ else $('mg').textContent=water<30?'🥀 The plant is thirsty. It needs water!':water>90?'🌊 Too much water! Let the soil dry out a bit.':'🌥️ The plant needs more sunshine to grow.';
+ water=Math.max(0,water-25);sun=Math.max(0,sun-30);draw()}
+$('wt').onclick=()=>{water=Math.min(100,water+30);for(let i=0;i<24;i++){const d=document.createElement('i');d.style.left=Math.random()*100+'%';d.style.animationDelay=Math.random()*.5+'s';$('rn').appendChild(d);setTimeout(()=>d.remove(),1400)}Kit.tone(700,.08,'sine',.08);if(stage===0&&water>=30){$('mg').textContent='💧 The seed is soaking up water. Let it sleep a day!'}else if(water>90)$('mg').textContent='🌊 That\'s a lot of water!';else $('mg').textContent='💧 Watered!';draw()};
+$('su').onclick=()=>{sunny=true;sun=Math.min(100,sun+40);Kit.tone(900,.1,'triangle',.06);$('mg').textContent='☀️ Warm sunshine!';draw()};
+$('dy').onclick=()=>{sunny=false;draw();setTimeout(()=>{sunny=true;grow()},window.__fast?1:700)};
+$('be').onclick=()=>{const b=document.createElement('span');b.className='pl-bee';b.textContent='🐝';$('pot').appendChild(b);setTimeout(()=>b.remove(),3000);bees++;Kit.tone(220,.6,'sawtooth',.03);setTimeout(()=>{stage=5;growth=0;Kit.tada();Kit.confetti(120);$('mg').textContent=`${ST[5][0]} ${ST[5][2]}`;draw()},window.__fast?1:1500)};
+$('rs').onclick=()=>{stage=0;water=40;sun=50;growth=0;bees=0;day=1;$('mg').textContent='🌰 You planted a seed! Give it water and sunshine, then let it sleep.';draw()};
+// ordering quiz
+function quiz(){const pick=[0,1,2,4,5];cards=Kit.shuffle(pick);slots=[null,null,null,null,null];drawQ()}
+function drawQ(){$('cd').innerHTML=cards.map(i=>`<div class="pl-card" data-c="${i}"><span class="e">${ST[i][0]}</span>${ST[i][1]}</div>`).join('');$('sl').innerHTML=slots.map((c,k)=>`<div class="pl-slot" data-s="${k}">${c==null?k+1:`<div class="pl-card"><span class="e">${ST[c][0]}</span>${ST[c][1]}</div>`}</div>`).join('');window.__q={slots:[...slots],cards:[...cards]}}
+Learn.drag($('cd').parentElement,{item:'#cd .pl-card',zone:'.pl-slot',drop(it,z){const c=+it.dataset.c,k=+z.dataset.s;if(slots[k]!=null)cards.push(slots[k]);slots[k]=c;cards=cards.filter(x=>x!==c);Kit.tick();drawQ()}});
+$('sl').addEventListener('click',e=>{const s=e.target.closest('[data-s]');if(s&&slots[+s.dataset.s]!=null&&!document.querySelector('.pl-card.picked')){cards.push(slots[+s.dataset.s]);slots[+s.dataset.s]=null;drawQ()}});
+$('ck').onclick=()=>{if(slots.includes(null)){$('qm').textContent='Fill every box first.';return}const ok=slots.every((c,k)=>c===[0,1,2,4,5][k]);$('qm').textContent=ok?'🎉 Perfect order!':'🤔 Not quite. What comes first?';ok?(Kit.tada(),Kit.confetti(80)):Kit.tone(180,.25,'sawtooth',.08)};
+$('mg').textContent='🌰 You planted a seed! Give it water and sunshine, then let it sleep.';draw();quiz();
+</script>
+</body></html>

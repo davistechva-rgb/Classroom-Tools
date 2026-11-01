@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Counting Train</title>
+<style>
+main{max-width:1600px}
+.ct-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:12px}
+.ct-world{background:linear-gradient(#BFE8FF 0 70%,#8FD694 70%);border:6px solid var(--ink);border-radius:28px;box-shadow:8px 8px 0 var(--ink);padding:16px 10px 10px;overflow:hidden;position:relative}
+.ct-train{display:flex;align-items:flex-end;gap:6px;justify-content:center;transition:transform 2.5s ease-in;position:relative;z-index:1;flex-wrap:nowrap}
+.ct-train.go{transform:translateX(120vw)}
+.ct-eng{font-size:clamp(4rem,11vw,7rem);line-height:.9;transform:scaleX(-1)}
+.ct-car{width:clamp(70px,15vw,150px);display:grid;gap:4px;justify-items:center;cursor:pointer}
+.ct-box{width:100%;min-height:clamp(70px,12vw,110px);background:var(--c);border:5px solid var(--ink);border-radius:12px 12px 6px 6px;display:flex;flex-wrap:wrap;gap:2px;align-content:flex-end;justify-content:center;padding:4px;position:relative}
+.ct-box span{font-size:clamp(1rem,2.6vw,1.6rem);line-height:1;animation:hop .3s}@keyframes hop{0%{transform:translateY(-20px)}}
+.ct-car.sel .ct-box{outline:5px solid var(--sun);outline-offset:2px}
+.ct-car.ok .ct-box{box-shadow:0 0 0 5px #5DC66E}
+.ct-car.no .ct-box{animation:sh .35s}@keyframes sh{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.ct-num{font:900 clamp(1.4rem,3.6vw,2.2rem) Fredoka,sans-serif;background:#fff;border:4px solid var(--ink);border-radius:12px;min-width:2.2ch;text-align:center;padding:0 6px}
+.ct-wh{display:flex;gap:10px;margin-top:-4px}.ct-wh i{width:20px;height:20px;border-radius:50%;background:#1D2B53;border:3px solid #55607E}
+.ct-track{height:12px;background:repeating-linear-gradient(90deg,#8B5A2B 0 12px,transparent 12px 28px),#55607E;margin:2px -10px 0;border-radius:4px}
+.ct-smoke{position:absolute;font-size:2rem;opacity:.8;animation:puff 2s forwards;pointer-events:none}@keyframes puff{to{transform:translate(-40px,-80px) scale(2);opacity:0}}
+.ct-cargo{display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;margin:14px 0}
+.ct-cargo button{font-size:clamp(2.2rem,6vw,3.2rem);width:clamp(70px,16vw,96px);height:clamp(70px,16vw,96px);border:5px solid var(--ink);border-radius:20px;background:#fff;cursor:pointer;box-shadow:0 5px 0 var(--ink)}
+.ct-cargo button:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink)}
+.ct-pick{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:10px 0}
+.ct-pick button{font:900 1.6rem Fredoka,sans-serif;width:56px;height:56px;border:4px solid var(--ink);border-radius:14px;background:#fff;cursor:pointer;color:var(--ink)}
+.ct-msg{text-align:center;font-weight:900;font-size:clamp(1.15rem,3vw,1.6rem);min-height:1.5em;color:#fff;text-shadow:2px 2px 0 var(--ink)}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🚂", "Counting Train");
+const $=id=>document.getElementById(id);
+const CARGO=['🍎','🐥','⭐','🧸','🍪','🎈','🐟','🌸'];const COLS=['#FF6B5B','#FFC93C','#5DC66E','#22C3E6','#9B6BF2'];
+let mode=Kit.get('ct-mode','load'),max=Kit.get('ct-max',5),cars=[],sel=0,item='🍎',trips=Kit.get('ct-trips',0),busy=false;
+const say=t=>{try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.rate=.9;speechSynthesis.speak(u)}catch(e){}};
+const WORD=['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen','twenty'];
+function newTrain(){busy=false;item=Kit.pick(CARGO);const n=innerWidth<600?3:4;const nums=Kit.shuffle(Array.from({length:max},(_,i)=>i+1)).slice(0,n);
+ cars=nums.map(v=>({want:v,have:mode==='count'?v:0,guess:null,ok:false}));if(mode==='order')cars.forEach(c=>c.have=c.want);sel=0;draw();
+ $('mg').textContent=mode==='load'?`Put the right number of ${item} in each car!`:mode==='count'?'Count what is in each car. Tap a car, then tap its number!':'';$('tr').classList.remove('go')}
+document.querySelector('main').innerHTML=`<div class="ct-top"><select id="md" style="width:auto"><option value="load">📦 Load the train</option><option value="count">🔢 How many?</option></select><select id="mx" style="width:auto"><option value="5">Up to 5</option><option value="10">Up to 10</option><option value="20">Up to 20</option></select><b style="color:#fff;text-shadow:2px 2px 0 var(--ink)" id="tp"></b></div>
+<div class="ct-world" id="wd"><div class="ct-train" id="tr"></div><div class="ct-track"></div></div><div class="ct-msg" id="mg"></div><div id="ui"></div>`;
+function draw(){$('md').value=mode;$('mx').value=max;$('tp').textContent=`🚂 Trips: ${trips}`;
+ $('tr').innerHTML=cars.map((c,i)=>`<div class="ct-car ${i===sel?'sel':''} ${c.ok?'ok':''}" data-c="${i}"><span class="ct-num">${mode==='load'?c.want:(c.guess??'?')}</span><div class="ct-box" style="--c:${COLS[i%5]}">${Array(c.have).fill(`<span>${item}</span>`).join('')}</div><div class="ct-wh"><i></i><i></i></div></div>`).reverse().join('')+`<span class="ct-eng">🚂</span>`;
+ $('ui').innerHTML=mode==='load'?`<div class="ct-cargo"><button id="ad" aria-label="Add one">${item}</button><button id="rm" aria-label="Take one out" style="font-size:2rem;background:#FFD3CC">↩️</button><button class="btn green big" id="go" style="width:auto;height:auto;font-size:1.4rem">🚦 All aboard!</button></div>`:`<div class="ct-pick">${Array.from({length:max},(_,i)=>`<button data-n="${i+1}">${i+1}</button>`).join('')}</div><div style="text-align:center"><button class="btn green big" id="go">🚦 All aboard!</button></div>`;
+ if(mode==='load'){$('ad').onclick=()=>{const c=cars[sel];if(c.have>=20)return;c.have++;c.ok=false;Kit.tone(300+c.have*40,.08,'triangle',.1);if(!window.__fast)say(WORD[c.have]||String(c.have));draw()};$('rm').onclick=()=>{const c=cars[sel];if(c.have>0)c.have--;c.ok=false;Kit.tick();draw()}}
+ else $('ui').querySelector('.ct-pick').onclick=e=>{const b=e.target.closest('[data-n]');if(!b)return;cars[sel].guess=+b.dataset.n;cars[sel].ok=false;Kit.tick();sel=Math.min(cars.length-1,sel+1);draw()};
+ $('go').onclick=depart;window.__t={mode,cars:cars.map(c=>({...c})),sel,trips}}
+$('tr').onclick=e=>{const c=e.target.closest('[data-c]');if(c&&!busy){sel=+c.dataset.c;Kit.tick();draw()}};
+async function depart(){if(busy)return;let bad=[];cars.forEach((c,i)=>{c.ok=mode==='load'?c.have===c.want:c.guess===c.have;if(!c.ok)bad.push(i)});draw();
+ if(bad.length){bad.forEach(i=>{const el=$('tr').querySelector(`[data-c="${i}"]`);el.classList.add('no')});const c=cars[bad[0]];$('mg').textContent=mode==='load'?(c.have<c.want?`Car ${c.want} needs ${c.want-c.have} more!`:`Car ${c.want} has too many!`):'Count again! One of the numbers isn\'t right.';sel=bad[0];Kit.tone(180,.25,'sawtooth',.08);return}
+ busy=true;trips++;Kit.set('ct-trips',trips);$('mg').textContent='🎉 Choo choo! Everything is right!';Kit.tada();say('Choo choo!');
+ for(let k=0;k<4;k++){const s=document.createElement('span');s.className='ct-smoke';s.textContent='💨';const r=$('wd').getBoundingClientRect(),en=$('tr').querySelector('.ct-eng').getBoundingClientRect();s.style.left=(en.left-r.left+30)+'px';s.style.top=(en.top-r.top)+'px';s.style.animationDelay=k*.3+'s';$('wd').appendChild(s);setTimeout(()=>s.remove(),3000)}
+ await Kit.sleep(window.__fast?1:400);$('tr').classList.add('go');Kit.confetti(80);window.__t.trips=trips;await Kit.sleep(window.__fast?1:2800);newTrain()}
+$('md').onchange=()=>{mode=$('md').value;Kit.set('ct-mode',mode);newTrain()};$('mx').onchange=()=>{max=+$('mx').value;Kit.set('ct-max',max);newTrain()};
+newTrain();
+</script>
+</body></html>

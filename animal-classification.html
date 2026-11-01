@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Animal Classification</title>
+<style>
+main{max-width:1700px}
+.ac-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:12px}
+.ac-pile{background:#fff;border:5px solid var(--ink);border-radius:22px;padding:10px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;min-height:96px;margin-bottom:14px}
+.ac-a{width:clamp(70px,10vw,92px);border:4px solid var(--ink);border-radius:18px;background:#FFF6E0;display:grid;justify-items:center;padding:4px;cursor:grab;user-select:none;touch-action:none;box-shadow:0 4px 0 var(--ink)}
+.ac-a .e{font-size:clamp(2.2rem,5vw,3rem);line-height:1.1}.ac-a .n{font-weight:800;font-size:.8rem;text-align:center;display:block}
+.ac-a.picked{outline:5px solid var(--sun);transform:translateY(-4px)}
+.ac-a.no{animation:sh .35s}@keyframes sh{25%{transform:translateX(-8px) rotate(-4deg)}75%{transform:translateX(8px) rotate(4deg)}}
+.dz-ghost{position:fixed;pointer-events:none;z-index:80;opacity:.9;transform:rotate(-5deg) scale(1.08)}
+.ac-bins{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:12px}
+.ac-bin{background:var(--bg);border:5px solid var(--ink);border-radius:22px;padding:8px;min-height:190px;display:grid;grid-template-rows:auto 1fr;gap:6px;box-shadow:6px 6px 0 var(--ink);cursor:pointer}
+.ac-bin.hover{outline:6px dashed var(--ink);outline-offset:-12px}
+.ac-bin h3{margin:0;text-align:center;font-size:1.15rem}.ac-bin h3 small{display:block;font-size:.78rem;font-weight:700;color:#55607E}
+.ac-in{display:flex;flex-wrap:wrap;gap:5px;align-content:flex-start;justify-content:center}
+.ac-in .ac-a{width:64px;cursor:default;box-shadow:none}.ac-in .ac-a .e{font-size:2rem}
+.ac-msg{text-align:center;font-weight:900;font-size:clamp(1.1rem,2.6vw,1.4rem);min-height:1.5em;color:#fff;text-shadow:2px 2px 0 var(--ink);margin:8px 0}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🐾", "Animal Classification");
+const $=id=>document.getElementById(id);
+// emoji | name | class | diet | home | legs
+const A=`🐶|Dog|mammal|meat|land|4
+🐄|Cow|mammal|plants|land|4
+🐋|Whale|mammal|meat|water|0
+🦇|Bat|mammal|plants|air|2
+🐒|Monkey|mammal|plants|land|2
+🦁|Lion|mammal|meat|land|4
+🐻|Bear|mammal|both|land|4
+🐭|Mouse|mammal|both|land|4
+🦅|Eagle|bird|meat|air|2
+🐧|Penguin|bird|meat|water|2
+🦜|Parrot|bird|plants|air|2
+🦆|Duck|bird|both|water|2
+🐔|Chicken|bird|both|land|2
+🦉|Owl|bird|meat|air|2
+🐟|Fish|fish|both|water|0
+🦈|Shark|fish|meat|water|0
+🐡|Pufferfish|fish|both|water|0
+🐍|Snake|reptile|meat|land|0
+🐢|Turtle|reptile|both|water|4
+🦎|Lizard|reptile|meat|land|4
+🐊|Crocodile|reptile|meat|water|4
+🐸|Frog|amphibian|meat|water|4
+🦎|Salamander|amphibian|meat|land|4
+🐝|Bee|insect|plants|air|6
+🦋|Butterfly|insect|plants|air|6
+🐞|Ladybug|insect|meat|land|6
+🐜|Ant|insect|both|land|6
+🦗|Cricket|insect|plants|land|6`;
+const ANIMALS=Kit.lines(A).map(l=>{const p=l.split('|');return {e:p[0],n:p[1],class:p[2],diet:p[3],home:p[4],legs:p[5]}});
+const SORTS={class:{name:'🧬 Animal groups',bins:[['mammal','🐾 Mammals','fur, babies drink milk','#FFE7D6'],['bird','🪶 Birds','feathers, lay eggs','#E3F6FF'],['fish','🐟 Fish','gills, scales, fins','#D6F5F0'],['reptile','🦎 Reptiles','dry scales, lay eggs','#E6F8EA'],['amphibian','🐸 Amphibians','live in water, then land','#F0FFD6'],['insect','🐞 Insects','6 legs, 3 body parts','#FFF6C9']],why:{mammal:'Mammals have hair or fur and feed their babies milk.',bird:'Birds have feathers and beaks.',fish:'Fish breathe with gills.',reptile:'Reptiles have dry, scaly skin.',amphibian:'Amphibians start life in water and then live on land too.',insect:'Insects have 6 legs.'}},
+ diet:{name:'🍽️ What they eat',bins:[['plants','🥬 Plant eaters','herbivores','#E6F8EA'],['meat','🍖 Meat eaters','carnivores','#FFE3DE'],['both','🥪 Eat both','omnivores','#FFF6C9']],why:{plants:'eats plants',meat:'eats other animals',both:'eats plants and animals'}},
+ home:{name:'🏞️ Where they live',bins:[['land','🌳 Land','','#E6F8EA'],['water','🌊 Water','','#E3F6FF'],['air','☁️ Air','mostly flies','#F3EEFF']],why:{land:'lives on land',water:'spends lots of time in water',air:'spends lots of time flying'}},
+ legs:{name:'🦵 How many legs?',bins:[['0','0 legs','','#F4F6FA'],['2','2 legs','','#FFF6C9'],['4','4 legs','','#E6F8EA'],['6','6 legs','','#FFE7D6']],why:{0:'has no legs',2:'has 2 legs',4:'has 4 legs',6:'has 6 legs'}}};
+let sort=Kit.get('ac-sort','class'),pile=[],placed={},misses=0;
+function newRound(){const S=SORTS[sort];const keys=S.bins.map(b=>b[0]);pile=Kit.shuffle(ANIMALS.filter(a=>keys.includes(a[sort]))).slice(0,sort==='class'?12:10);placed={};keys.forEach(k=>placed[k]=[]);misses=0;$('mg').textContent='Drag each animal into the right group (or tap an animal, then tap a group).';draw()}
+document.querySelector('main').innerHTML=`<div class="ac-top"><select id="so" style="width:auto">${Object.entries(SORTS).map(([k,v])=>`<option value="${k}">${v.name}</option>`).join('')}</select><button class="btn green" id="nw">🔀 New animals</button></div>
+<div class="ac-pile" id="pl"></div><div class="ac-msg" id="mg"></div><div class="ac-bins" id="bn"></div>`;
+const card=(a,i)=>`<div class="ac-a" data-i="${i}"><span class="e">${a.e}</span><span class="n">${a.n}</span></div>`;
+function draw(){const S=SORTS[sort];$('so').value=sort;
+ $('pl').innerHTML=pile.map((a,i)=>a?card(a,i):'').join('')||'<b style="font-size:1.3rem">🎉 All sorted!</b>';
+ $('bn').innerHTML=S.bins.map(b=>`<div class="ac-bin" data-b="${b[0]}" style="--bg:${b[3]}"><h3>${b[1]}${b[2]?`<small>${b[2]}</small>`:''}</h3><div class="ac-in">${placed[b[0]].map(a=>`<div class="ac-a"><span class="e">${a.e}</span><span class="n">${a.n}</span></div>`).join('')}</div></div>`).join('');
+ window.__t={sort,left:pile.filter(Boolean).length,misses,first:pile.find(Boolean)&&pile.find(Boolean)[sort],firstI:pile.findIndex(Boolean)}}
+Learn.drag(document.querySelector('main'),{item:'#pl .ac-a',zone:'.ac-bin',drop(it,z){const i=+it.dataset.i,a=pile[i],k=z.dataset.b,S=SORTS[sort];
+ if(a[sort]===k){placed[k].push(a);pile[i]=null;Kit.ding();$('mg').textContent=`✅ Yes! The ${a.n.toLowerCase()} ${sort==='class'?`is a ${k}. ${S.why[k]}`:S.why[k]}.`;draw();
+  if(!pile.some(Boolean)){Kit.tada();Kit.confetti(150);$('mg').textContent=misses?`🎉 All sorted! (${misses} oops along the way)`:'🎉 All sorted with no mistakes! Amazing!'}}
+ else{misses++;Kit.tone(180,.25,'sawtooth',.08);it.classList.remove('no');void it.offsetWidth;it.classList.add('no');const right=S.bins.find(b=>b[0]===a[sort]);$('mg').textContent=`🤔 Hmm, not ${S.bins.find(b=>b[0]===k)[1].replace(/^\S+ /,'')}. Think again!${misses%3===0?` (Hint: try ${right[1].replace(/^\S+ /,'')})`:''}`;window.__t.misses=misses}}});
+$('so').onchange=()=>{sort=$('so').value;Kit.set('ac-sort',sort);newRound()};$('nw').onclick=newRound;
+newRound();
+</script>
+</body></html>
