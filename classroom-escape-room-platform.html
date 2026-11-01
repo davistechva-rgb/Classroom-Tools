@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Classroom Escape Room Platform</title>
+<style>
+main{max-width:1900px}
+.ep-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:12px}
+.ep-clock{font:900 clamp(2rem,6vw,3.4rem) Fredoka,sans-serif;color:#fff;background:#1D2B53;border:5px solid var(--ink);border-radius:18px;padding:2px 18px;min-width:5ch;text-align:center}
+.ep-clock.low{background:#E5533F;animation:pl 1s infinite}@keyframes pl{50%{transform:scale(1.05)}}
+.ep-teams{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:12px}
+@media (max-width:1100px){.ep-teams{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px){.ep-teams{grid-template-columns:minmax(0,1fr)}}
+.ep-t{background:#2A2350;border:5px solid var(--ink);border-top:16px solid var(--c);border-radius:22px;box-shadow:6px 6px 0 var(--ink);padding:10px;color:#fff;display:grid;gap:8px;align-content:start}
+.ep-t input.nm{font:900 1.2rem Fredoka,sans-serif;background:transparent;border:0;color:#fff;text-align:center;width:100%}
+.ep-locks{display:flex;gap:3px;justify-content:center;flex-wrap:wrap}
+.ep-locks span{font-size:1.4rem;filter:grayscale(1);opacity:.5}.ep-locks span.open{filter:none;opacity:1}.ep-locks span.cur{filter:none;opacity:1;animation:bob .8s infinite alternate}@keyframes bob{to{transform:translateY(-4px)}}
+.ep-puz{background:#fff;color:var(--ink);border:4px solid var(--ink);border-radius:16px;padding:10px;display:grid;gap:6px;text-align:center}
+.ep-puz .e{font-size:2.4rem;line-height:1}.ep-puz b{font-size:1.05rem}
+.ep-puz input{font:900 1.3rem ui-monospace,Menlo,monospace;text-align:center;padding:5px;border:4px solid var(--ink);border-radius:12px;width:100%;letter-spacing:.15em;text-transform:uppercase}
+.ep-puz.no input{background:#FFD3CC;animation:sh .35s}@keyframes sh{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.ep-hint{background:#FFF6C9;border-radius:10px;padding:4px 8px;font-weight:700;font-size:.9rem}
+.ep-done{text-align:center;font-weight:900;font-size:1.3rem;padding:16px 4px}
+.ep-done .e{font-size:3.4rem}
+.ep-p{background:#fff;border:5px solid var(--ink);border-radius:22px;padding:12px;display:grid;gap:10px}
+.ep-p textarea{width:100%;min-height:280px;font:600 .95rem ui-monospace,Menlo,monospace;border:3px solid var(--ink);border-radius:12px;padding:8px}
+.ep-board{display:grid;gap:5px}.ep-board div{display:flex;justify-content:space-between;font-weight:900;border:3px solid var(--ink);border-radius:12px;padding:4px 10px;background:var(--c);color:#fff;text-shadow:1px 1px 0 #0006}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🧩", "Classroom Escape Room Platform");
+const $=id=>document.getElementById(id);
+const R0=`🔬 | The lab door has a keypad. What is 6 × 7? | 42 | Six groups of seven.
+🧪 | Unscramble the chemical: R E W A T | WATER | You drink it every day.
+📚 | The book code: How many sides do 3 triangles have in all? | 9 | Each triangle has 3.
+🧭 | Which direction does the sun rise? | EAST | Opposite of west.
+🔢 | Next in the pattern: 2, 4, 8, 16, __ | 32 | Each number doubles.
+🗝️ | Riddle: What has keys but can't open locks? | PIANO | You play music on it.`;
+Kit.editable({key:'ep-room',title:'Escape room locks',help:'(one lock per line: emoji | puzzle | answer | hint)',def:R0,onSave:()=>{reset();draw()}});
+const locks=()=>Kit.lines(Kit.get('ed:ep-room',R0)).map(l=>{const p=l.split('|').map(s=>s.trim());return {e:p[0]||'🔒',q:p[1]||'',a:(p[2]||'').toUpperCase(),h:p[3]||'No hint for this one!'}}).filter(x=>x.q&&x.a);
+const COLS=['#E5533F','#1E7FD0','#2E9E47','#9B6BF2','#FF9F43','#FF6B9A'];
+let S=Kit.get('ep-state',null),nT=Kit.get('ep-n',4),mins=Kit.get('ep-min',20),run=null,view='play';
+function reset(){S={teams:Array.from({length:nT},(_,i)=>({n:(S&&S.teams[i]&&S.teams[i].n)||`Team ${i+1}`,at:0,hints:0,shown:false,end:null,miss:0})),left:mins*60,started:false,penalty:60};save()}
+function save(){Kit.set('ep-state',S)}
+if(!S||S.teams.length!==nT)reset();
+const fmt=s=>`${s<0?'-':''}${Math.floor(Math.abs(s)/60)}:${String(Math.abs(s)%60).padStart(2,'0')}`;
+document.querySelector('main').innerHTML=`<div class="ep-top"><span class="ep-clock" id="ck"></span><button class="btn green" id="go">▶ Start</button><button class="btn white small" id="rs">🔄 Reset</button><select id="nt" style="width:auto">${[2,3,4,5,6].map(n=>`<option value="${n}">${n} teams</option>`).join('')}</select><select id="mn" style="width:auto">${[10,15,20,30,45].map(n=>`<option value="${n}">${n} minutes</option>`).join('')}</select><button class="btn white small" id="vw">🏅 Results</button></div><div id="bd"></div>`;
+function elapsed(t){return t.end!=null?t.end:null}
+function draw(){$('nt').value=nT;$('mn').value=mins;$('ck').textContent=fmt(S.left);$('ck').classList.toggle('low',S.left<=60&&S.started);$('go').textContent=run?'⏸ Pause':S.started?'▶ Resume':'▶ Start';const L=locks();
+ if(view==='results'){const T=S.teams.map((t,i)=>({...t,i,score:t.at*100-t.hints*20-(t.end!=null?0:0),time:t.end})).sort((a,b)=>(b.at-a.at)||((a.time??1e9)-(b.time??1e9))||(a.hints-b.hints));
+  $('bd').innerHTML=`<div class="ep-p" style="max-width:700px;margin:0 auto"><b>🏅 Results</b><div class="ep-board">${T.map((t,k)=>`<div style="--c:${COLS[t.i]}"><span>${['🥇','🥈','🥉'][k]||'🏳️'} ${Kit.esc(t.n)}</span><span>${t.at}/${L.length} 🔓 · ${t.hints} 💡${t.time!=null?` · ⏱️ ${fmt(t.time)}`:''}</span></div>`).join('')}</div><button class="btn white" id="bk">⬅ Back to the room</button></div>`;$('bk').onclick=()=>{view='play';draw()};window.__t={view};return}
+ $('bd').innerHTML=`<div class="ep-teams" style="--n:${nT}">${S.teams.map((t,i)=>{const l=L[t.at];return `<div class="ep-t" style="--c:${COLS[i]}" data-t="${i}"><input class="nm" value="${Kit.esc(t.n)}" data-n="${i}" aria-label="Team name"><div class="ep-locks">${L.map((x,k)=>`<span class="${k<t.at?'open':k===t.at?'cur':''}">${k<t.at?'🔓':x.e}</span>`).join('')}</div>
+  ${t.at>=L.length?`<div class="ep-done"><div class="e">🎉</div>Escaped!<br>⏱️ ${fmt(t.end)} · 💡 ${t.hints}</div>`:!S.started?`<div class="ep-puz"><span class="e">🚪</span><b>Waiting for the teacher to start…</b></div>`:S.left<=0?`<div class="ep-done"><div class="e">⏰</div>Time's up! ${t.at}/${L.length} locks</div>`:`<div class="ep-puz" id="pz${i}"><span class="e">${l.e}</span><b>Lock ${t.at+1}: ${Kit.esc(l.q)}</b><input data-a="${i}" placeholder="code" autocomplete="off" aria-label="Answer code"><div class="row" style="gap:4px;justify-content:center"><button class="btn green small" data-c="${i}">🔓 Try</button><button class="btn white small" data-h="${i}">💡 Hint (−1 min)</button></div>${t.shown?`<div class="ep-hint">💡 ${Kit.esc(l.h)}</div>`:''}</div>`}</div>`}).join('')}</div>`;
+ window.__t={view,started:S.started,left:S.left,at:S.teams.map(t=>t.at),hints:S.teams.map(t=>t.hints),answers:L.map(l=>l.a)}}
+function tick(){S.left--;if(S.left<=10&&S.left>0)Kit.tick();if(S.left<=0){S.left=0;clearInterval(run);run=null;Kit.alarm&&Kit.alarm();draw()}else{$('ck').textContent=fmt(S.left);$('ck').classList.toggle('low',S.left<=60);window.__t.left=S.left}save()}
+$('go').onclick=()=>{if(run){clearInterval(run);run=null}else{if(S.left<=0)return;S.started=true;run=setInterval(tick,1000)}save();draw()};
+$('rs').onclick=()=>{if(confirm('Reset every team back to the first lock?')){clearInterval(run);run=null;reset();view='play';draw()}};
+$('nt').onchange=()=>{nT=+$('nt').value;Kit.set('ep-n',nT);clearInterval(run);run=null;reset();draw()};$('mn').onchange=()=>{mins=+$('mn').value;Kit.set('ep-min',mins);if(!S.started){S.left=mins*60;save()}draw()};
+$('vw').onclick=()=>{view=view==='results'?'play':'results';draw()};
+function tryLock(i){const t=S.teams[i],L=locks(),l=L[t.at],inp=$('bd').querySelector(`[data-a="${i}"]`);if(!inp||!inp.value.trim())return;
+ if(inp.value.trim().toUpperCase().replace(/\s+/g,' ')===l.a){t.at++;t.shown=false;Kit.tone(880,.15,'triangle',.12);if(t.at>=L.length){t.end=mins*60-S.left+t.hints*S.penalty;Kit.tada();Kit.confetti(150)}save();draw();const n=$('bd').querySelector(`[data-a="${i}"]`);n&&n.focus()}
+ else{t.miss++;Kit.tone(160,.25,'sawtooth',.08);const p=$('pz'+i);p.classList.remove('no');void p.offsetWidth;p.classList.add('no');inp.select();save()}}
+$('bd').onclick=e=>{const c=e.target.closest('[data-c]'),h=e.target.closest('[data-h]');if(c)tryLock(+c.dataset.c);if(h){const t=S.teams[+h.dataset.h];if(!t.shown){t.shown=true;t.hints++;S.left=S.left;Kit.tick();save();draw()}}};
+$('bd').onkeydown=e=>{if(e.key==='Enter'&&e.target.dataset.a!=null)tryLock(+e.target.dataset.a)};
+$('bd').oninput=e=>{const i=e.target.dataset.n;if(i!=null){S.teams[+i].n=e.target.value;save()}};
+draw();
+</script>
+</body></html>

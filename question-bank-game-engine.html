@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Question Bank + Game Engine</title>
+<style>
+main{max-width:1700px}
+.qe-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:12px}
+.qe-tabs button{font:inherit;font-weight:900;border:4px solid var(--ink);border-radius:99px;padding:6px 14px;background:#fff;cursor:pointer;color:var(--ink)}.qe-tabs button.on{background:var(--sun)}
+.qe-p{background:#fff;border:5px solid var(--ink);border-radius:22px;padding:12px;display:grid;gap:10px}
+.qe-bank{display:grid;grid-template-columns:minmax(0,260px) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:860px){.qe-bank{grid-template-columns:minmax(0,1fr)}}
+.qe-sets{display:grid;gap:5px}.qe-sets button{font:inherit;font-weight:800;border:3px solid var(--ink);border-radius:12px;padding:6px 10px;background:#fff;cursor:pointer;text-align:left;color:var(--ink);display:flex;justify-content:space-between}.qe-sets button.on{background:#9FD8FF}
+.qe-p textarea{width:100%;min-height:300px;font:600 1rem ui-monospace,Menlo,monospace;border:3px solid var(--ink);border-radius:12px;padding:8px}
+.qe-p input[type=text]{font:inherit;font-weight:800;padding:5px 9px;border:3px solid var(--ink);border-radius:10px}
+.qe-game{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:960px){.qe-game{grid-template-columns:minmax(0,1fr)}}
+.qe-stage{background:#1D2B53;border:6px solid var(--ink);border-radius:26px;box-shadow:8px 8px 0 var(--ink);padding:14px;color:#fff;min-height:420px;display:grid;gap:12px;align-content:start}
+.qe-q{background:#fff;color:var(--ink);border:5px solid var(--ink);border-radius:18px;padding:14px;font:900 clamp(1.2rem,3vw,1.7rem) Fredoka,sans-serif;text-align:center}
+.qe-ch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.qe-ch button{font:inherit;font-weight:900;font-size:1.1rem;border:4px solid var(--ink);border-radius:16px;padding:12px;cursor:pointer;color:#fff;text-shadow:1px 1px 0 #0006;background:var(--c)}
+.qe-ch button.ok{outline:5px solid #5DC66E}.qe-ch button.no{opacity:.4}
+.qe-towers{display:flex;gap:16px;justify-content:center;align-items:flex-end;min-height:300px;border-bottom:6px solid #8B5A2B}
+.qe-tw{display:flex;flex-direction:column-reverse;align-items:center;gap:2px}
+.qe-tw i{display:block;width:clamp(50px,9vw,80px);height:22px;border:3px solid var(--ink);border-radius:5px;background:var(--c);animation:drop .35s}@keyframes drop{0%{transform:translateY(-120px)}}
+.qe-tw b{margin-top:6px;font-size:1rem}
+.qe-tw.wob{animation:wob .5s}@keyframes wob{25%{transform:rotate(-6deg)}75%{transform:rotate(6deg)}}
+.qe-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px}
+.qe-grid button{aspect-ratio:1;border:3px solid #0B1430;border-radius:8px;background:#2A8FD8;cursor:pointer;font-size:clamp(1rem,3vw,1.6rem);color:#fff;font-weight:900}
+.qe-grid button.hit{background:#E5533F}.qe-grid button.miss{background:#9FD8FF}.qe-grid button:disabled{cursor:default}
+.qe-score{display:grid;gap:6px}
+.qe-team{display:flex;justify-content:space-between;align-items:center;border:4px solid var(--ink);border-radius:14px;padding:6px 10px;font-weight:900;background:var(--c);color:#fff;text-shadow:1px 1px 0 #0007}
+.qe-team.now{outline:5px solid var(--sun)}
+.qe-msg{font-weight:900;font-size:1.15rem;min-height:1.4em;text-align:center}
+.qe-timer{height:14px;border:3px solid #fff;border-radius:99px;overflow:hidden}.qe-timer i{display:block;height:100%;background:#5DC66E;transition:width .25s linear}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🎯", "Question Bank + Game Engine");
+const $=id=>document.getElementById(id);
+const S0=[{id:1,n:'➗ Math facts',q:`7 × 8 = ? | 56 | 54 | 48 | 64
+9 + 6 = ? | 15 | 14 | 16 | 13
+How many sides does a hexagon have? | 6 | 5 | 8 | 7
+Half of 50 is? | 25 | 20 | 30 | 15
+12 − 5 = ? | 7 | 8 | 6 | 5
+Which is bigger: 0.5 or 0.25? | 0.5 | 0.25 | They are equal | Can't tell
+3 × 9 = ? | 27 | 24 | 21 | 36
+100 ÷ 4 = ? | 25 | 20 | 40 | 24`},{id:2,n:'🌎 Science & world',q:`What do plants need to make food? | Sunlight | Moonlight | Sand | Salt
+Which planet is the red planet? | Mars | Venus | Jupiter | Saturn
+What gas do we breathe in? | Oxygen | Carbon dioxide | Helium | Steam
+Which is a mammal? | Whale | Shark | Frog | Snake
+Water freezes at what °C? | 0 | 10 | 100 | −10
+What is the largest ocean? | Pacific | Atlantic | Indian | Arctic
+How many continents are there? | 7 | 5 | 6 | 8
+What pulls things toward Earth? | Gravity | Magnets | Wind | Light`}];
+const COLS=['#E5533F','#1E7FD0','#2E9E47','#9B6BF2'],CH=['#E5533F','#1E7FD0','#E8A317','#2E9E47'];
+let sets=Kit.get('qe-sets',null)||S0,cur=sets[0].id,tab='bank',game=null,Tm=null;
+const set=()=>sets.find(s=>s.id===cur)||sets[0];
+const qs=()=>Kit.lines(set().q).map(l=>{const p=l.split('|').map(s=>s.trim());return {q:p[0],a:p[1],w:p.slice(2).filter(Boolean)}}).filter(x=>x.q&&x.a);
+function save(){Kit.set('qe-sets',sets)}
+document.querySelector('main').innerHTML=`<div class="qe-top"><div class="qe-tabs" id="tb">${[['bank','📚 Question bank'],['tower','🧱 Tower stack'],['battle','🚢 Grid battle'],['speed','⚡ Speed round']].map(([k,v])=>`<button data-t="${k}">${v}</button>`).join(' ')}</div><select id="st" style="width:auto"></select></div><div id="bd"></div>`;
+function pickQ(){if(!game.pool.length)game.pool=Kit.shuffle(qs());const x=game.pool.pop();const wr=x.w.length?x.w:Kit.shuffle(qs().filter(y=>y.a!==x.a).map(y=>y.a)).slice(0,3);return {...x,ch:Kit.shuffle([x.a,...wr.slice(0,3)])}}
+function newGame(kind){clearInterval(Tm);const nT=kind==='speed'?1:(game&&game.nT)||2;game={kind,nT,turn:0,pool:[],score:Array(4).fill(0),q:null,ans:null,msg:''};
+ if(kind==='battle'){const cells=36,ships=new Set();while(ships.size<10)ships.add(Kit.rand(0,cells-1));game.grid=Array.from({length:cells},(_,i)=>({ship:ships.has(i),open:false}));game.pick=null}
+ if(kind==='speed'){game.left=60;game.streak=0;game.q=pickQ()}
+ if(kind==='tower')game.q=pickQ();draw()}
+function teams(){return `<div class="qe-score">${Array.from({length:game.nT},(_,i)=>`<div class="qe-team ${game.kind!=='speed'&&i===game.turn?'now':''}" style="--c:${COLS[i]}"><span>Team ${i+1}</span><span>${game.score[i]}${game.kind==='tower'?' 🧱':game.kind==='battle'?' 💥':''}</span></div>`).join('')}</div>${game.kind!=='speed'?`<label style="font-weight:800">Teams <select id="nt" style="width:auto">${[2,3,4].map(n=>`<option ${n===game.nT?'selected':''}>${n}</option>`).join('')}</select></label>`:''}`}
+function qhtml(){const q=game.q;if(!q)return '';return `<div class="qe-q">${Kit.esc(q.q)}</div><div class="qe-ch" id="ch">${q.ch.map((c,i)=>`<button data-i="${i}" style="--c:${CH[i]}" class="${game.ans!=null?(c===q.a?'ok':'no'):''}">${Kit.esc(c)}</button>`).join('')}</div>`}
+function draw(){document.querySelectorAll('[data-t]').forEach(b=>b.classList.toggle('on',b.dataset.t===tab));$('st').innerHTML=sets.map(s=>`<option value="${s.id}" ${s.id===cur?'selected':''}>${Kit.esc(s.n)} (${Kit.lines(s.q).length})</option>`).join('');
+ if(tab==='bank'){const s=set();$('bd').innerHTML=`<div class="qe-bank"><div class="qe-p"><b>📚 Question sets</b><div class="qe-sets" id="ss">${sets.map(x=>`<button data-s="${x.id}" class="${x.id===cur?'on':''}"><span>${Kit.esc(x.n)}</span><span>${Kit.lines(x.q).length}</span></button>`).join('')}</div><button class="btn white small" id="ns">➕ New set</button></div>
+  <div class="qe-p"><input type="text" id="sn" value="${Kit.esc(s.n)}" aria-label="Set name"><div class="muted" style="font-weight:700">One question per line: <b>question | right answer | wrong | wrong | wrong</b>. Wrong answers are optional (other answers get mixed in). Every game uses these questions.</div><textarea id="sq">${Kit.esc(s.q)}</textarea><div class="row" style="gap:6px"><button class="btn green" id="sv">💾 Save</button><button class="btn white small" id="cp">📋 Copy share code</button><button class="btn white small" id="im">📥 Paste share code</button><button class="btn white small" id="dl">🗑️ Delete set</button><span class="muted" style="font-weight:800">${qs().length} questions ready</span></div></div></div>`;
+  $('ss').onclick=e=>{const b=e.target.closest('[data-s]');if(b){cur=+b.dataset.s;draw()}};$('ns').onclick=()=>{const n={id:Date.now(),n:'📝 New set',q:''};sets.push(n);cur=n.id;save();draw()};
+  $('sv').onclick=()=>{s.n=$('sn').value.trim()||'My set';s.q=$('sq').value;save();Kit.ding();draw()};$('dl').onclick=()=>{if(sets.length<2)return;if(confirm('Delete this set?')){sets=sets.filter(x=>x!==s);cur=sets[0].id;save();draw()}};
+  $('cp').onclick=()=>{const code=btoa(unescape(encodeURIComponent(JSON.stringify({n:s.n,q:s.q}))));navigator.clipboard&&navigator.clipboard.writeText(code).catch(()=>{});Kit.modal(`<h2 style="margin-top:0">📋 Share code</h2><textarea style="width:100%;min-height:120px">${code}</textarea>`)};
+  $('im').onclick=()=>{const c=prompt('Paste a share code');if(!c)return;try{const o=JSON.parse(decodeURIComponent(escape(atob(c.trim()))));const n={id:Date.now(),n:o.n,q:o.q};sets.push(n);cur=n.id;save();draw()}catch(e){alert('That code did not work.')}};
+  window.__t={tab,sets:sets.length,n:qs().length};return}
+ if(!qs().length){$('bd').innerHTML='<div class="qe-p">Add questions in the 📚 Question bank first.</div>';return}
+ if(!game||game.kind!==tab)return newGame(tab);
+ let stage='';
+ if(tab==='tower')stage=`<div class="qe-towers">${Array.from({length:game.nT},(_,i)=>`<div class="qe-tw" id="tw${i}">${Array(game.score[i]).fill(`<i style="--c:${COLS[i]}"></i>`).join('')}<b>Team ${i+1}</b></div>`).join('')}</div>${qhtml()}`;
+ if(tab==='battle')stage=`<div style="font-weight:800">Team ${game.turn+1}: ${game.q?'answer to fire!':'pick a square to aim at.'} 10 ships are hidden.</div><div class="qe-grid" id="gr">${game.grid.map((c,i)=>`<button data-c="${i}" class="${c.open?(c.ship?'hit':'miss'):''}" ${c.open||game.q?'disabled':''} style="${game.pick===i?'outline:4px solid #FFC93C':''}">${c.open?(c.ship?'💥':'🌊'):''}</button>`).join('')}</div>${qhtml()}`;
+ if(tab==='speed')stage=`<div class="qe-timer"><i style="width:${game.left/60*100}%"></i></div><div style="display:flex;justify-content:space-between;font-weight:900;font-size:1.2rem"><span>⏱️ ${game.left}s</span><span>🔥 ${game.streak}</span><span>⭐ ${game.score[0]}</span></div>${game.left>0?qhtml():`<div class="qe-q">⏰ Time! You scored ${game.score[0]}.</div><button class="btn big green" id="ag">🔁 Again</button>`}`;
+ $('bd').innerHTML=`<div class="qe-game"><div class="qe-stage">${stage}<div class="qe-msg">${Kit.esc(game.msg)}</div></div><div class="qe-p"><b>🏅 Score</b>${teams()}<button class="btn white small" id="rs">🔄 New game</button><div class="muted" style="font-weight:700">${tab==='tower'?'Right answer = add a block to your tower. Wrong = your top block falls off! Tallest tower wins.':tab==='battle'?'Pick a square, then answer. Right answer fires! Find the most ships.':'Answer as many as you can in 60 seconds. Streaks give bonus points!'}</div></div></div>`;
+ bind();window.__t={tab,score:game.score.slice(0,game.nT),turn:game.turn,q:game.q&&game.q.q,a:game.q&&game.q.a,left:game.left,open:game.grid&&game.grid.filter(c=>c.open).length}}
+function bind(){$('rs').onclick=()=>newGame(tab);if($('nt'))$('nt').onchange=()=>{game.nT=+$('nt').value;newGame(tab)};if($('ag'))$('ag').onclick=()=>{newGame('speed');startSpeed()};
+ if($('gr'))$('gr').onclick=e=>{const b=e.target.closest('[data-c]');if(!b||b.disabled)return;game.pick=+b.dataset.c;game.q=pickQ();game.ans=null;game.msg='';Kit.tick();draw()};
+ if($('ch'))$('ch').onclick=e=>{const b=e.target.closest('[data-i]');if(!b||game.ans!=null)return;const c=game.q.ch[+b.dataset.i],ok=c===game.q.a;game.ans=c;const t=game.turn;
+  if(tab==='tower'){if(ok){game.score[t]++;game.msg=`✅ Team ${t+1} adds a block!`;Kit.ding()}else{game.score[t]=Math.max(0,game.score[t]-1);game.msg=`❌ Oops! Team ${t+1}'s top block falls. The answer was ${game.q.a}.`;Kit.tone(160,.3,'sawtooth',.08)}draw();if(!ok){const tw=$('tw'+t);tw&&tw.classList.add('wob')}
+   setTimeout(()=>{game.turn=(game.turn+1)%game.nT;game.q=pickQ();game.ans=null;draw()},window.__fast?1:1400)}
+  if(tab==='battle'){const cell=game.grid[game.pick];if(ok){cell.open=true;if(cell.ship){game.score[t]++;game.msg=`💥 HIT! Team ${t+1} found a ship!`;Kit.tada()}else{game.msg='🌊 Splash! Right answer, but no ship there.';Kit.tick()}}else{game.msg=`❌ Not quite (${game.q.a}). No shot this time.`;Kit.tone(160,.3,'sawtooth',.08)}draw();
+   setTimeout(()=>{game.q=null;game.pick=null;game.ans=null;game.turn=(game.turn+1)%game.nT;if(game.grid.filter(c=>c.ship&&c.open).length===10){const best=Math.max(...game.score.slice(0,game.nT));game.msg=`🏆 All ships found! Team ${game.score.indexOf(best)+1} wins!`;Kit.confetti(150)}draw()},window.__fast?1:1300)}
+  if(tab==='speed'){if(ok){game.streak++;game.score[0]+=1+(game.streak>=3?1:0);Kit.ding()}else{game.streak=0;Kit.tone(160,.2,'sawtooth',.08)}game.msg=ok?(game.streak>=3?'🔥 Streak bonus!':'✅'):`❌ ${game.q.a}`;game.q=pickQ();game.ans=null;draw()}}}
+function startSpeed(){clearInterval(Tm);Tm=setInterval(()=>{if(tab!=='speed'||!game||game.kind!=='speed'){clearInterval(Tm);return}game.left--;if(game.left<=0){clearInterval(Tm);game.left=0;Kit.tada();draw()}else{const bar=document.querySelector('.qe-timer i');if(bar){bar.style.width=game.left/60*100+'%'}const sp=document.querySelector('.qe-stage span');if(sp)sp.textContent=`⏱️ ${game.left}s`;window.__t&&(window.__t.left=game.left)}},1000)}
+$('tb').onclick=e=>{const b=e.target.closest('[data-t]');if(!b)return;tab=b.dataset.t;game=null;clearInterval(Tm);draw();if(tab==='speed')startSpeed()};
+$('st').onchange=()=>{cur=+$('st').value;game=null;draw();if(tab==='speed')startSpeed()};
+window.__qe={time:s=>{game.left=s}};
+draw();
+</script>
+</body></html>

@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Interactive Study Platform</title>
+<style>
+main{max-width:1500px}
+.sp{display:grid;grid-template-columns:minmax(0,280px) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.sp{grid-template-columns:minmax(0,1fr)}}
+.sp-p{background:#fff;border:5px solid var(--ink);border-radius:22px;padding:12px;display:grid;gap:10px}
+.sp-decks{display:grid;gap:5px}
+.sp-decks button{font:inherit;font-weight:800;border:3px solid var(--ink);border-radius:12px;padding:6px 10px;background:#fff;cursor:pointer;text-align:left;color:var(--ink);display:flex;justify-content:space-between;gap:6px}
+.sp-decks button.on{background:var(--sun)}
+.sp-modes{display:flex;gap:6px;flex-wrap:wrap}
+.sp-modes button{font:inherit;font-weight:900;border:4px solid var(--ink);border-radius:99px;padding:6px 14px;background:#fff;cursor:pointer;color:var(--ink)}.sp-modes button.on{background:#9FD8FF}
+.sp-main{background:#fff;border:6px solid var(--ink);border-radius:26px;box-shadow:8px 8px 0 var(--ink);padding:16px;display:grid;gap:14px;min-height:460px;align-content:start}
+.sp-boxes{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.sp-boxes div{border:3px solid var(--ink);border-radius:12px;text-align:center;padding:4px;font-weight:900;background:var(--c)}
+.sp-boxes small{display:block;font-size:.7rem;font-weight:700}
+.sp-card{perspective:1200px;height:clamp(220px,34vw,300px);cursor:pointer}
+.sp-in{position:relative;width:100%;height:100%;transition:transform .5s;transform-style:preserve-3d}
+.sp-card.flip .sp-in{transform:rotateY(180deg)}
+.sp-face{position:absolute;inset:0;backface-visibility:hidden;border:5px solid var(--ink);border-radius:22px;display:grid;place-items:center;padding:16px;text-align:center;font:900 clamp(1.4rem,4vw,2.3rem) Fredoka,sans-serif;background:#FFF6E0}
+.sp-face.b{transform:rotateY(180deg);background:#E3F6FF;font-size:clamp(1.1rem,3vw,1.7rem)}
+.sp-face small{position:absolute;top:10px;left:14px;font-size:.8rem;font-weight:800;color:#55607E}
+.sp-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+@media (max-width:600px){.sp-choices{grid-template-columns:minmax(0,1fr)}}
+.sp-choices button{font:inherit;font-weight:800;font-size:1.1rem;border:4px solid var(--ink);border-radius:16px;padding:12px;background:#fff;cursor:pointer;color:var(--ink);text-align:left}
+.sp-choices button.ok{background:#C8F3D0}.sp-choices button.no{background:#FFD3CC}
+.sp-q{font:900 clamp(1.4rem,4vw,2rem) Fredoka,sans-serif;text-align:center;background:#FFF6E0;border:4px solid var(--ink);border-radius:18px;padding:16px}
+.sp-match{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.sp-match button{font:inherit;font-weight:800;min-height:80px;border:4px solid var(--ink);border-radius:16px;background:#fff;cursor:pointer;color:var(--ink);padding:6px}
+.sp-match button.sel{background:var(--sun)}.sp-match button.gone{visibility:hidden}.sp-match button.no{background:#FFD3CC}
+.sp-test{display:grid;gap:8px}.sp-test label{display:grid;gap:3px;font-weight:800}
+.sp-test input{font:inherit;padding:6px 10px;border:3px solid var(--ink);border-radius:10px}
+.sp-test .ok input{background:#C8F3D0}.sp-test .no input{background:#FFD3CC}
+.sp-msg{font-weight:900;font-size:1.15rem;text-align:center;min-height:1.4em}
+.sp-ed textarea{width:100%;min-height:230px;font:inherit;font-weight:600;border:3px solid var(--ink);border-radius:12px;padding:8px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🧠", "Interactive Study Platform");
+const $=id=>document.getElementById(id);
+const D0=[{id:1,n:'🌎 Planets',c:`Mercury | closest planet to the sun
+Venus | hottest planet
+Earth | the planet we live on
+Mars | the red planet
+Jupiter | biggest planet
+Saturn | planet with bright rings
+Uranus | planet that spins on its side
+Neptune | windiest, farthest planet`},{id:2,n:'🇪🇸 Spanish words',c:`hola | hello
+gracias | thank you
+perro | dog
+gato | cat
+casa | house
+agua | water
+rojo | red
+libro | book`},{id:3,n:'🔬 Science words',c:`habitat | the natural home of an animal or plant
+predator | an animal that hunts other animals
+evaporation | when a liquid turns into a gas
+photosynthesis | how plants make food from sunlight
+gravity | the force that pulls things together
+fossil | the remains of a living thing from long ago`}];
+let decks=Kit.get('sp-decks',null)||D0,cur=decks[0].id,mode='cards',box=Kit.get('sp-box',{}),q=null,ix=0,flip=false,match=null,test=null,stats={ok:0,no:0};
+const deck=()=>decks.find(d=>d.id===cur)||decks[0];
+const cards=()=>Kit.lines(deck().c).map(l=>{const p=l.split('|').map(s=>s.trim());return {t:p[0],d:p[1]||''}}).filter(c=>c.t&&c.d);
+const bx=c=>(box[cur]||{})[c.t]||1;const setBx=(c,v)=>{box[cur]=box[cur]||{};box[cur][c.t]=Math.max(1,Math.min(5,v));Kit.set('sp-box',box)};
+const COL=['#FFD3CC','#FFE29A','#FFF6C9','#BDE6FF','#C8F3D0'];
+function save(){Kit.set('sp-decks',decks)}
+// the next card: lowest box first, randomized within the box
+function nextCard(){const C=cards();if(!C.length)return null;const lo=Math.min(...C.map(bx));const pool=C.filter(c=>bx(c)===lo&&(!q||c.t!==q.t||C.length===1));return Kit.pick(pool.length?pool:C)}
+document.querySelector('main').innerHTML=`<div class="sp"><div class="sp-p"><b>📚 Decks</b><div class="sp-decks" id="dk"></div><button class="btn white small" id="nd">➕ New deck</button></div><div class="sp-main" id="mn"></div></div>`;
+function side(){$('dk').innerHTML=decks.map(d=>{const C=Kit.lines(d.c).length;const m=Object.values(box[d.id]||{}).filter(v=>v>=5).length;return `<button data-d="${d.id}" class="${d.id===cur?'on':''}"><span>${Kit.esc(d.n)}</span><span>${m}/${C} ⭐</span></button>`}).join('')}
+function head(){const C=cards();const n=[1,2,3,4,5].map(k=>C.filter(c=>bx(c)===k).length);return `<div class="sp-modes">${[['cards','🃏 Flashcards'],['learn','🧠 Learn'],['match','🧩 Match'],['test','📝 Test'],['edit','✏️ Edit deck']].map(([k,v])=>`<button data-m="${k}" class="${mode===k?'on':''}">${v}</button>`).join('')}</div><div class="sp-boxes">${n.map((v,i)=>`<div style="--c:${COL[i]}">${v}<small>${['New','Learning','Getting it','Almost','Mastered ⭐'][i]}</small></div>`).join('')}</div>`}
+function draw(){side();const C=cards();let h=head();
+ if(!C.length&&mode!=='edit'){mode='edit';return draw()}
+ if(mode==='cards'){if(!q)q=nextCard();h+=`<div class="sp-card ${flip?'flip':''}" id="fc"><div class="sp-in"><div class="sp-face"><small>Box ${bx(q)} · tap to flip</small>${Kit.esc(q.t)}</div><div class="sp-face b">${Kit.esc(q.d)}</div></div></div><div class="row" style="gap:8px;justify-content:center">${flip?`<button class="btn big" style="background:#FFD3CC" id="no">😕 Still learning</button><button class="btn big green" id="ok">😄 I knew it!</button>`:`<button class="btn big" style="background:var(--sun)" id="fl">🔄 Flip</button>`}</div><div class="sp-msg" id="mg">✅ ${stats.ok} · 🔁 ${stats.no}</div>`}
+ if(mode==='learn'){if(!q||q.done){const c=nextCard();const wrong=Kit.shuffle(C.filter(x=>x.t!==c.t)).slice(0,3);q={...c,ch:Kit.shuffle([c,...wrong]),done:false}}h+=`<div class="sp-q">${Kit.esc(q.d)}</div><div class="sp-choices" id="ch">${q.ch.map((c,i)=>`<button data-i="${i}">${Kit.esc(c.t)}</button>`).join('')}</div><div class="sp-msg" id="mg">Which word matches?</div>`}
+ if(mode==='match'){if(!match){const pick=Kit.shuffle(C).slice(0,6);match={tiles:Kit.shuffle(pick.flatMap((c,i)=>[{k:i,s:c.t},{k:i,s:c.d}])),sel:null,gone:0,t0:Date.now(),miss:0}}h+=`<div class="sp-match" id="mt">${match.tiles.map((t,i)=>`<button data-i="${i}" class="${t.g?'gone':''} ${match.sel===i?'sel':''}">${Kit.esc(t.s)}</button>`).join('')}</div><div class="sp-msg" id="mg">${match.gone===match.tiles.length?`🎉 Done in ${Math.round((match.done-match.t0)/1000)} seconds! ${match.miss} misses.`:'Match each word to its meaning!'}</div>${match.gone===match.tiles.length?'<div style="text-align:center"><button class="btn green" id="ag">🔁 Play again</button></div>':''}`}
+ if(mode==='test'){if(!test)test={qs:Kit.shuffle(C).slice(0,Math.min(8,C.length)).map(c=>({...c,a:'',r:null})),done:false};h+=`<div class="sp-test" id="ts">${test.qs.map((x,i)=>`<label class="${x.r==null?'':x.r?'ok':'no'}">${i+1}. ${Kit.esc(x.d)}<input data-i="${i}" value="${Kit.esc(x.a)}" ${test.done?'readonly':''} autocomplete="off">${x.r===false?`<small style="color:#E5533F">Answer: ${Kit.esc(x.t)}</small>`:''}</label>`).join('')}</div><div class="row" style="gap:8px;justify-content:center">${test.done?'<button class="btn green" id="tn">🔁 New test</button>':'<button class="btn green" id="tc">✅ Grade my test</button>'}</div><div class="sp-msg" id="mg">${test.done?`📝 Score: ${test.qs.filter(x=>x.r).length} / ${test.qs.length}`:''}</div>`}
+ if(mode==='edit'){const d=deck();h+=`<div class="sp-ed sp-test"><label>Deck name<input id="en" value="${Kit.esc(d.n)}"></label><label>Cards (one per line: word | meaning)<textarea id="ec">${Kit.esc(d.c)}</textarea></label><div class="row" style="gap:6px"><button class="btn green" id="es">💾 Save deck</button><button class="btn white small" id="er">↺ Reset progress</button><button class="btn white small" id="ex">🗑️ Delete deck</button></div></div>`}
+ $('mn').innerHTML=h;bind();window.__t={mode,deck:deck().n,card:q&&q.t,boxes:Object.fromEntries(C.map(c=>[c.t,bx(c)])),stats:{...stats},match:match&&match.gone,test:test&&test.done?test.qs.filter(x=>x.r).length:null}}
+function bind(){$('mn').querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{mode=b.dataset.m;q=null;flip=false;match=null;test=null;draw()});
+ if(mode==='cards'){$('fc').onclick=()=>{flip=!flip;draw()};if($('fl'))$('fl').onclick=()=>{flip=true;draw()};
+  if($('ok'))$('ok').onclick=()=>{setBx(q,bx(q)+1);stats.ok++;Kit.ding();q=nextCard();flip=false;draw()};if($('no'))$('no').onclick=()=>{setBx(q,1);stats.no++;Kit.tick();q=nextCard();flip=false;draw()}}
+ if(mode==='learn')$('ch').onclick=e=>{const b=e.target.closest('[data-i]');if(!b||q.done)return;const c=q.ch[+b.dataset.i],ok=c.t===q.t;q.done=true;b.classList.add(ok?'ok':'no');if(!ok)[...$('ch').children].find(x=>x.textContent===q.t).classList.add('ok');
+  setBx(q,ok?bx(q)+1:1);ok?(stats.ok++,Kit.ding()):(stats.no++,Kit.tone(180,.25,'sawtooth',.08));$('mg').textContent=ok?'✅ Yes!':`The answer is ${q.t}.`;setTimeout(()=>{if(mode==='learn')draw()},window.__fast?1:1100);window.__t.stats={...stats}};
+ if(mode==='match'){$('mt').onclick=e=>{const b=e.target.closest('[data-i]');if(!b)return;const i=+b.dataset.i,t=match.tiles[i];if(t.g)return;if(match.sel==null||match.sel===i){match.sel=match.sel===i?null:i;Kit.tick();draw();return}
+  const o=match.tiles[match.sel];if(o.k===t.k){o.g=t.g=true;match.gone+=2;match.sel=null;Kit.ding();if(match.gone===match.tiles.length){match.done=Date.now();Kit.tada();Kit.confetti(90)}draw()}else{match.miss++;Kit.tone(180,.2,'sawtooth',.08);b.classList.add('no');match.sel=null;setTimeout(draw,window.__fast?1:400)}};if($('ag'))$('ag').onclick=()=>{match=null;draw()}}
+ if(mode==='test'){$('ts').oninput=e=>{const i=e.target.dataset.i;if(i!=null)test.qs[+i].a=e.target.value};
+  if($('tc'))$('tc').onclick=()=>{test.qs.forEach(x=>{x.r=x.a.trim().toLowerCase()===x.t.toLowerCase();setBx(x,x.r?bx(x)+1:1)});test.done=true;const s=test.qs.filter(x=>x.r).length;if(s===test.qs.length){Kit.tada();Kit.confetti(120)}draw()};if($('tn'))$('tn').onclick=()=>{test=null;draw()}}
+ if(mode==='edit'){$('es').onclick=()=>{const d=deck();d.n=$('en').value.trim()||'My deck';d.c=$('ec').value;save();Kit.ding();q=null;mode=cards().length?'cards':'edit';draw()};$('er').onclick=()=>{delete box[cur];Kit.set('sp-box',box);draw()};
+  $('ex').onclick=()=>{if(decks.length<2){alert('Keep at least one deck.');return}if(confirm('Delete this deck?')){decks=decks.filter(d=>d.id!==cur);cur=decks[0].id;save();mode='cards';q=null;draw()}}}}
+$('dk').onclick=e=>{const b=e.target.closest('[data-d]');if(b){cur=+b.dataset.d;q=null;match=null;test=null;flip=false;stats={ok:0,no:0};if(mode==='edit')mode='cards';draw()}};
+$('nd').onclick=()=>{const d={id:Date.now(),n:'📒 My new deck',c:''};decks.push(d);cur=d.id;save();mode='edit';q=null;draw()};
+draw();
+</script>
+</body></html>

@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Classroom RPG</title>
+<style>
+main{max-width:1800px}
+.rp-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:12px}
+.rp{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:980px){.rp{grid-template-columns:minmax(0,1fr)}}
+.rp-arena{background:radial-gradient(ellipse at 50% 90%,#4E7D3A,#22401C 60%),#22401C;border:6px solid var(--ink);border-radius:28px;box-shadow:8px 8px 0 var(--ink);padding:14px;color:#fff;display:grid;gap:10px;position:relative;overflow:hidden;background-image:linear-gradient(#2A2350 0 45%,transparent 45%),radial-gradient(ellipse at 50% 90%,#4E7D3A,#22401C 70%)}
+.rp-mon{display:grid;justify-items:center;gap:4px}
+.rp-mon .e{font-size:clamp(5rem,14vw,8.5rem);line-height:1;transition:transform .2s}
+.rp-mon .e.hurt{animation:hurt .4s}@keyframes hurt{30%{transform:translateX(-14px) rotate(-8deg);filter:brightness(2.2)}70%{transform:translateX(10px)}}
+.rp-mon .e.atk{animation:atk .5s}@keyframes atk{40%{transform:translateY(40px) scale(1.25)}}
+.rp-name{font:900 1.4rem Fredoka,sans-serif;text-shadow:2px 2px 0 #000}
+.rp-hp{width:min(420px,90%);height:22px;border:4px solid #fff;border-radius:99px;background:#0006;overflow:hidden}.rp-hp i{display:block;height:100%;background:var(--c,linear-gradient(90deg,#E5533F,#FF9F43));transition:width .5s}
+.rp-party{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.rp-h{background:#fff;color:var(--ink);border:4px solid var(--ink);border-radius:16px;padding:4px 8px;display:grid;justify-items:center;min-width:86px;cursor:pointer;font-weight:800;font-size:.85rem}
+.rp-h .e{font-size:2rem;line-height:1.1}.rp-h.now{outline:5px solid var(--sun);transform:translateY(-6px)}.rp-h.ko{opacity:.35}
+.rp-q{background:#fff;color:var(--ink);border:5px solid var(--ink);border-radius:18px;padding:12px;text-align:center;font:900 clamp(1.15rem,3vw,1.6rem) Fredoka,sans-serif}
+.rp-ch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.rp-ch button{font:inherit;font-weight:900;border:4px solid var(--ink);border-radius:14px;padding:10px;background:#FFF6E0;cursor:pointer;color:var(--ink);font-size:1.05rem}
+.rp-ch button.ok{background:#C8F3D0}.rp-ch button.no{background:#FFD3CC}
+.rp-log{background:#0007;border-radius:14px;padding:6px 10px;font-weight:700;max-height:110px;overflow:auto;font-size:.92rem}
+.rp-dmg{position:absolute;font:900 2.4rem Fredoka,sans-serif;text-shadow:3px 3px 0 #000;pointer-events:none;animation:fl 1s forwards;z-index:5}@keyframes fl{to{transform:translateY(-70px);opacity:0}}
+.rp-p{background:#fff;border:5px solid var(--ink);border-radius:22px;padding:12px;display:grid;gap:10px}
+.rp-map{display:flex;gap:4px;flex-wrap:wrap}
+.rp-map span{width:44px;height:44px;border:3px solid var(--ink);border-radius:12px;display:grid;place-items:center;font-size:1.5rem;background:#E3E8F2;filter:grayscale(1);opacity:.5}
+.rp-map span.beat{filter:none;opacity:1;background:#C8F3D0}.rp-map span.cur{filter:none;opacity:1;background:#FFF6C9;outline:4px solid var(--sun)}
+.rp-pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:5px;max-height:240px;overflow:auto}
+.rp-pick label{display:flex;gap:5px;align-items:center;font-weight:800;border:3px solid var(--ink);border-radius:10px;padding:3px 6px;font-size:.9rem}
+.rp-items{display:flex;gap:6px;flex-wrap:wrap}
+.rp-items button{font:inherit;font-weight:800;border:3px solid var(--ink);border-radius:12px;padding:4px 10px;background:#fff;cursor:pointer;color:var(--ink)}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script><script src="rewards.js"></script>
+<script>
+Kit.mount("🏆", "Classroom RPG");
+const $=id=>document.getElementById(id);
+const CLS={knight:['🛡️','Knight',3,'Hits hard'],wizard:['🧙','Wizard',2,'Sometimes casts a giant spell'],healer:['💚','Healer',1,'Heals the party too'],archer:['🏹','Archer',2,'Hits twice'],ninja:['🥷','Ninja',2,'Can dodge attacks']};
+const MON=[['🐀','Giant Rat',8],['🕷️','Cave Spider',12],['🧌','Bridge Troll',16],['🦂','Desert Scorpion',20],['🧟','Homework Zombie',24],['🐺','Shadow Wolf',28],['🐙','Lake Kraken',34],['🐉','Ancient Dragon',42]];
+const QB0=`7 × 6 = ? | 42 | 36 | 48 | 40
+What is the opposite of "hot"? | cold | warm | wet | dry
+How many legs does a spider have? | 8 | 6 | 10 | 4
+15 + 7 = ? | 22 | 21 | 23 | 12
+Which is a noun? | dog | run | quickly | blue
+What do bees make? | honey | milk | silk | wax paper
+9 × 9 = ? | 81 | 72 | 99 | 89
+What is H2O? | water | salt | air | gold`;
+let S=Kit.get('rpg',null)||{party:[],cls:{},hp:30,max:30,stage:0,mhp:MON[0][2],pot:2,log:[],turn:0},q=null,ans=null,busy=false;
+function save(){Kit.set('rpg',S)}
+function bank(){const sets=Kit.get('qe-sets',null);const txt=sets?sets.map(s=>s.q).join('\n'):QB0;return Kit.lines(txt).map(l=>{const p=l.split('|').map(s=>s.trim());return {q:p[0],a:p[1],w:p.slice(2).filter(Boolean)}}).filter(x=>x.q&&x.a)}
+function newQ(){const B=bank(),x=Kit.pick(B);const wr=x.w.length?x.w:Kit.shuffle(B.filter(y=>y.a!==x.a).map(y=>y.a)).slice(0,3);q={...x,ch:Kit.shuffle([x.a,...wr.slice(0,3)])};ans=null}
+function log(t){S.log.unshift(t);S.log=S.log.slice(0,30)}
+const clsOf=k=>S.cls[k]||Object.keys(CLS)[[...k].reduce((a,c)=>a+c.charCodeAt(0),0)%5];
+document.querySelector('main').innerHTML=`<div class="rp"><div class="rp-arena" id="ar"></div><div class="rp-p" id="sd"></div></div>`;
+function fly(el,t,c){const r=el.getBoundingClientRect(),a=$('ar').getBoundingClientRect(),d=document.createElement('div');d.className='rp-dmg';d.textContent=t;d.style.color=c;d.style.left=(r.left-a.left+r.width/2-20)+'px';d.style.top=(r.top-a.top)+'px';$('ar').appendChild(d);setTimeout(()=>d.remove(),1000)}
+function draw(){const m=MON[S.stage%MON.length],lvl=Math.floor(S.stage/MON.length),mmax=m[2]+lvl*20,P=S.party,hero=P[S.turn%Math.max(1,P.length)];
+ if(!P.length){$('ar').innerHTML=`<div class="rp-mon"><span class="e">🏰</span><div class="rp-name">Choose your party of heroes →</div><div style="font-weight:700;text-align:center;max-width:420px">Pick students for the party. Answer questions right to attack the monster. Wrong answers let the monster strike back!</div></div>`}
+ else{if(!q)newQ();$('ar').innerHTML=`<div class="rp-mon"><div class="rp-name">${m[0]} ${m[1]}${lvl?` +${lvl}`:''}</div><span class="e" id="mon">${S.mhp<=0?'💀':m[0]}</span><div class="rp-hp"><i style="width:${Math.max(0,S.mhp)/mmax*100}%"></i></div><div style="font-weight:900">👹 ${Math.max(0,S.mhp)} / ${mmax}</div></div>
+  <div class="rp-party" id="pt">${P.map((k,i)=>{const c=CLS[clsOf(k)];return `<div class="rp-h ${i===S.turn%P.length?'now':''}" data-h="${i}"><span class="e">${c[0]}</span>${Kit.esc(k)}</div>`}).join('')}</div>
+  <div class="rp-hp" style="--c:linear-gradient(90deg,#5DC66E,#22C3E6);margin:0 auto"><i style="width:${S.hp/S.max*100}%"></i></div><div style="text-align:center;font-weight:900">💚 Party ${S.hp} / ${S.max}</div>
+  ${S.hp<=0?`<div class="rp-q">😵 The party fainted! <button class="btn green" id="rv">✨ Rest and try again</button></div>`:S.mhp<=0?`<div class="rp-q">🏆 Victory! <button class="btn green" id="nx">⚔️ Next monster</button></div>`:`<div class="rp-q">${CLS[clsOf(hero)][0]} ${Kit.esc(hero)}'s turn!<br>${Kit.esc(q.q)}</div><div class="rp-ch" id="ch">${q.ch.map((c,i)=>`<button data-i="${i}" class="${ans!=null?(c===q.a?'ok':c===ans?'no':''):''}">${Kit.esc(c)}</button>`).join('')}</div>`}
+  <div class="rp-log">${S.log.map(l=>`<div>${Kit.esc(l)}</div>`).join('')}</div>`}
+ const K=RW.kids();$('sd').innerHTML=`<b>🗺️ Adventure map</b><div class="rp-map">${MON.map((x,i)=>`<span class="${i<S.stage%MON.length||lvl>0&&i>=S.stage%MON.length?'beat':i===S.stage%MON.length?'cur':''}" title="${x[1]}">${x[0]}</span>`).join('')}</div>
+ <b>🎒 Items</b><div class="rp-items"><button id="po" ${S.pot&&P.length?'':'disabled'}>🧪 Potion ×${S.pot} (+10 💚)</button></div>
+ <b>🧑‍🤝‍🧑 Party (${P.length})</b><div class="rp-pick" id="pk">${K.map(k=>`<label><input type="checkbox" data-k="${Kit.esc(k)}" ${P.includes(k)?'checked':''}> ${CLS[clsOf(k)][0]} ${Kit.esc(k)}</label>`).join('')}</div>
+ <div class="row" style="gap:6px"><button class="btn white small" id="al">✅ Whole class</button><button class="btn white small" id="nn">🧽 Nobody</button></div>
+ <b>🎭 Hero classes</b><div style="display:grid;gap:3px;font-weight:700;font-size:.9rem">${Object.entries(CLS).map(([k,c])=>`<div>${c[0]} <b>${c[1]}</b>: ${c[3]}</div>`).join('')}</div><div class="muted" style="font-weight:700">Tap a hero in the battle to change their class. Questions come from the 🎯 Question Bank tool if you've made one.</div><button class="btn white small" id="rs">🔄 Start the adventure over</button>`;
+ bind();window.__t={party:P.length,hp:S.hp,mhp:S.mhp,stage:S.stage,turn:S.turn,a:q&&q.a,pot:S.pot}}
+function bind(){$('pk').onchange=e=>{const k=e.target.dataset.k;if(!k)return;S.party=e.target.checked?[...S.party,k]:S.party.filter(x=>x!==k);save();draw()};
+ $('al').onclick=()=>{S.party=RW.kids();save();draw()};$('nn').onclick=()=>{S.party=[];save();draw()};
+ $('po').onclick=()=>{if(!S.pot)return;S.pot--;S.hp=Math.min(S.max,S.hp+10);log('🧪 The party drank a potion. +10 💚');Kit.ding();save();draw()};
+ $('rs').onclick=()=>{if(confirm('Start over from the first monster?')){S={party:S.party,cls:S.cls,hp:30,max:30,stage:0,mhp:MON[0][2],pot:2,log:[],turn:0};save();q=null;draw()}};
+ const pt=$('pt');if(pt)pt.onclick=e=>{const h=e.target.closest('[data-h]');if(!h)return;const k=S.party[+h.dataset.h];const ks=Object.keys(CLS);S.cls[k]=ks[(ks.indexOf(clsOf(k))+1)%ks.length];save();draw()};
+ if($('rv'))$('rv').onclick=()=>{S.hp=S.max;const m=MON[S.stage%MON.length];S.mhp=m[2]+Math.floor(S.stage/MON.length)*20;log('✨ The party rested and tried again.');save();q=null;draw()};
+ if($('nx'))$('nx').onclick=()=>{S.stage++;const m=MON[S.stage%MON.length];S.mhp=m[2]+Math.floor(S.stage/MON.length)*20;S.hp=Math.min(S.max,S.hp+8);save();q=null;draw()};
+ const ch=$('ch');if(ch)ch.onclick=async e=>{const b=e.target.closest('[data-i]');if(!b||busy||ans!=null)return;busy=true;ans=q.ch[+b.dataset.i];const hero=S.party[S.turn%S.party.length],c=clsOf(hero),ok=ans===q.a;draw();
+  if(ok){let d=CLS[c][2]+Kit.rand(0,1),extra='';if(c==='wizard'&&Math.random()<.35){d+=4;extra=' ✨ Giant spell!'}if(c==='archer')d+=CLS[c][2];if(c==='healer'){S.hp=Math.min(S.max,S.hp+3);extra=' 💚 +3 heal'}
+   S.mhp-=d;log(`⚔️ ${hero} hit for ${d}!${extra}`);Kit.tone(660,.1,'square',.1);const m=$('mon');if(m){m.classList.add('hurt');fly(m,'−'+d,'#FFD84D')}
+   if(S.mhp<=0){const m2=MON[S.stage%MON.length];log(`🏆 The party defeated the ${m2[1]}! Everyone gets ${5+S.stage} XP.`);S.party.forEach(k=>RW.addXP(k,5+S.stage,`RPG: ${m2[1]}`));if(Math.random()<.5){S.pot++;log('🎁 Found a potion!')}Kit.tada();Kit.confetti(150)}}
+  else{const dodge=c==='ninja'&&Math.random()<.5;const d=dodge?0:3+Math.floor(S.stage/2);S.hp=Math.max(0,S.hp-d);log(dodge?`🥷 ${hero} dodged! (The answer was ${q.a}.)`:`👹 Ouch! The monster hit the party for ${d}. (The answer was ${q.a}.)`);Kit.tone(150,.3,'sawtooth',.1);const m=$('mon');if(m)m.classList.add('atk')}
+  save();await Kit.sleep(window.__fast?1:1300);S.turn++;q=null;busy=false;save();draw()}}
+window.__r={go:()=>{}};
+draw();
+</script>
+</body></html>

@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Student Progress Dashboard</title>
+<style>
+main{max-width:1800px}
+.pd-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:12px}
+.pd-kids{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;margin-bottom:12px}
+.pd-kids button{font:inherit;font-weight:800;border:3px solid var(--ink);border-radius:99px;padding:3px 12px;background:#fff;cursor:pointer;color:var(--ink)}.pd-kids button.on{background:var(--sun)}
+.pd-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px}
+.pd-p{grid-column:span 4;background:#fff;border:5px solid var(--ink);border-radius:22px;box-shadow:6px 6px 0 var(--ink);padding:12px 14px;display:grid;gap:8px;align-content:start;min-width:0}
+.pd-p.w6{grid-column:span 6}.pd-p.w8{grid-column:span 8}.pd-p.w12{grid-column:span 12}
+@media (max-width:1000px){.pd-p,.pd-p.w6,.pd-p.w8{grid-column:span 6}}
+@media (max-width:680px){.pd-grid>*{grid-column:1/-1 !important}}
+.pd-p h3{margin:0;font-size:1.1rem}
+.pd-hero{display:flex;gap:14px;align-items:center}
+.pd-hero .av{font-size:4rem;line-height:1}
+.pd-hero .nm{font:900 clamp(1.6rem,4vw,2.4rem) Fredoka,sans-serif}
+.pd-big{font:900 2.2rem Fredoka,sans-serif;line-height:1}
+.pd-bar{height:18px;border:3px solid var(--ink);border-radius:99px;background:#E3E8F2;overflow:hidden}.pd-bar i{display:block;height:100%;background:var(--c,linear-gradient(90deg,#5DC66E,#22C3E6))}
+.pd-list{display:grid;gap:4px;max-height:220px;overflow:auto}
+.pd-list div{display:flex;justify-content:space-between;gap:6px;align-items:center;font-weight:700;background:#F4FAFF;border-radius:10px;padding:3px 9px}
+.pd-badges{display:flex;flex-wrap:wrap;gap:6px}
+.pd-badges span{font-size:1.9rem;filter:grayscale(1);opacity:.3}.pd-badges span.got{filter:none;opacity:1}
+.pd-skill{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;align-items:center;font-weight:800}
+.pd-lv{display:flex;gap:3px}.pd-lv button{width:30px;height:30px;border:3px solid var(--ink);border-radius:8px;background:#fff;cursor:pointer;font-weight:900;font-size:.8rem;color:var(--ink)}
+.pd-lv button.on{background:var(--c)}
+.pd-note{font:inherit;font-weight:600;width:100%;min-height:110px;border:3px solid var(--ink);border-radius:12px;padding:8px}
+.pd-chart{display:flex;align-items:flex-end;gap:3px;height:120px;border-bottom:3px solid var(--ink);padding-top:16px}
+.pd-chart div{flex:1;background:#9B6BF2;border-radius:5px 5px 0 0;position:relative;min-height:2px}
+.pd-chart div span{position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-size:.7rem;font-weight:900}
+.pd-ax{display:flex;gap:3px;font-size:.65rem;font-weight:800;color:#55607E}.pd-ax span{flex:1;text-align:center}
+.pd-tbl{width:100%;border-collapse:collapse;font-weight:800;font-size:.95rem}
+.pd-tbl th{background:var(--ink);color:#fff;padding:5px;position:sticky;top:0}.pd-tbl td{padding:4px 6px;border-bottom:2px solid #E3E8F2;text-align:center}.pd-tbl td:first-child{text-align:left}
+.pd-tbl tr{cursor:pointer}.pd-tbl tr.on td{background:#FFF6C9}
+.pd-heat{display:inline-block;width:22px;height:22px;border-radius:6px;border:2px solid var(--ink);vertical-align:middle}
+.pd-empty{color:#55607E;font-weight:700}
+@media print{.pd-top,.pd-kids,.site-head,header,footer{display:none !important}.pd-p{box-shadow:none;break-inside:avoid}}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script><script src="rewards.js"></script>
+<script>
+Kit.mount("📊", "Student Progress Dashboard");
+const $=id=>document.getElementById(id);
+const A0=`📚 | Bookworm | Read 10 books | 10 | 20
+🤝 | Helping Hand | Help classmates 5 times | 5 | 15
+⏰ | Early Bird | On time 20 days | 20 | 25
+✍️ | Author | Publish a story | 1 | 20
+🧮 | Math Whiz | Master all times tables | 1 | 30
+🌟 | Kindness Star | Get 3 kindness shout-outs | 3 | 15
+🔬 | Scientist | Finish 4 experiments | 4 | 20
+🏃 | Super Mover | 10 days of active recess | 10 | 10`;
+const SK0=`📖 Reading fluency
+✍️ Writing sentences
+➕ Addition & subtraction
+✖️ Times tables
+🔬 Science thinking
+🤝 Working with others`;
+Kit.editable({key:'pd-skills',title:'Skills to track',help:'(one skill per line)',def:SK0,onSave:()=>draw()});
+const skills=()=>Kit.lines(Kit.get('ed:pd-skills',SK0));
+const LV=[['Not yet','#FFD3CC'],['Starting','#FFE29A'],['Getting there','#BDE6FF'],['Got it!','#C8F3D0']];
+let who=null,M=Kit.get('pd-mastery',{}),N=Kit.get('pd-notes',{});
+const ach=()=>Kit.lines(Kit.get('ed:achievements',A0)).map(l=>{const p=l.split('|').map(s=>s.trim());return {e:p[0],n:p[1],g:parseInt(p[3])||1}});
+const ds=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+// read the other tools' saved data (each tool owns its own key; this page only reads them)
+function data(k){const ap=Kit.get('ac-prog',{})[k]||{},A=ach(),got=A.filter(a=>(ap[a.n]||0)>=a.g);
+ const ql=(Kit.get('qs-log',{})[k])||{a:{},done:[]};const Q=Kit.get('qs-quests',null);
+ const bank=(Kit.get('rw-bank',{})[k])||{bal:0,goal:null};
+ const SD=Kit.get('sk-data',{});const streaks=Object.entries(SD).map(([h,o])=>{const r=(o||{})[k]||{};let x=new Date(),n=0;if(!r[ds(x)])x.setDate(x.getDate()-1);for(let g=0;g<200;g++){const wd=x.getDay();if(wd===0||wd===6){x.setDate(x.getDate()-1);continue}const v=r[ds(x)];if(!v)break;if(v===1)n++;x.setDate(x.getDate()-1)}return [h,n]});
+ const mis=(Kit.get('cm2-m',[])).map(m=>[m.e+' '+m.code,m.log.filter(l=>l[1]===k).reduce((s,l)=>s+l[2],0)]).filter(x=>x[1]);
+ const lp=Kit.get('lv-players',{})[k];const mast=M[k]||{};const S=skills();const avg=S.length?S.reduce((s,x)=>s+(mast[x]??-1)+1,0)/S.length:0;
+ return {xp:RW.xp(k),lv:RW.level(RW.xp(k)),coins:RW.coins(k),bank,got,A,ap,quests:ql.done.length,active:Object.keys(ql.a).length,Q,ql,streaks,mis,cls:lp&&lp.c,mast,avg}}
+const AV={wizard:'🧙',knight:'🛡️',scientist:'🧑‍🔬',explorer:'🧭',artist:'🎨',ninja:'🥷'};
+document.querySelector('main').innerHTML=`<div class="pd-top"><button class="btn white small" id="ar">🧩 Arrange panels</button><button class="btn white small" id="pr">🖨️ Print this report</button></div><div class="pd-kids" id="ks"></div><div class="pd-grid" id="gd">
+<div class="pd-p w8" data-w="hero" data-n="👤 Student"><div id="p-hero"></div></div>
+<div class="pd-p" data-w="xp" data-n="⭐ XP & level"><h3>⭐ XP & level</h3><div id="p-xp"></div></div>
+<div class="pd-p" data-w="coins" data-n="🪙 Coins & savings"><h3>🪙 Coins & savings</h3><div id="p-coins"></div></div>
+<div class="pd-p" data-w="badges" data-n="🏅 Achievements"><h3>🏅 Achievements</h3><div id="p-badges"></div></div>
+<div class="pd-p" data-w="quests" data-n="📜 Quests & missions"><h3>📜 Quests & missions</h3><div id="p-quests"></div></div>
+<div class="pd-p w6" data-w="skills" data-n="🎯 Skills"><h3>🎯 Skills <span class="muted" style="font-size:.8rem">(tap a level · ✏️ top right to change skills)</span></h3><div id="p-skills" style="display:grid;gap:6px"></div></div>
+<div class="pd-p w6" data-w="chart" data-n="📈 XP this fortnight"><h3>📈 XP in the last 14 days</h3><div id="p-chart"></div></div>
+<div class="pd-p" data-w="streaks" data-n="🔥 Streaks"><h3>🔥 Streaks</h3><div id="p-streaks"></div></div>
+<div class="pd-p w8" data-w="notes" data-n="📝 Teacher notes"><h3>📝 Teacher notes</h3><textarea class="pd-note" id="nt" placeholder="Strengths, goals, things to talk about at conferences…"></textarea></div>
+<div class="pd-p w12" data-w="class" data-n="👥 Whole class"><h3>👥 Whole class <span class="muted" style="font-size:.8rem">(tap a row to see that student)</span></h3><div style="overflow:auto;max-height:420px"><table class="pd-tbl" id="ct"></table></div></div></div>`;
+const AR=Kit.arrange($('gd'),'student-progress');
+function draw(){const K=RW.kids();if(!K.includes(who))who=K[0];$('ks').innerHTML=K.map(k=>`<button data-k="${Kit.esc(k)}" class="${k===who?'on':''}">${Kit.esc(k)}</button>`).join('');
+ if(!who){$('p-hero').innerHTML='<div class="pd-empty">Add students in any tool\'s class list.</div>';return}const d=data(who),S=skills();
+ $('p-hero').innerHTML=`<div class="pd-hero"><span class="av">${AV[d.cls]||'🧒'}</span><div><div class="nm">${Kit.esc(who)}</div><div style="font-weight:800">Level ${d.lv.level} · ${d.got.length} badge${d.got.length===1?'':'s'} · ${d.quests} quest${d.quests===1?'':'s'} done · skills ${Math.round(d.avg/4*100)}%</div></div></div>`;
+ $('p-xp').innerHTML=`<div class="pd-big">Level ${d.lv.level}</div><div style="font-weight:800">${d.xp} XP · ${d.lv.to-d.xp} to level ${d.lv.level+1}</div><div class="pd-bar"><i style="width:${d.lv.pct}%"></i></div>`;
+ $('p-coins').innerHTML=`<div class="pd-big">${RW.coinName().split(' ')[0]} ${d.coins}</div><div style="font-weight:800">🏦 Savings: ${d.bank.bal||0}${d.bank.goal?` · 🎯 ${Kit.esc(d.bank.goal.name||'')} (${d.bank.goal.amt??d.bank.goal.cost??''})`:''}</div>`;
+ $('p-badges').innerHTML=`<div class="pd-badges">${d.A.map(a=>`<span class="${(d.ap[a.n]||0)>=a.g?'got':''}" title="${Kit.esc(a.n)}: ${d.ap[a.n]||0}/${a.g}">${a.e}</span>`).join('')}</div><div style="font-weight:800">${d.got.length} of ${d.A.length} earned</div>`;
+ const qn=id=>{const q=(d.Q||[]).find(x=>x.id==id);return q?q.e+' '+q.t:'Quest '+id};
+ $('p-quests').innerHTML=`<div class="pd-list">${d.ql.done.map(id=>`<div><span>✅ ${Kit.esc(qn(id))}</span></div>`).join('')}${Object.keys(d.ql.a).map(id=>`<div><span>⏳ ${Kit.esc(qn(id))}</span><span>${d.ql.a[id].length} steps</span></div>`).join('')}${d.mis.map(m=>`<div><span>🕵️ ${Kit.esc(m[0])}</span><span>+${m[1]}</span></div>`).join('')||''}</div>${!d.ql.done.length&&!Object.keys(d.ql.a).length&&!d.mis.length?'<div class="pd-empty">No quests or missions yet.</div>':''}`;
+ $('p-skills').innerHTML=S.map(s=>`<div class="pd-skill"><span>${Kit.esc(s)}</span><span class="pd-lv">${LV.map((l,i)=>`<button data-s="${Kit.esc(s)}" data-v="${i}" class="${d.mast[s]===i?'on':''}" style="--c:${l[1]}" title="${l[0]}">${i+1}</button>`).join('')}</span></div>`).join('')+`<div class="muted" style="font-weight:700;font-size:.85rem">${LV.map((l,i)=>`${i+1} = ${l[0]}`).join(' · ')}</div>`;
+ const days=[...Array(14)].map((_,i)=>{const x=new Date();x.setDate(x.getDate()-13+i);return ds(x)});const L=RW.xpLog().filter(l=>l[1]===who);const per=days.map(dd=>L.filter(l=>ds(new Date(l[0]))===dd).reduce((s,l)=>s+l[2],0));const mx=Math.max(1,...per);
+ $('p-chart').innerHTML=`<div class="pd-chart">${per.map(v=>`<div style="height:${v/mx*100}%">${v?`<span>${v}</span>`:''}</div>`).join('')}</div><div class="pd-ax">${days.map(dd=>`<span>${+dd.slice(8)}</span>`).join('')}</div>`;
+ $('p-streaks').innerHTML=d.streaks.length?`<div class="pd-list">${d.streaks.map(([h,n])=>`<div><span>${Kit.esc(h)}</span><span>${n?'🔥 '+n:'—'}</span></div>`).join('')}</div>`:'<div class="pd-empty">Track habits in the Streak Tracker.</div>';
+ if(document.activeElement!==$('nt'))$('nt').value=N[who]||'';
+ $('ct').innerHTML=`<tr><th>Student</th><th>Level</th><th>XP</th><th>Coins</th><th>Badges</th><th>Quests</th><th>Skills</th></tr>`+K.map(k=>{const x=data(k);const p=x.avg/4;return `<tr data-k="${Kit.esc(k)}" class="${k===who?'on':''}"><td>${Kit.esc(k)}</td><td>${x.lv.level}</td><td>${x.xp}</td><td>${x.coins}</td><td>${x.got.length}</td><td>${x.quests}</td><td><span class="pd-heat" style="background:${p>=.75?'#5DC66E':p>=.5?'#BDE6FF':p>=.25?'#FFE29A':p>0?'#FFD3CC':'#fff'}"></span> ${Math.round(p*100)}%</td></tr>`}).join('');
+ window.__t={who,xp:d.xp,level:d.lv.level,coins:d.coins,badges:d.got.length,quests:d.quests,avg:d.avg,mast:{...d.mast}}}
+$('ks').onclick=e=>{const b=e.target.closest('[data-k]');if(b){who=b.dataset.k;draw()}};$('ct').onclick=e=>{const r=e.target.closest('[data-k]');if(r){who=r.dataset.k;draw();scrollTo({top:0,behavior:'smooth'})}};
+$('p-skills').onclick=e=>{const b=e.target.closest('[data-s]');if(!b)return;M[who]=M[who]||{};const v=+b.dataset.v;M[who][b.dataset.s]=M[who][b.dataset.s]===v?undefined:v;Kit.set('pd-mastery',M);Kit.tick();draw()};
+$('nt').oninput=()=>{N[who]=$('nt').value;Kit.set('pd-notes',N)};
+$('ar').onclick=()=>{const on=AR.toggle();$('ar').textContent=on?'✅ Done arranging':'🧩 Arrange panels'};$('pr').onclick=()=>window.print();
+addEventListener('storage',draw);
+draw();
+</script>
+</body></html>
