@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Learning Adventure Map</title>
+<style>
+main{max-width:1700px}
+.la-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:12px}
+.la{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:960px){.la{grid-template-columns:minmax(0,1fr)}}
+.la-map{background:#9FD8FF;border:6px solid var(--ink);border-radius:26px;box-shadow:8px 8px 0 var(--ink);overflow:hidden;position:relative}
+.la-map svg{display:block;width:100%;height:auto;aspect-ratio:2/1}
+.la-bar{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:10px 14px;margin-top:12px;display:grid;gap:8px}
+.la-prog{height:26px;border:4px solid var(--ink);border-radius:99px;background:#E3E8F2;overflow:hidden;position:relative}
+.la-prog i{display:block;height:100%;background:linear-gradient(90deg,#5DC66E,#22C3E6);transition:width .8s}
+.la-prog b{position:absolute;inset:0;display:grid;place-items:center;font-size:.85rem}
+.la-add{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.la-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:8px}
+.la-stops{display:grid;gap:5px;max-height:470px;overflow:auto}
+.la-s{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;border:3px solid var(--ink);border-radius:14px;padding:6px 9px;font-weight:800;background:#F4F6FA;cursor:pointer}
+.la-s.got{background:#FFF6C9}.la-s.next{background:#D6E9FF;box-shadow:0 0 0 3px #22C3E6}
+.la-s .e{font-size:1.7rem}.la-s small{display:block;font-weight:700;color:#55607E}
+.la-card{text-align:center;display:grid;gap:8px}.la-card .big{font-size:5rem;line-height:1}
+.la-tok{animation:bob 1s infinite alternate}@keyframes bob{to{transform:translateY(-4px)}}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="geo.js"></script><script src="learn.js"></script><script src="rewards.js"></script>
+<script>
+Kit.mount("🗺️", "Learning Adventure Map");
+const $=id=>document.getElementById(id);
+const ROUTES={world:`🗽 | New York, USA | -74 | 40.7 | The Statue of Liberty was a gift from France in 1886.
+🌉 | San Francisco, USA | -122.4 | 37.8 | The Golden Gate Bridge is painted a color called International Orange.
+🌺 | Honolulu, USA | -157.8 | 21.3 | Hawaii is made of volcanoes and is still growing!
+🦘 | Sydney, Australia | 151.2 | -33.9 | The Sydney Opera House roof looks like sails or shells.
+🏯 | Tokyo, Japan | 139.7 | 35.7 | Tokyo is the biggest city in the world, with over 37 million people nearby.
+🐼 | Chengdu, China | 104.1 | 30.7 | Chengdu is home to a giant panda research center.
+🕌 | Agra, India | 78 | 27.2 | The Taj Mahal took about 20 years to build.
+🐪 | Cairo, Egypt | 31.2 | 30 | The Great Pyramid was the tallest building on Earth for almost 4,000 years.
+🦁 | Nairobi, Kenya | 36.8 | -1.3 | Nairobi has a national park with lions right next to the city.
+🗼 | Paris, France | 2.35 | 48.9 | The Eiffel Tower grows about 15 cm taller in summer heat.
+⚽ | Rio de Janeiro, Brazil | -43.2 | -22.9 | Christ the Redeemer statue stands on a mountain 700 m high.
+🗽 | New York, USA | -74 | 40.7 | You made it all the way around the world!`,
+usa:`🌉 | Washington, D.C. | -77 | 38.9 | The White House has 132 rooms and 35 bathrooms.
+🍎 | New York City | -74 | 40.7 | Over 800 languages are spoken in New York City.
+🌭 | Chicago | -87.6 | 41.9 | Chicago's river is dyed green every year on St. Patrick's Day.
+🌽 | Omaha | -96 | 41.3 | Nebraska has more miles of river than any other state.
+🏔️ | Denver | -105 | 39.7 | Denver is exactly one mile above sea level.
+🏜️ | Grand Canyon | -112.1 | 36.1 | The Grand Canyon is about 1.8 km deep.
+🎰 | Las Vegas | -115.1 | 36.2 | Las Vegas gets about 300 sunny days a year.
+🎬 | Los Angeles | -118.2 | 34 | Hollywood makes hundreds of movies every year.
+🌲 | Seattle | -122.3 | 47.6 | The Space Needle was built for the 1962 World's Fair.
+🐻 | Anchorage, Alaska | -149.9 | 61.2 | Alaska is more than twice as big as Texas!`,
+silk:`🏯 | Xi'an, China | 108.9 | 34.3 | Xi'an is where the Terracotta Army of 8,000 clay soldiers was found.
+🏜️ | Dunhuang, China | 94.7 | 40.1 | Travelers rested here before crossing the Gobi Desert.
+🕌 | Kashgar, China | 76 | 39.5 | Kashgar's Sunday market has been busy for 2,000 years.
+🐫 | Samarkand, Uzbekistan | 67 | 39.7 | Samarkand was famous for beautiful blue-tiled buildings.
+🏺 | Merv, Turkmenistan | 62.2 | 37.7 | Merv was once one of the largest cities in the world.
+🌹 | Baghdad, Iraq | 44.4 | 33.3 | Baghdad's House of Wisdom was a giant library for scholars.
+🏛️ | Constantinople (Istanbul) | 29 | 41 | Istanbul sits on two continents: Europe and Asia.
+⛵ | Venice, Italy | 12.3 | 45.4 | Marco Polo set off from Venice in 1271.`};
+const RN={world:'🌍 Around the world',usa:'🇺🇸 Across the USA',silk:'🐫 The Silk Road'};
+let S=Kit.get('la-state',null)||{route:'world',pts:0,per:200,src:'manual',seen:0};
+Kit.editable({key:'la-custom',title:'My own route',help:'(one stop per line: emoji | place | longitude | latitude | fun fact)  Pick "✏️ My route" to use it.',def:ROUTES.world,onSave:()=>{if(S.route==='custom')draw()}});
+function save(){Kit.set('la-state',S)}
+function stops(){const t=S.route==='custom'?Kit.get('ed:la-custom',ROUTES.world):ROUTES[S.route];return Kit.lines(t).map(l=>{const p=l.split('|').map(s=>s.trim());return {e:p[0]||'📍',n:p[1]||'Stop',ll:[+p[2]||0,+p[3]||0],f:p[4]||''}}).filter(s=>!isNaN(s.ll[0]))}
+// points needed to reach each stop: distance / km per point
+function costs(St){let c=[0];for(let i=1;i<St.length;i++)c.push(c[i-1]+Math.max(1,Math.round(GEO.km(St[i-1].ll,St[i].ll)/S.per)));return c}
+function points(){if(S.src==='xp')return RW.kids().reduce((s,k)=>s+RW.xp(k),0);return S.pts}
+document.querySelector('main').innerHTML=`<div class="la-top"><select id="rt" style="width:auto">${Object.entries(RN).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}<option value="custom">✏️ My route</option></select><select id="sr" style="width:auto"><option value="manual">⭐ Class points (tap to add)</option><option value="xp">🏆 Everyone's XP added up</option></select><label style="font-weight:800;color:#fff;text-shadow:1px 1px 0 var(--ink)">1 point = <select id="pr" style="width:auto">${[50,100,200,400,800].map(n=>`<option value="${n}">${n} km</option>`).join('')}</select></label></div>
+<div class="la"><div><div class="la-map"><svg id="sv"></svg></div><div class="la-bar"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;font-weight:900"><span id="pt"></span><span id="nx"></span></div><div class="la-prog"><i id="pg"></i><b id="pb"></b></div><div class="la-add" id="ad"></div></div></div>
+<div class="la-p"><b>📍 Stops on the trip</b><div class="la-stops" id="ls"></div><button class="btn white small" id="rs">🔄 Start the trip over</button></div></div>`;
+const M=GEO.world($('sv'));GEO.zoomButtons&&GEO.zoomButtons(document.querySelector('.la-map'),M);
+function wrapLon(a,b){let d=b[0]-a[0];if(d>180)d-=360;if(d<-180)d+=360;return d}
+function at(St,C,p){if(p>=C[C.length-1])return {ll:St[St.length-1].ll,i:St.length-1,t:1};let i=0;while(C[i+1]<=p)i++;const t=(p-C[i])/(C[i+1]-C[i]),a=St[i].ll,b=St[i+1].ll;let lon=a[0]+wrapLon(a,b)*t;lon=((lon+540)%360)-180;return {ll:[lon,a[1]+(b[1]-a[1])*t],i,t}}
+function line(a,b,col,w,dash){const out=[];const d=wrapLon(a,b),N=12;let prev=GEO.xy(...a);for(let k=1;k<=N;k++){let lon=a[0]+d*k/N;lon=((lon+540)%360)-180;const q=GEO.xy(lon,a[1]+(b[1]-a[1])*k/N);if(Math.abs(q[0]-prev[0])<500)out.push(`<line x1="${prev[0]}" y1="${prev[1]}" x2="${q[0]}" y2="${q[1]}" stroke="${col}" stroke-width="${w}" stroke-linecap="round" ${dash?'stroke-dasharray="2 6"':''} vector-effect="non-scaling-stroke"/>`);prev=q}return out.join('')}
+let quiet=true;
+function draw(){const St=stops(),C=costs(St),P=Math.min(points(),C[C.length-1]),pos=at(St,C,P),got=C.filter(c=>c<=P).length;
+ $('rt').value=S.route;$('sr').value=S.src;$('pr').value=S.per;
+ let h='';for(let i=0;i<St.length-1;i++){h+=line(St[i].ll,St[i+1].ll,'#1D2B53',3,true);if(i<pos.i)h+=line(St[i].ll,St[i+1].ll,'#E5533F',5);else if(i===pos.i&&pos.t>0)h+=line(St[i].ll,pos.ll,'#E5533F',5)}
+ St.forEach((s,i)=>{const [x,y]=GEO.xy(...s.ll);h+=`<circle cx="${x}" cy="${y}" r="${C[i]<=P?7:5}" fill="${C[i]<=P?'#FFC93C':'#fff'}" stroke="#1D2B53" stroke-width="2.5" vector-effect="non-scaling-stroke" data-st="${i}" style="cursor:pointer"/>`});
+ const [tx,ty]=GEO.xy(...pos.ll);h+=`<g class="la-tok" style="transform-box:fill-box"><text x="${tx}" y="${ty-12}" font-size="30" text-anchor="middle">${S.route==='silk'?'🐫':P>=C[C.length-1]?'🏁':'✈️'}</text></g>`;M.ovl().innerHTML=h;
+ const done=P>=C[C.length-1],nextI=Math.min(St.length-1,got);
+ $('pt').textContent=`⭐ ${points()} point${points()===1?'':'s'}`;$('nx').textContent=done?'🏁 Trip complete!':`Next stop: ${St[nextI].e} ${St[nextI].n} in ${C[nextI]-P} point${C[nextI]-P===1?'':'s'}`;
+ $('pg').style.width=(P/C[C.length-1]*100)+'%';$('pb').textContent=`${got} of ${St.length} stops · ${Math.round(P*S.per).toLocaleString()} km traveled`;
+ $('ad').innerHTML=S.src==='manual'?`${[1,5,10].map(n=>`<button class="btn green" data-a="${n}">+${n} ⭐</button>`).join('')}<button class="btn white small" data-a="-1">−1</button><span class="muted" style="font-weight:700">Earn points for great work and watch the class travel!</span>`:`<span style="font-weight:700">🏆 Moving with everyone's XP. Give XP in the XP Tracker and come back to see how far you've gone.</span>`;
+ $('ls').innerHTML=St.map((s,i)=>`<div class="la-s ${C[i]<=P?'got':i===nextI&&!done?'next':''}" data-st="${i}"><span class="e">${C[i]<=P?s.e:'🔒'}</span><span>${Kit.esc(s.n)}<small>${C[i]<=P?Kit.esc(s.f):`${C[i]} points`}</small></span><span>${C[i]<=P?'✅':''}</span></div>`).join('');
+ // newly reached stop: show its fact
+ if(got>S.seen&&!quiet){S.seen=got;save();card(St[got-1],got===St.length)}else if(got!==S.seen){S.seen=got;save()}quiet=false;
+ window.__t={pts:P,got,stops:St.length,done,need:C[nextI]-P}}
+function card(s,end){if(!window.__fast){Kit.tada();Kit.confetti(end?160:70)}Kit.modal(`<div class="la-card"><div class="big">${s.e}</div><h2 style="margin:0">${end?'🏁 You finished the trip!':'📍 We made it to'}<br>${Kit.esc(s.n)}</h2><div style="font-size:1.25rem;font-weight:700">💡 ${Kit.esc(s.f)}</div></div>`)}
+function show(i){const St=stops(),C=costs(St),P=points();if(C[i]<=P)Kit.modal(`<div class="la-card"><div class="big">${St[i].e}</div><h2 style="margin:0">${Kit.esc(St[i].n)}</h2><div style="font-size:1.2rem;font-weight:700">💡 ${Kit.esc(St[i].f)}</div></div>`);else Kit.modal(`<div class="la-card"><div class="big">🔒</div><h2 style="margin:0">${Kit.esc(St[i].n)}</h2><div style="font-size:1.2rem;font-weight:700">Earn ${C[i]-P} more points to unlock this stop!</div></div>`)}
+$('ad').onclick=e=>{const b=e.target.closest('[data-a]');if(!b)return;S.pts=Math.max(0,S.pts+ +b.dataset.a);save();+b.dataset.a>0?Kit.ding():Kit.tick();draw()};
+$('ls').onclick=e=>{const b=e.target.closest('[data-st]');if(b)show(+b.dataset.st)};$('sv').addEventListener('click',e=>{const b=e.target.closest('[data-st]');if(b)show(+b.dataset.st)});
+$('rt').onchange=()=>{S.route=$('rt').value;quiet=true;save();draw()};$('sr').onchange=()=>{S.src=$('sr').value;quiet=true;save();draw()};$('pr').onchange=()=>{S.per=+$('pr').value;quiet=true;save();draw()};
+$('rs').onclick=()=>{if(confirm('Go back to the first stop?')){S.pts=0;S.seen=0;save();draw()}};
+window.__la={add:n=>{S.pts+=n;save();draw()}};
+draw();
+</script>
+</body></html>

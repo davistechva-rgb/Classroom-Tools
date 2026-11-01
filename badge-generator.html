@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Badge Generator</title>
+<style>
+main{max-width:1600px}
+.bd-tabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
+.bd{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:16px;align-items:start}
+@media (max-width:960px){.bd{grid-template-columns:minmax(0,1fr)}}
+.bd-prev{background:#fff;border:6px solid var(--ink);border-radius:26px;box-shadow:8px 8px 0 var(--ink);padding:16px;display:grid;place-items:center;gap:10px}
+.bd-prev svg{width:min(380px,90%);height:auto;filter:drop-shadow(4px 6px 0 rgba(29,43,83,.3))}
+.bd-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:14px;display:grid;gap:10px}
+.bd-p .lb{font-weight:800}
+.bd-p input{font:inherit;font-weight:700;padding:7px 10px;border:3px solid var(--ink);border-radius:12px;width:100%;display:block;margin-top:4px}
+.bd-seg{display:flex;gap:5px;flex-wrap:wrap}.bd-seg button{font:inherit;font-weight:800;border:3px solid var(--ink);border-radius:10px;padding:4px 10px;background:#fff;cursor:pointer;color:var(--ink)}.bd-seg button.on{background:var(--sun)}
+.bd-cols{display:flex;gap:5px;flex-wrap:wrap}.bd-cols button{width:30px;height:30px;border-radius:50%;border:3px solid var(--ink);background:var(--c);cursor:pointer}.bd-cols button.on{outline:4px solid var(--sun);outline-offset:2px}
+.bd-emo{display:flex;gap:3px;flex-wrap:wrap}.bd-emo button{font-size:1.4rem;width:40px;height:40px;border:3px solid var(--ink);border-radius:9px;background:#fff;cursor:pointer}.bd-emo button.on{background:var(--sun)}
+.bd-shelf{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.bd-item{background:#fff;border:4px solid var(--ink);border-radius:16px;padding:8px;text-align:center;font-weight:800;cursor:pointer;position:relative}
+.bd-item svg{width:100%;height:auto}
+.bd-item.on{outline:4px solid var(--sun);outline-offset:2px}
+.bd-item .x{position:absolute;top:2px;right:4px;font-size:.9rem}
+.bd-kids{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.bd-k{background:#fff;border:4px solid var(--ink);border-radius:16px;padding:6px 8px;cursor:pointer;font-weight:900}
+.bd-k .row2{display:flex;gap:2px;flex-wrap:wrap;min-height:34px;margin-top:4px}
+.bd-k .row2 svg{width:30px;height:30px}
+.bd-cert{background:#FFFDF6;border:10px double #C99A63;border-radius:12px;padding:28px;text-align:center;max-width:900px;margin:12px auto;display:grid;gap:10px;break-inside:avoid;page-break-after:always}
+.bd-cert svg{width:180px;margin:0 auto}
+.bd-cert h1{margin:0;font-size:2.6rem;color:#8B5A2B}.bd-cert .nm{font-size:2.4rem;font-weight:900;border-bottom:3px solid #1D2B53;display:inline-block;padding:0 30px}
+@media print{header,.bd-tabs,.bd-noprint{display:none!important}.bd-cert{border-width:10px}}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script><script src="rewards.js"></script>
+<script>
+Kit.mount("🎖️", "Badge Generator");
+const $=id=>document.getElementById(id);
+const COLS=['#E5533F','#FF9F43','#FFC93C','#5DC66E','#22C3E6','#1E7FD0','#9B6BF2','#FF6B9A','#C0C7D6','#D4A13A','#1D2B53','#FFFFFF'];
+const EMO=['⭐','🏆','📚','🧮','🔬','🎨','🎵','🤝','💡','🚀','🌱','❤️','🦉','🐢','⚡','🔥','🧠','✏️','🌍','🏃','😊','👑','🎯','🛡️'];
+const SH={circle:'⭕ Circle',shield:'🛡️ Shield',star:'⭐ Star',hex:'⬡ Hexagon',burst:'💥 Burst'};
+let B=Kit.get('bd-cur',{shape:'circle',fill:5,ring:9,icon:'📚',top:'SUPER',bottom:'READER',ribbon:true}),saved=Kit.get('bd-saved',[]),awards=Kit.get('bd-awards',{}),tab='make',pick=0;
+function save(){Kit.set('bd-cur',B);Kit.set('bd-saved',saved);Kit.set('bd-awards',awards)}
+function badgeSVG(b,id='b'+Math.random().toString(36).slice(2,7)){const f=COLS[b.fill],r=COLS[b.ring],dark=['#1D2B53','#1E7FD0','#9B6BF2','#E5533F'].includes(f),tc=dark?'#fff':'#1D2B53';let shape='';
+ const star=(n,R,ri)=>Array.from({length:n*2},(_,i)=>{const a=-Math.PI/2+i*Math.PI/n,rr=i%2?ri:R;return `${100+rr*Math.cos(a)},${100+rr*Math.sin(a)}`}).join(' ');
+ if(b.shape==='circle')shape=`<circle cx="100" cy="100" r="86" fill="${r}"/><circle cx="100" cy="100" r="72" fill="${f}"/>`;
+ if(b.shape==='shield')shape=`<path d="M100,10 L180,38 C180,110 150,160 100,190 C50,160 20,110 20,38Z" fill="${r}"/><path d="M100,24 L166,47 C166,108 140,148 100,174 C60,148 34,108 34,47Z" fill="${f}"/>`;
+ if(b.shape==='star')shape=`<polygon points="${star(5,95,48)}" fill="${r}"/><polygon points="${star(5,78,40)}" fill="${f}"/>`;
+ if(b.shape==='hex')shape=`<polygon points="${Array.from({length:6},(_,i)=>{const a=Math.PI/6+i*Math.PI/3;return `${100+90*Math.cos(a)},${100+90*Math.sin(a)}`}).join(' ')}" fill="${r}"/><polygon points="${Array.from({length:6},(_,i)=>{const a=Math.PI/6+i*Math.PI/3;return `${100+75*Math.cos(a)},${100+75*Math.sin(a)}`}).join(' ')}" fill="${f}"/>`;
+ if(b.shape==='burst')shape=`<polygon points="${star(16,95,80)}" fill="${r}"/><circle cx="100" cy="100" r="70" fill="${f}"/>`;
+ const rib=b.ribbon?`<path d="M62,150 L42,215 L64,203 L76,224 L92,160Z" fill="${r}" stroke="#1D2B53" stroke-width="3"/><path d="M138,150 L158,215 L136,203 L124,224 L108,160Z" fill="${r}" stroke="#1D2B53" stroke-width="3"/>`:'';
+ const curve=b.shape==='circle'||b.shape==='burst'||b.shape==='hex';
+ const txt=curve?`<defs><path id="${id}t" d="M42,100 A58,58 0 0 1 158,100"/><path id="${id}b" d="M34,100 A66,66 0 0 0 166,100"/></defs><text font-family="Fredoka,sans-serif" font-weight="800" font-size="19" fill="${tc}" letter-spacing="2"><textPath href="#${id}t" startOffset="50%" text-anchor="middle">${Kit.esc(b.top)}</textPath></text><text font-family="Fredoka,sans-serif" font-weight="800" font-size="19" fill="${tc}" letter-spacing="2"><textPath href="#${id}b" startOffset="50%" text-anchor="middle" dominant-baseline="hanging">${Kit.esc(b.bottom)}</textPath></text>`
+  :`<text x="100" y="${b.shape==='shield'?58:66}" text-anchor="middle" font-family="Fredoka,sans-serif" font-weight="800" font-size="15" fill="${tc}">${Kit.esc(b.top)}</text><text x="100" y="${b.shape==='shield'?150:146}" text-anchor="middle" font-family="Fredoka,sans-serif" font-weight="800" font-size="15" fill="${tc}">${Kit.esc(b.bottom)}</text>`;
+ return `<svg viewBox="0 0 200 230" xmlns="http://www.w3.org/2000/svg">${rib}<g stroke="#1D2B53" stroke-width="0">${shape}</g><g fill="none" stroke="#1D2B53" stroke-width="4">${shape.replace(/fill="[^"]*"/g,'')}</g>${txt}<text x="100" y="${b.shape==='shield'?104:102}" text-anchor="middle" dominant-baseline="central" font-size="${b.shape==='star'?52:62}">${b.icon}</text></svg>`}
+document.querySelector('main').innerHTML=`<div class="bd-tabs"><button class="btn" data-t="make">🎨 Design</button><button class="btn white" data-t="give">🎖️ Give badges</button><button class="btn white" data-t="cert">📜 Certificates</button></div><div id="bd"></div><div id="ro" class="bd-noprint" style="margin-top:12px;background:#fff;border:4px solid var(--ink);border-radius:16px;padding:8px"></div>`;
+Learn.rosterEditor($('ro'));$('ro').addEventListener('roster',()=>draw());
+function make(){$('bd').innerHTML=`<div class="bd"><div class="bd-prev"><div id="pv">${badgeSVG(B,'pv')}</div><div class="row" style="gap:6px"><button class="btn green" id="sv">💾 Save to my badges</button><button class="btn white" id="png">⬇️ Download picture</button></div></div>
+ <div class="bd-p"><div class="lb">Shape</div><div class="bd-seg" id="sh">${Object.entries(SH).map(([k,v])=>`<button data-s="${k}" class="${B.shape===k?'on':''}">${v}</button>`).join('')}</div>
+ <div class="lb">Inside color</div><div class="bd-cols" id="fc">${COLS.map((c,i)=>`<button data-f="${i}" style="--c:${c}" class="${B.fill===i?'on':''}"></button>`).join('')}</div><div class="lb">Edge & ribbon color</div><div class="bd-cols" id="rc">${COLS.map((c,i)=>`<button data-r="${i}" style="--c:${c}" class="${B.ring===i?'on':''}"></button>`).join('')}</div>
+ <div class="lb">Picture</div><div class="bd-emo" id="em">${EMO.map(e=>`<button data-e="${e}" class="${B.icon===e?'on':''}">${e}</button>`).join('')}</div>
+ <div class="row" style="gap:8px"><label class="lb" style="flex:1">Top words<input id="tt" maxlength="16" value="${Kit.esc(B.top)}"></label><label class="lb" style="flex:1">Bottom words<input id="bt" maxlength="16" value="${Kit.esc(B.bottom)}"></label></div>
+ <label class="lb" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="rb" style="width:auto;display:inline" ${B.ribbon?'checked':''}> 🎗️ Ribbons</label>
+ <div class="lb">🗂️ My badges (${saved.length})</div><div class="bd-shelf" id="sf">${saved.map((s,i)=>`<div class="bd-item" data-load="${i}">${badgeSVG(s,'s'+i)}<span class="x" data-del="${i}">✖</span></div>`).join('')||'<span class="muted" style="font-weight:700">Save a badge to give it to students.</span>'}</div></div></div>`;
+ const up=()=>{$('pv').innerHTML=badgeSVG(B,'pv');save()};
+ $('bd').querySelector('.bd-p').onclick=e=>{const t=e.target.closest('button,[data-load],[data-del]');if(!t)return;const d=t.dataset;if(d.s)B.shape=d.s;if(d.f)B.fill=+d.f;if(d.r)B.ring=+d.r;if(d.e)B.icon=d.e;if(d.del){saved.splice(+d.del,1);save();make();return}if(d.load){B={...saved[+d.load]};save();make();return}if(d.s||d.f||d.r||d.e)make()};
+ $('tt').oninput=()=>{B.top=$('tt').value.toUpperCase();up()};$('bt').oninput=()=>{B.bottom=$('bt').value.toUpperCase();up()};$('rb').onchange=()=>{B.ribbon=$('rb').checked;up()};
+ $('sv').onclick=()=>{saved.push({...B});save();Kit.ding();make()};
+ $('png').onclick=()=>{const svg=badgeSVG(B,'dl'),img=new Image(),c=document.createElement('canvas');c.width=800;c.height=920;img.onload=()=>{c.getContext('2d').drawImage(img,0,0,800,920);const a=document.createElement('a');a.download=`${(B.top+' '+B.bottom).trim().toLowerCase().replace(/\s+/g,'-')||'badge'}.png`;a.href=c.toDataURL('image/png');a.click()};img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)};window.__t={tab,saved:saved.length}}
+function give(){const K=RW.kids();if(!saved.length){$('bd').innerHTML='<div class="bd-p" style="text-align:center;font-weight:800">Design and save a badge first (🎨 Design).</div>';return}pick=Math.min(pick,saved.length-1);
+ $('bd').innerHTML=`<div class="bd-p"><div class="lb">1️⃣ Pick a badge</div><div class="bd-shelf" id="sf">${saved.map((s,i)=>`<div class="bd-item ${i===pick?'on':''}" data-p="${i}">${badgeSVG(s,'g'+i)}</div>`).join('')}</div><div class="lb">2️⃣ Tap students to give it (tap again to take it back)</div><div class="bd-kids" id="kd">${K.map(k=>`<div class="bd-k" data-k="${Kit.esc(k)}">${Kit.esc(k)} ${(awards[k]||[]).length?`· ${(awards[k]||[]).length}`:''}<div class="row2">${(awards[k]||[]).map(i=>saved[i]?badgeSVG(saved[i],'m'+i+k.length):'').join('')}</div></div>`).join('')}</div></div>`;
+ $('sf').onclick=e=>{const b=e.target.closest('[data-p]');if(b){pick=+b.dataset.p;give()}};
+ $('kd').onclick=e=>{const c=e.target.closest('[data-k]');if(!c)return;const k=c.dataset.k,a=awards[k]=awards[k]||[];const at=a.indexOf(pick);if(at>=0)a.splice(at,1);else{a.push(pick);Kit.tada();Kit.confetti(40)}save();give()};window.__t={tab,awards:Object.fromEntries(Object.entries(awards).map(([k,v])=>[k,v.length]))}}
+function cert(){const list=[];Object.entries(awards).forEach(([k,a])=>a.forEach(i=>saved[i]&&list.push([k,i])));const date=new Date().toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'});
+ $('bd').innerHTML=`<div class="row bd-noprint" style="justify-content:center;gap:6px;margin-bottom:8px"><button class="btn green" id="pr">🖨️ Print all certificates</button><input id="tc" value="${Kit.esc(Kit.get('bd-teacher','Your teacher'))}" style="font-weight:700;padding:6px 10px;border:3px solid var(--ink);border-radius:10px"></div>${list.map(([k,i])=>`<div class="bd-cert">${badgeSVG(saved[i],'c'+i+k.length)}<h1>Certificate of Achievement</h1><div style="font-size:1.3rem;font-weight:700">This badge is proudly awarded to</div><div><span class="nm">${Kit.esc(k)}</span></div><div style="font-size:1.4rem;font-weight:900">${Kit.esc((saved[i].top+' '+saved[i].bottom).trim())}</div><div style="display:flex;justify-content:space-around;font-weight:700;margin-top:16px"><span>📅 ${date}</span><span>✍️ <span class="tch">${Kit.esc(Kit.get('bd-teacher','Your teacher'))}</span></span></div></div>`).join('')||'<div class="bd-p" style="text-align:center;font-weight:800">Give some badges first, then print certificates here.</div>'}`;
+ if($('pr')){$('pr').onclick=()=>print();$('tc').oninput=()=>{Kit.set('bd-teacher',$('tc').value);document.querySelectorAll('.tch').forEach(x=>x.textContent=$('tc').value)}}window.__t={tab,certs:list.length}}
+function draw(){document.querySelectorAll('[data-t]').forEach(b=>b.className='btn '+(b.dataset.t===tab?'':'white'));({make,give,cert})[tab]()}
+document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;draw()});
+draw();
+</script>
+</body></html>

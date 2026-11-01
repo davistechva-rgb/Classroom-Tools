@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Class Leaderboard</title>
+<style>
+main{max-width:1500px}
+.lb2-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:12px}
+.lb2-stage{background:radial-gradient(circle at 50% 0%,#3B4C8A,#141C3A 75%);border:6px solid var(--ink);border-radius:28px;box-shadow:8px 8px 0 var(--ink);padding:18px;color:#fff;min-height:440px}
+.lb2-stage h2{margin:0 0 12px;text-align:center;color:#FFD84D;text-shadow:3px 3px 0 #000}
+.lb2-pod{display:flex;justify-content:center;align-items:flex-end;gap:10px;margin-bottom:16px}
+.lb2-pod div{width:min(180px,28vw);text-align:center;font-weight:900}
+.lb2-pod .blk{border:4px solid #1D2B53;border-radius:14px 14px 0 0;display:grid;place-items:center;font-size:2.4rem;color:#1D2B53;animation:rise .8s backwards}
+@keyframes rise{from{transform:scaleY(0);transform-origin:bottom}}
+.lb2-pod .nm{font-size:clamp(1rem,2.6vw,1.5rem);margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb2-pod .sc{color:#FFD84D}
+.lb2-pod .crown{font-size:2.2rem;animation:bob 1.2s infinite alternate}@keyframes bob{to{transform:translateY(-8px)}}
+.lb2-bars{position:relative}
+.lb2-row{position:absolute;left:0;right:0;height:44px;display:grid;grid-template-columns:44px 140px minmax(0,1fr) 70px 34px;gap:8px;align-items:center;transition:top .8s cubic-bezier(.3,.7,.3,1)}
+@media (max-width:600px){.lb2-row{grid-template-columns:34px 90px minmax(0,1fr) 54px 26px}}
+.lb2-row .rk{font-weight:900;font-size:1.3rem;text-align:center}
+.lb2-row .nm{font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb2-row .bar{height:30px;border-radius:10px;background:var(--bc);border:3px solid rgba(255,255,255,.7);transition:width .8s;min-width:6px}
+.lb2-row .sc{font-weight:900;text-align:right;color:#FFD84D}
+.lb2-row .mv{font-size:1rem;text-align:center}
+.lb2-row.hid .nm{color:#7F8FB8}
+.lb2-man{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;margin-top:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:6px}
+.lb2-man div{display:flex;gap:4px;align-items:center;font-weight:800}.lb2-man input{width:70px;font:inherit;font-weight:800;padding:3px 6px;border:3px solid var(--ink);border-radius:8px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script><script src="rewards.js"></script>
+<script>
+Kit.mount("🏆", "Class Leaderboard");
+const $=id=>document.getElementById(id);
+const COLS=['#FFD84D','#FF9F43','#5DC66E','#22C3E6','#9B6BF2','#FF6B9A','#E5533F','#1E7FD0'];
+let src=Kit.get('lb2-src','xp'),range='all',show=Kit.get('lb2-show','10'),manual=Kit.get('lb2-man',{}),title=Kit.get('lb2-title','Class Leaderboard'),last=Kit.get('lb2-last',{});
+document.querySelector('main').innerHTML=`<div class="lb2-top"><select id="sr" style="width:auto"><option value="xp">⭐ XP</option><option value="coins">🪙 Coins</option><option value="man">✏️ My own scores</option></select><select id="rg" style="width:auto"><option value="all">📅 All time</option><option value="week">🗓️ This week</option><option value="day">☀️ Today</option></select><select id="sh" style="width:auto"><option value="3">🏆 Top 3 only</option><option value="5">Top 5</option><option value="10">Top 10</option><option value="all">Everyone</option><option value="teams">👥 Team totals</option></select><input id="ti" style="width:220px;font-weight:800" value="${Kit.esc(title)}"><button class="btn green small" id="rf">🔄 Update</button></div>
+<div class="lb2-stage" id="st"></div><div class="lb2-man" id="mn" hidden></div><div id="ro" style="margin-top:12px;background:#fff;border:4px solid var(--ink);border-radius:16px;padding:8px"></div>`;
+Learn.rosterEditor($('ro'));$('ro').addEventListener('roster',()=>draw());
+function scores(){const K=RW.kids(),since=range==='day'?new Date().setHours(0,0,0,0):range==='week'?Date.now()-7*864e5:0;
+ if(src==='man')return K.map(k=>[k,manual[k]||0]);
+ if(range!=='all'){const log=src==='xp'?RW.xpLog():RW.coinLog(),m={};log.forEach(l=>{if(l[0]>=since)m[l[1]]=(m[l[1]]||0)+l[2]});return K.map(k=>[k,Math.max(0,m[k]||0)])}
+ return K.map(k=>[k,src==='xp'?RW.xp(k):RW.coins(k)])}
+function draw(){let S=scores();const unit=src==='xp'?'XP':src==='coins'?'🪙':'pts';
+ if(show==='teams'){const n=Math.max(2,Math.min(6,Math.ceil(S.length/4))),T=Array.from({length:n},(_,i)=>[`Team ${i+1}`,0]);S.forEach(([k,v],i)=>T[i%n][1]+=v);S=T}
+ S.sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]));const N=show==='all'||show==='teams'?S.length:Math.min(S.length,+show),top=S.slice(0,3),mx=Math.max(1,S[0]?S[0][1]:1);
+ const rank=[];S.forEach((s,i)=>rank.push(i&&s[1]===S[i-1][1]?rank[i-1]:i+1));
+ const H=[150,110,80],ORDER=[1,0,2];
+ if(!S.length||S[0][1]<=0){$('st').innerHTML=`<h2>🏆 ${Kit.esc(title)}</h2><div style="text-align:center;font-size:1.4rem;font-weight:800;margin-top:60px">No points yet! ${src==='man'?'Type scores below.':src==='xp'?'Give XP with the ⭐ XP Tracker.':'Give coins with the 🪙 Classroom Currency System.'}</div>`;$('mn').hidden=src!=='man';window.__t={order:S.map(s=>s[0]),scores:S.map(s=>s[1]),shown:0};if(src==='man')$('mn').innerHTML=RW.kids().map(k=>`<div><span style="flex:1;overflow:hidden;text-overflow:ellipsis">${Kit.esc(k)}</span><input type="number" data-k="${Kit.esc(k)}" value="${manual[k]||0}"></div>`).join('');['sr','rg','sh'].forEach((id,i)=>$(id).value=[src,range,show][i]);return}
+ $('st').innerHTML=`<h2>🏆 ${Kit.esc(title)}</h2><div class="lb2-pod">${ORDER.filter(i=>top[i]).map(i=>`<div>${i===0?'<div class="crown">👑</div>':''}<div class="nm">${Kit.esc(top[i][0])}</div><div class="sc">${top[i][1]} ${unit}</div><div class="blk" style="height:${H[i]}px;background:${['#FFD84D','#D8DEE9','#E8A060'][i]};animation-delay:${i*.2}s">${['🥇','🥈','🥉'][i]}</div></div>`).join('')}</div>
+ ${N>3||show==='all'?`<div class="lb2-bars" id="bars" style="height:${(N-3)*50}px"></div>`:''}`;
+ if($('bars')){const b=$('bars');S.slice(3,N).forEach(([k,v],j)=>{const i=j+3,prev=last[src+range+show]?.indexOf(k),mv=prev==null||prev<0?'':prev>i?'🔺':prev<i?'🔻':'';
+  const r=document.createElement('div');r.className='lb2-row';r.style.top=((prev!=null&&prev>=3&&prev<N?prev:i)-3)*50+'px';r.innerHTML=`<span class="rk">${rank[i]}</span><span class="nm">${Kit.esc(k)}</span><div><div class="bar" style="width:0%;--bc:${COLS[i%8]}"></div></div><span class="sc">${v}</span><span class="mv">${mv}</span>`;b.appendChild(r);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{r.style.top=(i-3)*50+'px';r.querySelector('.bar').style.width=(v/mx*100)+'%'}))})}
+ last[src+range+show]=S.map(s=>s[0]);Kit.set('lb2-last',last);
+ $('mn').hidden=src!=='man';if(src==='man')$('mn').innerHTML=RW.kids().map(k=>`<div><span style="flex:1;overflow:hidden;text-overflow:ellipsis">${Kit.esc(k)}</span><input type="number" data-k="${Kit.esc(k)}" value="${manual[k]||0}"></div>`).join('');
+ ['sr','rg','sh'].forEach((id,i)=>$(id).value=[src,range,show][i]);$('rg').disabled=src==='man';window.__t={order:S.map(s=>s[0]),scores:S.map(s=>s[1]),shown:N}}
+$('sr').onchange=()=>{src=$('sr').value;Kit.set('lb2-src',src);draw()};$('rg').onchange=()=>{range=$('rg').value;draw()};$('sh').onchange=()=>{show=$('sh').value;Kit.set('lb2-show',show);draw()};
+$('ti').oninput=()=>{title=$('ti').value;Kit.set('lb2-title',title);$('st').querySelector('h2').textContent='🏆 '+title};$('rf').onclick=()=>{draw();Kit.ding()};
+$('mn').onchange=e=>{const k=e.target.dataset.k;if(k){manual[k]=+e.target.value||0;Kit.set('lb2-man',manual);draw()}};
+draw();
+</script>
+</body></html>

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Achievement System</title>
+<style>
+main{max-width:1700px}
+.ac-tabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
+.ac-wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:16px;align-items:start}
+@media (max-width:960px){.ac-wrap{grid-template-columns:minmax(0,1fr)}}
+.ac-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:8px}
+.ac-list{display:grid;gap:6px}
+.ac-a{display:flex;gap:10px;align-items:center;border:4px solid var(--ink);border-radius:16px;padding:6px 10px;background:#fff;cursor:pointer;text-align:left;font:inherit;color:var(--ink)}
+.ac-a.on{background:var(--sun)}.ac-a span{font-size:2rem}.ac-a small{display:block;font-weight:600;color:#55607E}
+.ac-kids{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.ac-k{border:4px solid var(--ink);border-radius:16px;padding:6px 8px;background:#fff;cursor:pointer;font-weight:900;text-align:center;box-shadow:0 4px 0 var(--ink);user-select:none}
+.ac-k .ring{width:58px;height:58px;margin:4px auto;border-radius:50%;display:grid;place-items:center;font-size:1.7rem;background:conic-gradient(#5DC66E calc(var(--p)*1%),#E3E8F2 0);position:relative}
+.ac-k .ring::before{content:"";position:absolute;inset:6px;border-radius:50%;background:#fff}
+.ac-k .ring span{position:relative}
+.ac-k.done{background:#FFF6C9}
+.ac-k small{display:block;font-weight:700;color:#55607E}
+.ac-case{background:linear-gradient(#8B5A2B,#6E4520);border:6px solid var(--ink);border-radius:24px;box-shadow:8px 8px 0 var(--ink);padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.ac-t{background:#FFFDF6;border:4px solid var(--ink);border-radius:16px;padding:10px;text-align:center;font-weight:800}
+.ac-t span{font-size:3rem;display:block}.ac-t small{display:block;font-weight:600;color:#55607E;font-size:.8rem}
+.ac-t.lock span{filter:grayscale(1) brightness(.2);opacity:.45}.ac-t.lock{background:#E3E8F2}
+.ac-t .pb{height:10px;border:3px solid var(--ink);border-radius:99px;background:#E3E8F2;overflow:hidden;margin-top:6px}.ac-t .pb i{display:block;height:100%;background:#5DC66E}
+.ac-pop{position:fixed;inset:0;display:grid;place-items:center;z-index:50;background:rgba(15,22,45,.6);animation:fd .3s}@keyframes fd{from{opacity:0}}
+.ac-pop div{background:#fff;border:6px solid var(--ink);border-radius:26px;padding:24px;text-align:center;box-shadow:8px 8px 0 var(--ink);animation:zoom .5s}@keyframes zoom{0%{transform:scale(.2) rotate(-20deg)}70%{transform:scale(1.1)}}
+.ac-pop .big{font-size:7rem}
+.ac-wall{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.ac-w{background:#fff;border:4px solid var(--ink);border-radius:16px;padding:10px;display:grid;gap:4px}
+.ac-w b{font-size:1.1rem}.ac-w .who{font-size:.85rem;font-weight:700;color:#55607E}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script><script src="rewards.js"></script>
+<script>
+Kit.mount("🏅", "Achievement System");
+const $=id=>document.getElementById(id);
+const A0=`📚 | Bookworm | Read 10 books | 10 | 20
+🤝 | Helping Hand | Help classmates 5 times | 5 | 15
+⏰ | Early Bird | On time 20 days | 20 | 25
+✍️ | Author | Publish a story | 1 | 20
+🧮 | Math Whiz | Master all times tables | 1 | 30
+🌟 | Kindness Star | Get 3 kindness shout-outs | 3 | 15
+🔬 | Scientist | Finish 4 experiments | 4 | 20
+🏃 | Super Mover | 10 days of active recess | 10 | 10`;
+Kit.editable({key:'achievements',title:'Achievements',help:'(one per line: emoji | name | what to do | how many times | bonus XP)',def:A0,onSave:()=>draw()});
+const ACH=()=>Kit.lines(Kit.get('ed:achievements',A0)).map(l=>{const p=l.split('|').map(s=>s.trim());return {e:p[0]||'🏅',n:p[1]||'Achievement',d:p[2]||'',g:Math.max(1,parseInt(p[3])||1),x:parseInt(p[4])||0}}).filter(a=>a.n);
+let prog=Kit.get('ac-prog',{}),tab='award',cur=0,who=null;
+const P=(k,a)=>(prog[k]||{})[a]||0;
+function save(){Kit.set('ac-prog',prog)}
+document.querySelector('main').innerHTML=`<div class="ac-tabs"><button class="btn" data-t="award">🎖️ Give progress</button><button class="btn white" data-t="case">🏆 Trophy cases</button><button class="btn white" data-t="wall">🧱 Class wall</button></div><div id="bd"></div><div id="ro" style="margin-top:12px;background:#fff;border:4px solid var(--ink);border-radius:16px;padding:8px"></div>`;
+Learn.rosterEditor($('ro'));$('ro').addEventListener('roster',()=>draw());
+function bump(k,i,d=1){const a=ACH()[i];prog[k]=prog[k]||{};const before=P(k,a.n);const v=Math.max(0,Math.min(a.g,before+d));prog[k][a.n]=v;save();
+ if(before<a.g&&v>=a.g){if(a.x)RW.addXP(k,a.x,`Achievement: ${a.n}`);pop(k,a)}else Kit.tick()}
+function pop(k,a){Kit.tada();Kit.confetti(90);const o=document.createElement('div');o.className='ac-pop';o.innerHTML=`<div><div class="big">${a.e}</div><h2 style="margin:4px 0">Achievement unlocked!</h2><div style="font-size:1.6rem;font-weight:900">${Kit.esc(a.n)}</div><div style="font-weight:800">${Kit.esc(k)}${a.x?` · +${a.x} XP`:''}</div><button class="btn green" style="margin-top:12px">🎉 Yay!</button></div>`;document.body.appendChild(o);o.onclick=()=>o.remove();setTimeout(()=>o.remove(),window.__fast?10:4500)}
+function draw(){document.querySelectorAll('[data-t]').forEach(b=>b.className='btn '+(b.dataset.t===tab?'':'white'));const L=ACH(),K=RW.kids();cur=Math.min(cur,L.length-1);
+ if(tab==='award'){const a=L[cur];$('bd').innerHTML=`<div class="ac-wrap"><div class="ac-p"><b>1️⃣ Pick an achievement</b><div class="ac-list" id="al">${L.map((x,i)=>`<button class="ac-a ${i===cur?'on':''}" data-a="${i}"><span>${x.e}</span><div><b>${Kit.esc(x.n)}</b><small>${Kit.esc(x.d)}${x.g>1?` (${x.g} times)`:''}${x.x?` · +${x.x} XP`:''}</small></div></button>`).join('')}</div><div class="muted" style="font-weight:700">✏️ Tap the pencil (top right) to make your own.</div></div>
+ <div class="ac-p"><b>2️⃣ Tap a student to add progress</b> <span class="muted" style="font-weight:700">(long-press or right-click to take one away)</span><div class="ac-kids" id="kd">${K.map(k=>{const v=P(k,a.n);return `<div class="ac-k ${v>=a.g?'done':''}" data-k="${Kit.esc(k)}"><div class="ring" style="--p:${v/a.g*100}"><span>${v>=a.g?a.e:v}</span></div>${Kit.esc(k)}<small>${v>=a.g?'Unlocked!':`${v} / ${a.g}`}</small></div>`}).join('')}</div></div></div>`;
+  $('al').onclick=e=>{const b=e.target.closest('[data-a]');if(b){cur=+b.dataset.a;draw()}};
+  $('kd').onclick=e=>{const c=e.target.closest('[data-k]');if(c){bump(c.dataset.k,cur,1);draw()}};$('kd').oncontextmenu=e=>{const c=e.target.closest('[data-k]');if(c){e.preventDefault();bump(c.dataset.k,cur,-1);draw()}}}
+ if(tab==='case'){who=who&&K.includes(who)?who:K[0];const got=L.filter(a=>P(who,a.n)>=a.g).length;
+  $('bd').innerHTML=`<div class="row" style="justify-content:center;gap:6px;margin-bottom:10px"><select id="wk" style="width:auto">${K.map(k=>`<option ${k===who?'selected':''}>${Kit.esc(k)}</option>`).join('')}</select><span class="ln-pill" style="background:#fff">🏆 ${got} / ${L.length} unlocked</span></div><div class="ac-case">${L.map(a=>{const v=P(who,a.n),ok=v>=a.g;return `<div class="ac-t ${ok?'':'lock'}"><span>${a.e}</span>${ok?Kit.esc(a.n):'???'}<small>${Kit.esc(a.d)}</small>${ok?'':`<div class="pb"><i style="width:${v/a.g*100}%"></i></div><small>${v} / ${a.g}</small>`}</div>`}).join('')}</div>`;
+  $('wk').onchange=()=>{who=$('wk').value;draw()}}
+ if(tab==='wall'){$('bd').innerHTML=`<div class="ac-wall">${L.map(a=>{const w=K.filter(k=>P(k,a.n)>=a.g);return {a,w}}).sort((x,y)=>x.w.length-y.w.length).map(({a,w})=>`<div class="ac-w"><b>${a.e} ${Kit.esc(a.n)}</b><div class="pb" style="height:14px;border:3px solid var(--ink);border-radius:99px;background:#E3E8F2;overflow:hidden"><i style="display:block;height:100%;width:${K.length?w.length/K.length*100:0}%;background:#FFC93C"></i></div><div>${w.length} of ${K.length} students${w.length&&w.length<=2?' · 💎 rare!':''}</div><div class="who">${w.map(Kit.esc).join(', ')||'Nobody yet. Who will be first?'}</div></div>`).join('')}</div>`}
+ window.__t={tab,cur,prog}}
+document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;draw()});
+window.__a={bump:(k,i,d)=>{bump(k,i,d);draw()}};
+draw();
+</script>
+</body></html>

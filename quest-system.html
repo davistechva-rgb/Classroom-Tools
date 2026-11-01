@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Quest System</title>
+<style>
+main{max-width:1700px}
+.qs-tabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
+.qs-board{background:#8B5A2B;background-image:repeating-linear-gradient(90deg,rgba(0,0,0,.08) 0 4px,transparent 4px 70px);border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);padding:18px;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px}
+.qs-q{background:#F6E7C1;border:3px solid #6E4520;border-radius:6px;padding:14px 12px 12px;position:relative;box-shadow:3px 5px 0 rgba(0,0,0,.35);transform:rotate(var(--r));display:grid;gap:6px;font-family:Georgia,serif}
+.qs-q::before{content:"📌";position:absolute;top:-14px;left:50%;transform:translateX(-50%);font-size:1.5rem}
+.qs-q h3{margin:0;font-family:Fredoka,sans-serif;display:flex;gap:8px;align-items:center}.qs-q h3 span{font-size:2rem}
+.qs-q .st{font-size:1.1rem}.qs-q ol{margin:0;padding-left:1.3em;font-weight:600}
+.qs-q .rw{font-family:Fredoka,sans-serif;font-weight:900;color:#8B5A2B}
+.qs-q .who{font-family:Fredoka,sans-serif;font-size:.85rem;font-weight:700;color:#5B4426}
+.qs-q .act{display:flex;gap:4px;flex-wrap:wrap}
+.qs-me{display:grid;grid-template-columns:260px minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:860px){.qs-me{grid-template-columns:minmax(0,1fr)}}
+.qs-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:8px}
+.qs-kids{display:grid;gap:4px;max-height:60vh;overflow:auto}.qs-kids button{font:inherit;font-weight:800;border:3px solid var(--ink);border-radius:10px;padding:4px 8px;background:#fff;cursor:pointer;text-align:left;color:var(--ink);display:flex;justify-content:space-between}.qs-kids button.on{background:var(--sun)}
+.qs-log{display:grid;gap:10px}
+.qs-act{background:#F6E7C1;border:4px solid var(--ink);border-radius:16px;padding:10px;display:grid;gap:6px}
+.qs-act h3{margin:0;display:flex;gap:6px;align-items:center}
+.qs-act label{display:flex;gap:8px;align-items:center;font-weight:700;background:#fff;border-radius:10px;padding:4px 8px;cursor:pointer}
+.qs-act label.ok{background:#C8F3D0;text-decoration:line-through}
+.qs-act .bar{height:14px;border:3px solid var(--ink);border-radius:99px;background:#E3E8F2;overflow:hidden}.qs-act .bar i{display:block;height:100%;background:#5DC66E}
+.qs-done{display:flex;gap:6px;flex-wrap:wrap}.qs-done span{background:#FFF6C9;border:3px solid var(--ink);border-radius:99px;padding:2px 10px;font-weight:800}
+.qs-ed{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:14px;display:grid;gap:8px;max-width:720px;margin:0 auto}
+.qs-ed input,.qs-ed textarea,.qs-ed select{font:inherit;font-weight:600;padding:6px 9px;border:3px solid var(--ink);border-radius:10px;width:100%;display:block;margin-top:3px}
+.qs-ed textarea{min-height:0}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script><script src="rewards.js"></script>
+<script>
+Kit.mount("🎯", "Quest System");
+const $=id=>document.getElementById(id);
+const Q0=[{id:1,e:'📚',t:'The Reading Rover',d:1,xp:30,s:['Read a book from a new genre','Tell a friend about it','Write 3 sentences about your favorite part']},
+ {id:2,e:'🌱',t:'Garden Guardian',d:2,xp:50,s:['Plant a seed in a cup','Measure it every day for a week','Draw a chart of how it grew']},
+ {id:3,e:'🧮',t:'Times Table Titan',d:3,xp:80,s:['Master the 6s','Master the 7s','Master the 8s','Beat the class timer']},
+ {id:4,e:'🤝',t:'Kindness Quest',d:1,xp:25,s:['Help someone without being asked','Write a thank-you note','Include someone new at recess']},
+ {id:5,e:'🔬',t:'Mad Scientist',d:2,xp:60,s:['Ask a question you can test','Do the experiment','Share your results with the class']}];
+let Q=Kit.get('qs-quests',null)||Q0,L=Kit.get('qs-log',{}),tab='board',who=null,editId=null;
+const qlog=k=>L[k]||(L[k]={a:{},done:[]});
+function save(){Kit.set('qs-quests',Q);Kit.set('qs-log',L)}
+document.querySelector('main').innerHTML=`<div class="qs-tabs"><button class="btn" data-t="board">📜 Quest board</button><button class="btn white" data-t="me">🧭 Adventurers</button><button class="btn white" data-t="edit">✏️ Make a quest</button></div><div id="bd"></div><div id="ro" style="margin-top:12px;background:#fff;border:4px solid var(--ink);border-radius:16px;padding:8px"></div>`;
+Learn.rosterEditor($('ro'));$('ro').addEventListener('roster',()=>draw());
+const on=q=>RW.kids().filter(k=>qlog(k).a[q.id]),fin=q=>RW.kids().filter(k=>qlog(k).done.includes(q.id));
+function board(){$('bd').innerHTML=`<div class="qs-board">${Q.map((q,i)=>`<div class="qs-q" style="--r:${(i*37%7-3)*.6}deg"><h3><span>${q.e}</span>${Kit.esc(q.t)}</h3><div class="st">${'⭐'.repeat(q.d)}${'☆'.repeat(3-q.d)}</div><ol>${q.s.map(s=>`<li>${Kit.esc(s)}</li>`).join('')}</ol><div class="rw">🏆 Reward: ${q.xp} XP</div><div class="who">🧭 On this quest: ${on(q).length?on(q).map(Kit.esc).join(', '):'nobody yet'}${fin(q).length?`<br>✅ Finished: ${fin(q).map(Kit.esc).join(', ')}`:''}</div><div class="act"><button class="btn green small" data-join="${q.id}">✋ Join quest</button><button class="btn white small" data-ed="${q.id}">✏️</button></div></div>`).join('')||'<div style="color:#fff;font-weight:800">No quests yet. Make one!</div>'}</div>`;
+ $('bd').querySelector('.qs-board').onclick=e=>{const j=e.target.closest('[data-join]'),d=e.target.closest('[data-ed]');if(d){editId=+d.dataset.ed;tab='edit';draw();return}if(j){const q=Q.find(x=>x.id===+j.dataset.join),K=RW.kids();
+  Kit.modal(`<h2 style="margin-top:0">${q.e} Who is joining "${Kit.esc(q.t)}"?</h2><div style="display:flex;flex-wrap:wrap;gap:6px">${K.map(k=>{const st=qlog(k).done.includes(q.id)?'✅':qlog(k).a[q.id]?'🧭':'';return `<button class="btn ${st?'':'white'} small" data-jk="${Kit.esc(k)}" ${qlog(k).done.includes(q.id)?'disabled':''}>${st} ${Kit.esc(k)}</button>`}).join('')}</div><p class="muted">Tap names to add or remove adventurers.</p>`);
+  document.getElementById('kitModal').onclick=ev=>{const b=ev.target.closest('[data-jk]');if(!b)return;const lg=qlog(b.dataset.jk);if(lg.a[q.id])delete lg.a[q.id];else lg.a[q.id]=[];save();b.className='btn '+(lg.a[q.id]?'':'white')+' small';b.textContent=(lg.a[q.id]?'🧭 ':'')+b.dataset.jk;board()}}};window.__t={tab,quests:Q.length}}
+function me(){const K=RW.kids();who=who&&K.includes(who)?who:K[0];const lg=qlog(who),act=Q.filter(q=>lg.a[q.id]);
+ $('bd').innerHTML=`<div class="qs-me"><div class="qs-p"><b>🧭 Adventurers</b><div class="qs-kids" id="ks">${K.map(k=>`<button data-k="${Kit.esc(k)}" class="${k===who?'on':''}"><span>${Kit.esc(k)}</span><span>${Object.keys(qlog(k).a).length?'🧭'+Object.keys(qlog(k).a).length:''} ${qlog(k).done.length?'🏆'+qlog(k).done.length:''}</span></button>`).join('')}</div></div>
+ <div class="qs-p"><h2 style="margin:0">${Kit.esc(who)}'s quest log</h2><div style="font-weight:800">⭐ ${RW.xp(who)} XP</div><div class="qs-log">${act.map(q=>{const d=lg.a[q.id]||[];return `<div class="qs-act"><h3>${q.e} ${Kit.esc(q.t)} <small style="margin-left:auto">${'⭐'.repeat(q.d)}</small></h3><div class="bar"><i style="width:${d.length/q.s.length*100}%"></i></div>${q.s.map((s,i)=>`<label class="${d.includes(i)?'ok':''}"><input type="checkbox" data-q="${q.id}" data-s="${i}" ${d.includes(i)?'checked':''}> ${Kit.esc(s)}</label>`).join('')}<button class="btn white small" data-quit="${q.id}" style="justify-self:start">🚪 Leave quest</button></div>`}).join('')||'<div class="muted" style="font-weight:700">No active quests. Join one from the quest board!</div>'}</div>
+ <b>🏆 Finished quests</b><div class="qs-done">${lg.done.map(id=>Q.find(q=>q.id===id)).filter(Boolean).map(q=>`<span>${q.e} ${Kit.esc(q.t)}</span>`).join('')||'<span class="muted" style="border:0;background:none">None yet</span>'}</div></div></div>`;
+ $('ks').onclick=e=>{const b=e.target.closest('[data-k]');if(b){who=b.dataset.k;me()}};
+ $('bd').querySelector('.qs-log').onchange=e=>{const c=e.target;if(!c.dataset.q)return;const id=+c.dataset.q,s=+c.dataset.s,d=lg.a[id];const at=d.indexOf(s);if(c.checked&&at<0)d.push(s);if(!c.checked&&at>=0)d.splice(at,1);Kit.tick();
+  const q=Q.find(x=>x.id===id);if(d.length===q.s.length){delete lg.a[id];lg.done.push(id);RW.addXP(who,q.xp,`Quest: ${q.t}`);Kit.tada();Kit.confetti(90);Kit.modal(`<div style="text-align:center"><div style="font-size:5rem">${q.e}</div><h2>Quest complete!</h2><div style="font-size:1.4rem;font-weight:900">${Kit.esc(who)} finished "${Kit.esc(q.t)}"</div><div style="font-size:1.2rem;font-weight:800">+${q.xp} XP 🏆</div></div>`)}save();me()};
+ $('bd').querySelector('.qs-log').onclick=e=>{const b=e.target.closest('[data-quit]');if(b&&confirm('Leave this quest? Progress will be lost.')){delete lg.a[+b.dataset.quit];save();me()}};window.__t={tab,who,active:act.length,done:lg.done.length,xp:RW.xp(who)}}
+function edit(){const q=Q.find(x=>x.id===editId)||{e:'🗺️',t:'',d:1,xp:30,s:['','','']};
+ $('bd').innerHTML=`<div class="qs-ed"><h2 style="margin:0">${editId?'✏️ Edit quest':'✨ New quest'}</h2><div class="row" style="gap:8px"><label style="font-weight:800;width:90px">Emoji<input id="qe" value="${Kit.esc(q.e)}" maxlength="4"></label><label style="font-weight:800;flex:1">Quest name<input id="qt" value="${Kit.esc(q.t)}"></label></div>
+ <div class="row" style="gap:8px"><label style="font-weight:800;flex:1">Difficulty<select id="qd">${[1,2,3].map(n=>`<option value="${n}" ${q.d===n?'selected':''}>${'⭐'.repeat(n)}</option>`).join('')}</select></label><label style="font-weight:800;flex:1">Reward XP<input id="qx" type="number" min="0" value="${q.xp}"></label></div>
+ <label style="font-weight:800">Steps (one per line)<textarea id="qs" rows="5">${Kit.esc(q.s.join('\n'))}</textarea></label><div class="row" style="gap:6px"><button class="btn green" id="sv">💾 Save quest</button>${editId?'<button class="btn white" id="dl">🗑️ Delete quest</button>':''}<button class="btn white" id="cx">Cancel</button></div></div>`;
+ $('sv').onclick=()=>{const s=Kit.lines($('qs').value);if(!$('qt').value.trim()||!s.length){alert('Give the quest a name and at least one step.');return}const nq={id:editId||Date.now(),e:$('qe').value||'🗺️',t:$('qt').value.trim(),d:+$('qd').value,xp:Math.max(0,+$('qx').value||0),s};if(editId)Q[Q.findIndex(x=>x.id===editId)]=nq;else Q.push(nq);save();editId=null;tab='board';draw()};
+ if($('dl'))$('dl').onclick=()=>{if(confirm('Delete this quest?')){Q=Q.filter(x=>x.id!==editId);save();editId=null;tab='board';draw()}};$('cx').onclick=()=>{editId=null;tab='board';draw()};window.__t={tab}}
+function draw(){document.querySelectorAll('[data-t]').forEach(b=>b.className='btn '+(b.dataset.t===tab?'':'white'));({board,me,edit})[tab]()}
+document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;if(tab==='edit')editId=null;draw()});
+window.__q={join:(k,id)=>{qlog(k).a[id]=[];save();draw()},who:k=>{who=k;tab='me';draw()}};
+draw();
+</script>
+</body></html>

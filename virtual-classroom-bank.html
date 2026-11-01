@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Virtual Classroom Bank</title>
+<style>
+main{max-width:1700px}
+.bk{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:16px;align-items:start}
+@media (max-width:960px){.bk{grid-template-columns:minmax(0,1fr)}}
+.bk-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:10px}
+.bk-list{display:grid;gap:5px;max-height:70vh;overflow:auto}
+.bk-r{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;border:3px solid var(--ink);border-radius:12px;padding:5px 10px;cursor:pointer;font-weight:800;background:#fff}
+.bk-r.on{background:var(--sun)}.bk-r small{color:#55607E;font-weight:700}
+.bk-teller{background:linear-gradient(#2E7D4F,#1F5A38);color:#fff;border:6px solid var(--ink);border-radius:26px;box-shadow:8px 8px 0 var(--ink);padding:16px;display:grid;gap:12px}
+.bk-teller h2{margin:0;text-shadow:2px 2px 0 #000}
+.bk-acc{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.bk-acc div{background:#fff;color:var(--ink);border:4px solid var(--ink);border-radius:16px;padding:8px;text-align:center;font-weight:800}
+.bk-acc b{display:block;font-size:2rem}
+.bk-mv{display:flex;gap:6px;flex-wrap:wrap;align-items:center;justify-content:center}
+.bk-mv input{width:80px;font:inherit;font-weight:900;font-size:1.2rem;text-align:center;padding:5px;border:3px solid var(--ink);border-radius:10px}
+.bk-goal{background:#fff;color:var(--ink);border:4px solid var(--ink);border-radius:16px;padding:8px;display:grid;gap:6px}
+.bk-goal .bar{height:18px;border:3px solid var(--ink);border-radius:99px;background:#E3E8F2;overflow:hidden}.bk-goal .bar i{display:block;height:100%;background:#FFC93C}
+.bk-chart svg{width:100%;background:#fff;border:4px solid var(--ink);border-radius:14px}
+.bk-msg{font-weight:800;min-height:1.3em;text-align:center}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script><script src="rewards.js"></script>
+<script>
+Kit.mount("🏦", "Virtual Classroom Bank");
+const $=id=>document.getElementById(id);
+let BK=Kit.get('rw-bank',{}),rate=Kit.get('bk-rate',10),who=null;
+const acc=k=>BK[k]||(BK[k]={bal:0,goal:null,hist:[]});
+function save(){Kit.set('rw-bank',BK)}
+const ce=()=>RW.coinName().split(' ')[0];
+document.querySelector('main').innerHTML=`<div class="bk"><div class="bk-p"><div style="font-size:1.3rem;font-weight:900;text-align:center">🏦 Class Bank</div><div style="font-weight:800;text-align:center" id="tv"></div>
+<label style="font-weight:800">📈 Interest each week: <select id="rt" style="width:auto">${[2,5,10,20].map(r=>`<option value="${r}">${r}%</option>`).join('')}</select></label><button class="btn green" id="iday">✨ Interest day! (pay everyone's interest)</button><div class="bk-msg" id="im"></div><b>👥 Accounts</b><div class="bk-list" id="ls"></div></div><div id="tl"></div></div>
+<div id="ro" style="margin-top:12px;background:#fff;border:4px solid var(--ink);border-radius:16px;padding:8px"></div>`;
+Learn.rosterEditor($('ro'));$('ro').addEventListener('roster',()=>draw());
+$('rt').value=rate;
+const interest=b=>Math.floor(b*rate/100);
+function draw(){const K=RW.kids();who=who&&K.includes(who)?who:K[0];const tot=K.reduce((s,k)=>s+acc(k).bal,0);$('tv').textContent=`💰 ${tot} ${ce()} saved in the vault`;
+ $('ls').innerHTML=K.map(k=>`<div class="bk-r ${k===who?'on':''}" data-k="${Kit.esc(k)}"><span>${Kit.esc(k)}</span><small>👛 ${RW.coins(k)}</small><span>🏦 ${acc(k).bal}</span></div>`).join('');
+ const a=acc(who),c=ce(),g=a.goal;
+ $('tl').innerHTML=`<div class="bk-teller"><h2>🧑‍💼 Teller: ${Kit.esc(who)}'s account</h2><div class="bk-acc"><div>👛 Wallet (spending)<b>${c} ${RW.coins(who)}</b></div><div>🏦 Savings<b>${c} ${a.bal}</b></div></div>
+ <div class="bk-mv"><input id="amt" type="number" min="1" value="5"><button class="btn green" id="dep">⬇️ Save it (deposit)</button><button class="btn white" id="wd">⬆️ Take out (withdraw)</button></div><div class="bk-msg" id="msg"></div>
+ <div class="bk-goal"><b>🎯 Saving goal</b>${g?`<div style="font-weight:800">${Kit.esc(g.name)}: ${a.bal} / ${g.amt} ${c}</div><div class="bar"><i style="width:${Math.min(100,a.bal/g.amt*100)}%"></i></div><div style="font-weight:700">${a.bal>=g.amt?'🎉 Goal reached!':weeks(a.bal,g.amt)}</div><button class="btn white small" id="gx">✖ Remove goal</button>`:`<div class="row" style="gap:6px"><input id="gn" placeholder="What are you saving for?" style="flex:1;min-width:0;font:inherit;font-weight:700;padding:5px;border:3px solid var(--ink);border-radius:10px"><input id="ga" type="number" min="1" placeholder="${c}" style="width:80px;font:inherit;font-weight:700;padding:5px;border:3px solid var(--ink);border-radius:10px"><button class="btn green small" id="gs">Set goal</button></div>`}</div>
+ <div class="bk-goal"><b>🔮 What if ${Kit.esc(who)} keeps saving?</b><label style="font-weight:700">Weeks: <input type="range" id="wk" min="1" max="20" value="8" style="vertical-align:middle"> <span id="wkv">8</span></label><div class="bk-chart" id="ch"></div></div></div>`;
+ $('dep').onclick=()=>move(1);$('wd').onclick=()=>move(-1);$('wk').oninput=proj;proj();
+ if($('gs'))$('gs').onclick=()=>{const n=$('gn').value.trim(),m=parseInt($('ga').value);if(!n||!(m>0))return;a.goal={name:n,amt:m};save();draw()};if($('gx'))$('gx').onclick=()=>{a.goal=null;save();draw()};
+ window.__t={who,bal:a.bal,wallet:RW.coins(who),tot}}
+function weeks(b,goal){if(!b&&!rate)return '';let w=0,x=b;while(x<goal&&w<200){x+=Math.max(x>0?1:0,interest(x));w++}return x>=goal&&w<200?`With interest alone, about ${w} week${w>1?'s':''} to go. Saving more makes it faster!`:'Keep saving to grow your money!'}
+function proj(){const W=+$('wk').value;$('wkv').textContent=W;const a=acc(who),pts=[a.bal];for(let i=0;i<W;i++){const x=pts[pts.length-1];pts.push(x+interest(x))}
+ const withSave=[a.bal];for(let i=0;i<W;i++){const x=withSave[withSave.length-1]+5;withSave.push(x+interest(x))}
+ const mx=Math.max(10,...withSave),X=i=>40+i*(560/W),Y=v=>200-v/mx*170;
+ $('ch').innerHTML=`<svg viewBox="0 0 620 230"><line x1="40" y1="200" x2="600" y2="200" stroke="#1D2B53" stroke-width="2"/><polyline points="${withSave.map((v,i)=>`${X(i)},${Y(v)}`).join(' ')}" fill="none" stroke="#5DC66E" stroke-width="5"/><polyline points="${pts.map((v,i)=>`${X(i)},${Y(v)}`).join(' ')}" fill="none" stroke="#FFC93C" stroke-width="5"/>
+ <text x="${X(W)}" y="${Y(withSave[W])-8}" text-anchor="end" font-weight="900" fill="#2E9E47">${withSave[W]} (saving 5 more each week)</text><text x="${X(W)}" y="${Y(pts[W])+20}" text-anchor="end" font-weight="900" fill="#B8860B">${pts[W]} (just interest)</text><text x="40" y="222" font-weight="800">now</text><text x="600" y="222" text-anchor="end" font-weight="800">${W} weeks</text></svg>`}
+function move(d){const n=parseInt($('amt').value);if(!(n>0))return;const a=acc(who);
+ if(d>0){if(!RW.addCoins(who,-n,'Deposit to savings')){$('msg').textContent=`Not enough in the wallet (has ${RW.coins(who)}).`;Kit.tone(200,.2,'triangle',.15);return}a.bal+=n;a.hist.push([Date.now(),n]);Kit.ding()}
+ else{if(a.bal<n){$('msg').textContent=`Only ${a.bal} in savings.`;Kit.tone(200,.2,'triangle',.15);return}a.bal-=n;RW.addCoins(who,n,'Withdraw from savings');a.hist.push([Date.now(),-n]);Kit.tick()}
+ const was=a.goal&&a.bal-(d>0?n:0)<a.goal.amt;save();draw();if(d>0&&was&&a.bal>=a.goal.amt){Kit.tada();Kit.confetti(80)}}
+$('ls').onclick=e=>{const r=e.target.closest('[data-k]');if(r){who=r.dataset.k;draw()}};$('rt').onchange=()=>{rate=+$('rt').value;Kit.set('bk-rate',rate);draw()};
+$('iday').onclick=()=>{let t=0;RW.kids().forEach(k=>{const a=acc(k),i=interest(a.bal);if(i>0){a.bal+=i;a.hist.push([Date.now(),i,'interest']);t+=i}});save();draw();$('im').textContent=t?`✨ The bank paid ${t} ${ce()} in interest!`:'Nobody has enough savings to earn interest yet.';if(t){Kit.tada();Kit.confetti(50)}window.__t.paid=t};
+window.__b={who:k=>{who=k;draw()},amt:n=>$('amt').value=n};
+draw();
+</script>
+</body></html>

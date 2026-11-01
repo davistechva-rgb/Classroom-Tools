@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Class Championship System</title>
+<style>
+main{max-width:1800px}
+.cc-tabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
+.cc-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:8px}
+.cc-br{background:#fff;border:6px solid var(--ink);border-radius:24px;box-shadow:8px 8px 0 var(--ink);padding:14px;overflow-x:auto}
+.cc-rounds{display:flex;gap:26px;min-width:max-content;align-items:stretch}
+.cc-r{display:flex;flex-direction:column;min-width:170px}.cc-r>div{flex:1;display:flex;flex-direction:column;justify-content:space-around;gap:10px}
+.cc-r h3{margin:0 0 4px;text-align:center;font-size:1rem}
+/**/.cc-m{border:4px solid var(--ink);border-radius:14px;overflow:hidden;background:#F4F6FA;position:relative}
+.cc-m::after{content:"";position:absolute;right:-30px;top:50%;width:26px;border-top:4px solid var(--ink)}
+.cc-r:last-child .cc-m::after{display:none}
+.cc-m button{display:flex;justify-content:space-between;align-items:center;gap:6px;width:100%;font:inherit;font-weight:800;border:0;padding:6px 10px;background:none;cursor:pointer;color:var(--ink);text-align:left;min-height:38px}
+.cc-m button+button{border-top:3px dashed #B8C2D6}
+.cc-m button.w{background:#C8F3D0}.cc-m button.l{opacity:.45;text-decoration:line-through}
+.cc-m button:disabled{cursor:default}
+.cc-champ{display:grid;place-items:center;text-align:center;min-width:170px;font-weight:900;font-size:1.3rem}
+.cc-champ .tr{font-size:5rem;line-height:1;animation:sp 2s infinite alternate}@keyframes sp{to{transform:rotate(8deg) scale(1.08)}}
+.cc-lg{width:100%;border-collapse:collapse;font-weight:800}
+.cc-lg th,.cc-lg td{padding:6px 8px;border-bottom:2px solid #E3E8F2;text-align:center}.cc-lg td:nth-child(2){text-align:left}
+.cc-lg tr:first-child td{background:#FFF6C9}
+.cc-lg th{background:var(--ink);color:#fff}
+.cc-game{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:8px;align-items:center;border:3px solid var(--ink);border-radius:14px;padding:6px 10px;font-weight:800}
+.cc-game input{width:56px;font:inherit;font-weight:900;text-align:center;padding:4px;border:3px solid var(--ink);border-radius:10px}
+.cc-game .a{text-align:right}
+.cc-ent{display:flex;flex-wrap:wrap;gap:5px}
+.cc-ent span{border:3px solid var(--ink);border-radius:99px;padding:2px 10px;font-weight:800;background:#FFF6C9}
+.cc-two{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.cc-two{grid-template-columns:minmax(0,1fr)}}
+.cc-p textarea{font:inherit;font-weight:700;padding:8px;border:3px solid var(--ink);border-radius:12px;width:100%;min-height:150px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🏆", "Class Championship System");
+const $=id=>document.getElementById(id);
+let S=Kit.get('cc-state',null)||{ents:'🦁 Lions\n🐯 Tigers\n🦅 Eagles\n🐺 Wolves\n🦈 Sharks\n🐉 Dragons',seed:null,picks:{},games:[],name:'Class Championship'},tab='bracket';
+function save(){Kit.set('cc-state',S)}
+const ents=()=>Kit.lines(S.ents).slice(0,32);
+document.querySelector('main').innerHTML=`<div class="cc-tabs"><button class="btn" data-t="bracket">🏆 Knockout bracket</button><button class="btn white" data-t="league">📊 Season league</button><button class="btn white" data-t="setup">✏️ Players & teams</button></div><div id="bd"></div>`;
+// bracket: seed list padded with byes to a power of 2; picks["r-m"]=0|1 (top or bottom wins)
+function size(n){let s=2;while(s<n)s*=2;return s}
+function seedOrder(){const E=ents();if(!S.seed||S.seed.length!==E.length||S.seed.some(x=>!E.includes(x))){S.seed=[...E];S.picks={};save()}const s=size(S.seed.length),L=[...S.seed];
+ // standard seeding (1 v 8, 4 v 5, 2 v 7, 3 v 6…) so byes go to the top seeds and are spread out
+ let o=[1];while(o.length<s)o=o.flatMap(x=>[x,o.length*2+1-x]);return o.map(k=>L[k-1]??null)}
+function rounds(){const first=seedOrder(),R=[first];let cur=first,r=0;while(cur.length>1){const nx=[];for(let m=0;m<cur.length/2;m++){const a=cur[m*2],b=cur[m*2+1];let w=null;if(a&&!b)w=a;else if(b&&!a)w=b;else if(a&&b&&S.picks[`${r}-${m}`]!=null)w=S.picks[`${r}-${m}`]?b:a;nx.push(w)}R.push(nx);cur=nx;r++}return R}
+const RNAME=(r,n)=>{const left=n-r;return left===1?'🏆 Final':left===2?'Semifinals':left===3?'Quarterfinals':`Round ${r+1}`};
+function bracket(){const R=rounds(),n=R.length-1,champ=R[n][0];
+ $('bd').innerHTML=`<div class="cc-br"><div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:space-between;align-items:center;margin-bottom:10px"><input id="nm" value="${Kit.esc(S.name)}" style="font:900 1.4rem Fredoka,sans-serif;border:0;color:var(--ink);min-width:0;flex:1 1 240px" aria-label="Championship name"><span class="muted" style="font-weight:700">Tap the winner of each match.</span><button class="btn white small" id="sh">🔀 Shuffle the bracket</button><button class="btn white small" id="cl">🧽 Clear winners</button></div><div class="cc-rounds">${R.slice(0,n).map((rd,r)=>`<div class="cc-r"><h3>${RNAME(r,n)}</h3><div>${Array.from({length:rd.length/2},(_,m)=>{const a=rd[m*2],b=rd[m*2+1],w=R[r+1][m],bye=!a||!b;return `<div class="cc-m">${[a,b].map((x,k)=>`<button data-r="${r}" data-m="${m}" data-k="${k}" class="${w&&x?w===x?'w':'l':''}" ${!x||bye||!(a&&b)?'disabled':''}><span>${x?Kit.esc(x):(a||b)&&r===0?'<i class="muted">bye</i>':'…'}</span>${w&&x===w?'✔️':''}</button>`).join('')}</div>`}).join('')}</div></div>`).join('')}
+ <div class="cc-champ">${champ?`<div><div class="tr">🏆</div><div>Champion!</div><div style="font-size:1.6rem">${Kit.esc(champ)}</div></div>`:'<div><div class="tr" style="filter:grayscale(1);opacity:.4">🏆</div><div class="muted">Champion</div></div>'}</div></div></div>`;
+ $('bd').querySelector('.cc-rounds').onclick=e=>{const b=e.target.closest('[data-r]');if(!b||b.disabled)return;const r=+b.dataset.r,m=+b.dataset.m,k=+b.dataset.k,key=`${r}-${m}`;
+  const was=S.picks[key];S.picks[key]=was===k?null:k;
+  // clear later picks that depended on this match
+  let mm=m;for(let rr=r+1;rr<20;rr++){mm=Math.floor(mm/2);delete S.picks[`${rr}-${mm}`]}save();const before=champ;bracket();const now=rounds();if(now[now.length-1][0]&&!before){Kit.tada();Kit.confetti(180)}else Kit.ding()};
+ $('nm').oninput=()=>{S.name=$('nm').value;save()};$('sh').onclick=()=>{S.seed=Kit.shuffle(ents());S.picks={};save();bracket()};$('cl').onclick=()=>{S.picks={};save();bracket()};
+ window.__t={tab,champ,rounds:n,size:R[0].length}}
+// league: round-robin schedule, 3 pts win / 1 draw
+function schedule(){const E=ents(),L=[...E];if(L.length%2)L.push(null);const n=L.length,G=[];for(let r=0;r<n-1;r++){for(let i=0;i<n/2;i++){const a=L[i],b=L[n-1-i];if(a&&b)G.push({w:r+1,a,b,sa:'',sb:''})}L.splice(1,0,L.pop())}return G}
+function table(){const T={};ents().forEach(e=>T[e]={p:0,w:0,d:0,l:0,f:0,g:0,pts:0});S.games.forEach(g=>{if(g.sa===''||g.sb===''||!T[g.a]||!T[g.b])return;const A=T[g.a],B=T[g.b],a=+g.sa,b=+g.sb;A.p++;B.p++;A.f+=a;A.g+=b;B.f+=b;B.g+=a;if(a>b){A.w++;B.l++;A.pts+=3}else if(b>a){B.w++;A.l++;B.pts+=3}else{A.d++;B.d++;A.pts++;B.pts++}});return Object.entries(T).sort((x,y)=>y[1].pts-x[1].pts||(y[1].f-y[1].g)-(x[1].f-x[1].g)||y[1].f-x[1].f)}
+function league(){const E=ents();if(!S.games.length||S.games.some(g=>!E.includes(g.a)||!E.includes(g.b))||S.games.length!==schedule().length){S.games=schedule();save()}const T=table(),wk=[...new Set(S.games.map(g=>g.w))];
+ $('bd').innerHTML=`<div class="cc-two"><div class="cc-p"><b>📊 Standings</b><div style="overflow-x:auto"><table class="cc-lg"><tr><th>#</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>+/−</th><th>Pts</th></tr>${T.map(([n,t],i)=>`<tr><td>${['🥇','🥈','🥉'][i]&&t.p?['🥇','🥈','🥉'][i]:i+1}</td><td>${Kit.esc(n)}</td><td>${t.p}</td><td>${t.w}</td><td>${t.d}</td><td>${t.l}</td><td>${t.f-t.g>0?'+':''}${t.f-t.g}</td><td style="font-size:1.2rem">${t.pts}</td></tr>`).join('')}</table></div><div class="muted" style="font-weight:700">Win = 3 points · Tie = 1 point · Score can be anything: quiz points, goals, stars…</div></div>
+ <div class="cc-p"><b>📅 Games</b><div style="display:grid;gap:10px;max-height:560px;overflow:auto">${wk.map(w=>`<div style="display:grid;gap:5px"><b>Week ${w}</b>${S.games.map((g,i)=>g.w!==w?'':`<div class="cc-game"><span class="a">${Kit.esc(g.a)}</span><span style="display:flex;gap:4px;align-items:center"><input type="number" min="0" data-g="${i}" data-s="sa" value="${g.sa}" aria-label="${Kit.esc(g.a)} score">–<input type="number" min="0" data-g="${i}" data-s="sb" value="${g.sb}" aria-label="${Kit.esc(g.b)} score"></span><span>${Kit.esc(g.b)}</span></div>`).join('')}</div>`).join('')}</div><button class="btn white small" id="cg">🧽 Clear all scores</button></div></div>`;
+ $('bd').querySelectorAll('[data-g]').forEach(n=>n.onchange=()=>{S.games[+n.dataset.g][n.dataset.s]=n.value===''?'':Math.max(0,+n.value);save();league();Kit.tick()});
+ $('cg').onclick=()=>{if(confirm('Clear every score?')){S.games.forEach(g=>{g.sa=g.sb=''});save();league()}};window.__t={tab,games:S.games.length,lead:T[0]&&T[0][0],pts:T[0]&&T[0][1].pts}}
+function setup(){$('bd').innerHTML=`<div class="cc-two"><div class="cc-p"><b>✏️ Who's playing?</b><div class="muted" style="font-weight:700">One per line (up to 32). Use teams or single players. Changing the list starts a fresh bracket and season.</div><textarea id="et">${Kit.esc(S.ents)}</textarea><div class="row" style="gap:6px"><button class="btn green small" id="es">💾 Save</button><button class="btn white small" id="er">👥 Use my class list</button></div></div><div class="cc-p"><b>👀 Entries</b><div class="cc-ent">${ents().map(e=>`<span>${Kit.esc(e)}</span>`).join('')}</div></div></div>`;
+$('es').onclick=()=>{S.ents=$('et').value;S.seed=null;S.picks={};S.games=[];save();Kit.ding();setup()};$('er').onclick=()=>{$('et').value=Learn.roster().join('\n')};window.__t={tab,n:ents().length}}
+function draw(){document.querySelectorAll('[data-t]').forEach(b=>b.className='btn '+(b.dataset.t===tab?'':'white'));({bracket,league,setup})[tab]()}
+document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;draw()});
+draw();
+</script>
+</body></html>

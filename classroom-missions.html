@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Classroom Missions</title>
+<style>
+main{max-width:1600px}
+.cm2-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:40px}
+.cm2{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:960px){.cm2{grid-template-columns:minmax(0,1fr)}}
+.cm2-file{background:#E8C38A;border:6px solid var(--ink);border-radius:8px 26px 26px 26px;box-shadow:8px 8px 0 var(--ink);padding:18px;position:relative;display:grid;gap:12px}
+.cm2-file::before{content:"";position:absolute;top:-30px;left:-6px;width:180px;height:30px;background:#E8C38A;border:6px solid var(--ink);border-bottom:0;border-radius:14px 14px 0 0}
+.cm2-stamp{position:absolute;right:16px;top:14px;border:5px solid #E5533F;color:#E5533F;font-weight:900;padding:2px 12px;transform:rotate(8deg);border-radius:8px;font-size:1.1rem;letter-spacing:.1em}
+.cm2-file h2{margin:0;font-family:ui-monospace,Menlo,monospace;font-size:clamp(1.3rem,3.5vw,2rem)}
+.cm2-brief{background:#FFFDF6;border:3px solid var(--ink);border-radius:10px;padding:10px 12px;font-family:ui-monospace,Menlo,monospace;font-weight:700;font-size:1.05rem}
+.cm2-meter{display:grid;grid-template-columns:90px minmax(0,1fr);gap:16px;align-items:end}
+.cm2-tube{height:300px;width:70px;border:6px solid var(--ink);border-radius:40px;background:#fff;position:relative;overflow:hidden;margin:0 auto}
+.cm2-tube i{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(#FF9F43,#E5533F);transition:height 1s cubic-bezier(.3,1.4,.5,1)}
+.cm2-tube b{position:absolute;left:0;right:0;text-align:center;font-weight:900;font-size:.8rem;color:#55607E}
+.cm2-num{font-size:clamp(2.4rem,7vw,4rem);font-weight:900;line-height:1}
+.cm2-add{display:flex;gap:6px;flex-wrap:wrap}
+.cm2-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:8px}
+.cm2-p input,.cm2-p select,.cm2-p textarea{font:inherit;font-weight:600;padding:6px 9px;border:3px solid var(--ink);border-radius:10px;width:100%;display:block;margin-top:3px}
+.cm2-p textarea{min-height:0}
+.cm2-list{display:grid;gap:5px}.cm2-list button{font:inherit;font-weight:800;border:3px solid var(--ink);border-radius:12px;padding:5px 9px;background:#fff;cursor:pointer;text-align:left;color:var(--ink);display:flex;justify-content:space-between;gap:6px}.cm2-list button.on{background:var(--sun)}
+.cm2-done{position:fixed;inset:0;display:grid;place-items:center;background:rgba(15,22,45,.7);z-index:50}
+.cm2-done div{border:8px solid #2E9E47;color:#2E9E47;background:#fff;font-weight:900;font-size:clamp(2rem,7vw,4.5rem);padding:10px 30px;border-radius:16px;transform:rotate(-8deg);animation:slam .5s;text-align:center}@keyframes slam{0%{transform:scale(3) rotate(-8deg);opacity:0}}
+.cm2-who{display:flex;gap:4px;flex-wrap:wrap}.cm2-who button{font:inherit;font-weight:800;font-size:.85rem;border:2px solid var(--ink);border-radius:99px;padding:1px 8px;background:#fff;cursor:pointer;color:var(--ink)}.cm2-who button.on{background:#C8F3D0}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script><script src="rewards.js"></script>
+<script>
+Kit.mount("📜", "Classroom Missions");
+const $=id=>document.getElementById(id);
+const M0=[{id:1,code:'Operation Bookworm',e:'📚',goal:300,unit:'pages read',brief:'Agents, our mission is to read 300 pages as a class. Every page counts!',reward:'Pajama reading day',due:'',got:0,log:[]},{id:2,code:'Operation Kindness',e:'💖',goal:50,unit:'kind acts',brief:'Do 50 secret acts of kindness. Report each one to headquarters (your teacher).',reward:'Extra recess',due:'',got:0,log:[]}];
+let M=Kit.get('cm2-m',null)||M0,cur=M[0]&&M[0].id,from=null,newM=false;
+function save(){Kit.set('cm2-m',M)}
+const m=()=>M.find(x=>x.id===cur);
+document.querySelector('main').innerHTML=`<div class="cm2-top"><button class="btn white small" id="nw">🕵️ New mission</button></div><div class="cm2"><div id="fl"></div><div class="cm2-p"><b>🗂️ Missions</b><div class="cm2-list" id="ls"></div><div id="ed"></div></div></div><div id="ro" style="margin-top:12px;background:#fff;border:4px solid var(--ink);border-radius:16px;padding:8px"></div>`;
+Learn.rosterEditor($('ro'));$('ro').addEventListener('roster',()=>draw());
+function days(d){if(!d)return null;return Math.ceil((new Date(d+'T23:59')-Date.now())/864e5)}
+function draw(){$('ls').innerHTML=M.map(x=>`<button data-m="${x.id}" class="${x.id===cur?'on':''}"><span>${x.e} ${Kit.esc(x.code)}</span><span>${x.got>=x.goal?'✅':Math.round(x.got/x.goal*100)+'%'}</span></button>`).join('')||'<span class="muted">No missions.</span>';
+ const x=m();if(newM||!x){editor(null);$('fl').innerHTML='<div class="cm2-file"><h2>🕵️ Write a new mission</h2><div class="cm2-brief">Fill in the mission details on the right.</div></div>';return}
+ const pct=Math.min(100,x.got/x.goal*100),d=days(x.due),done=x.got>=x.goal,K=RW.kids();
+ $('fl').innerHTML=`<div class="cm2-file"><span class="cm2-stamp">${done?'✅ ACCOMPLISHED':'TOP SECRET'}</span><h2>${x.e} ${Kit.esc(x.code)}</h2><div class="cm2-brief">${x.brief?`📋 ${Kit.esc(x.brief)}<br>`:""}🎁 Reward: ${Kit.esc(x.reward||'A surprise!')}${d!=null?`<br>⏳ ${d>0?`${d} day${d>1?'s':''} left`:d===0?'Last day!':'Time is up!'}`:''}</div>
+ <div class="cm2-meter"><div class="cm2-tube"><i style="height:${pct}%"></i>${[25,50,75].map(p=>`<b style="bottom:${p}%">— ${Math.round(x.goal*p/100)}</b>`).join('')}</div><div><div class="cm2-num">${x.got}<span style="font-size:.4em"> / ${x.goal}</span></div><div style="font-weight:900;font-size:1.2rem">${Kit.esc(x.unit)}</div><div style="font-weight:700;margin:6px 0">${done?'🎉 Mission accomplished!':`${x.goal-x.got} to go!`}</div>
+ <div style="font-weight:800">🧒 Who helped? <span class="muted" style="font-weight:600">(optional)</span></div><div class="cm2-who" id="wh"><button data-w="" class="${from?'':'on'}">The class</button>${K.map(k=>`<button data-w="${Kit.esc(k)}" class="${from===k?'on':''}">${Kit.esc(k)}</button>`).join('')}</div>
+ <div class="cm2-add" style="margin-top:8px">${[1,5,10,25].map(n=>`<button class="btn green" data-a="${n}">+${n}</button>`).join('')}<button class="btn white small" data-a="-1">−1</button></div></div></div>
+ <div style="font-weight:800">🏅 Top agents: ${topA(x)||'—'}</div></div>`;
+ $('fl').querySelector('.cm2-add').onclick=e=>{const b=e.target.closest('[data-a]');if(b)add(+b.dataset.a)};$('wh').onclick=e=>{const b=e.target.closest('[data-w]');if(b){from=b.dataset.w||null;draw()}};
+ editor(x);window.__t={cur,got:x.got,goal:x.goal,done,missions:M.length}}
+function topA(x){const c={};x.log.forEach(l=>{if(l[1])c[l[1]]=(c[l[1]]||0)+l[2]});return Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k,v])=>`${Kit.esc(k)} (${v})`).join(', ')}
+function add(n){const x=m(),was=x.got>=x.goal;x.got=Math.max(0,x.got+n);x.log.push([Date.now(),from,n]);save();n>0?Kit.ding():Kit.tick();draw();
+ if(!was&&x.got>=x.goal){Kit.tada();Kit.confetti(150);const o=document.createElement('div');o.className='cm2-done';o.innerHTML=`<div>MISSION<br>ACCOMPLISHED<div style="font-size:.4em;color:#1D2B53">${x.e} ${Kit.esc(x.code)} · 🎁 ${Kit.esc(x.reward||'')}</div></div>`;document.body.appendChild(o);o.onclick=()=>o.remove();setTimeout(()=>o.remove(),window.__fast?10:5000)}}
+function editor(x){const v=x||{code:'Operation ',e:'🕵️',goal:100,unit:'',brief:'',reward:'',due:''};
+ $('ed').innerHTML=`<hr style="width:100%"><b>${x?'✏️ Edit this mission':'✨ New mission'}</b><div class="row" style="gap:6px"><label style="font-weight:800;width:70px">Icon<input id="me" value="${Kit.esc(v.e)}" maxlength="4"></label><label style="font-weight:800;flex:1">Code name<input id="mc" value="${Kit.esc(v.code)}"></label></div><div class="row" style="gap:6px"><label style="font-weight:800;width:100px">Goal<input id="mg" type="number" min="1" value="${v.goal}"></label><label style="font-weight:800;flex:1">Counting what?<input id="mu" value="${Kit.esc(v.unit)}" placeholder="pages read, kind acts…"></label></div>
+ <label style="font-weight:800">Briefing<textarea id="mb" rows="2">${Kit.esc(v.brief)}</textarea></label><div class="row" style="gap:6px"><label style="font-weight:800;flex:1">Reward<input id="mr" value="${Kit.esc(v.reward)}"></label><label style="font-weight:800;flex:1">Deadline<input id="md" type="date" value="${v.due||''}"></label></div>
+ <div class="row" style="gap:6px"><button class="btn green small" id="ms">💾 ${x?'Save changes':'Start mission'}</button>${x?'<button class="btn white small" id="mz">↺ Reset count</button><button class="btn white small" id="mx">🗑️ Delete</button>':'<button class="btn white small" id="mq">Cancel</button>'}</div>`;
+ $('ms').onclick=()=>{const g=Math.max(1,+$('mg').value||1);const d={code:$('mc').value.trim()||'Secret mission',e:$('me').value||'🕵️',goal:g,unit:$('mu').value.trim()||'points',brief:$('mb').value,reward:$('mr').value,due:$('md').value};if(x)Object.assign(x,d);else{const n={id:Date.now(),got:0,log:[],...d};M.unshift(n);cur=n.id;newM=false}save();draw()};
+ if($('mz'))$('mz').onclick=()=>{if(confirm('Set this mission back to 0?')){x.got=0;x.log=[];save();draw()}};if($('mx'))$('mx').onclick=()=>{if(confirm('Delete this mission?')){M=M.filter(y=>y!==x);cur=M[0]&&M[0].id;save();draw()}};if($('mq'))$('mq').onclick=()=>{newM=false;draw()}}
+$('ls').onclick=e=>{const b=e.target.closest('[data-m]');if(b){cur=+b.dataset.m;newM=false;draw()}};$('nw').onclick=()=>{newM=true;draw()};
+window.__c={add,from:k=>{from=k}};
+draw();
+</script>
+</body></html>

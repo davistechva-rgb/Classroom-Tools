@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Classroom Currency System</title>
+<style>
+main{max-width:1700px}
+.cy-tabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
+.cy{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:960px){.cy{grid-template-columns:minmax(0,1fr)}}
+.cy-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:10px}
+.cy-w{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.cy-k{background:linear-gradient(#FFF6C9,#fff);border:4px solid var(--ink);border-radius:18px;padding:8px;display:grid;gap:4px;box-shadow:0 4px 0 var(--ink)}
+.cy-k .nm{font-weight:900;display:flex;justify-content:space-between}
+.cy-k .bal{font-size:1.6rem;font-weight:900;color:#8B5A2B}
+.cy-k .job{font-size:.8rem;font-weight:800;color:#55607E;min-height:1.2em}
+.cy-k .ac{display:flex;gap:3px}.cy-k .ac button{flex:1;font:inherit;font-weight:900;border:3px solid var(--ink);border-radius:10px;padding:2px;background:#fff;cursor:pointer;color:var(--ink)}
+.cy-k .ac button.m{background:#FFD3CC}.cy-k .ac button.p{background:#C8F3D0}
+.cy-k.bump{animation:bump .4s}@keyframes bump{40%{transform:scale(1.08)}}
+.cy-jobs{display:grid;gap:6px}
+.cy-job{display:grid;grid-template-columns:auto minmax(0,1fr) auto minmax(0,1fr);gap:6px;align-items:center;border:3px solid var(--ink);border-radius:12px;padding:5px 8px;font-weight:800}
+.cy-job span{font-size:1.5rem}.cy-job select{font:inherit;font-weight:700;padding:3px;border:2px solid var(--ink);border-radius:8px;min-width:0}
+.cy-led{max-height:340px;overflow:auto;display:grid;gap:3px;font-weight:700;font-size:.9rem}
+.cy-led div{display:flex;justify-content:space-between;gap:6px;background:#F4FAFF;border-radius:8px;padding:2px 8px}.cy-led .neg{background:#FFE7E3}
+.cy-big{font-size:1.4rem;font-weight:900;text-align:center}
+.cy-coin{position:fixed;font-size:2rem;pointer-events:none;z-index:60;animation:drop 1s forwards}@keyframes drop{0%{transform:translateY(-80px) rotateY(0)}100%{transform:translateY(0) rotateY(720deg);opacity:0}}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script><script src="rewards.js"></script>
+<script>
+Kit.mount("🪙", "Classroom Currency System");
+const $=id=>document.getElementById(id);
+const J0=`🚶 | Line leader | 5
+🌱 | Plant waterer | 4
+📚 | Librarian | 5
+🧹 | Floor sweeper | 4
+💡 | Lights | 3
+📝 | Paper passer | 3
+🐠 | Pet helper | 5
+💻 | Tech helper | 6`;
+Kit.editable({key:'class-jobs',title:'Class jobs',help:'(one per line: emoji | job | pay each payday)',def:J0,onSave:()=>draw()});
+const jobs=()=>Kit.lines(Kit.get('ed:class-jobs',J0)).map(l=>{const p=l.split('|').map(s=>s.trim());return {e:p[0],n:p[1]||'Job',pay:parseInt(p[2])||0}}).filter(j=>j.n);
+let asg=Kit.get('cy-asg',{}),tab='wallets',base=Kit.get('cy-base',2);
+const CN=[['🪙','coins'],['⭐','stars'],['🐚','shells'],['💎','gems'],['🍀','clovers'],['🦴','bones']];
+const cn=()=>{const v=RW.coinName();return [v.split(' ')[0],v.split(' ').slice(1).join(' ')]};
+document.querySelector('main').innerHTML=`<div class="cy-tabs"><button class="btn" data-t="wallets">👛 Wallets</button><button class="btn white" data-t="jobs">💼 Jobs & payday</button><button class="btn white" data-t="ledger">📒 Ledger</button><select id="cn" style="width:auto">${CN.map(c=>`<option value="${c.join(' ')}">${c[0]} ${c[1]}</option>`).join('')}</select></div><div id="bd"></div><div id="ro" style="margin-top:12px;background:#fff;border:4px solid var(--ink);border-radius:16px;padding:8px"></div>`;
+Learn.rosterEditor($('ro'));$('ro').addEventListener('roster',()=>draw());
+function jobOf(k){const J=jobs();const i=J.findIndex(j=>asg[j.n]===k);return i<0?null:J[i]}
+function rain(el,n){if(!el)return;const r=el.getBoundingClientRect();for(let i=0;i<Math.min(6,Math.abs(n));i++){const c=document.createElement('div');c.className='cy-coin';c.textContent=cn()[0];c.style.left=(r.left+r.width*Math.random())+'px';c.style.top=(r.top+20)+'px';c.style.animationDelay=(i*.08)+'s';document.body.appendChild(c);setTimeout(()=>c.remove(),1400)}}
+function pay(k,n,why){if(!RW.addCoins(k,n,why)){Kit.tone(200,.2,'triangle',.15);return false}n>0?Kit.tone(1046,.08,'triangle',.12):Kit.tone(260,.15,'triangle',.12);return true}
+function draw(){document.querySelectorAll('[data-t]').forEach(b=>b.className='btn '+(b.dataset.t===tab?'':'white'));$('cn').value=RW.coinName();const [ce,cw]=cn(),K=RW.kids(),total=K.reduce((s,k)=>s+RW.coins(k),0);
+ if(tab==='wallets'){$('bd').innerHTML=`<div class="cy-big" style="color:#fff;text-shadow:2px 2px 0 var(--ink);margin-bottom:10px">🏦 The class has ${total} ${ce} ${cw} in all</div><div class="cy-w" id="ws">${K.map(k=>{const j=jobOf(k);return `<div class="cy-k" data-k="${Kit.esc(k)}"><div class="nm"><span>${Kit.esc(k)}</span></div><div class="bal">${ce} ${RW.coins(k)}</div><div class="job">${j?`${j.e} ${Kit.esc(j.n)}`:''}</div><div class="ac"><button class="m" data-d="-1">−1</button><button class="p" data-d="1">+1</button><button class="p" data-d="5">+5</button></div></div>`}).join('')}</div>`;
+  $('ws').onclick=e=>{const b=e.target.closest('[data-d]');if(!b)return;const c=b.closest('[data-k]'),k=c.dataset.k,d=+b.dataset.d;if(pay(k,d,d>0?'Bonus':'Fine')){if(d>0)rain(c,d);draw()}}}
+ if(tab==='jobs'){const J=jobs();$('bd').innerHTML=`<div class="cy"><div class="cy-p"><b>💼 Who has each job?</b><div class="cy-jobs" id="js">${J.map(j=>`<div class="cy-job"><span>${j.e}</span>${Kit.esc(j.n)}<b>${ce} ${j.pay}</b><select data-j="${Kit.esc(j.n)}"><option value="">— nobody —</option>${K.map(k=>`<option ${asg[j.n]===k?'selected':''}>${Kit.esc(k)}</option>`).join('')}</select></div>`).join('')}</div><div class="row" style="gap:6px"><button class="btn white small" id="sh">🔀 Shuffle jobs</button><button class="btn white small" id="cl">🧽 Clear jobs</button><span class="muted" style="font-weight:700">✏️ top right to change jobs and pay</span></div></div>
+  <div class="cy-p"><b>💰 Payday</b><label style="font-weight:800">Everyone also gets <input id="bs" type="number" min="0" max="50" value="${base}" style="width:60px;font:inherit;font-weight:800;padding:3px;border:3px solid var(--ink);border-radius:8px"> ${ce} for coming to school</label><div style="font-weight:700">Payday will give out <b id="pt">${K.length*base+J.filter(j=>asg[j.n]&&K.includes(asg[j.n])).reduce((s,j)=>s+j.pay,0)}</b> ${ce} ${cw}.</div><button class="btn green big" id="pd">💰 It's payday!</button><div id="pr" style="font-weight:700"></div></div></div>`;
+  $('js').onchange=e=>{const s=e.target.dataset.j;if(s==null)return;Object.keys(asg).forEach(j=>{if(asg[j]===e.target.value&&e.target.value&&j!==s)delete asg[j]});if(e.target.value)asg[s]=e.target.value;else delete asg[s];Kit.set('cy-asg',asg);draw()};
+  $('sh').onclick=()=>{const ks=Kit.shuffle(K);asg={};J.forEach((j,i)=>{if(ks[i])asg[j.n]=ks[i]});Kit.set('cy-asg',asg);draw()};$('cl').onclick=()=>{asg={};Kit.set('cy-asg',asg);draw()};
+  $('bs').oninput=()=>{base=Math.max(0,+$('bs').value||0);Kit.set('cy-base',base);$('pt').textContent=K.length*base+J.filter(j=>asg[j.n]&&K.includes(asg[j.n])).reduce((s,j)=>s+j.pay,0)};
+  $('pd').onclick=()=>{let n=0;K.forEach(k=>{if(base){pay(k,base,'Payday');n+=base}});J.forEach(j=>{const k=asg[j.n];if(k&&K.includes(k)&&j.pay){pay(k,j.pay,`Payday: ${j.n}`);n+=j.pay}});Kit.tada();Kit.confetti(60);draw();$('pr').textContent=`✅ Paid out ${n} ${ce} ${cw}!`;window.__t.paid=n}}
+ if(tab==='ledger'){const L=RW.coinLog();$('bd').innerHTML=`<div class="cy"><div class="cy-p"><b>📒 Every coin in and out</b><div class="cy-led">${L.slice(0,200).map(l=>`<div class="${l[2]<0?'neg':''}"><span>${new Date(l[0]).toLocaleDateString(undefined,{month:'short',day:'numeric'})} · ${Kit.esc(l[1])}: ${Kit.esc(l[3])}</span><b>${l[2]>0?'+':''}${l[2]} ${ce}</b></div>`).join('')||'<div>Nothing yet.</div>'}</div></div>
+  <div class="cy-p"><b>📊 Richest to poorest</b>${[...K].sort((a,b)=>RW.coins(b)-RW.coins(a)).map(k=>`<div style="display:flex;justify-content:space-between;font-weight:800"><span>${Kit.esc(k)}</span><span>${ce} ${RW.coins(k)}</span></div>`).join('')}<button class="btn white small" id="rz">🗑️ Reset all wallets</button></div></div>`;
+  $('rz').onclick=()=>{if(confirm('Set every wallet back to 0? (The bank and store use these wallets too.)')){K.forEach(k=>{const c=RW.coins(k);if(c)RW.addCoins(k,-c,'Reset')});draw()}}}
+ window.__t={tab,coins:Object.fromEntries(K.map(k=>[k,RW.coins(k)])),total,asg:{...asg}}}
+document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;draw()});
+$('cn').onchange=()=>{Kit.set('rw-coin-name',$('cn').value);draw()};
+draw();
+</script>
+</body></html>

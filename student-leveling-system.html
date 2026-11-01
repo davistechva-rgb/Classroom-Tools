@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Student Leveling System</title>
+<style>
+main{max-width:1700px}
+.lv-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:10px}
+.lv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
+.lv-c{background:linear-gradient(var(--cc),#fff 70%);border:4px solid var(--ink);border-radius:20px;padding:10px;text-align:center;cursor:pointer;box-shadow:0 5px 0 var(--ink);position:relative}
+.lv-c .av{font-size:3rem;line-height:1.1}
+.lv-c .nm{font-weight:900;font-size:1.1rem}
+.lv-c .ti{font-weight:800;font-size:.8rem;color:#55607E}
+.lv-c .badge{position:absolute;top:-10px;right:-8px;background:#9B6BF2;color:#fff;border:3px solid var(--ink);border-radius:99px;padding:0 9px;font-weight:900}
+.lv-c .bar{height:10px;border:3px solid var(--ink);border-radius:99px;background:#E3E8F2;overflow:hidden;margin-top:6px}.lv-c .bar i{display:block;height:100%;background:#5DC66E}
+.lv-c.up{animation:glow 1s infinite alternate}@keyframes glow{to{box-shadow:0 5px 0 var(--ink),0 0 24px #FFD84D}}
+.lv-sheet{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:16px;background:#fff;border:6px solid var(--ink);border-radius:26px;box-shadow:8px 8px 0 var(--ink);padding:18px;max-width:1100px;margin:0 auto}
+@media (max-width:800px){.lv-sheet{grid-template-columns:minmax(0,1fr)}}
+.lv-hero{background:linear-gradient(var(--cc),#fff);border:5px solid var(--ink);border-radius:22px;display:grid;place-items:center;position:relative;min-height:320px}
+.lv-hero .big{font-size:clamp(6rem,15vw,9rem)}
+.lv-hero .g{position:absolute;font-size:2.6rem}
+.lv-hero .lvl{position:absolute;top:10px;left:10px;background:#9B6BF2;color:#fff;border:4px solid var(--ink);border-radius:16px;padding:2px 12px;font-weight:900;font-size:1.4rem}
+.lv-info{display:grid;gap:10px;align-content:start}
+.lv-info h2{margin:0;font-size:clamp(1.6rem,4vw,2.4rem)}
+.lv-bar{height:22px;border:4px solid var(--ink);border-radius:99px;background:#E3E8F2;overflow:hidden}.lv-bar i{display:block;height:100%;background:linear-gradient(90deg,#5DC66E,#22C3E6)}
+.lv-gear{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px}
+.lv-gear div{border:3px solid var(--ink);border-radius:12px;padding:5px;text-align:center;font-weight:800;font-size:.85rem;background:#F4FAFF}.lv-gear div span{display:block;font-size:1.8rem}
+.lv-gear .lock{opacity:.4;background:#eee}
+.lv-cls{display:flex;gap:6px;flex-wrap:wrap}.lv-cls button{font:inherit;font-weight:800;border:3px solid var(--ink);border-radius:12px;padding:4px 10px;background:#fff;cursor:pointer;color:var(--ink)}.lv-cls button.on{background:var(--sun)}
+.lv-party{position:fixed;inset:0;background:radial-gradient(circle,#3B4C8A,#141C3A);z-index:50;display:grid;place-items:center;color:#fff;text-align:center;animation:fd .3s}
+@keyframes fd{from{opacity:0}}
+.lv-party .bigi{font-size:clamp(7rem,20vw,12rem);animation:bounce 1s infinite alternate}@keyframes bounce{to{transform:translateY(-20px) scale(1.05)}}
+.lv-party h1{font-size:clamp(2rem,6vw,4rem);margin:0;color:#FFD84D;text-shadow:4px 4px 0 #1D2B53}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script><script src="rewards.js"></script>
+<script>
+Kit.mount("📈", "Student Leveling System");
+const $=id=>document.getElementById(id);
+// each class looks different at every tier
+const CLS={wizard:['🧙 Wizard','#D6C2FF',['🧒','🧙','🧙‍♂️','🧙‍♀️','🔮'],['🪄','📜','🦉','🌟','🐉']],knight:['🛡️ Knight','#C3CBDB',['👦','💂','🤺','🫅','🏰'],['🗡️','🛡️','🐎','👑','🐲']],scientist:['🔬 Scientist','#B8F0E6',['👧','🧑‍🔬','👩‍🔬','👨‍🔬','🚀'],['🧪','🔭','🤖','🧬','🛸']],
+ artist:['🎨 Artist','#FFB3D1',['🧑','🧑‍🎨','👩‍🎨','👨‍🎨','🖼️'],['🖌️','🎭','🦜','🎻','🌈']],ranger:['🏹 Ranger','#C9E58A',['🧑‍🌾','🧝','🧝‍♀️','🧝‍♂️','🌳'],['🏹','🧭','🦊','🦅','🐺']],explorer:['🧭 Explorer','#FFD27F',['👶','🧑‍🚀','👩‍🚀','👨‍🚀','🪐'],['🎒','🗺️','🐒','⛵','🌍']]};
+const TIERS=[[1,'Rookie'],[3,'Apprentice'],[5,'Adventurer'],[8,'Hero'],[12,'Legend']];
+const GEAR_AT=[2,4,6,9,13];
+let P=Kit.get('lv-players',{}),view=null;
+const pl=k=>P[k]||(P[k]={c:Object.keys(CLS)[Math.abs([...k].reduce((a,c)=>a+c.charCodeAt(0),0))%6],seen:1});
+const tier=L=>{let t=0;TIERS.forEach((x,i)=>{if(L>=x[0])t=i});return t};
+function save(){Kit.set('lv-players',P)}
+document.querySelector('main').innerHTML=`<div class="lv-top"><button class="btn green" id="pt" hidden>🎉 Celebrate level-ups!</button><button class="btn white small" id="bk" hidden>⬅ Whole class</button><span class="ln-pill" style="background:#fff">⭐ XP comes from the XP Tracker (shared). You can also give XP here.</span></div><div id="bd"></div><div id="ro" style="margin-top:12px;background:#fff;border:4px solid var(--ink);border-radius:16px;padding:8px"></div>`;
+Learn.rosterEditor($('ro'));$('ro').addEventListener('roster',()=>draw());
+function pending(){return RW.kids().filter(k=>RW.level(RW.xp(k)).level>pl(k).seen)}
+function draw(){const up=pending();$('pt').hidden=!up.length;$('pt').textContent=`🎉 Celebrate ${up.length} level-up${up.length>1?'s':''}!`;$('bk').hidden=!view;
+ if(view)return sheet(view);
+ $('bd').innerHTML=`<div class="lv-grid">${RW.kids().map(k=>{const p=pl(k),x=RW.xp(k),L=RW.level(x),c=CLS[p.c],t=tier(L.level);return `<div class="lv-c ${up.includes(k)?'up':''}" data-k="${Kit.esc(k)}" style="--cc:${c[1]}"><span class="badge">Lv ${L.level}</span><div class="av">${c[2][t]}</div><div class="nm">${Kit.esc(k)}</div><div class="ti">${TIERS[t][1]} ${c[0].split(' ')[1]}</div><div class="bar"><i style="width:${L.pct*100}%"></i></div></div>`}).join('')}</div>`;
+ $('bd').querySelector('.lv-grid').onclick=e=>{const c=e.target.closest('[data-k]');if(c){view=c.dataset.k;draw()}};save();window.__t={view,pending:up.length}}
+function sheet(k){const p=pl(k),x=RW.xp(k),L=RW.level(x),c=CLS[p.c],t=tier(L.level);const nextGear=GEAR_AT.find(g=>g>L.level);
+ const spots=[[8,30],[80,22],[10,72],[82,70],[46,6]];
+ $('bd').innerHTML=`<div class="lv-sheet" style="--cc:${c[1]}"><div class="lv-hero"><span class="lvl">Lv ${L.level}</span><span class="big">${c[2][t]}</span>${c[3].map((g,i)=>L.level>=GEAR_AT[i]?`<span class="g" style="left:${spots[i][0]}%;top:${spots[i][1]}%">${g}</span>`:'').join('')}</div>
+ <div class="lv-info"><h2>${Kit.esc(k)}</h2><div style="font-weight:900;font-size:1.2rem">${TIERS[t][1]} ${c[0]}</div><div class="lv-bar"><i style="width:${L.pct*100}%"></i></div><div style="font-weight:700">⭐ ${x} XP · ${L.to-x} XP to level ${L.level+1}${nextGear?` · next gear at level ${nextGear}`:''}</div>
+ <b>🎒 Gear</b><div class="lv-gear">${c[3].map((g,i)=>`<div class="${L.level>=GEAR_AT[i]?'':'lock'}"><span>${L.level>=GEAR_AT[i]?g:'🔒'}</span>Level ${GEAR_AT[i]}</div>`).join('')}</div>
+ <b>🏅 Ranks</b><div class="lv-gear">${TIERS.map((r,i)=>`<div class="${L.level>=r[0]?'':'lock'}"><span>${c[2][i]}</span>${r[1]} (Lv ${r[0]})</div>`).join('')}</div>
+ <b>🧑 Character class</b><div class="lv-cls" id="cl">${Object.entries(CLS).map(([id,v])=>`<button data-c="${id}" class="${p.c===id?'on':''}">${v[0]}</button>`).join('')}</div>
+ <div class="row" style="gap:6px">${[5,10,25].map(n=>`<button class="btn green small" data-x="${n}">+${n} XP</button>`).join('')}</div></div></div>`;
+ $('cl').onclick=e=>{const b=e.target.closest('[data-c]');if(b){p.c=b.dataset.c;save();draw()}};
+ $('bd').querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>{RW.addXP(k,+b.dataset.x,'Leveling page');Kit.ding();draw()});window.__t={view,level:L.level,tier:t,gear:c[3].filter((g,i)=>L.level>=GEAR_AT[i]).length,pending:pending().length}}
+async function party(){const up=pending();for(const k of up){const p=pl(k),L=RW.level(RW.xp(k)),c=CLS[p.c],t=tier(L.level),newTier=tier(p.seen)<t,gear=c[3].filter((g,i)=>GEAR_AT[i]>p.seen&&GEAR_AT[i]<=L.level);
+  const ov=document.createElement('div');ov.className='lv-party';ov.innerHTML=`<div><div class="bigi">${c[2][t]}</div><h1>LEVEL ${L.level}!</h1><div style="font-size:2rem;font-weight:900">${Kit.esc(k)}</div>${newTier?`<div style="font-size:1.4rem;font-weight:800">New rank: ${TIERS[t][1]}!</div>`:''}${gear.length?`<div style="font-size:1.4rem;font-weight:800">New gear: ${gear.join(' ')}</div>`:''}<button class="btn big" style="background:var(--sun);margin-top:20px" id="nx">${up.indexOf(k)<up.length-1?'Next ➜':'🎉 Done'}</button></div>`;
+  document.body.appendChild(ov);Kit.tada();Kit.confetti(120);await new Promise(r=>ov.querySelector('#nx').onclick=r);ov.remove();p.seen=L.level;save()}draw()}
+$('pt').onclick=party;$('bk').onclick=()=>{view=null;draw()};
+window.__l={view:k=>{view=k;draw()}};
+draw();
+</script>
+</body></html>

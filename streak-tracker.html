@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Streak Tracker</title>
+<style>
+main{max-width:1700px}
+.sk-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:12px}
+.sk-habits{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.sk-habits button{font:inherit;font-weight:900;border:4px solid var(--ink);border-radius:99px;padding:5px 14px;background:#fff;cursor:pointer;color:var(--ink)}.sk-habits button.on{background:var(--sun)}
+.sk-day{display:flex;gap:8px;justify-content:center;align-items:center;color:#fff;font-weight:900;font-size:1.25rem;text-shadow:2px 2px 0 var(--ink);margin-bottom:10px}
+.sk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.sk-k{background:#fff;border:4px solid var(--ink);border-radius:20px;padding:10px 8px;display:grid;gap:3px;justify-items:center;cursor:pointer;box-shadow:0 5px 0 var(--ink);user-select:none;position:relative;transition:transform .1s}
+.sk-k:active{transform:translateY(3px);box-shadow:0 2px 0 var(--ink)}
+.sk-k.done{background:linear-gradient(#FFE29A,#FFB347)}
+.sk-k .fl{font-size:var(--fs,2rem);line-height:1;transition:font-size .3s}
+.sk-k .fl.out{filter:grayscale(1);opacity:.4}
+.sk-k .nm{font-weight:900;font-size:1.05rem}
+.sk-k .n{font-weight:900;font-size:.9rem;color:#8B3A00}
+.sk-k .fz{position:absolute;top:5px;right:7px;font-size:.85rem;font-weight:900}
+.sk-k.pop{animation:pop .45s}@keyframes pop{40%{transform:scale(1.12) rotate(-3deg)}}
+.sk-side{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;margin-top:16px;align-items:start}
+@media (max-width:900px){.sk-side{grid-template-columns:minmax(0,1fr)}}
+.sk-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:8px}
+.sk-heat{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.sk-heat div{aspect-ratio:1;border-radius:6px;background:#EEF1F6;display:grid;place-items:center;font-size:.7rem;font-weight:800;color:#55607E}
+.sk-heat .h{font-size:.75rem;background:none;aspect-ratio:auto}
+.sk-best{display:grid;gap:4px}.sk-best div{display:flex;justify-content:space-between;font-weight:800;border-radius:10px;padding:3px 9px;background:#FFF6C9}
+.sk-class{display:flex;align-items:center;gap:12px;justify-content:center;font-weight:900;font-size:1.3rem}
+.sk-class .big{font-size:3.5rem}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script><script src="rewards.js"></script>
+<script>
+Kit.mount("🔥", "Streak Tracker");
+const $=id=>document.getElementById(id);
+const H0=`📚 | Reading at home
+✏️ | Homework turned in
+👋 | On time
+🦷 | Brushed teeth`;
+Kit.editable({key:'sk-habits',title:'Habits to track',help:'(one per line: emoji | habit)',def:H0,onSave:()=>draw()});
+const habits=()=>Kit.lines(Kit.get('ed:sk-habits',H0)).map(l=>{const p=l.split('|').map(s=>s.trim());return {e:p[0],n:p[1]||p[0]}});
+// D = {habit: {kid: {"2026-11-02":1 | "f" (freeze)}}}, freezes = {kid:n}
+let D=Kit.get('sk-data',{}),FZ=Kit.get('sk-fz',{}),hab=0,day=new Date(),weekends=Kit.get('sk-wk',false),fzMode=false;
+const ds=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const add=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
+const school=d=>weekends||(d.getDay()!==0&&d.getDay()!==6);
+function save(){Kit.set('sk-data',D);Kit.set('sk-fz',FZ);Kit.set('sk-wk',weekends)}
+function rec(k){const h=habits()[hab].n;D[h]=D[h]||{};D[h][k]=D[h][k]||{};return D[h][k]}
+// streak = days in a row counting back from `d` (today counts if done; if not done yet, start from the day before)
+function streak(k,d=day){const r=rec(k);let x=new Date(d),n=0;if(!r[ds(x)])x=add(x,-1);for(let g=0;g<400;g++){if(!school(x)){x=add(x,-1);continue}const v=r[ds(x)];if(!v)break;if(v===1)n++;x=add(x,-1)}return n}
+function best(k){const r=rec(k),keys=Object.keys(r).sort();if(!keys.length)return 0;let b=0,x=new Date(keys[0]+'T12:00'),end=new Date(keys[keys.length-1]+'T12:00'),n=0;while(x<=end){if(school(x)){const v=r[ds(x)];if(v===1){n++;b=Math.max(b,n)}else if(!v)n=0}x=add(x,1)}return b}
+document.querySelector('main').innerHTML=`<div class="sk-top"><div class="sk-habits" id="hb"></div></div>
+<div class="sk-day"><button class="btn white small" id="pv">◀</button><span id="dy"></span><button class="btn white small" id="nx">▶</button><button class="btn white small" id="td">Today</button></div>
+<div class="sk-top"><button class="btn green small" id="al">✅ Everyone did it</button><button class="btn white small" id="fm">🧊 Use a freeze</button><button class="btn white small" id="gf">🧊 +1 freeze for everyone</button><label style="font-weight:800;color:#fff;text-shadow:1px 1px 0 var(--ink)"><input type="checkbox" id="wk"> Count weekends</label></div>
+<div class="sk-grid" id="gd"></div>
+<div class="sk-side"><div class="sk-p"><b id="ht">📅 Last 5 weeks</b><div class="sk-heat" id="hm"></div><div class="muted" style="font-weight:700">Darker = more of the class did it that day. 🧊 = freeze used.</div></div><div class="sk-p"><div class="sk-class" id="cl"></div><b>🏆 Longest streaks ever</b><div class="sk-best" id="bs"></div></div></div>
+<div id="ro" style="margin-top:12px;background:#fff;border:4px solid var(--ink);border-radius:16px;padding:8px"></div>`;
+Learn.rosterEditor($('ro'));$('ro').addEventListener('roster',()=>draw());
+function flame(n){return n>=20?'☄️':n>=10?'🔥':n>=5?'🔥':n>=1?'🔥':'🪵'}
+function draw(){const Hs=habits();hab=Math.min(hab,Hs.length-1);const K=RW.kids(),key=ds(day),isToday=key===ds(new Date());
+ $('hb').innerHTML=Hs.map((h,i)=>`<button data-h="${i}" class="${i===hab?'on':''}">${h.e} ${Kit.esc(h.n)}</button>`).join('');
+ $('dy').textContent=(isToday?'Today · ':'')+day.toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'});$('nx').disabled=isToday;$('wk').checked=weekends;
+ $('fm').className='btn small '+(fzMode?'':'white');$('fm').textContent=fzMode?'🧊 Tap a student to freeze (tap here to stop)':'🧊 Use a freeze';
+ $('gd').innerHTML=K.map(k=>{const v=rec(k)[key],n=streak(k);return `<div class="sk-k ${v===1?'done':''}" data-k="${Kit.esc(k)}"><span class="fz">${FZ[k]?'🧊'+FZ[k]:''}</span><span class="fl ${n?'':'out'}" style="--fs:${Math.min(4,1.8+n*.12)}rem">${v==='f'?'🧊':flame(n)}</span><span class="nm">${Kit.esc(k)}</span><span class="n">${n?`${n} day${n>1?'s':''} in a row`:'Start a streak!'}</span></div>`}).join('');
+ // heatmap: 5 weeks ending this week
+ const end=add(day,6-day.getDay()),start=add(end,-34);let hm=['S','M','T','W','T','F','S'].map(d=>`<div class="h">${d}</div>`).join('');
+ for(let i=0;i<35;i++){const d=add(start,i),k2=ds(d),c=K.filter(k=>rec(k)[k2]===1).length,f=K.some(k=>rec(k)[k2]==='f'),p=K.length?c/K.length:0;
+  hm+=`<div title="${d.toDateString()}: ${c} of ${K.length}" style="${d>new Date()?'opacity:.3;':''}${p?`background:rgba(255,120,30,${.15+p*.85});color:${p>.5?'#fff':'#55607E'}`:''};${k2===key?'outline:3px solid var(--ink)':''}">${f&&!c?'🧊':d.getDate()}</div>`}
+ $('hm').innerHTML=hm;$('ht').textContent=`📅 ${Hs[hab].e} ${Hs[hab].n}: last 5 weeks`;
+ const c=K.filter(k=>rec(k)[key]===1).length;let cs=0,x=new Date(day);if(c<K.length)x=add(x,-1);for(let g=0;g<400;g++){if(!school(x)){x=add(x,-1);continue}if(K.length&&K.every(k=>rec(k)[ds(x)]))cs++;else break;x=add(x,-1)}
+ $('cl').innerHTML=`<span class="big">${cs?'🔥':'🌱'}</span><span>Whole class streak:<br>${cs} day${cs===1?'':'s'}<br><small style="font-weight:700">${c} of ${K.length} done ${isToday?'today':'that day'}</small></span>`;
+ $('bs').innerHTML=K.map(k=>[k,best(k)]).filter(x=>x[1]).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([k,b],i)=>`<div><span>${['🥇','🥈','🥉'][i]||'⭐'} ${Kit.esc(k)}</span><span>${b} days</span></div>`).join('')||'<div><span>No streaks yet. Tap a name when they do it!</span></div>';
+ window.__t={habit:Hs[hab].n,day:key,done:c,cls:cs,st:Object.fromEntries(K.map(k=>[k,streak(k)])),fz:{...FZ}}}
+$('gd').onclick=e=>{const c=e.target.closest('[data-k]');if(!c)return;const k=c.dataset.k,r=rec(k),key=ds(day);
+ if(fzMode){if(r[key]){Kit.tone(200,.2,'triangle',.1);return}if(!(FZ[k]>0)){Kit.modal(`<div style="text-align:center"><div style="font-size:4rem">🧊</div><h2>${Kit.esc(k)} has no freezes</h2><p style="font-weight:700">Give out freezes with "+1 freeze for everyone".</p></div>`);return}FZ[k]--;r[key]='f';Kit.tone(1400,.15,'sine',.1)}
+ else if(r[key]==='f'){delete r[key];FZ[k]=(FZ[k]||0)+1}
+ else if(r[key]){delete r[key];Kit.tick()}else{r[key]=1;const n=streak(k);if(n&&n%5===0){Kit.tada();Kit.confetti(60);RW.addXP&&Kit.get('sk-xp',true)&&RW.addXP(k,n,`🔥 ${n}-day streak`)}else Kit.ding()}
+ save();draw();const el=$('gd').querySelector(`[data-k="${CSS.escape(k)}"]`);el&&el.classList.add('pop')};
+$('hb').onclick=e=>{const b=e.target.closest('[data-h]');if(b){hab=+b.dataset.h;draw()}};
+$('pv').onclick=()=>{day=add(day,-1);draw()};$('nx').onclick=()=>{day=add(day,1);draw()};$('td').onclick=()=>{day=new Date();draw()};
+$('al').onclick=()=>{const key=ds(day);RW.kids().forEach(k=>{const r=rec(k);if(!r[key])r[key]=1});save();Kit.tada();draw()};
+$('fm').onclick=()=>{fzMode=!fzMode;draw()};$('gf').onclick=()=>{RW.kids().forEach(k=>FZ[k]=(FZ[k]||0)+1);save();Kit.ding();draw()};
+$('wk').onchange=()=>{weekends=$('wk').checked;save();draw()};
+window.__k={day:s=>{day=new Date(s+'T12:00');draw()},fz:()=>{fzMode=true;draw()}};
+draw();
+</script>
+</body></html>

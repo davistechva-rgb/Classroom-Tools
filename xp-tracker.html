@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>XP Tracker</title>
+<style>
+main{max-width:1700px}
+.xp{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:960px){.xp{grid-template-columns:minmax(0,1fr)}}
+.xp-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:10px}
+.xp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.xp-k{background:#fff;border:4px solid var(--ink);border-radius:18px;padding:8px 10px;cursor:pointer;position:relative;box-shadow:0 4px 0 var(--ink);transition:transform .1s;user-select:none}
+.xp-k:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+.xp-k.sel{background:#FFF6C9;outline:4px solid var(--sun);outline-offset:2px}
+.xp-k .nm{font-weight:900;font-size:1.15rem;display:flex;justify-content:space-between;gap:4px}
+.xp-k .lv{background:#9B6BF2;color:#fff;border-radius:99px;padding:0 8px;font-size:.8rem}
+.xp-k .bar{height:12px;border:3px solid var(--ink);border-radius:99px;background:#E3E8F2;overflow:hidden;margin-top:6px}.xp-k .bar i{display:block;height:100%;background:linear-gradient(90deg,#FFC93C,#FF9F43);transition:width .5s}
+.xp-k .n{font-weight:800;font-size:.85rem;color:#55607E;margin-top:3px}
+.xp-fly{position:fixed;font-weight:900;font-size:1.6rem;color:#FF9F43;text-shadow:2px 2px 0 #1D2B53;pointer-events:none;z-index:60;animation:fly 1s forwards}
+@keyframes fly{to{transform:translateY(-70px);opacity:0}}
+.xp-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:10px;position:sticky;top:10px}
+.xp-btns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.xp-btns button{font:inherit;font-weight:800;border:3px solid var(--ink);border-radius:12px;padding:7px 8px;background:var(--bc);cursor:pointer;text-align:left;color:var(--ink);line-height:1.15}
+.xp-btns button b{float:right}
+.xp-log{max-height:260px;overflow:auto;display:grid;gap:3px;font-size:.9rem;font-weight:700}
+.xp-log div{background:#F4FAFF;border-radius:8px;padding:2px 8px;display:flex;justify-content:space-between;gap:6px}
+.xp-log .neg{background:#FFE7E3}
+.xp-sum{text-align:center;font-weight:900}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script><script src="rewards.js"></script>
+<script>
+Kit.mount("⭐", "XP Tracker");
+const $=id=>document.getElementById(id);
+const R0=`👋 Participation | 5
+🤝 Helping a friend | 10
+📚 Homework done | 10
+💡 Great question | 5
+🏆 Excellent work | 20
+🧹 Cleaning up | 5
+⏰ On time | 3
+😕 Off task | -5`;
+Kit.editable({key:'xp-reasons',title:'XP buttons',help:'(one per line: label | XP. Use a minus sign to take XP away.)',def:R0,onSave:()=>draw()});
+const reasons=()=>Kit.lines(Kit.get('ed:xp-reasons',R0)).map(l=>{const [a,b]=l.split('|').map(s=>s.trim());return [a,parseInt(b)||0]}).filter(r=>r[0]&&r[1]);
+let sel=new Set(),sort='name',undo=[];
+const BC=['#FFF27A','#B8F59A','#9FE6FF','#FFC98B','#D6C2FF','#FFB3D1','#C9E58A','#FFB3AA'];
+document.querySelector('main').innerHTML=`<div class="xp-top"><button class="btn white small" id="all">☑️ Select all</button><button class="btn white small" id="none">⬜ Clear</button><select id="so" style="width:auto"><option value="name">🔤 A–Z</option><option value="xp">⭐ Most XP</option><option value="low">🌱 Least XP</option></select><button class="btn white small" id="un">↩️ Undo</button></div>
+<div class="xp"><div><div class="xp-grid" id="gd"></div><div id="ro" style="margin-top:12px;background:#fff;border:4px solid var(--ink);border-radius:16px;padding:8px"></div></div>
+<div class="xp-p"><div class="xp-sum" id="sm">Tap students, then tap a reason</div><div class="xp-btns" id="bt"></div><div class="row" style="gap:6px"><input id="cx" type="number" placeholder="XP" style="width:80px"><input id="cr" placeholder="Reason" style="flex:1;min-width:0"><button class="btn green small" id="cg">Give</button></div><b>📜 Recent XP</b><div class="xp-log" id="lg"></div><div class="xp-sum" id="tot"></div></div></div>`;
+Learn.rosterEditor($('ro'));$('ro').addEventListener('roster',()=>draw());
+function draw(){const K=RW.kids();let ks=[...K];if(sort==='xp')ks.sort((a,b)=>RW.xp(b)-RW.xp(a));if(sort==='low')ks.sort((a,b)=>RW.xp(a)-RW.xp(b));
+ $('gd').innerHTML=ks.map(k=>{const x=RW.xp(k),L=RW.level(x);return `<div class="xp-k ${sel.has(k)?'sel':''}" data-k="${Kit.esc(k)}"><div class="nm"><span>${Kit.esc(k)}</span><span class="lv">Lv ${L.level}</span></div><div class="bar"><i style="width:${L.pct*100}%"></i></div><div class="n">⭐ ${x} XP · ${L.to-x} to next level</div></div>`}).join('');
+ $('bt').innerHTML=reasons().map((r,i)=>`<button data-r="${i}" style="--bc:${r[1]<0?'#FFD3CC':BC[i%BC.length]}">${Kit.esc(r[0])}<b>${r[1]>0?'+':''}${r[1]}</b></button>`).join('');
+ $('sm').textContent=sel.size?`${sel.size} selected: ${[...sel].slice(0,4).join(', ')}${sel.size>4?'…':''}`:'Tap students, then tap a reason';
+ const log=RW.xpLog();$('lg').innerHTML=log.slice(0,25).map(l=>`<div class="${l[2]<0?'neg':''}"><span>${Kit.esc(l[1])}: ${Kit.esc(l[3]||'')}</span><b>${l[2]>0?'+':''}${l[2]}</b></div>`).join('')||'<div>No XP yet. Start awarding!</div>';
+ const today=new Date().toDateString(),t=log.filter(l=>new Date(l[0]).toDateString()===today&&l[2]>0).reduce((s,l)=>s+l[2],0);$('tot').textContent=`🌟 ${t} XP given today`;$('so').value=sort;
+ window.__t={sel:[...sel],xp:RW.xpAll(),log:log.length}}
+function give(amt,why){if(!sel.size){$('sm').textContent='👆 Tap a student first!';Kit.tone(200,.15,'triangle',.12);return}const batch=[];
+ sel.forEach(k=>{const before=RW.level(RW.xp(k)).level;RW.addXP(k,amt,why);batch.push([k,amt]);const el=$('gd').querySelector(`[data-k="${CSS.escape(k)}"]`);if(el){const r=el.getBoundingClientRect(),f=document.createElement('div');f.className='xp-fly';f.textContent=(amt>0?'+':'')+amt+' XP';f.style.left=(r.left+r.width/2-30)+'px';f.style.top=(r.top)+'px';if(amt<0)f.style.color='#E5533F';document.body.appendChild(f);setTimeout(()=>f.remove(),1000)}
+  if(RW.level(RW.xp(k)).level>before){setTimeout(()=>{Kit.tada();Kit.confetti(60)},300)}});undo.push(batch);amt>0?Kit.ding():Kit.tone(220,.2,'triangle',.12);if(!multi)sel.clear();draw()}
+let multi=false;
+$('gd').onclick=e=>{const k=e.target.closest('[data-k]');if(!k)return;const n=k.dataset.k;sel.has(n)?sel.delete(n):sel.add(n);Kit.tick();draw()};
+$('bt').onclick=e=>{const b=e.target.closest('[data-r]');if(b){const r=reasons()[+b.dataset.r];give(r[1],r[0])}};
+$('cg').onclick=()=>{const n=parseInt($('cx').value);if(n)give(n,$('cr').value||'Bonus');$('cx').value=''};
+$('all').onclick=()=>{RW.kids().forEach(k=>sel.add(k));multi=true;draw()};$('none').onclick=()=>{sel.clear();multi=false;draw()};$('so').onchange=()=>{sort=$('so').value;draw()};
+$('un').onclick=()=>{const b=undo.pop();if(!b)return;b.forEach(([k,a])=>RW.addXP(k,-a,'Undo'));draw()};
+window.__x={sel:ks=>{sel=new Set(ks);draw()},give};
+draw();
+</script>
+</body></html>
