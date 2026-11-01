@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Memory Allocation Simulator</title>
+<style>
+main{max-width:1600px}
+.ma-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:12px}
+.ma-mem{background:#2B3A67;border:6px solid var(--ink);border-radius:20px;box-shadow:7px 7px 0 var(--ink);padding:12px}
+.ma-mem h3{margin:0 0 8px;color:#fff;display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px}
+.ma-strip{display:grid;grid-template-columns:repeat(16,minmax(0,1fr));gap:4px}
+@media (max-width:600px){.ma-strip{grid-template-columns:repeat(8,minmax(0,1fr))}}
+.ma-c{aspect-ratio:1;border-radius:8px;background:#45568C;border:2px solid #1D2B53;display:grid;place-items:center;font-size:clamp(.8rem,2vw,1.4rem);position:relative;cursor:pointer;transition:.15s}
+.ma-c.used{background:var(--pc);border-color:#1D2B53}
+.ma-c.fit{outline:4px solid #FFD84D;outline-offset:-4px;background:#5E72AD}
+.ma-c small{position:absolute;left:3px;top:1px;font-size:.55rem;color:rgba(255,255,255,.55);font-weight:800}
+.ma-c.used small{color:rgba(0,0,0,.35)}
+.ma-g{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;margin-top:14px}
+@media (max-width:860px){.ma-g{grid-template-columns:1fr}}
+.ma-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:8px;align-content:start}
+.ma-q{display:flex;gap:8px;flex-wrap:wrap}
+.ma-app{border:4px solid var(--ink);border-radius:14px;padding:6px 10px;background:var(--pc);font-weight:800;cursor:pointer;display:flex;gap:6px;align-items:center}
+.ma-app.sel{outline:5px solid #FFD84D;outline-offset:2px}
+.ma-app b{font-size:1.4rem}
+.ma-run{display:flex;gap:6px;flex-wrap:wrap}
+.ma-run button{font:inherit;font-weight:800;border:3px solid var(--ink);border-radius:12px;padding:4px 8px;background:var(--pc);cursor:pointer;color:var(--ink)}
+.ma-strat{display:grid;gap:6px}.ma-strat button{font:inherit;font-weight:800;border:3px solid var(--ink);border-radius:12px;padding:5px 9px;background:#fff;cursor:pointer;text-align:left;color:var(--ink)}
+.ma-strat button.on{background:var(--sun)}.ma-strat small{display:block;font-weight:600;color:#55607E}
+.ma-meter{height:22px;border:3px solid var(--ink);border-radius:99px;overflow:hidden;background:#E3E8F2;display:flex}
+.ma-meter i{display:block;height:100%}
+.ma-msg{font-weight:800;font-size:1.05rem;min-height:1.4em}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("💾", "Memory Allocation Simulator");
+const $=id=>document.getElementById(id);
+const SIZE=48;
+const APPS=[['🎮','Game',8,'#FFB3AA'],['🎵','Music',3,'#8BE09A'],['🖍️','Paint',5,'#FFD27F'],['📝','Notes',2,'#9FD8FF'],['🌐','Browser',7,'#D6C2FF'],['📷','Camera',4,'#FFC98B'],['🧮','Calculator',1,'#B8F0E6'],['🎬','Video',9,'#FF9FCB'],['💬','Chat',3,'#C9E58A'],['🗺️','Maps',6,'#A8D8FF']];
+const ST={first:['1️⃣ First fit','Use the first empty space that is big enough.'],best:['🎯 Best fit','Use the smallest empty space that is big enough. Leaves the least waste.'],worst:['🐘 Worst fit','Use the biggest empty space, so the leftover hole stays useful.']};
+let mem,queue,running,strat='first',sel=null,auto=true,fails=0,nid=0;
+document.querySelector('main').innerHTML=`<div class="ma-top"><label style="color:#fff;font-weight:800"><input type="checkbox" id="au" checked> 🤖 Let the computer place apps</label><button class="btn white small" id="cp">🧹 Compact memory</button><button class="btn white small" id="rs">🔄 Start over</button></div>
+<div class="ma-mem"><h3><span>💾 Memory (${SIZE} blocks)</span><span id="fr"></span></h3><div class="ma-strip" id="mm"></div></div>
+<div class="ma-g"><div class="ma-p"><div class="ma-msg" id="msg"></div><b>📥 Apps waiting to open (tap one)</b><div class="ma-q" id="q"></div><b>▶ Running apps (tap to close)</b><div class="ma-run" id="rn"></div></div>
+<div class="ma-p"><b>🧠 How should memory be chosen?</b><div class="ma-strat" id="sg">${Object.entries(ST).map(([k,s])=>`<button data-s="${k}">${s[0]}<small>${s[1]}</small></button>`).join('')}</div><b>📊 Memory use</b><div class="ma-meter" id="mt"></div><div style="font-weight:700" id="fx"></div></div></div>`;
+function start(){mem=Array(SIZE).fill(null);running=[];queue=[];fails=0;sel=null;for(let i=0;i<4;i++)queue.push(newApp());draw();msg('Tap an app waiting in line to open it in memory.')}
+function newApp(){const a=Kit.pick(APPS);return {id:nid++,e:a[0],n:a[1],s:a[2],c:a[3]}}
+function holes(){const h=[];let i=0;while(i<SIZE){if(mem[i]===null){let j=i;while(j<SIZE&&mem[j]===null)j++;h.push([i,j-i]);i=j}else i++}return h}
+function choose(s){const ok=holes().filter(h=>h[1]>=s);if(!ok.length)return null;if(strat==='first')return ok[0][0];if(strat==='best')return ok.reduce((a,b)=>b[1]<a[1]?b:a)[0];return ok.reduce((a,b)=>b[1]>a[1]?b:a)[0]}
+function place(app,at){for(let k=0;k<app.s;k++)mem[at+k]=app.id;app.at=at;running.push(app);queue=queue.filter(q=>q!==app);queue.push(newApp());sel=null;Kit.ding();msg(`${app.e} ${app.n} is using blocks ${at}–${at+app.s-1}.`);draw()}
+function open(app){if(auto){const at=choose(app.s);if(at===null){fail(app);return}place(app,at)}else{sel=sel===app?null:app;draw();if(sel)msg(`${app.e} ${app.n} needs ${app.s} blocks in a row. Tap the first block of a space that fits.`)}}
+function fail(app){fails++;const free=mem.filter(x=>x===null).length;Kit.tone(200,.3,'triangle',.15);msg(free>=app.s?`😬 There are ${free} free blocks, but no ${app.s} in a row! That's called fragmentation. Try compacting.`:`🚫 Not enough memory for ${app.n}. Close an app first.`);draw()}
+function closeApp(id){mem=mem.map(x=>x===id?null:x);const a=running.find(r=>r.id===id);running=running.filter(r=>r.id!==id);Kit.tick();msg(`Closed ${a.e} ${a.n}. Its ${a.s} blocks are free again.`);draw()}
+function draw(){const fit=sel?holes().filter(h=>h[1]>=sel.s).flatMap(h=>Array.from({length:h[1]-sel.s+1},(_,k)=>h[0]+k)):[];
+ $('mm').innerHTML=mem.map((id,i)=>{const a=running.find(r=>r.id===id);return `<div class="ma-c ${a?'used':''} ${fit.includes(i)?'fit':''}" data-i="${i}" style="${a?`--pc:${a.c}`:''}"><small>${i}</small>${a&&a.at===i?a.e:''}</div>`}).join('');
+ $('q').innerHTML=queue.map(a=>`<div class="ma-app ${a===sel?'sel':''}" data-q="${a.id}" style="--pc:${a.c}"><b>${a.e}</b>${a.n}<span class="ln-pill">${a.s}</span></div>`).join('');
+ $('rn').innerHTML=running.map(a=>`<button data-r="${a.id}" style="--pc:${a.c}">${a.e} ${a.n} ✖</button>`).join('')||'<span class="muted">Nothing running yet.</span>';
+ const used=mem.filter(x=>x!==null).length,h=holes(),big=h.reduce((m,x)=>Math.max(m,x[1]),0),free=SIZE-used;
+ $('fr').textContent=`${free} free · biggest space ${big}`;$('mt').innerHTML=`<i style="width:${used/SIZE*100}%;background:#5DC66E"></i><i style="width:${(free-big)/SIZE*100}%;background:#FF9F8F"></i>`;
+ $('fx').innerHTML=`🟩 Used: ${used} &nbsp; 🟥 Scattered free blocks: ${free-big} &nbsp; ⬜ Biggest space: ${big}<br>${h.length} separate empty spaces. ${fails?`😬 ${fails} apps couldn't fit.`:''}`;
+ document.querySelectorAll('[data-s]').forEach(b=>b.classList.toggle('on',b.dataset.s===strat));window.__t={used,free,big,holes:h.length,running:running.length,fails,queue:queue.map(a=>a.s)}}
+function msg(t){$('msg').textContent=t}
+$('q').onclick=e=>{const d=e.target.closest('[data-q]');if(d)open(queue.find(a=>a.id===+d.dataset.q))};
+$('rn').onclick=e=>{const d=e.target.closest('[data-r]');if(d)closeApp(+d.dataset.r)};
+$('mm').onclick=e=>{const d=e.target.closest('[data-i]');if(!d)return;const i=+d.dataset.i;if(mem[i]!==null){closeApp(mem[i]);return}if(!sel)return;
+ if(holes().some(h=>i>=h[0]&&i+sel.s<=h[0]+h[1]))place(sel,i);else{Kit.tone(200,.2,'triangle',.15);msg(`${sel.n} needs ${sel.s} empty blocks in a row starting there.`)}};
+$('sg').onclick=e=>{const b=e.target.closest('[data-s]');if(b){strat=b.dataset.s;draw()}};
+$('au').onchange=()=>{auto=$('au').checked;sel=null;draw()};
+$('cp').onclick=()=>{let at=0;running.sort((a,b)=>a.at-b.at).forEach(a=>{a.at=at;at+=a.s});mem=Array(SIZE).fill(null);running.forEach(a=>{for(let k=0;k<a.s;k++)mem[a.at+k]=a.id});Kit.tada();msg('🧹 Compacted! All the apps slid together, so the free space is one big block.');draw()};
+$('rs').onclick=start;
+window.__m={open:k=>open(queue[k]),close:k=>closeApp(running[k].id),strat:s=>{strat=s;draw()},mem:()=>mem};
+start();
+</script>
+</body></html>

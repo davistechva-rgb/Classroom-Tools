@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Graph Algorithm Visualizer</title>
+<style>
+main{max-width:1600px}
+.ga{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.ga{grid-template-columns:1fr}}
+.ga-map{background:#C9E58A;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);overflow:hidden;touch-action:none}
+.ga-map svg{width:100%;display:block;aspect-ratio:16/10;cursor:crosshair}
+.ga-e{stroke:#8A94A8;stroke-width:12;stroke-linecap:round}
+.ga-e.seen{stroke:#FFC93C}.ga-e.path{stroke:#E5533F;stroke-width:16}
+.ga-e-in{stroke:#fff;stroke-width:2;stroke-dasharray:8 8;pointer-events:none}
+.ga-w{font-weight:900;font-size:17px;fill:#1D2B53;paint-order:stroke;stroke:#fff;stroke-width:5;text-anchor:middle;dominant-baseline:central;cursor:pointer}
+.ga-n circle{fill:#fff;stroke:#1D2B53;stroke-width:4}
+.ga-n text{font-size:26px;text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.ga-n .lb{font-size:15px;font-weight:900;fill:#1D2B53;paint-order:stroke;stroke:#fff;stroke-width:4}
+.ga-n.front circle{fill:#FFD84D}.ga-n.done circle{fill:#9FD8FF}.ga-n.path circle{fill:#FF8F80}.ga-n.st circle{stroke:#2E9E47;stroke-width:7}.ga-n.en circle{stroke:#E5533F;stroke-width:7}.ga-n.pick circle{fill:#D6C2FF}
+.ga-n{cursor:pointer}
+.ga-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:9px}
+.ga-p .row{gap:6px}
+.ga-alg{display:grid;gap:6px}.ga-alg button{font:inherit;font-weight:800;border:3px solid var(--ink);border-radius:12px;padding:6px 10px;background:#fff;cursor:pointer;text-align:left;color:var(--ink)}
+.ga-alg button.on{background:var(--sun)}.ga-alg small{display:block;font-weight:600;color:#55607E}
+.ga-q{display:flex;gap:4px;flex-wrap:wrap;min-height:34px;border:3px dashed #C3CBDB;border-radius:10px;padding:4px;align-items:center;font-weight:800}
+.ga-q span{border:3px solid var(--ink);border-radius:8px;padding:0 6px;background:#FFD84D}
+.ga-msg{font-weight:800;min-height:1.4em}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("📊", "Graph Algorithm Visualizer");
+const $=id=>document.getElementById(id);
+const PL=['🏠','🏫','🏪','🏥','🌳','🏰','🚒','⛪','🏟️','🏭','🎡','🏦'];
+const ALG={bfs:['🌊 Breadth-first search','Explores in rings: all neighbors first, then their neighbors. Finds the path with the fewest roads.'],dfs:['🕳️ Depth-first search','Follows one road as far as it can, then backs up. Finds A path, not always the best.'],dij:["📏 Dijkstra's algorithm",'Always visits the closest unvisited place next. Finds the shortest total distance.']};
+let N=[],E=[],alg='dij',st=0,en=5,mode='play',pick=null,busy=false,cls={n:{},e:{}},mine=null;
+document.querySelector('main').innerHTML=`<div class="ga"><div><div class="ga-map"><svg id="sv" viewBox="0 0 800 500"></svg></div><div class="row" style="justify-content:center;margin-top:10px;gap:6px"><button class="btn white small" data-m="play">🚩 Pick start & end</button><button class="btn white small" data-m="guess">🤔 I'll guess the path</button><button class="btn white small" data-m="edit">✏️ Build my own map</button><button class="btn white small" id="nm">🎲 New town</button></div></div>
+<div class="ga-p"><div class="ga-msg" id="msg"></div><div class="ga-alg" id="al">${Object.entries(ALG).map(([k,a])=>`<button data-a="${k}">${a[0]}<small>${a[1]}</small></button>`).join('')}</div><button class="btn green" id="go">▶ Run it</button><b id="ql">📋 Places waiting to be visited</b><div class="ga-q" id="q"></div><div id="res" style="font-weight:800"></div></div></div>`;
+function town(){N=[];E=[];const pts=[];let g=0;while(pts.length<10&&g++<2000){const p=[Kit.rand(60,740),Kit.rand(60,440)];if(pts.every(q=>Math.hypot(q[0]-p[0],q[1]-p[1])>140))pts.push(p)}
+ const em=Kit.shuffle(PL);N=pts.map((p,i)=>({x:p[0],y:p[1],e:em[i%em.length],l:String.fromCharCode(65+i)}));
+ // connect each place to its 2 nearest, then make sure everything is connected
+ N.forEach((a,i)=>N.map((b,j)=>[j,Math.hypot(a.x-b.x,a.y-b.y)]).filter(([j])=>j!==i).sort((p,q)=>p[1]-q[1]).slice(0,2).forEach(([j])=>link(i,j)));
+ for(let k=0;k<3;k++){const i=Kit.rand(0,N.length-1),near=N.map((b,j)=>[j,Math.hypot(N[i].x-b.x,N[i].y-b.y)]).filter(([j])=>j!==i).sort((p,q)=>p[1]-q[1]);link(i,near[2][0])}
+ let comp=reach(0);while(comp.size<N.length){let best=null;comp.forEach(i=>N.forEach((b,j)=>{if(!comp.has(j)){const d=Math.hypot(N[i].x-b.x,N[i].y-b.y);if(!best||d<best[2])best=[i,j,d]}}));link(best[0],best[1]);comp=reach(0)}
+ st=0;en=N.reduce((b,n,i)=>Math.hypot(n.x-N[0].x,n.y-N[0].y)>Math.hypot(N[b].x-N[0].x,N[b].y-N[0].y)?i:b,0);clear();msg('Pick an algorithm and press Run. Watch which places it visits!')}
+function link(i,j){if(i===j||E.some(e=>(e.a===i&&e.b===j)||(e.a===j&&e.b===i)))return;E.push({a:i,b:j,w:Math.max(1,Math.round(Math.hypot(N[i].x-N[j].x,N[i].y-N[j].y)/40))})}
+const nb=i=>E.filter(e=>e.a===i||e.b===i).map(e=>[e.a===i?e.b:e.a,e]);
+function reach(s){const seen=new Set([s]),q=[s];while(q.length){const i=q.shift();nb(i).forEach(([j])=>{if(!seen.has(j)){seen.add(j);q.push(j)}})}return seen}
+function clear(){cls={n:{},e:{}};mine=null;$('q').innerHTML='';$('res').innerHTML='';draw()}
+function draw(){let h='';E.forEach((e,k)=>{const a=N[e.a],b=N[e.b];h+=`<line class="ga-e ${cls.e[k]||''}" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/><line class="ga-e-in" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/>`});
+ E.forEach((e,k)=>{const a=N[e.a],b=N[e.b];h+=`<text class="ga-w" data-e="${k}" x="${(a.x+b.x)/2}" y="${(a.y+b.y)/2}">${e.w}</text>`});
+ N.forEach((n,i)=>h+=`<g class="ga-n ${cls.n[i]||''} ${i===st?'st':''} ${i===en?'en':''} ${i===pick?'pick':''}" data-n="${i}"><circle cx="${n.x}" cy="${n.y}" r="30"/><text x="${n.x}" y="${n.y}">${n.e}</text><text class="lb" x="${n.x}" y="${n.y+44}">${n.l}${i===st?' 🚩':i===en?' 🏁':''}</text></g>`);
+ $('sv').innerHTML=h;document.querySelectorAll('[data-a]').forEach(b=>b.classList.toggle('on',b.dataset.a===alg));document.querySelectorAll('[data-m]').forEach(b=>b.className='btn small '+(b.dataset.m===mode?'':'white'));window.__t={n:N.length,e:E.length,st,en,mode}}
+function msg(t){$('msg').textContent=t}
+function* search(){const prev={},dist={},seen=new Set();N.forEach((_,i)=>dist[i]=Infinity);dist[st]=0;
+ if(alg==='dij'){const open=new Set([st]);while(open.size){const u=[...open].reduce((a,b)=>dist[a]<=dist[b]?a:b);open.delete(u);if(seen.has(u))continue;seen.add(u);yield {u,seen,open:[...open].sort((a,b)=>dist[a]-dist[b]),dist,prev};if(u===en)break;nb(u).forEach(([v,e])=>{if(!seen.has(v)&&dist[u]+e.w<dist[v]){dist[v]=dist[u]+e.w;prev[v]=[u,e];open.add(v)}})}}
+ else{const list=[st];const inl=new Set([st]);while(list.length){const u=alg==='bfs'?list.shift():list.pop();if(seen.has(u))continue;seen.add(u);yield {u,seen,open:alg==='bfs'?[...list]:[...list].reverse(),dist,prev};if(u===en)break;
+  const ns=nb(u).sort((p,q)=>N[p[0]].l<N[q[0]].l?(alg==='bfs'?-1:1):(alg==='bfs'?1:-1));ns.forEach(([v,e])=>{if(!seen.has(v)&&(alg==='dfs'||!inl.has(v))){if(alg==='bfs')inl.add(v);prev[v]=[u,e];dist[v]=dist[u]+e.w;list.push(v)}})}}
+ return {prev}}
+const ek=e=>E.indexOf(e);
+async function run(){if(busy)return;busy=true;clear();const g=search();let r,last;while(!(r=g.next()).done){last=r.value;cls.n={};last.seen.forEach(i=>cls.n[i]='done');last.open.forEach(i=>cls.n[i]='front');cls.n[last.u]='path';Object.values(last.prev).forEach(([,e])=>cls.e[ek(e)]='seen');
+  $('q').innerHTML=last.open.length?last.open.map(i=>`<span>${N[i].l}${alg==='dij'?' '+last.dist[i]:''}</span>`).join(''):'<span style="background:#eee">empty</span>';draw();Kit.tone(300+last.seen.size*40,.08,'triangle',.12);await Kit.sleep(window.__fast?1:650)}
+ const path=[];let k=en,len=0;cls.e={};while(k!==st&&last.prev[k]){const [p,e]=last.prev[k];cls.e[ek(e)]='path';len+=e.w;path.unshift(k);k=p}path.unshift(st);path.forEach(i=>cls.n[i]='path');draw();
+ const roads=path.length-1;$('res').innerHTML=`🏁 ${ALG[alg][0]} visited <b>${last.seen.size}</b> places.<br>Path: ${path.map(i=>N[i].l).join(' ➜ ')}<br>${roads} roads · total distance <b>${len}</b>`+(mine?`<br>Your guess: total distance <b>${mine.len}</b> ${mine.len<=len?'🎉 as short as it gets!':'(longer)'}`:'');
+ Kit.ding();busy=false;window.__t={...window.__t,path:path.map(i=>N[i].l),len,visited:last.seen.size}}
+function best(){const d={},seen=new Set();N.forEach((_,i)=>d[i]=Infinity);d[st]=0;while(seen.size<N.length){const u=[...Array(N.length).keys()].filter(i=>!seen.has(i)).reduce((a,b)=>d[a]<=d[b]?a:b);seen.add(u);nb(u).forEach(([v,e])=>d[v]=Math.min(d[v],d[u]+e.w))}return d[en]}
+$('sv').onclick=e=>{if(busy)return;const g=e.target.closest('[data-n]'),w=e.target.closest('[data-e]');
+ if(mode==='edit'){if(w){const ed=E[+w.dataset.e];const v=prompt('Road length (1–20):',ed.w);if(v!==null){const n=parseInt(v);if(n>=1&&n<=20)ed.w=n}draw();return}
+  if(g){const i=+g.dataset.n;if(pick===null)pick=i;else{if(pick!==i){const k=E.findIndex(x=>(x.a===pick&&x.b===i)||(x.b===pick&&x.a===i));if(k>=0)E.splice(k,1);else link(pick,i)}pick=null}clear();return}
+  const r=$('sv').getBoundingClientRect(),x=(e.clientX-r.left)/r.width*800,y=(e.clientY-r.top)/r.height*500;if(N.length<12&&N.every(n=>Math.hypot(n.x-x,n.y-y)>80)){N.push({x,y,e:PL[N.length%PL.length],l:String.fromCharCode(65+N.length)});clear()}return}
+ if(!g)return;const i=+g.dataset.n;
+ if(mode==='play'){if(pick!=='end'){st=i;pick='end';msg(`Start: ${N[i].l}. Now tap the finish.`)}else{if(i!==st)en=i;pick=null;msg(`From ${N[st].l} to ${N[en].l}. Press Run!`)}clear();return}
+ if(mode==='guess'){mine=mine||{path:[st],len:0};const at=mine.path[mine.path.length-1],ed=nb(at).find(([j])=>j===i);if(!ed){Kit.tone(200,.15,'triangle',.12);msg(`There's no road from ${N[at].l} to ${N[i].l}.`);return}
+  mine.path.push(i);mine.len+=ed[1].w;cls.e[ek(ed[1])]='seen';cls.n[i]='front';Kit.tick();draw();if(i===en){const b=best();msg(mine.len===b?`🎉 Your path is ${mine.len} long, the shortest possible! Run Dijkstra to check.`:`Your path is ${mine.len} long. Run Dijkstra to see if there's a shorter one!`);window.__t.mine=mine.len;if(mine.len===b)Kit.tada()}else msg(`So far: ${mine.len}. Keep going to ${N[en].l}.`)}};
+$('al').onclick=e=>{const b=e.target.closest('[data-a]');if(b&&!busy){alg=b.dataset.a;draw()}};$('go').onclick=run;$('nm').onclick=()=>{if(!busy)town()};
+document.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{if(busy)return;mode=b.dataset.m;pick=null;clear();msg({play:'Tap a place to start, then a place to finish.',guess:`Tap places one at a time to make your own path from ${N[st].l} to ${N[en].l}.`,edit:'Tap empty space to add a place. Tap two places to add (or remove) a road. Tap a number to change a road\'s length.'}[mode]);if(mode==='guess'){mine={path:[st],len:0};cls.n[st]='front';draw()}});
+window.__g={run,best,set:(a)=>{alg=a;draw()},nb:i=>nb(i).map(([j,e])=>[j,e.w])};
+town();
+</script>
+</body></html>

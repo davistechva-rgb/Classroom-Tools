@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Boolean Logic Game</title>
+<style>
+main{max-width:1300px}
+.bl-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:12px}
+.bl-card{background:#fff;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);padding:16px;display:grid;gap:14px;text-align:center}
+.bl-vars{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.bl-v{border:4px solid var(--ink);border-radius:16px;padding:8px 12px;font-weight:900;min-width:120px;background:#F4FAFF;transition:.2s}
+.bl-v .e{font-size:2.2rem;display:block}
+.bl-v .val{display:inline-block;margin-top:4px;border-radius:99px;padding:1px 10px;border:3px solid var(--ink)}
+.bl-v.t .val{background:#8BE09A}.bl-v.f .val{background:#FFB3AA}
+.bl-v.tap{cursor:pointer}.bl-v.tap:hover{transform:translateY(-3px)}
+.bl-ex{font-size:clamp(1.25rem,3.2vw,2rem);font-weight:900;line-height:1.6}
+.bl-ex .op{border-radius:10px;padding:0 8px;color:#fff;text-shadow:1px 1px 0 rgba(0,0,0,.3)}
+.bl-ex .AND{background:#FF9F43}.bl-ex .OR{background:#22C3E6}.bl-ex .NOT{background:#E5533F}
+.bl-ex .vr{border-bottom:5px solid var(--vc);padding:0 2px}
+.bl-ex .vr.t{background:#E3F8E6}.bl-ex .vr.f{background:#FFE7E3}
+.bl-ans{display:flex;gap:12px;justify-content:center}
+.bl-ans button{font:inherit;font-weight:900;font-size:1.5rem;border:5px solid var(--ink);border-radius:18px;padding:10px 26px;cursor:pointer;box-shadow:0 6px 0 var(--ink);color:var(--ink)}
+.bl-ans .T{background:#8BE09A}.bl-ans .F{background:#FFB3AA}
+.bl-ans button:active{transform:translateY(4px);box-shadow:0 2px 0 var(--ink)}
+.bl-res{font-weight:800;font-size:1.15rem;min-height:1.5em}
+.bl-lamp{font-size:4rem;line-height:1}
+.bl-time{height:14px;border:3px solid var(--ink);border-radius:99px;overflow:hidden;background:#E3E8F2}.bl-time i{display:block;height:100%;background:#FFC93C}
+.bl-help{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;font-weight:700;font-size:.92rem}
+.bl-help span{background:#fff;border:3px solid var(--ink);border-radius:12px;padding:4px 10px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🧮", "Boolean Logic Game");
+const $=id=>document.getElementById(id);
+const V=[['☔','raining','#22C3E6'],['☀️','sunny','#FFC93C'],['🍕','pizzaDay','#FF9F43'],['🐶','dogHungry','#C99A63'],['📚','homeworkDone','#9B6BF2'],['🎒','haveBackpack','#5DC66E'],['🥶','cold','#9FD8FF'],['🎉','weekend','#FF6B9A']];
+let mode='predict',lvl=1,vars=[],ex=null,score=0,streak=0,qn=0,teams=null,timer=0,left=1,lock=false;
+document.querySelector('main').innerHTML=`<div class="bl-top"><button class="btn" data-m="predict">🤔 True or false?</button><button class="btn white" data-m="make">💡 Make it true</button><select id="lv" style="width:auto"><option value="1">⭐ Level 1: one word</option><option value="2">⭐⭐ Level 2: two parts</option><option value="3">⭐⭐⭐ Level 3: brackets</option></select>${Learn.teamPicker('tp',0)}<span class="ln-pill">✅ <b id="sc">0</b></span><span class="ln-pill">🔥 <b id="sk">0</b></span></div><div id="tm"></div>
+<div class="bl-card" id="cd"></div>
+<div class="bl-help" style="margin-top:12px"><span><b class="op" style="background:#FF9F43;color:#fff;border-radius:8px;padding:0 6px">AND</b> both sides must be true</span><span><b style="background:#22C3E6;color:#fff;border-radius:8px;padding:0 6px">OR</b> at least one side is true</span><span><b style="background:#E5533F;color:#fff;border-radius:8px;padding:0 6px">NOT</b> flips true ↔ false</span></div>`;
+// expressions are trees: ['v',i] | ['NOT',x] | ['AND',a,b] | ['OR',a,b]
+function gen(l){const pool=Kit.shuffle([...Array(V.length).keys()]).slice(0,l===1?2:l===2?3:4);let k=0;const v=()=>['v',pool[k++%pool.length]];
+ if(l===1)return Math.random()<.5?['NOT',v()]:[Kit.pick(['AND','OR']),v(),v()];
+ if(l===2){const r=Math.random();return r<.4?[Kit.pick(['AND','OR']),['NOT',v()],v()]:r<.7?[Kit.pick(['AND','OR']),v(),v()]:['NOT',[Kit.pick(['AND','OR']),v(),v()]]}
+ const a=[Kit.pick(['AND','OR']),v(),Math.random()<.4?['NOT',v()]:v()];return Math.random()<.5?[Kit.pick(['AND','OR']),a,v()]:[Kit.pick(['AND','OR']),v(),['NOT',[Kit.pick(['AND','OR']),v(),v()]]]}
+const used=(e,s=new Set())=>{if(e[0]==='v')s.add(e[1]);else e.slice(1).forEach(x=>used(x,s));return s};
+const ev=e=>e[0]==='v'?vars[e[1]]:e[0]==='NOT'?!ev(e[1]):e[0]==='AND'?ev(e[1])&&ev(e[2]):ev(e[1])||ev(e[2]);
+function html(e,top=true,show=false){if(e[0]==='v'){const s=V[e[1]];return `<span class="vr ${show?(vars[e[1]]?'t':'f'):''}" style="--vc:${s[2]}">${s[0]}&nbsp;${s[1]}</span>`}
+ if(e[0]==='NOT')return `<span class="op NOT">NOT</span> ${html(e[1],false,show)}`;const inner=`${html(e[1],false,show)} <span class="op ${e[0]}">${e[0]}</span> ${html(e[2],false,show)}`;return top?inner:`(${inner})`}
+function varsHtml(tap){return [...used(ex)].map(i=>`<div class="bl-v ${vars[i]?'t':'f'} ${tap?'tap':''}" data-v="${i}"><span class="e">${V[i][0]}</span>${V[i][1]}<br><span class="val">${vars[i]?'TRUE':'FALSE'}</span></div>`).join('')}
+function next(){clearInterval(timer);lock=false;lvl=+$('lv').value;ex=gen(lvl);vars=V.map(()=>Math.random()<.5);qn++;
+ if(mode==='predict'){$('cd').innerHTML=`<div class="bl-vars">${varsHtml(false)}</div><div class="bl-ex">${html(ex)}</div><div class="bl-time"><i id="ti" style="width:100%"></i></div><div class="bl-ans"><button class="T" data-a="1">✅ TRUE</button><button class="F" data-a="0">❌ FALSE</button></div><div class="bl-res" id="rs"></div>`;
+  left=1;const dur=lvl*6+6;timer=setInterval(()=>{left-=.1/dur;$('ti')&&($('ti').style.width=Math.max(0,left*100)+'%');if(left<=0){clearInterval(timer);answer(null)}},100)}
+ else{// skip statements that can never be true
+  const u=[...used(ex)],keep=[...vars];let can=false;for(let m=0;m<1<<u.length;m++){u.forEach((v,k)=>vars[v]=!!(m>>k&1));if(ev(ex)){can=true;break}}vars=keep;if(!can){return next()}
+  // start with the statement false so there's something to fix
+  let g=0;while(ev(ex)&&g++<50)vars=V.map(()=>Math.random()<.5);if(ev(ex)){ex=gen(lvl);return next()}drawMake()}
+ window.__t={ans:ev(ex),mode,score,used:[...used(ex)],on:ev(ex)}}
+function drawMake(){const on=ev(ex);$('cd').innerHTML=`<div class="bl-lamp">${on?'💡':'⚫'}</div><div class="bl-ex">${html(ex,true,true)}</div><div style="font-weight:800">Tap the cards to flip them TRUE or FALSE until the light turns on!</div><div class="bl-vars">${varsHtml(true)}</div><div class="bl-res" id="rs">${on?'🎉 TRUE! The light is on.':''}</div>${on?'<button class="btn green" id="nx">Next ➜</button>':''}`;
+ if(on&&!lock){lock=true;score++;$('sc').textContent=score;if(teams){teams.add(1);teams.next()}Kit.tada()}if($('nx'))$('nx').onclick=next;window.__t={...window.__t,on}}
+function answer(a){if(lock)return;lock=true;clearInterval(timer);const right=ev(ex),ok=a!==null&&!!a===right;
+ if(ok){score++;streak++;Kit.ding();if(teams)teams.add(1);if(streak%5===0)Kit.confetti(40)}else{streak=0;Kit.tone(200,.25,'triangle',.15)}if(teams)teams.next();$('sc').textContent=score;$('sk').textContent=streak;
+ $('cd').querySelector('.bl-ex').innerHTML=html(ex,true,true);$('rs').innerHTML=`${ok?'✅ Right!':a===null?'⏰ Time\'s up!':'❌ Not this time.'} The statement is <b>${right?'TRUE':'FALSE'}</b>. ${why(ex)}`;
+ $('cd').querySelector('.bl-ans').innerHTML='<button class="btn green" id="nx" style="font-size:1.2rem">Next ➜</button>';$('nx').onclick=next;window.__t={...window.__t,score}}
+function why(e){if(e[0]==='NOT')return `NOT flips ${ev(e[1])?'TRUE to FALSE':'FALSE to TRUE'}.`;if(e[0]==='AND')return ev(e)?'Both sides are true.':'At least one side is false, so AND is false.';if(e[0]==='OR')return ev(e)?'At least one side is true, so OR is true.':'Both sides are false.';return ''}
+$('cd').onclick=e=>{const b=e.target.closest('[data-a]');if(b&&mode==='predict')return answer(+b.dataset.a);const v=e.target.closest('.tap');if(v&&mode==='make'&&!ev(ex)){vars[+v.dataset.v]=!vars[+v.dataset.v];Kit.tick();drawMake()}};
+document.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{mode=b.dataset.m;document.querySelectorAll('[data-m]').forEach(x=>x.className='btn '+(x.dataset.m===mode?'':'white'));next()});
+$('lv').onchange=next;$('tp').onchange=()=>{const n=+$('tp').value;teams=n?Learn.teams($('tm'),n,{turns:true}):($('tm').innerHTML='',null);score=0;$('sc').textContent=0;next()};
+window.__b={answer,flip:i=>{vars[i]=!vars[i];drawMake()},ev:()=>ev(ex)};
+next();
+</script>
+</body></html>

@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Code Tracing Game</title>
+<style>
+main{max-width:1400px}
+.ct2-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:12px}
+.ct2{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.ct2{grid-template-columns:1fr}}
+.ct2-code{background:#1D2B53;border:6px solid var(--ink);border-radius:20px;box-shadow:7px 7px 0 var(--ink);padding:10px 0;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:clamp(1rem,2.2vw,1.35rem);overflow-x:auto}
+.ct2-ln{display:flex;white-space:pre;color:#E8F0FF;padding:3px 0;border-left:6px solid transparent}
+.ct2-ln .n{width:2.6em;text-align:right;padding-right:14px;color:#7F8FB8;flex:none}
+.ct2-ln.at{background:#6B5A1D;border-left-color:#FFD84D}
+.ct2-ln .kw{color:#FF9FCB}.ct2-ln .st{color:#B8F0A0}.ct2-ln .nm{color:#FFD27F}.ct2-ln .fn{color:#7FD8FF}
+.ct2-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:10px}
+.ct2-q{font-weight:900;font-size:1.25rem}
+.ct2-ch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.ct2-ch button{font:700 1.1rem ui-monospace,Menlo,monospace;white-space:pre;border:4px solid var(--ink);border-radius:14px;padding:10px;background:#fff;cursor:pointer;color:var(--ink)}
+.ct2-ch button.yes{background:#8BE09A}.ct2-ch button.no{background:#FFB3AA}
+.ct2-vars{display:flex;gap:6px;flex-wrap:wrap;min-height:44px}
+.ct2-vars div{border:3px solid var(--ink);border-radius:12px;padding:3px 10px;font-family:ui-monospace,Menlo,monospace;font-weight:800;background:#F4FAFF;text-align:center}
+.ct2-vars div small{display:block;font-family:inherit;color:#55607E;font-size:.72rem}
+.ct2-vars div.chg{background:#FFF1A8;animation:pop .35s}@keyframes pop{0%{transform:scale(1.25)}}
+.ct2-out{background:#111a35;color:#CFF5FF;border-radius:12px;padding:8px 10px;font-family:ui-monospace,Menlo,monospace;min-height:2.6em;white-space:pre-wrap;font-weight:700}
+.ct2-msg{font-weight:800;min-height:1.4em}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("⌨️", "Code Tracing Game");
+const $=id=>document.getElementById(id);
+const R=Kit.rand;
+// each template returns lines, a trace of steps [line, vars, output], and the answer; "tricky" wrong answers come from common mistakes
+const T=[
+ [1,()=>{const a=R(2,9),b=R(2,9),L=[`a = ${a}`,`b = ${b}`,`a = a + b`,`print(a)`];return {L,tr:[[0,{a}],[1,{a,b}],[2,{a:a+b,b}],[3,{a:a+b,b},`${a+b}`]],ans:`${a+b}`,wr:[`${a}`,`${b}`,`${a}${b}`]}}],
+ [1,()=>{const x=R(1,9),y=R(10,20),L=[`x = ${x}`,`y = ${y}`,`x = y`,`print(x, y)`];return {L,tr:[[0,{x}],[1,{x,y}],[2,{x:y,y}],[3,{x:y,y},`${y} ${y}`]],ans:`${y} ${y}`,wr:[`${y} ${x}`,`${x} ${y}`,`${x} ${x}`]}}],
+ [1,()=>{const n=R(1,20),k=R(6,14),L=[`n = ${n}`,`if n > ${k}:`,`    print("big")`,`else:`,`    print("small")`];const big=n>k;return {L,tr:[[0,{n}],[1,{n}],big?[2,{n},'big']:[4,{n},'small']],ans:big?'big':'small',wr:[big?'small':'big','big\nsmall','nothing']}}],
+ [1,()=>{const w=Kit.pick(['pizza','robot','tiger','rocket','planet','dragon']),i=R(0,2),L=[`word = "${w}"`,`print(word[${i}])`];return {L,tr:[[0,{word:`"${w}"`}],[1,{word:`"${w}"`},w[i]]],ans:w[i],wr:[...new Set([w[i+1],w[Math.max(0,i-1)]||w[w.length-1],w[w.length-1],`${i}`])].filter(x=>x!==w[i]).slice(0,3)}}],
+ [2,()=>{const n=R(3,6),L=[`total = 0`,`for i in range(1, ${n}):`,`    total = total + i`,`print(total)`];const tr=[[0,{total:0}]];let t=0;for(let i=1;i<n;i++){tr.push([1,{total:t,i}]);t+=i;tr.push([2,{total:t,i}])}tr.push([3,{total:t,i:n-1},`${t}`]);return {L,tr,ans:`${t}`,wr:[`${t+n}`,`${n}`,`${t-(n-1)}`]}}],
+ [2,()=>{const a=R(1,5),k=R(2,4),n=R(2,4),L=[`count = ${a}`,`for step in range(${n}):`,`    count = count + ${k}`,`print(count)`];const tr=[[0,{count:a}]];let c=a;for(let s=0;s<n;s++){tr.push([1,{count:c,step:s}]);c+=k;tr.push([2,{count:c,step:s}])}tr.push([3,{count:c,step:n-1},`${c}`]);return {L,tr,ans:`${c}`,wr:[`${c-k}`,`${c+k}`,`${a+k}`]}}],
+ [2,()=>{const nums=[R(1,9),R(10,19),R(20,29),R(30,39)],i=R(0,3),L=[`nums = [${nums.join(', ')}]`,`print(nums[${i}])`];return {L,tr:[[0,{nums:`[${nums.join(',')}]`}],[1,{nums:`[${nums.join(',')}]`},`${nums[i]}`]],ans:`${nums[i]}`,wr:[...new Set([nums[(i+1)%4],nums[(i+3)%4],nums[(i+2)%4]])].map(String)}}],
+ [2,()=>{const n=Kit.pick([6,8,10]),L=[`for i in range(0, ${n}, 2):`,`    print(i)`];const tr=[],o=[];for(let i=0;i<n;i+=2){tr.push([0,{i}]);o.push(i);tr.push([1,{i},o.join('\n')])}const all=[];for(let i=0;i<=n;i+=2)all.push(i);return {L,tr,ans:o.join('\n'),wr:[all.join('\n'),o.slice(1).concat([n]).join('\n'),Array.from({length:n},(_,k)=>k).join('\n').split('\n').slice(0,n/2).join('\n')]}}],
+ [3,()=>{const a=R(1,4),b=R(10,16),k=R(3,5),L=[`n = ${a}`,`while n < ${b}:`,`    n = n + ${k}`,`print(n)`];const tr=[[0,{n:a}]];let n=a;while(n<b){tr.push([1,{n}]);n+=k;tr.push([2,{n}])}tr.push([1,{n}]);tr.push([3,{n},`${n}`]);return {L,tr,ans:`${n}`,wr:[`${n-k}`,`${b}`,`${n+k}`]}}],
+ [3,()=>{const s=R(55,100),L=[`score = ${s}`,`if score >= 90:`,`    print("A")`,`elif score >= 80:`,`    print("B")`,`elif score >= 70:`,`    print("C")`,`else:`,`    print("Keep trying")`];const g=s>=90?'A':s>=80?'B':s>=70?'C':'Keep trying',line=s>=90?2:s>=80?4:s>=70?6:8;
+  const tr=[[0,{score:s}],[1,{score:s}]];if(s<90){tr.push([3,{score:s}]);if(s<80){tr.push([5,{score:s}]);if(s<70)tr.push([7,{score:s}])}}tr.push([line,{score:s},g]);return {L,tr,ans:g,wr:['A','B','C','Keep trying'].filter(x=>x!==g)}}],
+ [3,()=>{const w=Kit.pick(['banana','balloon','cocoa','pepper','apple']),c=Kit.pick([...new Set(w)]),L=[`word = "${w}"`,`count = 0`,`for letter in word:`,`    if letter == "${c}":`,`        count = count + 1`,`print(count)`];const tr=[[0,{word:`"${w}"`}],[1,{word:`"${w}"`,count:0}]];let n=0;for(const ch of w){tr.push([2,{count:n,letter:`"${ch}"`}]);tr.push([3,{count:n,letter:`"${ch}"`}]);if(ch===c){n++;tr.push([4,{count:n,letter:`"${ch}"`}])}}tr.push([5,{count:n,letter:`"${w[w.length-1]}"`},`${n}`]);return {L,tr,ans:`${n}`,wr:[...new Set([n+1,n-1<0?n+2:n-1,w.length].map(String))].filter(x=>x!==`${n}`).slice(0,3)}}],
+ [3,()=>{const n=R(3,5),L=[`x = 1`,`for i in range(${n}):`,`    x = x * 2`,`print(x)`];const tr=[[0,{x:1}]];let x=1;for(let i=0;i<n;i++){tr.push([1,{x,i}]);x*=2;tr.push([2,{x,i}])}tr.push([3,{x,i:n-1},`${x}`]);return {L,tr,ans:`${x}`,wr:[`${x/2}`,`${x*2}`,`${n*2}`]}}]];
+const KW=/\b(for|in|range|if|elif|else|while|print)\b/g;
+function color(c){return Kit.esc(c).replace(/("[^"]*"|&quot;.*?&quot;)/g,'\u0001$1\u0002').replace(/\b(\d+)\b/g,'<span class="nm">$1</span>').replace(KW,m=>m==='print'||m==='range'?`<span class="fn">${m}</span>`:`<span class="kw">${m}</span>`).replace(/\u0001(.*?)\u0002/g,(m,s)=>`<span class="st">${s.replace(/<[^>]+>/g,'')}</span>`)}
+let lvl=1,P=null,step=-1,score=0,streak=0,teams=null,done=false;
+document.querySelector('main').innerHTML=`<div class="ct2-top"><select id="lv" style="width:auto"><option value="1">⭐ Variables & if</option><option value="2">⭐⭐ Loops & lists</option><option value="3">⭐⭐⭐ While & elif</option><option value="0">🎲 Mix</option></select>${Learn.teamPicker('tp',0)}<span class="ln-pill">✅ <b id="sc">0</b></span><span class="ln-pill">🔥 <b id="sk">0</b></span></div><div id="tm"></div>
+<div class="ct2"><div><div class="ct2-code" id="cd"></div><div class="row" style="justify-content:center;gap:6px;margin-top:12px"><button class="btn white" id="bk">⬅ Step back</button><button class="btn white" id="st">👣 Step through it</button><button class="btn white" id="rn">⏭️ Run it all</button></div></div>
+<div class="ct2-p"><div class="ct2-q">🤔 What does this program print?</div><div class="ct2-ch" id="ch"></div><div class="ct2-msg" id="msg"></div><b>📦 Variables (the computer's memory)</b><div class="ct2-vars" id="vr"></div><b>🖥️ Output</b><div class="ct2-out" id="ou"></div><button class="btn green" id="nx" hidden>Next program ➜</button></div></div>`;
+function next(){lvl=+$('lv').value;const pool=T.filter(t=>!lvl||t[0]===lvl);let g=0;do P=Kit.pick(pool)[1]();while(new Set([P.ans,...P.wr]).size<4&&g++<20);step=-1;done=false;
+ const opts=Kit.shuffle([P.ans,...[...new Set(P.wr)].filter(w=>w!==P.ans).slice(0,3)]);$('ch').innerHTML=opts.map(o=>`<button data-a="${Kit.esc(o)}">${Kit.esc(o)}</button>`).join('');$('msg').textContent='Read it line by line like a computer. Step through it if you get stuck!';$('nx').hidden=true;show();window.__t={ans:P.ans,score,steps:P.tr.length}}
+function show(prev){const s=P.tr[step]||[-1,{},''];$('cd').innerHTML=P.L.map((l,i)=>`<div class="ct2-ln ${i===s[0]?'at':''}"><span class="n">${i+1}</span><span>${color(l)}</span></div>`).join('');
+ const pv=prev?prev[1]:{};$('vr').innerHTML=Object.entries(s[1]).map(([k,v])=>`<div class="${pv[k]!==v?'chg':''}"><small>${k}</small>${Kit.esc(String(v))}</div>`).join('')||'<span class="muted">Empty</span>';
+ let out='';for(let k=0;k<=step;k++)if(P.tr[k][2]!==undefined)out=P.tr[k][2];$('ou').textContent=out;$('bk').disabled=step<0;window.__t={...window.__t,step}}
+$('st').onclick=()=>{if(step<P.tr.length-1){const p=P.tr[step];step++;show(p);Kit.tick()}};$('bk').onclick=()=>{if(step>=0){step--;show()}};$('rn').onclick=()=>{step=P.tr.length-1;show()};
+$('ch').onclick=e=>{const b=e.target.closest('[data-a]');if(!b||done)return;done=true;const ok=b.dataset.a===P.ans;
+ if(ok){b.classList.add('yes');score++;streak++;Kit.ding();if(teams)teams.add(1);if(streak%5===0)Kit.confetti(40);$('msg').textContent=step<0?'✅ Right, and you traced it in your head!':'✅ Right!'}
+ else{b.classList.add('no');[...$('ch').children].find(x=>x.dataset.a===P.ans).classList.add('yes');streak=0;Kit.tone(200,.25,'triangle',.15);$('msg').textContent='Not quite. Watch the program run step by step to see why.';step=P.tr.length-1;show()}
+ if(teams)teams.next();$('sc').textContent=score;$('sk').textContent=streak;$('nx').hidden=false;window.__t={...window.__t,score}};
+$('nx').onclick=next;$('lv').onchange=next;$('tp').onchange=()=>{const n=+$('tp').value;teams=n?Learn.teams($('tm'),n,{turns:true}):($('tm').innerHTML='',null);score=0;$('sc').textContent=0;next()};
+window.__c={all:()=>T.map(t=>{const p=t[1]();return [p.ans,p.tr[p.tr.length-1][2],new Set([p.ans,...p.wr]).size]})};
+next();
+</script>
+</body></html>

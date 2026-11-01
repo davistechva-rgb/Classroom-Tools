@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Binary Tree Builder</title>
+<style>
+main{max-width:1600px}
+.bt{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.bt{grid-template-columns:1fr}}
+.bt-stage{background:linear-gradient(#DDF3FF,#F4FBFF);border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);position:relative;overflow:hidden}
+.bt-stage svg{width:100%;display:block;min-height:300px}
+.bt-node circle{fill:#FFFDF6;stroke:#1D2B53;stroke-width:4;transition:fill .2s}
+.bt-node text{font-weight:900;font-size:22px;fill:#1D2B53;text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.bt-node.at circle{fill:#FFD84D}.bt-node.vis circle{fill:#8BE09A}.bt-node.new circle{fill:#9FD8FF}.bt-node.bad circle{fill:#FFB3AA}
+.bt-edge{stroke:#7A5230;stroke-width:6;stroke-linecap:round}
+.bt-new{position:absolute;left:12px;top:12px;background:#9FD8FF;border:4px solid var(--ink);border-radius:50%;width:58px;height:58px;display:grid;place-items:center;font-weight:900;font-size:1.4rem}
+.bt-ask{position:absolute;left:0;right:0;bottom:12px;display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+.bt-ask button{font:inherit;font-weight:900;font-size:1.15rem;border:4px solid var(--ink);border-radius:16px;padding:8px 16px;background:#fff;cursor:pointer;box-shadow:0 4px 0 var(--ink);color:var(--ink)}
+.bt-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:10px}
+.bt-p .row{gap:6px}
+.bt-out{display:flex;gap:6px;flex-wrap:wrap;min-height:44px;border:3px dashed #C3CBDB;border-radius:12px;padding:6px}
+.bt-out span{border:3px solid var(--ink);border-radius:10px;padding:2px 9px;font-weight:900;background:#8BE09A;animation:pop .3s}
+@keyframes pop{0%{transform:scale(.3)}}
+.bt-msg{font-weight:800;font-size:1.05rem;min-height:1.4em}
+.bt-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.bt-stats div{border:3px solid var(--ink);border-radius:12px;padding:4px;text-align:center;font-weight:700;background:#F4FAFF}.bt-stats b{display:block;font-size:1.3rem}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🌳", "Binary Tree Builder");
+const $=id=>document.getElementById(id);
+let root=null,pending=null,cur=null,busy=false,mode='guide';
+const node=v=>({v,l:null,r:null});
+function insertAuto(v){if(!root){root=node(v);return}let n=root;while(true){if(v===n.v)return;const s=v<n.v?'l':'r';if(!n[s]){n[s]=node(v);return}n=n[s]}}
+function all(n=root,a=[]){if(n){all(n.l,a);a.push(n);all(n.r,a)}return a}
+function height(n=root){return n?1+Math.max(height(n.l),height(n.r)):0}
+document.querySelector('main').innerHTML=`<div class="bt"><div class="bt-stage" id="st"><svg id="sv"></svg><div id="nw"></div><div class="bt-ask" id="ask"></div></div>
+<div class="bt-p"><div class="bt-msg" id="msg"></div><div class="bt-stats"><div>🔵 Nodes<b id="nn">0</b></div><div>📏 Height<b id="hh">0</b></div><div>👣 Steps<b id="ss">0</b></div></div>
+<b>🌱 Add numbers</b><div class="row"><input id="iv" type="number" min="1" max="99" placeholder="1–99" style="width:90px"><button class="btn green small" id="add">➕ Add</button><button class="btn white small" id="rnd">🎲 Random</button></div>
+<div class="row"><label style="font-weight:700"><input type="checkbox" id="gd" checked> I'll guide it (tap ⬅ or ➡)</label></div>
+<b>🚶 Walk the tree</b><div class="row"><button class="btn white small" data-w="in">In-order</button><button class="btn white small" data-w="pre">Pre-order</button><button class="btn white small" data-w="post">Post-order</button><button class="btn white small" data-w="level">Level by level</button></div><div class="bt-out" id="out"></div>
+<b>🔎 Find a number</b><div class="row"><input id="fv" type="number" min="1" max="99" style="width:90px"><button class="btn white small" id="find">Search</button></div>
+<b>🌳 Start a tree</b><div class="row"><button class="btn white small" id="t7">🎲 7 random</button><button class="btn white small" id="tb">⚖️ Balanced</button><button class="btn white small" id="ts">📶 Sorted 1–7</button><button class="btn white small" id="clr">🧽 Empty</button></div></div></div>`;
+function layout(){const ns=all(),pos=new Map();ns.forEach((n,i)=>pos.set(n,i));const dep=new Map();(function d(n,k){if(!n)return;dep.set(n,k);d(n.l,k+1);d(n.r,k+1)})(root,0);
+ const W=Math.max(600,ns.length*70+80),H=Math.max(300,(height()+1)*90+60);return {ns,W,H,x:n=>40+(pos.get(n)+.5)*(W-80)/Math.max(1,ns.length),y:n=>50+dep.get(n)*90}}
+function draw(cls={}){const L=layout();let e='',c='';(function w(n){if(!n)return;['l','r'].forEach(s=>{if(n[s]){e+=`<line class="bt-edge" x1="${L.x(n)}" y1="${L.y(n)}" x2="${L.x(n[s])}" y2="${L.y(n[s])}"/>`;w(n[s])}})})(root);
+ L.ns.forEach(n=>c+=`<g class="bt-node ${cls.get?cls.get(n)||'':''}"><circle cx="${L.x(n)}" cy="${L.y(n)}" r="26"/><text x="${L.x(n)}" y="${L.y(n)}">${n.v}</text></g>`);
+ $('sv').setAttribute('viewBox',`0 0 ${L.W} ${L.H+(pending?70:0)}`);$('sv').innerHTML=e+c+(root?'':`<text x="${L.W/2}" y="150" text-anchor="middle" font-weight="800" font-size="22" fill="#55607E">Add a number to plant the root 🌱</text>`);
+ $('nn').textContent=L.ns.length;$('hh').textContent=height();window.__t={vals:L.ns.map(n=>n.v),h:height(),pending:pending&&pending.v,at:cur&&cur.v}}
+function msg(t){$('msg').textContent=t}
+function add(v){if(busy||pending)return;v=Math.round(v);if(!(v>=1&&v<=99))return msg('Pick a number from 1 to 99.');if(all().some(n=>n.v===v))return msg(`${v} is already in the tree. Each number can only be there once.`);
+ if(!root||!$('gd').checked){insertAuto(v);if(!root.l&&!root.r&&all().length===1)msg(`${v} is the root, the top of the tree!`);else msg(`Added ${v}.`);Kit.ding();draw();return}
+ pending=node(v);cur=root;ask()}
+function ask(){$('nw').innerHTML=`<div class="bt-new">${pending.v}</div>`;msg(`Is ${pending.v} smaller or bigger than ${cur.v}?`);$('ask').innerHTML=`<button data-s="l">⬅ Smaller</button><button data-s="r">Bigger ➡</button>`;draw(new Map([[cur,'at']]))}
+$('ask').onclick=e=>{const b=e.target.closest('[data-s]');if(!b||!pending)return;const s=b.dataset.s,right=pending.v<cur.v?'l':'r';
+ if(s!==right){Kit.tone(200,.2,'triangle',.15);msg(`Not quite! ${pending.v} is ${right==='l'?'smaller':'bigger'} than ${cur.v}.`);draw(new Map([[cur,'bad']]));setTimeout(()=>pending&&draw(new Map([[cur,'at']])),500);return}
+ Kit.tick();if(cur[s]){cur=cur[s];ask()}else{cur[s]=pending;const v=pending.v,p=cur;pending=null;cur=null;$('nw').innerHTML='';$('ask').innerHTML='';msg(`✅ ${v} goes on the ${s==='l'?'left':'right'} of ${p.v}.`);Kit.ding();draw(new Map([[p[s],'new']]))}};
+async function walk(kind){if(busy||!root||pending)return;busy=true;const seq=[];
+ if(kind==='level'){const q=[root];while(q.length){const n=q.shift();seq.push(n);n.l&&q.push(n.l);n.r&&q.push(n.r)}}else(function w(n){if(!n)return;if(kind==='pre')seq.push(n);w(n.l);if(kind==='in')seq.push(n);w(n.r);if(kind==='post')seq.push(n)})(root);
+ msg({in:'In-order: left side, then the node, then the right side. The numbers come out sorted!',pre:'Pre-order: the node first, then its left side, then its right side.',post:'Post-order: left side, right side, and the node last.',level:'Level by level: the root, then everything one row down, and so on.'}[kind]);
+ $('out').innerHTML='';const vis=new Map();for(const n of seq){vis.set(n,'vis');draw(new Map([...vis,[n,'at']]));$('out').insertAdjacentHTML('beforeend',`<span>${n.v}</span>`);Kit.tone(400+n.v*6,.1,'triangle',.12);await Kit.sleep(window.__fast?1:550)}
+ draw(vis);busy=false;window.__t.walk=seq.map(n=>n.v)}
+async function find(v){if(busy||!root||pending)return;busy=true;let n=root,steps=0;const vis=new Map();while(n){steps++;$('ss').textContent=steps;draw(new Map([...vis,[n,'at']]));await Kit.sleep(window.__fast?1:600);if(n.v===v)break;vis.set(n,'vis');n=v<n.v?n.l:n.r}
+ if(n){draw(new Map([[n,'new']]));msg(`🎉 Found ${v} in ${steps} steps (the tree is ${height()} tall).`);Kit.ding()}else{msg(`${v} is not in the tree. We knew after ${steps} steps.`);draw(vis)}busy=false;window.__t.steps=steps;window.__t.found=!!n}
+function plant(vals){if(busy)return;root=null;pending=null;$('nw').innerHTML='';$('ask').innerHTML='';$('out').innerHTML='';vals.forEach(insertAuto);draw();
+ msg(vals.join(',')==='1,2,3,4,5,6,7'?'Sorted numbers make a tree that is just one long branch. Searching it is as slow as checking every number!':`Planted ${vals.length} numbers.`)}
+$('add').onclick=()=>{add(+$('iv').value);$('iv').value=''};$('iv').onkeydown=e=>{if(e.key==='Enter')$('add').click()};
+$('rnd').onclick=()=>{const have=new Set(all().map(n=>n.v));let v;do v=Kit.rand(1,99);while(have.has(v));add(v)};
+document.querySelectorAll('[data-w]').forEach(b=>b.onclick=()=>walk(b.dataset.w));$('find').onclick=()=>find(+$('fv').value);
+$('t7').onclick=()=>{const s=new Set();while(s.size<7)s.add(Kit.rand(1,99));plant([...s])};$('tb').onclick=()=>plant([50,25,75,12,37,62,88,6,18,31,43]);$('ts').onclick=()=>plant([1,2,3,4,5,6,7]);$('clr').onclick=()=>plant([]);
+window.__b={add,walk,find,plant};
+plant([50,30,70,20,40,60,80]);msg('Every number on the left of a node is smaller, and every number on the right is bigger. Add a number!');
+</script>
+</body></html>

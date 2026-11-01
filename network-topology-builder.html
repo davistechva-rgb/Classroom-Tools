@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Network Topology Builder</title>
+<style>
+main{max-width:1600px}
+.nt-tools{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:8px}
+.nt-tools button{font:inherit;font-weight:900;border:4px solid var(--ink);border-radius:12px;padding:5px 10px;background:#fff;cursor:pointer;color:var(--ink);box-shadow:0 4px 0 var(--ink)}
+.nt-tools button.on{background:var(--sun);transform:translateY(2px);box-shadow:0 2px 0 var(--ink)}
+.nt{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.nt{grid-template-columns:1fr}}
+.nt-board{background:#F4FAFF;background-image:linear-gradient(#E3EEF9 1px,transparent 1px),linear-gradient(90deg,#E3EEF9 1px,transparent 1px);background-size:40px 40px;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);overflow:hidden;touch-action:none}
+.nt-board svg{width:100%;display:block;aspect-ratio:16/10;user-select:none}
+.nt-cab{stroke:#1D2B53;stroke-width:7;stroke-linecap:round;cursor:pointer}
+.nt-cab.brk{stroke:#E5533F;stroke-dasharray:10 10}.nt-cab.path{stroke:#5DC66E;stroke-width:11}
+.nt-hit{stroke:transparent;stroke-width:26;cursor:pointer}
+.nt-dev circle{fill:#fff;stroke:#1D2B53;stroke-width:4}
+.nt-dev text{font-size:32px;text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.nt-dev .lb{font-size:13px;font-weight:900;fill:#1D2B53;paint-order:stroke;stroke:#fff;stroke-width:4}
+.nt-dev.sel circle{fill:#FFF1A8;stroke:#E5533F;stroke-width:6}.nt-dev.down circle{fill:#FFB3AA}.nt-dev.cut circle{stroke:#E5533F;stroke-dasharray:6 5}
+.nt-dev.reach circle{fill:#C8F3D0}
+.nt-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:9px}
+.nt-stat{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.nt-stat div{border:3px solid var(--ink);border-radius:12px;padding:4px 8px;font-weight:700;background:#F4FAFF}.nt-stat b{display:block;font-size:1.25rem}
+.nt-msg{font-weight:800;min-height:2.6em}
+.nt-ch{display:grid;gap:6px}.nt-ch button{font:inherit;font-weight:800;border:3px solid var(--ink);border-radius:12px;padding:5px 9px;background:#fff;cursor:pointer;text-align:left;color:var(--ink)}
+.nt-ch button.on{background:var(--sun)}.nt-ch button.won::after{content:" ✅"}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🌐", "Network Topology Builder");
+const $=id=>document.getElementById(id);
+const DEV={pc:['💻','Computer'],pr:['🖨️','Printer'],sv:['🖥️','Server'],sw:['🔀','Switch'],rt:['📡','Router'],net:['☁️','Internet']};
+const CH=[['⭐ Star','Connect 5 computers using one switch in the middle.',()=>{const pcs=D.filter(d=>d.t==='pc'),sws=D.filter(d=>d.t==='sw');return pcs.length===5&&sws.length===1&&pcs.every(p=>deg(p.id)===1&&linked(p.id,sws[0].id))}],
+ ['💍 Unbreakable ring','Connect 6 computers so ANY one cable can break and everyone can still talk. Use as few cables as you can!',()=>{const pcs=D.filter(d=>d.t==='pc');return pcs.length===6&&D.length===6&&connected()&&bridges().length===0}],
+ ['☁️ Everyone online','Connect every device to the Internet through a router.',()=>{const n=D.find(d=>d.t==='net'),r=D.filter(d=>d.t==='rt');if(!n||!r.length||D.length<4)return false;const s=reach(n.id);return D.every(d=>s.has(d.id))&&deg(n.id)>=1&&C.filter(c=>c.a===n.id||c.b===n.id).every(c=>D.find(d=>d.id===(c.a===n.id?c.b:c.a)).t==='rt')}],
+ ['🛡️ No weak spots','Build a network of at least 5 devices where no single device or cable failing can split it.',()=>D.length>=5&&connected()&&bridges().length===0&&cutVerts().length===0]];
+let D=[],C=[],tool='move',sel=null,drag=null,ch=-1,won=Kit.get('nt-won',[]),path=null,nid=1,busy=false;
+document.querySelector('main').innerHTML=`<div class="nt-tools" id="tl"><button data-tool="move">✋ Move</button><button data-tool="link">🔌 Connect</button><button data-tool="break">✂️ Break / fix</button><button data-tool="ping">📨 Send a message</button><button data-tool="del">🗑️ Remove</button></div>
+<div class="nt-tools" id="ad">${Object.entries(DEV).map(([k,d])=>`<button data-add="${k}">${d[0]} ${d[1]}</button>`).join('')}</div>
+<div class="nt"><div class="nt-board"><svg id="sv" viewBox="0 0 960 600"></svg></div>
+<div class="nt-p"><div class="nt-msg" id="msg"></div><div class="nt-stat"><div>🧩 Shape<b id="shp">—</b></div><div>🔌 Cables<b id="cb">0</b></div><div>⚠️ Weak spots<b id="wk">0</b></div><div>🌐 Connected?<b id="cn">—</b></div></div>
+<b>📐 Start from a shape</b><div class="row" style="gap:6px"><button class="btn white small" data-pre="star">⭐ Star</button><button class="btn white small" data-pre="bus">➖ Bus</button><button class="btn white small" data-pre="ring">💍 Ring</button><button class="btn white small" data-pre="mesh">🕸️ Mesh</button><button class="btn white small" data-pre="clear">🧽 Empty</button></div>
+<b>🎯 Challenges</b><div class="nt-ch" id="ch">${CH.map((c,i)=>`<button data-c="${i}">${c[0]}</button>`).join('')}</div><button class="btn green small" id="ck" hidden>✓ Check</button></div></div>`;
+const at=id=>D.find(d=>d.id===id),deg=id=>C.filter(c=>!c.brk&&(c.a===id||c.b===id)).length,linked=(a,b)=>C.some(c=>!c.brk&&((c.a===a&&c.b===b)||(c.a===b&&c.b===a)));
+function reach(s,skipC=-1,skipD=-1){const seen=new Set([s]),q=[s];while(q.length){const u=q.shift();C.forEach((c,i)=>{if(c.brk||i===skipC)return;const v=c.a===u?c.b:c.b===u?c.a:null;if(v==null||v===skipD||seen.has(v)||at(v).down)return;seen.add(v);q.push(v)})}return seen}
+const live=()=>D.filter(d=>!d.down);
+function connected(){const L=live();return L.length>0&&reach(L[0].id).size===L.length}
+function bridges(){if(!connected())return[];return C.map((c,i)=>i).filter(i=>!C[i].brk&&reach(live()[0].id,i).size<live().length)}
+function cutVerts(){if(!connected()||live().length<3)return[];return live().filter(d=>{const o=live().find(x=>x.id!==d.id);return reach(o.id,-1,d.id).size<live().length-1}).map(d=>d.id)}
+function shape(){const L=D,n=L.length,m=C.filter(c=>!c.brk).length;if(!n)return'—';if(!connected())return'🧩 In pieces';const ds=L.map(d=>deg(d.id));
+ if(n>=3&&m===n*(n-1)/2)return'🕸️ Mesh';if(n>=3&&ds.every(x=>x===2))return'💍 Ring';if(n>=3&&ds.filter(x=>x===n-1).length===1&&ds.filter(x=>x===1).length===n-1)return'⭐ Star';if(n>=2&&m===n-1&&ds.every(x=>x<=2))return'➖ Bus (line)';if(m===n-1)return'🌳 Tree';return'🛠️ Custom'}
+function draw(reachSet){let h='';C.forEach((c,i)=>{const a=at(c.a),b=at(c.b);const onPath=path&&path.cab.includes(i);h+=`<line class="nt-cab ${c.brk?'brk':''} ${onPath?'path':''}" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/><line class="nt-hit" data-c="${i}" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/>`});
+ const weak=new Set(cutVerts());D.forEach(d=>h+=`<g class="nt-dev ${sel===d.id?'sel':''} ${d.down?'down':''} ${weak.has(d.id)?'cut':''} ${reachSet&&reachSet.has(d.id)?'reach':''}" data-d="${d.id}"><circle cx="${d.x}" cy="${d.y}" r="36"/><text x="${d.x}" y="${d.y}">${d.down?'💥':DEV[d.t][0]}</text><text class="lb" x="${d.x}" y="${d.y+52}">${d.name}</text></g>`);
+ h+='<g id="pk"></g>';$('sv').innerHTML=h;const br=bridges().length,cv=weak.size;$('shp').textContent=shape();$('cb').textContent=C.length;$('wk').textContent=br+cv;$('cn').textContent=!D.length?'—':connected()?'✅ Yes':'❌ No';
+ document.querySelectorAll('[data-tool]').forEach(b=>b.classList.toggle('on',b.dataset.tool===tool));[...$('ch').children].forEach((b,i)=>{b.classList.toggle('on',i===ch);b.classList.toggle('won',won.includes(i))});
+ window.__t={n:D.length,cables:C.length,shape:shape(),weak:br+cv,connected:connected(),won:[...won]}}
+function msg(t){$('msg').textContent=t}
+function add(t,x,y){const n=D.filter(d=>d.t===t).length+1;const d={id:nid++,t,x:x??Kit.rand(80,880),y:y??Kit.rand(70,520),name:`${DEV[t][1]} ${n}`,down:false};D.push(d);return d}
+function link(a,b){if(a===b||C.some(c=>(c.a===a&&c.b===b)||(c.a===b&&c.b===a)))return false;C.push({a,b,brk:false});return true}
+function pre(k){D=[];C=[];nid=1;sel=null;path=null;const cx=480,cy=290;
+ if(k==='star'){const s=add('sw',cx,cy);for(let i=0;i<6;i++){const a=i/6*Math.PI*2;link(s.id,add('pc',cx+Math.cos(a)*230,cy+Math.sin(a)*210).id)}msg('Star: every computer plugs into one switch. Easy to add more, but if the switch breaks, nobody can talk!')}
+ if(k==='bus'){let p=null;for(let i=0;i<6;i++){const d=add('pc',110+i*148,cy+(i%2?60:-60));if(p)link(p.id,d.id);p=d}msg('Bus: devices in a line. Cheap, but one broken cable splits the network in two.')}
+ if(k==='ring'){const ds=[];for(let i=0;i<6;i++){const a=i/6*Math.PI*2;ds.push(add('pc',cx+Math.cos(a)*240,cy+Math.sin(a)*210))}ds.forEach((d,i)=>link(d.id,ds[(i+1)%6].id));msg('Ring: messages can go either way around, so one broken cable is OK!')}
+ if(k==='mesh'){const ds=[];for(let i=0;i<5;i++){const a=i/5*Math.PI*2-Math.PI/2;ds.push(add('pc',cx+Math.cos(a)*230,cy+Math.sin(a)*210))}ds.forEach((a,i)=>ds.slice(i+1).forEach(b=>link(a.id,b.id)));msg('Mesh: everything connects to everything. Super reliable, but look at all those cables!')}
+ if(k==='clear')msg('Add devices from the buttons above, then use 🔌 Connect to plug them together.');draw()}
+async function ping(a,b){busy=true;// breadth-first search for the path with the fewest hops
+ const prev={[a]:null},q=[a];while(q.length){const u=q.shift();if(u===b)break;C.forEach((c,i)=>{if(c.brk)return;const v=c.a===u?c.b:c.b===u?c.a:null;if(v==null||v in prev||at(v).down)return;prev[v]=[u,i];q.push(v)})}
+ if(!(b in prev)){msg(`❌ ${at(a).name} can't reach ${at(b).name}. There's no working path!`);Kit.tone(160,.4,'triangle',.15);draw(reach(a));busy=false;window.__t.ping=false;return}
+ const nodes=[b],cab=[];let k=b;while(prev[k]){cab.unshift(prev[k][1]);k=prev[k][0];nodes.unshift(k)}path={cab};draw();
+ for(let i=0;i<nodes.length-1;i++){const p=at(nodes[i]),r=at(nodes[i+1]);for(let t=0;t<=1;t+=window.__fast?1:.1){$('pk').innerHTML=`<text x="${p.x+(r.x-p.x)*t}" y="${p.y+(r.y-p.y)*t}" font-size="30" text-anchor="middle" dominant-baseline="central">✉️</text>`;await Kit.sleep(window.__fast?1:30)}Kit.tick()}
+ $('pk').innerHTML='';Kit.ding();msg(`✅ Message delivered in ${nodes.length-1} hop${nodes.length>2?'s':''}: ${nodes.map(n=>at(n).name).join(' ➜ ')}`);busy=false;window.__t.ping=true;window.__t.hops=nodes.length-1;setTimeout(()=>{path=null;if(!busy)draw()},1800)}
+function pt(e){const r=$('sv').getBoundingClientRect();return [(e.clientX-r.left)/r.width*960,(e.clientY-r.top)/r.height*600]}
+$('sv').addEventListener('pointerdown',e=>{if(busy)return;const g=e.target.closest('[data-d]'),c=e.target.closest('[data-c]');
+ if(c&&!g){const k=+c.dataset.c;if(tool==='break'){C[k].brk=!C[k].brk;Kit.tick();msg(C[k].brk?'✂️ Cable cut! Is everyone still connected?':'🔧 Cable fixed.')}else if(tool==='del'){C.splice(k,1)}draw();return}
+ if(!g){sel=null;draw();return}const id=+g.dataset.d,d=at(id);
+ if(tool==='move'){const [x,y]=pt(e);drag={d,dx:x-d.x,dy:y-d.y};$('sv').setPointerCapture(e.pointerId);return}
+ if(tool==='break'){d.down=!d.down;Kit.tick();msg(d.down?`💥 ${d.name} broke down!`:`🔧 ${d.name} is fixed.`);draw();return}
+ if(tool==='del'){C=C.filter(c=>c.a!==id&&c.b!==id);D=D.filter(x=>x.id!==id);draw();return}
+ if(sel===null){sel=id;msg(tool==='link'?`Now tap the device to connect ${d.name} to.`:`Now tap who should get the message from ${d.name}.`);draw();return}
+ const a=sel;sel=null;if(a===id){draw();return}if(tool==='link'){if(link(a,id)){Kit.ding();msg(`🔌 Connected ${at(a).name} to ${d.name}.`)}else msg('Those are already connected.');draw()}else if(tool==='ping')ping(a,id)});
+$('sv').addEventListener('pointermove',e=>{if(!drag)return;const [x,y]=pt(e);drag.d.x=Math.max(40,Math.min(920,x-drag.dx));drag.d.y=Math.max(40,Math.min(540,y-drag.dy));draw()});
+$('sv').addEventListener('pointerup',()=>{drag=null});
+$('tl').onclick=e=>{const b=e.target.closest('[data-tool]');if(b){tool=b.dataset.tool;sel=null;msg({move:'Drag devices around.',link:'Tap two devices to plug a cable between them.',break:'Tap a cable or a device to break it (or fix it). Then send a message to test!',ping:'Tap a device, then another, to send a message.',del:'Tap a device or cable to remove it.'}[tool]);draw()}};
+$('ad').onclick=e=>{const b=e.target.closest('[data-add]');if(b&&D.length<14){const d=add(b.dataset.add);tool='link';sel=null;msg(`Added ${d.name}. Now connect it with 🔌.`);Kit.tick();draw()}};
+document.querySelectorAll('[data-pre]').forEach(b=>b.onclick=()=>{if(!busy)pre(b.dataset.pre)});
+$('ch').onclick=e=>{const b=e.target.closest('[data-c]');if(!b)return;ch=+b.dataset.c;pre('clear');msg('🎯 '+CH[ch][1]);$('ck').hidden=false;draw()};
+$('ck').onclick=()=>{if(ch<0)return;if(CH[ch][2]()){if(!won.includes(ch)){won.push(ch);Kit.set('nt-won',won)}Kit.tada();Kit.confetti(60);msg(`🎉 Challenge complete!${ch===1?` You used ${C.length} cables.`:''}`)}else{Kit.tone(200,.25,'triangle',.15);msg('Not yet! '+CH[ch][1])}draw()};
+window.__n={pre,add:(t,x,y)=>{const d=add(t,x,y);draw();return d.id},link:(a,b)=>{link(a,b);draw()},cut:k=>{C[k].brk=!C[k].brk;draw()},down:id=>{at(id).down=!at(id).down;draw()},ping,check:()=>{$('ck').click();return won.includes(ch)},ch:i=>$('ch').children[i].click()};
+pre('star');
+</script>
+</body></html>

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Packet Routing Simulator</title>
+<style>
+main{max-width:1600px}
+.pr{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.pr{grid-template-columns:1fr}}
+.pr-net{background:#EAF6FF;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);overflow:hidden}
+.pr-net svg{width:100%;display:block;aspect-ratio:2/1}
+.pr-l{stroke:#5B6B95;stroke-width:10;stroke-linecap:round;cursor:pointer}
+.pr-l:hover{stroke:#E5533F}
+.pr-l.cut{stroke:#E5533F;stroke-dasharray:6 14;stroke-width:6}
+.pr-l.busy{stroke:#FFB020}
+.pr-r rect{fill:#fff;stroke:#1D2B53;stroke-width:4}
+.pr-r text{font-size:28px;text-anchor:middle;dominant-baseline:central}
+.pr-r .lb{font-size:13px;font-weight:900;fill:#1D2B53}
+.pr-pk text{font-size:15px;font-weight:900;text-anchor:middle;dominant-baseline:central;fill:#1D2B53}
+.pr-pk rect{stroke:#1D2B53;stroke-width:3}
+.pr-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:9px}
+.pr-p input[type=text]{font-weight:800;text-transform:uppercase}
+.pr-in{display:flex;gap:4px;flex-wrap:wrap;min-height:44px;border:3px dashed #C3CBDB;border-radius:12px;padding:5px}
+.pr-in span{border:3px solid var(--ink);border-radius:8px;padding:2px 6px;font-weight:900;background:var(--pc);font-family:ui-monospace,Menlo,monospace;animation:pop .3s}
+.pr-in span.miss{background:#fff;border-style:dashed;color:#C3CBDB}
+@keyframes pop{0%{transform:scale(.3)}}
+.pr-msg{font-family:ui-monospace,Menlo,monospace;font-size:1.4rem;font-weight:900;letter-spacing:.1em;background:#1D2B53;color:#CFF5FF;border-radius:12px;padding:8px 10px;min-height:2.2em;word-break:break-all}
+.pr-note{font-weight:800;min-height:1.4em}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🌐", "Packet Routing Simulator");
+const $=id=>document.getElementById(id);
+const COLS=['#FFB3AA','#FFD27F','#C9E58A','#9FD8FF','#D6C2FF','#FF9FCB','#8BE09A','#FFC98B','#B8F0E6','#A8D8FF'];
+// a small internet: S = your computer, D = your friend's computer, the rest are routers
+const R={S:[60,200,'💻','You'],A:[220,90,'📡','A'],B:[220,310,'📡','B'],C:[400,60,'📡','C'],E:[400,200,'📡','E'],F:[400,340,'📡','F'],G:[580,100,'📡','G'],H:[580,300,'📡','H'],D:[740,200,'🖥️','Friend']};
+const L0=[['S','A'],['S','B'],['A','C'],['A','E'],['B','E'],['B','F'],['C','G'],['E','G'],['E','H'],['F','H'],['G','D'],['H','D'],['C','E'],['E','F']];
+let L=[],pk=[],got=[],total=0,lossy=false,sending=false,raf=0,last=0,word='';
+document.querySelector('main').innerHTML=`<div class="pr"><div><div class="pr-net"><svg id="sv" viewBox="0 0 800 400"></svg></div><p style="color:#fff;font-weight:800;text-align:center;text-shadow:1px 1px 0 var(--ink)">✂️ Tap a cable to cut it (or fix it). Packets will find another way!</p></div>
+<div class="pr-p"><b>✉️ Your message</b><div class="row" style="gap:6px"><input type="text" id="tx" maxlength="24" value="HELLO FRIEND" style="flex:1;min-width:150px"><button class="btn green" id="go">📨 Send</button></div>
+<label style="font-weight:800"><input type="checkbox" id="ls"> 🌩️ Stormy network (some packets get lost)</label>
+<div class="pr-note" id="nt">Messages are split into small numbered packets. Each one can take a different path!</div>
+<b>📬 Packets arriving (in the order they came)</b><div class="pr-in" id="ar"></div><b>🧩 Put back in number order</b><div class="pr-in" id="so"></div><b>🖥️ Your friend reads</b><div class="pr-msg" id="ms"></div><div class="row" style="gap:6px"><button class="btn white small" id="rs" hidden>🔁 Ask for missing packets again</button><button class="btn white small" id="fx">🔧 Fix all cables</button></div></div></div>`;
+const lid=(a,b)=>L.findIndex(l=>(l.a===a&&l.b===b)||(l.a===b&&l.b===a));
+function draw(){let h='';L.forEach((l,i)=>{const a=R[l.a],b=R[l.b];h+=`<line class="pr-l ${l.cut?'cut':l.load>1?'busy':''}" data-l="${i}" x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}"/>`;if(l.cut)h+=`<text x="${(a[0]+b[0])/2}" y="${(a[1]+b[1])/2}" font-size="22" text-anchor="middle" dominant-baseline="central">✂️</text>`});
+ Object.entries(R).forEach(([k,r])=>h+=`<g class="pr-r"><rect x="${r[0]-30}" y="${r[1]-30}" width="60" height="60" rx="14" ${k==='S'||k==='D'?'style="fill:#FFF6C9"':''}/><text x="${r[0]}" y="${r[1]-2}">${r[2]}</text><text class="lb" x="${r[0]}" y="${r[1]+44}">${r[3]}</text></g>`);
+ h+='<g id="pkg"></g>';$('sv').innerHTML=h;drawPk()}
+function drawPk(){const g=$('pkg');if(!g)return;g.innerHTML=pk.filter(p=>!p.done&&!p.lost).map(p=>{const [x,y]=pos(p);return `<g class="pr-pk"><rect x="${x-17}" y="${y-13}" width="34" height="26" rx="6" fill="${p.c}"/><text x="${x}" y="${y}">${p.n}</text></g>`}).join('')+pk.filter(p=>p.lost&&p.lostT>0).map(p=>`<text x="${p.lx}" y="${p.ly}" font-size="26" text-anchor="middle" opacity="${p.lostT}">💥</text>`).join('')}
+function pos(p){const a=R[p.path[p.k]],b=R[p.path[p.k+1]]||a;return [a[0]+(b[0]-a[0])*p.f,a[1]+(b[1]-a[1])*p.f]}
+function route(src='S'){// shortest path that avoids cut cables; busy cables cost more, with a little randomness so packets spread out
+ const dist={},prev={},todo=new Set(Object.keys(R));Object.keys(R).forEach(k=>dist[k]=Infinity);dist[src]=0;
+ while(todo.size){const u=[...todo].reduce((a,b)=>dist[a]<=dist[b]?a:b);todo.delete(u);if(dist[u]===Infinity)break;L.forEach(l=>{if(l.cut)return;const v=l.a===u?l.b:l.b===u?l.a:null;if(!v||!todo.has(v))return;const d=dist[u]+1+l.load*.7+Math.random()*.9;if(d<dist[v]){dist[v]=d;prev[v]=u}})}
+ if(dist.D===Infinity)return null;const p=['D'];while(p[0]!==src)p.unshift(prev[p[0]]);return p}
+function send(nums){let k=0;const go=()=>{if(k>=nums.length)return;const n=nums[k++],path=route();if(!path){$('nt').textContent='🚫 No path from you to your friend! Fix a cable.';Kit.tone(160,.4,'triangle',.15);return}
+  const p={n,c:COLS[(n-1)%COLS.length],path,k:0,f:0,sp:.9+Math.random()*.5};pk.push(p);L[lid(path[0],path[1])].load++;setTimeout(go,window.__fast?0:350)};go();if(!raf){last=0;raf=requestAnimationFrame(loop)}}
+function loop(ts){const dt=Math.min(.05,(ts-(last||ts))/1000)*(window.__fast?20:1);last=ts;let live=false;
+ pk.forEach(p=>{if(p.lost){p.lostT=Math.max(0,(p.lostT||0)-dt);return}if(p.done)return;live=true;const l=L[lid(p.path[p.k],p.path[p.k+1])];
+  p.f+=dt*p.sp/(1+l.load*.25);
+  if(lossy&&!p.risk&&p.f>.5&&Math.random()<.18){p.risk=1;p.lost=true;p.lostT=1;[p.lx,p.ly]=pos(p);l.load=Math.max(0,l.load-1);Kit.tone(150,.2,'sawtooth',.08);return}
+  if(p.f>=1){l.load=Math.max(0,l.load-1);p.k++;p.f=0;p.risk=0;if(p.path[p.k]==='D'){p.done=true;arrive(p)}else{// each router picks the best next cable right now, so packets steer around cut or busy cables
+   const rest=route(p.path[p.k]);if(!rest){p.lost=true;p.lostT=1;[p.lx,p.ly]=pos(p);$('nt').textContent='🚫 A packet got stuck: there is no path left to your friend!';return}p.path=rest;p.k=0;L[lid(p.path[0],p.path[1])].load++}}});
+ drawPk();document.querySelectorAll('.pr-l').forEach((e,i)=>e.classList.toggle('busy',!L[i].cut&&L[i].load>1));
+ if(live||pk.some(p=>p.lostT>0))raf=requestAnimationFrame(loop);else{raf=0;finish()}}
+function arrive(p){if(!got.includes(p.n))got.push(p.n);Kit.tick();show()}
+function show(){const parts=chunks();$('ar').innerHTML=got.map(n=>`<span style="--pc:${COLS[(n-1)%COLS.length]}">${n}</span>`).join('');
+ $('so').innerHTML=parts.map((s,i)=>got.includes(i+1)?`<span style="--pc:${COLS[i%COLS.length]}">${i+1}:${s.replace(/ /g,'␣')}</span>`:`<span class="miss">${i+1}:??</span>`).join('');
+ $('ms').textContent=parts.map((s,i)=>got.includes(i+1)?s:'▢'.repeat(s.length)).join('');window.__t={got:[...got],total,lost:pk.filter(p=>p.lost).length,live:pk.filter(p=>!p.done&&!p.lost).length}}
+function chunks(){const a=[];for(let i=0;i<word.length;i+=3)a.push(word.slice(i,i+3));return a}
+function finish(){sending=false;$('go').disabled=false;const miss=chunks().map((_,i)=>i+1).filter(n=>!got.includes(n));
+ const inOrder=got.every((n,i)=>i===0||n>got[i-1]);
+ if(!miss.length&&got.length){$('rs').hidden=true;$('nt').textContent=inOrder?'🎉 Every packet arrived! Your friend\'s computer put them in order.':'🎉 Every packet arrived, some out of order! The numbers let your friend\'s computer put them back together.';Kit.tada()}
+ else if(miss.length&&got.length+miss.length===total){$('rs').hidden=false;$('nt').textContent=`📭 Packet${miss.length>1?'s':''} ${miss.join(', ')} got lost. Your friend's computer can ask for just those again.`}window.__t.done=true}
+$('go').onclick=()=>{if(sending)return;word=$('tx').value.toUpperCase().replace(/[^A-Z0-9 !?.,]/g,'').slice(0,24)||'HI';$('tx').value=word;pk=[];got=[];L.forEach(l=>l.load=0);total=chunks().length;sending=true;$('go').disabled=true;$('rs').hidden=true;
+ $('nt').textContent=`Split into ${total} packets of up to 3 letters. Off they go!`;show();draw();send(chunks().map((_,i)=>i+1))};
+$('rs').onclick=()=>{const miss=chunks().map((_,i)=>i+1).filter(n=>!got.includes(n));if(!miss.length)return;sending=true;$('go').disabled=true;$('rs').hidden=true;pk=pk.filter(p=>!p.lost);$('nt').textContent=`Resending packet${miss.length>1?'s':''} ${miss.join(', ')}…`;send(miss)};
+$('sv').onclick=e=>{const l=e.target.closest('[data-l]');if(!l)return;const x=L[+l.dataset.l];if(pk.some(p=>!p.done&&!p.lost&&lid(p.path[p.k],p.path[p.k+1])===+l.dataset.l)){Kit.tone(200,.2,'triangle',.12);$('nt').textContent='A packet is on that cable right now. Wait a moment!';return}x.cut=!x.cut;Kit.tick();draw();window.__t.cut=L.filter(l=>l.cut).length};
+$('ls').onchange=()=>lossy=$('ls').checked;$('fx').onclick=()=>{L.forEach(l=>l.cut=false);draw()};
+window.__p={cut:(a,b)=>{L[lid(a,b)].cut=true;draw()},route,lossy:v=>{lossy=v;$('ls').checked=v}};
+L=L0.map(([a,b])=>({a,b,cut:false,load:0}));draw();show();
+</script>
+</body></html>

@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Sorting Algorithm Race</title>
+<style>
+main{max-width:1600px}
+.sr-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:12px}
+.sr-lanes{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:12px}
+.sr-lane{background:#fff;border:5px solid var(--ink);border-radius:20px;box-shadow:5px 5px 0 var(--ink);padding:10px;position:relative}
+.sr-lane.pick{outline:6px solid var(--sun);outline-offset:2px}
+.sr-lane h3{margin:0;display:flex;justify-content:space-between;align-items:center;gap:6px}
+.sr-lane h3 button{font:inherit;font-size:.8rem;font-weight:800;border:3px solid var(--ink);border-radius:99px;padding:2px 8px;background:#fff;cursor:pointer;color:var(--ink)}
+.sr-lane.pick h3 button{background:var(--sun)}
+.sr-how{font-weight:600;font-size:.88rem;color:#55607E;min-height:2.4em}
+.sr-bars{display:flex;align-items:flex-end;gap:2px;height:150px;border-bottom:4px solid var(--ink);margin:6px 0}
+.sr-bars i{flex:1;background:var(--bc);border-radius:4px 4px 0 0;transition:height .08s}
+.sr-bars i.cmp{background:#FFD84D!important}.sr-bars i.sw{background:#E5533F!important}.sr-bars i.ok{background:#5DC66E!important}
+.sr-st{display:flex;gap:8px;font-weight:800;font-size:.9rem;flex-wrap:wrap}
+.sr-medal{position:absolute;right:10px;top:42px;font-size:2.6rem;animation:pop .5s}
+@keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.2)}}
+.sr-msg{text-align:center;color:#fff;font-weight:800;font-size:1.25rem;text-shadow:2px 2px 0 var(--ink);min-height:1.6em;margin-bottom:8px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🔀", "Sorting Algorithm Race");
+const $=id=>document.getElementById(id);
+// every algorithm is a generator that yields one step: ['c',i,j] compare, ['s',i,j] swap, ['w',i,v] write
+const A={
+ bubble:['🫧 Bubble Sort','#9FD8FF','Compares neighbors and swaps them if they are in the wrong order. Big numbers bubble to the end.',function*(a){const n=a.length;for(let e=n-1;e>0;e--){let sw=false;for(let i=0;i<e;i++){yield ['c',i,i+1];if(a[i]>a[i+1]){[a[i],a[i+1]]=[a[i+1],a[i]];sw=true;yield ['s',i,i+1]}}if(!sw)break}}],
+ selection:['👆 Selection Sort','#FFC98B','Finds the smallest number left and moves it to the front, again and again.',function*(a){const n=a.length;for(let i=0;i<n-1;i++){let m=i;for(let j=i+1;j<n;j++){yield ['c',m,j];if(a[j]<a[m])m=j}if(m!==i){[a[i],a[m]]=[a[m],a[i]];yield ['s',i,m]}}}],
+ insertion:['🃏 Insertion Sort','#D6C2FF','Like sorting cards in your hand: takes each number and slides it left into its place.',function*(a){for(let i=1;i<a.length;i++){let j=i;while(j>0){yield ['c',j-1,j];if(a[j-1]>a[j]){[a[j-1],a[j]]=[a[j],a[j-1]];yield ['s',j-1,j];j--}else break}}}],
+ merge:['✂️ Merge Sort','#8BE09A','Splits the list in half again and again, then merges the small sorted pieces back together.',function*(a){function* ms(lo,hi){if(hi-lo<2)return;const m=(lo+hi)>>1;yield* ms(lo,m);yield* ms(m,hi);const L=a.slice(lo,m),R=a.slice(m,hi);let i=0,j=0,k=lo;while(i<L.length&&j<R.length){yield ['c',lo+i,m+j];a[k]=L[i]<=R[j]?L[i++]:R[j++];yield ['w',k,a[k]];k++}while(i<L.length){a[k]=L[i++];yield ['w',k,a[k]];k++}while(j<R.length){a[k]=R[j++];yield ['w',k,a[k]];k++}}yield* ms(0,a.length)}],
+ quick:['⚡ Quick Sort','#FFB3AA','Picks a "pivot" number, puts smaller numbers on its left and bigger on its right, then repeats on each side.',function*(a){function* qs(lo,hi){if(lo>=hi)return;const p=a[hi];let i=lo;for(let j=lo;j<hi;j++){yield ['c',j,hi];if(a[j]<p){[a[i],a[j]]=[a[j],a[i]];yield ['s',i,j];i++}}[a[i],a[hi]]=[a[hi],a[i]];yield ['s',i,hi];yield* qs(lo,i-1);yield* qs(i+1,hi)}yield* qs(0,a.length-1)}]};
+const KEYS=Object.keys(A);
+let acc=0,N=30,start=[],lanes=[],run=false,pick=null,place=0,raf=0,last=0;
+document.querySelector('main').innerHTML=`<div class="sr-top"><select id="sz" style="width:auto"><option value="15">15 bars</option><option value="30" selected>30 bars</option><option value="60">60 bars</option></select><select id="kd" style="width:auto"><option value="rand">🎲 Mixed up</option><option value="near">🤏 Almost sorted</option><option value="rev">🔁 Backwards</option></select><label style="color:#fff;font-weight:800">🐢 <input type="range" id="sp" min="1" max="60" value="12" style="width:120px;vertical-align:middle"> 🐇</label><button class="btn white" id="nw">🔀 New list</button><button class="btn green big" id="go">🏁 Race!</button></div>
+<div class="sr-msg" id="msg">Tap "My pick" on the algorithm you think will win, then press Race!</div><div class="sr-lanes" id="ln"></div>`;
+function make(){const k=$('kd').value;N=+$('sz').value;let a=Array.from({length:N},(_,i)=>i+1);
+ if(k==='rand')a=Kit.shuffle(a);else if(k==='rev')a.reverse();else for(let t=0;t<Math.max(2,N/10);t++){const i=Kit.rand(0,N-2);[a[i],a[i+1]]=[a[i+1],a[i]]}
+ start=a;reset()}
+function reset(){run=false;place=0;cancelAnimationFrame(raf);$('go').disabled=false;
+ lanes=KEYS.map(k=>({k,a:[...start],g:null,cmp:0,sw:0,done:false,hl:[],medal:''}));lanes.forEach(l=>{l.a=[...start];l.g=A[l.k][3](l.a)});
+ $('ln').innerHTML=lanes.map((l,i)=>`<div class="sr-lane ${pick===l.k?'pick':''}" id="L${i}"><h3>${A[l.k][0]}<button data-p="${l.k}">${pick===l.k?'⭐ My pick':'My pick?'}</button></h3><div class="sr-how">${A[l.k][2]}</div><div class="sr-bars" id="B${i}" style="--bc:${A[l.k][1]}">${l.a.map(()=>'<i></i>').join('')}</div><div class="sr-st"><span class="ln-pill">👀 <b id="C${i}">0</b> compares</span><span class="ln-pill">🔁 <b id="S${i}">0</b> moves</span></div></div>`).join('');
+ lanes.forEach((l,i)=>draw(i));$('msg').textContent=pick?`Your pick: ${A[pick][0]}. Press Race!`:'Tap "My pick" on the algorithm you think will win, then press Race!';window.__t={run,done:0}}
+function draw(i){const l=lanes[i],bs=$('B'+i).children;for(let k=0;k<l.a.length;k++){bs[k].style.height=(l.a[k]/N*100)+'%';bs[k].className=l.done?'ok':l.hl[1]===k||l.hl[2]===k?(l.hl[0]==='c'?'cmp':'sw'):''}$('C'+i).textContent=l.cmp;$('S'+i).textContent=l.sw}
+function step(l,i){const r=l.g.next();if(r.done){l.done=true;l.hl=[];place++;l.medal=['🥇','🥈','🥉'][place-1]||'';if(l.medal){const m=document.createElement('div');m.className='sr-medal';m.textContent=l.medal;$('L'+i).appendChild(m)}
+  if(place===1){Kit.tada();$('msg').textContent=pick?(pick===l.k?`🎉 You picked the winner: ${A[l.k][0]}!`:`${A[l.k][0]} won! Your pick is still racing…`):`${A[l.k][0]} wins!`;if(pick===l.k)Kit.confetti(60)}else Kit.ding();return}
+ const s=r.value;l.hl=s;if(s[0]==='c')l.cmp++;else l.sw++}
+function loop(ts){const sp=+$('sp').value;// every lane takes the same number of steps per frame, so a lane finishes first only if it needs fewer steps
+ acc+=sp/6;const n=Math.floor(acc);acc-=n;lanes.forEach((l,i)=>{if(l.done)return;for(let k=0;k<n&&!l.done;k++)step(l,i);draw(i)});
+ window.__t={run,done:lanes.filter(l=>l.done).length,order:lanes.filter(l=>l.done).map(l=>l.k),st:lanes.map(l=>[l.k,l.cmp,l.sw])};
+ if(lanes.every(l=>l.done)){run=false;$('go').disabled=false;const best=lanes.reduce((a,b)=>a.cmp+a.sw<=b.cmp+b.sw?a:b);if(!pick)$('msg').textContent=`🏁 Done! ${A[best.k][0]} needed the fewest steps.`;return}
+ raf=requestAnimationFrame(loop)}
+$('go').onclick=()=>{if(lanes.some(l=>l.done))reset();run=true;$('go').disabled=true;$('msg').textContent='And they\'re off! 🏃';raf=requestAnimationFrame(loop)};
+$('nw').onclick=make;$('sz').onchange=make;$('kd').onchange=make;
+$('ln').onclick=e=>{const b=e.target.closest('[data-p]');if(!b||run)return;pick=pick===b.dataset.p?null:b.dataset.p;Kit.tick();reset()};
+window.__s={finish:()=>{lanes.forEach((l,i)=>{while(!l.done)step(l,i);draw(i)})},pick:k=>{pick=k;reset()}};
+make();
+</script>
+</body></html>

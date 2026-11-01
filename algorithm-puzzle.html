@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Algorithm Puzzle</title>
+<style>
+main{max-width:1500px}
+.ap-lv{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
+.ap-lv button{font:inherit;font-weight:900;width:44px;height:44px;border:4px solid var(--ink);border-radius:12px;background:#fff;cursor:pointer;color:var(--ink)}
+.ap-lv button.on{background:var(--sun)}.ap-lv button.won{background:#8BE09A}.ap-lv button.won.on{background:#5DC66E;outline:3px solid var(--sun)}
+.ap{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.ap{grid-template-columns:1fr}}
+.ap-board{background:#7BC86C;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);padding:12px;display:grid;place-items:center}
+.ap-grid{display:grid;gap:5px;width:100%;max-width:560px}
+.ap-c{aspect-ratio:1;border-radius:10px;background:#C9E58A;border:3px solid rgba(29,43,83,.25);display:grid;place-items:center;font-size:clamp(1.3rem,4.5vw,2.6rem);position:relative}
+.ap-c.w{background:#8A6B4A;border-color:#5B4426}
+.ap-c.trail{background:#E8F5B8}
+.ap-bot{position:absolute;inset:0;display:grid;place-items:center;transition:transform .25s}
+.ap-bot span{display:inline-block;transition:transform .25s}
+.ap-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:10px}
+.ap-goal{font-weight:800}
+.ap-prog{border:4px solid var(--ink);border-radius:16px;padding:8px;cursor:pointer;background:#F4FAFF}
+.ap-prog.sel{background:#FFF6C9;outline:4px solid var(--sun)}
+.ap-prog h4{margin:0 0 6px;display:flex;justify-content:space-between}
+.ap-slots{display:flex;gap:5px;flex-wrap:wrap}
+.ap-slots i{width:46px;height:46px;border:3px dashed #C3CBDB;border-radius:10px;display:grid;place-items:center;font-style:normal;font-size:1.5rem;background:#fff}
+.ap-slots i.f{border:3px solid var(--ink);background:var(--kc);cursor:pointer}
+.ap-slots i.run{outline:4px solid #E5533F;transform:scale(1.1)}
+.ap-pal{display:flex;gap:6px;flex-wrap:wrap}
+.ap-pal button{font:inherit;font-weight:900;font-size:1.05rem;border:4px solid var(--ink);border-radius:12px;padding:6px 10px;background:var(--kc);cursor:pointer;box-shadow:0 4px 0 var(--ink);color:var(--ink)}
+.ap-msg{font-weight:800;font-size:1.1rem;min-height:1.4em}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🧩", "Algorithm Puzzle");
+const $=id=>document.getElementById(id);
+const CMD={F:['⬆️','Forward','#9FD8FF'],L:['↩️','Turn left','#FFD27F'],R:['↪️','Turn right','#FFB3AA'],P:['🟣','Run P','#D6C2FF']};
+// grid rows: R robot (faces right), * star, # rock. [rows, main slots, P slots, hint]
+const LV=[[['R...*'],5,0,'Drive forward to the star.'],
+ [['R..','..*'],5,0,'You will need to turn. Turns happen in place: the robot spins but does not move.'],
+ [['R#*','...'],8,0,'Find a way around the rock.'],
+ [['R*..','.**.','..**'],10,0,'Collect every star on the stairs.'],
+ [['R.*.*.*.*'],4,2,'Too many steps for the main program! Put a pattern in P, then run P again and again.'],
+ [['R*..','.**.','..**'],4,4,'The same stairs, but now with only 4 main slots. What pattern repeats?'],
+ [['R..*','.##.','.##.','*..*'],4,4,'Drive around the lake. Each side is the same pattern!'],
+ [['R...*','####.','*...*'],5,5,'P can be used more than once, with other commands in between.']];
+const DIR=[[1,0],[0,1],[-1,0],[0,-1]];
+let li=0,grid=[],bot,stars,prog={main:[],P:[]},tgt='main',busy=false,won=Kit.get('ap-won',[]),trail=new Set();
+document.querySelector('main').innerHTML=`<div class="ap-lv" id="lv"></div><div class="ap"><div class="ap-board"><div class="ap-grid" id="gd"></div></div>
+<div class="ap-p"><div class="ap-goal" id="gl"></div><div class="ap-prog" data-t="main"><h4>🤖 Main program <span id="mc"></span></h4><div class="ap-slots" id="ms"></div></div><div class="ap-prog" data-t="P" id="pp"><h4>🟣 P (a mini program) <span id="pc"></span></h4><div class="ap-slots" id="ps"></div></div>
+<div class="muted" style="font-weight:700">Tap a program to pick it, then tap commands to add them. Tap a command in a program to remove it.</div><div class="ap-pal" id="pal"></div>
+<div class="row" style="gap:6px"><button class="btn green" id="go">▶ Run</button><button class="btn white small" id="rs">↺ Reset robot</button><button class="btn white small" id="cl">🧽 Clear</button></div><div class="ap-msg" id="msg"></div></div></div>`;
+function load(i){li=i;const L=LV[i];grid=L[0].map(r=>r.split(''));stars=new Set();grid.forEach((r,y)=>r.forEach((c,x)=>{if(c==='R'){bot={x,y,d:0,sx:x,sy:y}}if(c==='*')stars.add(x+','+y)}));
+ prog={main:[],P:[]};tgt='main';$('gl').innerHTML=`🎯 Level ${i+1}: ${L[3]}`;$('pp').style.display=L[2]?'':'none';
+ $('pal').innerHTML=Object.entries(CMD).filter(([k])=>k!=='P'||L[2]).map(([k,c])=>`<button data-k="${k}" style="--kc:${c[2]}">${c[0]} ${c[1]}</button>`).join('');reset();msg('')}
+function reset(){const L=LV[li];bot.x=bot.sx;bot.y=bot.sy;bot.d=0;stars=new Set();L[0].forEach((r,y)=>r.split('').forEach((c,x)=>{if(c==='*')stars.add(x+','+y)}));trail=new Set([bot.x+','+bot.y]);draw()}
+function draw(run={}){const L=LV[li],W=grid[0].length;$('gd').style.gridTemplateColumns=`repeat(${W},1fr)`;$('gd').style.maxWidth=Math.min(560,W*110)+'px';
+ $('gd').innerHTML=grid.map((r,y)=>r.map((c,x)=>{const k=x+','+y;return `<div class="ap-c ${c==='#'?'w':''} ${trail.has(k)&&c!=='#'?'trail':''}">${c==='#'?'🪨':stars.has(k)?'⭐':''}${bot.x===x&&bot.y===y?`<div class="ap-bot"><span style="transform:rotate(${bot.d*90}deg)">➡️</span></div>`:''}</div>`}).join('')).join('');
+ const slots=(t,n)=>Array.from({length:n},(_,i)=>{const k=prog[t][i];return k?`<i class="f ${run.t===t&&run.i===i?'run':''}" data-t="${t}" data-i="${i}" style="--kc:${CMD[k][2]}">${CMD[k][0]}</i>`:'<i></i>'}).join('');
+ $('ms').innerHTML=slots('main',L[1]);$('ps').innerHTML=slots('P',L[2]);$('mc').textContent=`${prog.main.length}/${L[1]}`;$('pc').textContent=`${prog.P.length}/${L[2]}`;
+ document.querySelectorAll('.ap-prog').forEach(p=>p.classList.toggle('sel',p.dataset.t===tgt));
+ $('lv').innerHTML=LV.map((_,i)=>`<button data-l="${i}" class="${i===li?'on':''} ${won.includes(i)?'won':''}">${i+1}</button>`).join('');
+ window.__t={li,bot:{...bot},stars:stars.size,main:prog.main.join(''),P:prog.P.join(''),won:[...won]}}
+function msg(t){$('msg').textContent=t}
+async function run(){if(busy)return;if(!prog.main.length)return msg('Add some commands to the main program first!');busy=true;reset();let steps=0,fail=null;
+ async function exec(t,depth){for(let i=0;i<prog[t].length;i++){if(fail||!stars.size)return;const k=prog[t][i];draw({t,i});await Kit.sleep(window.__fast?1:380);steps++;
+   if(k==='P'){if(depth>3){fail='P keeps calling itself forever!';return}await exec('P',depth+1);continue}
+   if(k==='L')bot.d=(bot.d+3)%4;else if(k==='R')bot.d=(bot.d+1)%4;else{const nx=bot.x+DIR[bot.d][0],ny=bot.y+DIR[bot.d][1];if(ny<0||ny>=grid.length||nx<0||nx>=grid[0].length){fail='Oops! The robot drove off the edge.';return}if(grid[ny][nx]==='#'){fail='Bonk! 🪨 The robot hit a rock.';return}bot.x=nx;bot.y=ny;trail.add(nx+','+ny);if(stars.delete(nx+','+ny))Kit.ding();else Kit.tick()}
+   draw({t,i})}}
+ await exec('main',0);draw();busy=false;
+ if(fail){Kit.tone(160,.35,'sawtooth',.1);msg('💥 '+fail+' Fix the program and try again.')}
+ else if(!stars.size){Kit.tada();Kit.confetti(60);if(!won.includes(li)){won.push(li);Kit.set('ap-won',won)}msg(`🎉 All stars collected using ${prog.main.length+prog.P.length} commands!${li<LV.length-1?' On to the next level!':' You finished every level!'}`);draw()}
+ else msg(`The program ended with ${stars.size} star${stars.size>1?'s':''} left. Add more commands!`);window.__t.res=fail?'fail':stars.size?'short':'win'}
+$('pal').onclick=e=>{const b=e.target.closest('[data-k]');if(!b||busy)return;const L=LV[li],max=tgt==='main'?L[1]:L[2];if(prog[tgt].length>=max){Kit.tone(200,.15,'triangle',.12);return msg(`${tgt==='main'?'The main program':'P'} is full!`)}prog[tgt].push(b.dataset.k);Kit.tick();draw()};
+document.querySelectorAll('.ap-prog').forEach(p=>p.onclick=e=>{const s=e.target.closest('[data-i]');if(s&&!busy){prog[s.dataset.t].splice(+s.dataset.i,1);draw();return}tgt=p.dataset.t;draw()});
+$('go').onclick=run;$('rs').onclick=()=>{if(!busy){reset();msg('')}};$('cl').onclick=()=>{if(!busy){prog={main:[],P:[]};reset()}};
+$('lv').onclick=e=>{const b=e.target.closest('[data-l]');if(b&&!busy)load(+b.dataset.l)};
+window.__a={load,set:(m,p='')=>{prog={main:m.split(''),P:p.split('')};draw()},run};
+load(Math.min(won.length,LV.length-1));
+</script>
+</body></html>

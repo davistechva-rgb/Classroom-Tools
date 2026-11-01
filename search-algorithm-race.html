@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Search Algorithm Race</title>
+<style>
+main{max-width:1600px}
+.sa-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:10px}
+.sa-goal{text-align:center;color:#fff;font-weight:900;font-size:clamp(1.3rem,3.5vw,2rem);text-shadow:3px 3px 0 var(--ink)}
+.sa-goal b{background:var(--sun);color:var(--ink);text-shadow:none;border:4px solid var(--ink);border-radius:14px;padding:0 12px;display:inline-block}
+.sa-row{background:#fff;border:5px solid var(--ink);border-radius:20px;box-shadow:5px 5px 0 var(--ink);padding:10px;margin-top:12px}
+.sa-row h3{margin:0 0 4px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;align-items:center}
+.sa-row .how{font-weight:600;color:#55607E;font-size:.9rem;margin-bottom:6px}
+.sa-lk{display:grid;grid-template-columns:repeat(var(--n),minmax(0,54px));gap:4px;justify-content:center}
+@media (max-width:600px){.sa-lk{grid-template-columns:repeat(8,minmax(0,1fr))}}
+.sa-lk i{aspect-ratio:3/4;border:2px solid var(--ink);border-radius:6px;background:#9FB2DA;display:grid;place-items:center;font-style:normal;font-weight:900;font-size:clamp(.5rem,1.3vw,.95rem);color:var(--ink);position:relative;cursor:default;user-select:none}
+.sa-lk i::before{content:"";position:absolute;top:18%;left:50%;width:30%;height:5%;background:rgba(0,0,0,.25);border-radius:3px;transform:translateX(-50%)}
+.sa-lk i.op{background:#FFFDF6}.sa-lk i.op::before{display:none}
+.sa-lk i.out{background:#E3E8F2;color:#9FA9C4;border-color:#C3CBDB}
+.sa-lk i.now{background:#FFD84D;transform:scale(1.15);z-index:1}
+.sa-lk i.hit{background:#5DC66E;transform:scale(1.2);z-index:1}
+.sa-you .sa-lk i:not(.op):not(.out){cursor:pointer}.sa-you .sa-lk i:not(.op):not(.out):hover{background:#C9D6F0}
+.sa-steps{font-size:1.2rem}
+.sa-msg{text-align:center;font-weight:800;font-size:1.15rem;min-height:1.5em;margin-top:6px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🔎", "Search Algorithm Race");
+const $=id=>document.getElementById(id);
+let N=32,nums=[],goal,you,lin,bin,timer=0,over=false;
+document.querySelector('main').innerHTML=`<div class="sa-top"><select id="sz" style="width:auto"><option value="16">16 lockers</option><option value="32" selected>32 lockers</option><option value="64">64 lockers</option></select><button class="btn green" id="go">🔄 New race</button><label style="color:#fff;font-weight:800">🐢 <input type="range" id="sp" min="1" max="10" value="4" style="width:110px;vertical-align:middle"> 🐇</label></div>
+<div class="sa-goal">Find the locker with <b id="gl">?</b></div><div class="muted" style="text-align:center;color:#fff;font-weight:700">The lockers are in order from smallest to biggest. Every locker you open counts as a step.</div>
+<div class="sa-row sa-you"><h3>🧒 You <span class="ln-pill sa-steps">👣 <b id="ys">0</b> steps</span></h3><div class="how">Tap any closed locker to peek inside. Use the number you see to decide where to look next!</div><div class="sa-lk" id="yl"></div><div class="sa-msg" id="ym"></div></div>
+<div class="sa-row"><h3>🚶 Linear search robot <span class="ln-pill sa-steps">👣 <b id="ls">0</b> steps</span></h3><div class="how">Opens every locker in a row, from the first one, until it finds the number.</div><div class="sa-lk" id="ll"></div></div>
+<div class="sa-row"><h3>✂️ Binary search robot <span class="ln-pill sa-steps">👣 <b id="bs">0</b> steps</span></h3><div class="how">Opens the middle locker. Too small? Throw away the left half. Too big? Throw away the right half. Repeat!</div><div class="sa-lk" id="bl"></div></div>`;
+function newRace(){N=+$('sz').value;const s=new Set();while(s.size<N)s.add(Kit.rand(1,N*4));nums=[...s].sort((a,b)=>a-b);goal=Kit.pick(nums);over=false;
+ you={open:new Set(),out:new Set(),steps:0,done:false};lin={i:0,steps:0,done:false,open:new Set()};bin={lo:0,hi:N-1,steps:0,done:false,open:new Set(),out:new Set(),now:-1};
+ $('gl').textContent=goal;$('ym').textContent='';['yl','ll','bl'].forEach(id=>$(id).style.setProperty('--n',Math.min(N,16)));draw();clearInterval(timer);timer=0;window.__t={goal,idx:nums.indexOf(goal),you:0,lin:0,bin:0}}
+function row(id,st,now){$(id).innerHTML=nums.map((v,i)=>{const op=st.open.has(i),hit=op&&v===goal;return `<i data-i="${i}" class="${hit?'hit op':op?(i===now?'now op':'op'):st.out&&st.out.has(i)?'out':''}">${op?v:''}</i>`}).join('')}
+function draw(){row('yl',you,-1);row('ll',lin,lin.i-1);row('bl',bin,bin.now);$('ys').textContent=you.steps;$('ls').textContent=lin.steps;$('bs').textContent=bin.steps}
+function robots(){// one step for each robot
+ if(!lin.done){lin.open.add(lin.i);lin.steps++;if(nums[lin.i]===goal)lin.done=true;lin.i++}
+ if(!bin.done){const m=(bin.lo+bin.hi)>>1;bin.now=m;bin.open.add(m);bin.steps++;if(nums[m]===goal)bin.done=true;else if(nums[m]<goal){for(let k=bin.lo;k<=m;k++)if(k!==m)bin.out.add(k);bin.lo=m+1}else{for(let k=m;k<=bin.hi;k++)if(k!==m)bin.out.add(k);bin.hi=m-1}}
+ Kit.tick();draw();window.__t={...window.__t,lin:lin.steps,bin:bin.steps};if(lin.done&&bin.done)finish()}
+function start(){if(timer)return;timer=setInterval(()=>{if(lin.done&&bin.done){clearInterval(timer);return}robots()},1100-$('sp').value*100)}
+function finish(){if(!you.done||!lin.done||!bin.done||over)return;over=true;clearInterval(timer);const r=[['You',you.steps],['Linear robot',lin.steps],['Binary robot',bin.steps]].sort((a,b)=>a[1]-b[1]);
+ $('ym').innerHTML=`🏁 ${r[0][0]} found it in the fewest steps (${r[0][1]}). With ${N} lockers, binary search never needs more than <b>${Math.ceil(Math.log2(N+1))}</b> steps!`;if(r[0][0]==='You'||you.steps<=bin.steps){Kit.tada();Kit.confetti(50)}else Kit.ding()}
+$('yl').onclick=e=>{const d=e.target.closest('[data-i]');if(!d||you.done)return;const i=+d.dataset.i;if(you.open.has(i))return;start();you.open.add(i);you.steps++;const v=nums[i];
+ if(v===goal){you.done=true;$('ym').textContent=`🎉 Found ${goal} in ${you.steps} steps!`;Kit.ding()}else{$('ym').textContent=v<goal?`${v} is too small. Look to the RIGHT ➡`:`${v} is too big. Look to the LEFT ⬅`;
+  // cross out lockers that can't hold the number
+  nums.forEach((x,k)=>{if(!you.open.has(k)&&((v<goal&&k<i)||(v>goal&&k>i)))you.out.add(k)});Kit.tone(v<goal?520:330,.12,'triangle',.15)}
+ draw();window.__t={...window.__t,you:you.steps,ydone:you.done};finish()};
+$('go').onclick=newRace;$('sz').onchange=newRace;
+window.__r={robots,open:i=>$('yl').children[i].click()};
+newRace();
+</script>
+</body></html>

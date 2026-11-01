@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Data Structure Playground</title>
+<style>
+main{max-width:1600px}
+.ds-tabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
+.ds{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+@media (max-width:1100px){.ds{grid-template-columns:1fr}}
+.ds-box{background:#fff;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);padding:12px;display:grid;gap:8px;align-content:start}
+.ds-box h2{margin:0;display:flex;justify-content:space-between;align-items:center}
+.ds-box .how{font-weight:700;color:#55607E;font-size:.9rem}
+.ds-view{min-height:150px;border:3px dashed #C3CBDB;border-radius:14px;padding:8px;position:relative}
+.ds-arr{display:flex;gap:4px;flex-wrap:wrap;align-items:flex-end}
+.ds-cell{display:grid;justify-items:center;font-weight:900}
+.ds-cell b{border:3px solid var(--ink);border-radius:8px;min-width:46px;padding:8px 6px;text-align:center;background:#9FD8FF;font-size:1.05rem}
+.ds-cell small{color:#55607E;font-size:.72rem}
+.ds-cell.at b{background:#FFD84D;transform:scale(1.1)}.ds-cell.hit b{background:#5DC66E}.ds-cell.new b{animation:pop .35s}
+@keyframes pop{0%{transform:scale(.3)}}
+.ds-bag{background:radial-gradient(circle at 50% 40%,#FFF1D6,#F2D6A2);border-radius:40% 40% 30% 30%;height:170px;position:relative;overflow:hidden;border:4px solid #C99A63}
+.ds-bag span{position:absolute;border:3px solid var(--ink);border-radius:99px;padding:3px 10px;font-weight:900;background:#C9E58A;transform:translate(-50%,-50%);animation:pop .35s}
+.ds-bag span.hit{background:#5DC66E;outline:4px solid #FFD84D}
+.ds-dict{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px}
+.ds-lock{border:3px solid var(--ink);border-radius:10px;overflow:hidden;font-weight:800;text-align:center}
+.ds-lock .k{background:#D6C2FF;padding:3px;font-size:.85rem}.ds-lock .v{padding:6px;background:#fff}
+.ds-lock.hit{outline:4px solid #FFD84D}.ds-lock.hit .v{background:#B8F0C2}.ds-lock.new{animation:pop .35s}
+.ds-ops{display:grid;gap:6px}.ds-ops .row{gap:5px}
+.ds-ops input{width:96px;font:inherit;font-weight:800;padding:6px 8px;border:3px solid var(--ink);border-radius:10px}
+.ds-msg{font-weight:800;min-height:2.6em;font-size:.95rem}
+.ds-steps{font-size:.95rem}
+.ds-q{background:#fff;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);padding:16px;max-width:860px;margin:0 auto;display:grid;gap:12px;text-align:center}
+.ds-q .sc{font-size:1.4rem;font-weight:900}
+.ds-q .ch{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+@media (max-width:600px){.ds-q .ch{grid-template-columns:1fr}}
+.ds-q .ch button{font:inherit;font-weight:900;font-size:1.1rem;border:4px solid var(--ink);border-radius:14px;padding:12px;background:#fff;cursor:pointer;color:var(--ink)}
+.ds-q .ch button.yes{background:#8BE09A}.ds-q .ch button.no{background:#FFB3AA}
+.ds-q .ch button small{display:block;font-weight:600;font-size:.8rem;color:#55607E}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("📦", "Data Structure Playground");
+const $=id=>document.getElementById(id);
+let arr=['🍎','🍌','🍇'],bag=new Map([['red',[30,40]],['blue',[65,55]]]),dict=new Map([['Ava','pizza'],['Leo','tacos']]),tab='play',hl={},qs=0,qn=0,bag2=[],teams=null;
+const Q=[['Keep track of the order kids line up in.','arr','Order matters, and a list keeps things in order.'],['Remember each student\'s favorite color, so you can look it up by name.','dict','Look up by a name (the key) to get a value: that\'s a dictionary.'],['Collect every different kind of bug found on a nature walk. No repeats!','set','A set ignores duplicates automatically.'],['A playlist of songs that play one after another.','arr','A list keeps the songs in order.'],['Look up what a word means.','dict','The word is the key, the meaning is the value.'],['Which states your class has visited. Each state only counts once.','set','A set only keeps one of each.'],['The scores from each round of a game, in order.','arr','Round 1, round 2, round 3… a numbered list.'],['Phone contacts: find a number by someone\'s name.','dict','Name ➜ number is a key ➜ value pair.'],['The different colors used in a drawing.','set','You only care which colors were used, not how many times.'],['Which time each student left with the hall pass.','dict','Student ➜ time is a key ➜ value pair.'],['The temperature each day this week.','arr','Day 1, day 2… in order.'],['Usernames that are already taken.','set','You just need to ask "is this name in there?", and sets answer that super fast.']];
+const NAME={arr:['📦 List','numbered shelf, keeps order'],set:['🎒 Set','a bag with no repeats'],dict:['📒 Dictionary','labeled lockers: key ➜ value']};
+document.querySelector('main').innerHTML=`<div class="ds-tabs"><button class="btn" data-t="play">🧪 Playground</button><button class="btn white" data-t="quiz">🤔 Pick the right one</button></div><div id="bd"></div>`;
+function play(){$('bd').innerHTML=`<div class="ds">
+<div class="ds-box"><h2>📦 List <span class="ln-pill ds-steps">👣 <b id="as">0</b></span></h2><div class="how">A numbered shelf. Items stay in order, and each spot has a number starting at 0.</div><div class="ds-view"><div class="ds-arr" id="av"></div></div>
+<div class="ds-ops"><div class="row"><input id="ai" value="🍓"><button class="btn green small" id="aa">➕ Add to end</button></div><div class="row"><input id="ax" type="number" min="0" value="0"><button class="btn white small" id="ag">📍 Get spot #</button><button class="btn white small" id="ar">🗑️ Remove spot #</button></div><div class="row"><button class="btn white small" id="af">🔎 Find the item</button><button class="btn white small" id="ao">🔤 Sort</button></div></div><div class="ds-msg" id="am"></div></div>
+<div class="ds-box"><h2>🎒 Set <span class="ln-pill ds-steps">👣 <b id="ss">0</b></span></h2><div class="how">A bag of things with no repeats and no order. Great for "is it in there?"</div><div class="ds-bag" id="sv"></div>
+<div class="ds-ops"><div class="row"><input id="si" value="green"><button class="btn green small" id="sa">➕ Add</button><button class="btn white small" id="sh">❓ Is it in there?</button><button class="btn white small" id="sr">🗑️ Remove</button></div></div><div class="ds-msg" id="sm"></div></div>
+<div class="ds-box"><h2>📒 Dictionary <span class="ln-pill ds-steps">👣 <b id="ds">0</b></span></h2><div class="how">Lockers with name tags. Use the key (tag) to jump straight to its value.</div><div class="ds-view"><div class="ds-dict" id="dv"></div></div>
+<div class="ds-ops"><div class="row"><input id="dk" value="Mia" placeholder="key"><input id="dval" value="pasta" placeholder="value"><button class="btn green small" id="da">💾 Save</button></div><div class="row"><button class="btn white small" id="dg">🔎 Look up key</button><button class="btn white small" id="dd">🗑️ Delete key</button></div></div><div class="ds-msg" id="dm"></div></div></div>
+<p style="color:#fff;font-weight:800;text-align:center;text-shadow:1px 1px 0 var(--ink)">👣 counts how many boxes the computer had to look at. Finding something in a list means checking one spot at a time!</p>`;bind();draw()}
+function draw(){if(!$('av'))return;$('av').innerHTML=arr.map((v,i)=>`<div class="ds-cell ${hl.a===i?'at':''} ${hl.ah===i?'hit':''} ${hl.an===i?'new':''}"><b>${Kit.esc(v)}</b><small>${i}</small></div>`).join('')||'<span class="muted">Empty list []</span>';
+ $('sv').innerHTML=[...bag].map(([v,p])=>`<span class="${hl.s===v?'hit':''}" style="left:${p[0]}%;top:${p[1]}%">${Kit.esc(v)}</span>`).join('')||'<span style="left:50%;top:50%;border:0;background:none" class="muted">Empty bag</span>';
+ $('dv').innerHTML=[...dict].map(([k,v])=>`<div class="ds-lock ${hl.d===k?'hit':''} ${hl.dn===k?'new':''}"><div class="k">🏷️ ${Kit.esc(k)}</div><div class="v">${Kit.esc(v)}</div></div>`).join('')||'<span class="muted">Empty dictionary {}</span>';
+ window.__t={arr:[...arr],set:[...bag.keys()],dict:Object.fromEntries(dict),as:+$('as').textContent,ss:+$('ss').textContent,ds:+$('ds').textContent}}
+const sleep=ms=>Kit.sleep(window.__fast?1:ms);let busy=false;
+function bind(){const v=id=>$(id).value.trim();
+ $('aa').onclick=()=>{const x=v('ai');if(!x)return;if(arr.length>=12)return $('am').textContent='The shelf is full!';arr.push(x);hl={an:arr.length-1};$('as').textContent=1;$('am').textContent=`Added ${x} at spot ${arr.length-1}. Adding to the end takes 1 step.`;Kit.tick();draw()};
+ $('ag').onclick=()=>{const i=+v('ax');if(!(i>=0&&i<arr.length)){$('am').textContent=`There is no spot ${i}. Spots go from 0 to ${arr.length-1}.`;Kit.tone(200,.2,'triangle',.15);return}hl={ah:i};$('as').textContent=1;$('am').textContent=`Spot ${i} holds ${arr[i]}. Jumping to a spot number takes just 1 step!`;Kit.ding();draw()};
+ $('ar').onclick=()=>{const i=+v('ax');if(!(i>=0&&i<arr.length))return;const x=arr.splice(i,1)[0];hl={};$('as').textContent=arr.length-i+1;$('am').textContent=`Removed ${x}. Everything after it slid down one spot (${arr.length-i} item${arr.length-i===1?'':'s'} moved).`;Kit.tick();draw()};
+ $('af').onclick=async()=>{if(busy)return;busy=true;const x=v('ai');let i=0;for(;i<arr.length;i++){hl={a:i};$('as').textContent=i+1;draw();Kit.tick();await sleep(350);if(arr[i]===x)break}
+  if(i<arr.length){hl={ah:i};$('am').textContent=`Found ${x} at spot ${i} after checking ${i+1} spot${i?'s':''}.`;Kit.ding()}else{hl={};$('am').textContent=`${x} isn't on the shelf. We had to check all ${arr.length} spots to be sure!`}draw();busy=false};
+ $('ao').onclick=()=>{arr.sort();hl={};$('as').textContent=arr.length;$('am').textContent='Sorted! Now the order is alphabetical (emoji sort by their secret code numbers).';Kit.tick();draw()};
+ $('sa').onclick=()=>{const x=v('si');if(!x)return;$('ss').textContent=1;if(bag.has(x)){hl={s:x};$('sm').textContent=`${x} is already in the bag. Sets never keep a second copy!`;Kit.tone(300,.15,'triangle',.12)}else{if(bag.size>=10)return $('sm').textContent='The bag is full!';let p,g=0;do p=[Kit.rand(15,85),Kit.rand(20,80)];while(g++<40&&[...bag.values()].some(q=>Math.abs(q[0]-p[0])<22&&Math.abs(q[1]-p[1])<16));bag.set(x,p);hl={s:x};$('sm').textContent=`Added ${x}. The bag has ${bag.size} different things.`;Kit.tick()}draw()};
+ $('sh').onclick=()=>{const x=v('si');$('ss').textContent=1;hl={s:x};$('sm').textContent=bag.has(x)?`✅ Yes, ${x} is in the set. Sets answer in about 1 step, no matter how big!`:`❌ No, ${x} isn't in the set. That only took 1 step too.`;Kit.ding();draw()};
+ $('sr').onclick=()=>{const x=v('si');$('ss').textContent=1;$('sm').textContent=bag.delete(x)?`Removed ${x}.`:`${x} wasn't in the bag.`;hl={};draw()};
+ $('da').onclick=()=>{const k=v('dk'),x=v('dval');if(!k)return;const had=dict.has(k);if(!had&&dict.size>=9)return $('dm').textContent='All lockers are full!';const old=dict.get(k);dict.set(k,x||'?');hl={dn:k,d:k};$('ds').textContent=1;$('dm').textContent=had?`${k} already had a locker, so ${old} was replaced with ${x}. Each key has only one value.`:`Saved ${k} ➜ ${x}.`;Kit.tick();draw()};
+ $('dg').onclick=()=>{const k=v('dk');$('ds').textContent=1;hl={d:k};$('dm').textContent=dict.has(k)?`🔎 ${k} ➜ ${dict.get(k)}. The key took us straight to the right locker in 1 step!`:`There's no locker tagged ${k}.`;Kit.ding();draw()};
+ $('dd').onclick=()=>{const k=v('dk');$('ds').textContent=1;$('dm').textContent=dict.delete(k)?`Deleted the ${k} locker.`:`There's no locker tagged ${k}.`;hl={};draw()}}
+function quiz(){if(!bag2.length)bag2=Kit.shuffle(Q);const q=bag2.pop();
+ $('bd').innerHTML=`<div class="ds-q"><div><span class="ln-pill">✅ ${qs} / ${qn}</span></div><div class="sc">🤔 ${q[0]}</div><b>Which would you use?</b><div class="ch" id="qc">${Object.entries(NAME).map(([k,n])=>`<button data-a="${k}">${n[0]}<small>${n[1]}</small></button>`).join('')}</div><div id="qr" style="font-weight:800;min-height:1.4em"></div><button class="btn green" id="qn" hidden>Next ➜</button></div>`;
+ window.__q=q[1];let done=false;$('qc').onclick=e=>{const b=e.target.closest('[data-a]');if(!b||done)return;done=true;qn++;if(b.dataset.a===q[1]){qs++;b.classList.add('yes');Kit.ding();$('qr').textContent='✅ '+q[2]}else{b.classList.add('no');[...$('qc').children].find(x=>x.dataset.a===q[1]).classList.add('yes');Kit.tone(200,.2,'triangle',.15);$('qr').textContent=`It's a ${NAME[q[1]][0].slice(3)}. ${q[2]}`}$('qn').hidden=false};$('qn').onclick=quiz;}
+document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;document.querySelectorAll('[data-t]').forEach(x=>x.className='btn '+(x.dataset.t===tab?'':'white'));tab==='play'?play():quiz()});
+window.__d={fast:()=>window.__fast=1};
+play();
+</script>
+</body></html>

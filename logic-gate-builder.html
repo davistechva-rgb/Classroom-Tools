@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Logic Gate Builder</title>
+<style>
+main{max-width:1600px}
+.lg{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.lg{grid-template-columns:1fr}}
+.lg-pal{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:8px}
+.lg-pal button{font:inherit;font-weight:900;border:4px solid var(--ink);border-radius:12px;padding:5px 10px;background:var(--gc);cursor:pointer;color:var(--ink);box-shadow:0 4px 0 var(--ink)}
+.lg-board{background:#1D2B53;background-image:radial-gradient(#33457A 1.5px,transparent 1.5px);background-size:24px 24px;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);overflow:hidden;touch-action:none}
+.lg-board svg{width:100%;display:block;aspect-ratio:16/10;user-select:none}
+.lg-w{fill:none;stroke:#5B6B95;stroke-width:6;stroke-linecap:round;cursor:pointer}
+.lg-w.on{stroke:#FFD84D}
+.lg-w:hover{stroke-width:9}
+.lg-g rect{stroke:#0E1630;stroke-width:4;rx:14}
+.lg-g text{font-weight:900;font-size:18px;text-anchor:middle;dominant-baseline:central;pointer-events:none;fill:#1D2B53}
+.lg-g .ic{font-size:30px}
+.lg-g.sel rect{stroke:#FFD84D;stroke-width:6}
+.lg-port{fill:#fff;stroke:#0E1630;stroke-width:3;cursor:crosshair}
+.lg-port.on{fill:#FFD84D}.lg-port.pick{fill:#5DC66E;r:11}
+.lg-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:9px}
+.lg-tt{width:100%;border-collapse:collapse;font-weight:800;text-align:center}.lg-tt td,.lg-tt th{border:2px solid #C3CBDB;padding:3px}
+.lg-tt .one{background:#FFF1A8}.lg-tt .bad{background:#FFB3AA}.lg-tt .ok{background:#B8F0C2}
+.lg-ch{display:grid;gap:6px}.lg-ch button{font:inherit;font-weight:800;border:3px solid var(--ink);border-radius:12px;padding:5px 9px;background:#fff;cursor:pointer;text-align:left;color:var(--ink)}
+.lg-ch button.on{background:var(--sun)}.lg-ch button.won::after{content:" ✅"}
+.lg-msg{font-weight:800;min-height:1.4em}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🔌", "Logic Gate Builder");
+const $=id=>document.getElementById(id);
+// gate type: [label, inputs, color, rule]
+const G={SW:['Switch',0,'#9FD8FF'],AND:['AND',2,'#FFD27F',(a,b)=>a&&b],OR:['OR',2,'#8BE09A',(a,b)=>a||b],NOT:['NOT',1,'#FFB3AA',a=>!a],XOR:['XOR',2,'#D6C2FF',(a,b)=>a!==b],NAND:['NAND',2,'#FFC98B',(a,b)=>!(a&&b)],NOR:['NOR',2,'#B8F0E6',(a,b)=>!(a||b)],LAMP:['Lamp',1,'#FFF6C9']};
+const CH=[['Both switches','The lamp turns on only when switch A AND switch B are both on.',2,r=>r[0]&&r[1]],['Either switch','The lamp turns on when A or B (or both) are on.',2,r=>r[0]||r[1]],['Opposite day','The lamp is on when switch A is OFF.',1,r=>!r[0]],['Exactly one','On when exactly one switch is on, not both. (Try it without XOR!)',2,r=>r[0]!==r[1]],['Neither','On only when both switches are off.',2,r=>!r[0]&&!r[1]],['A but not B','On when A is on and B is off.',2,r=>r[0]&&!r[1]],['Majority vote','Three switches: on when at least 2 of them are on.',3,r=>r[0]+r[1]+r[2]>=2],['All three','On only when A, B and C are all on.',3,r=>r[0]&&r[1]&&r[2]]];
+let parts=[],wires=[],pick=null,sel=null,drag=null,ch=0,won=Kit.get('lg-won',[]),nid=1;
+document.querySelector('main').innerHTML=`<div class="lg"><div><div class="lg-pal" id="pl">${Object.entries(G).map(([k,g])=>`<button data-g="${k}" style="--gc:${g[2]}">${k==='SW'?'🔘 ':k==='LAMP'?'💡 ':''}${g[0]}</button>`).join('')}<button data-del style="--gc:#fff">🗑️ Delete</button></div>
+<div class="lg-board" id="bd"><svg id="sv" viewBox="0 0 960 600"></svg></div><p style="color:#fff;font-weight:800;text-align:center;text-shadow:1px 1px 0 var(--ink)">Drag parts to move them. Tap a ⚪ output, then a ⚪ input, to connect a wire. Tap a switch to flip it. Tap a wire to remove it.</p></div>
+<div class="lg-p"><b>🎯 Challenges</b><div class="lg-ch" id="ch">${CH.map((c,i)=>`<button data-c="${i}">${c[0]}</button>`).join('')}</div><div class="lg-msg" id="msg"></div><div class="row" style="gap:6px"><button class="btn green small" id="ck">✓ Check my circuit</button><button class="btn white small" id="cl">🧽 Clear board</button></div><b>📋 Truth table</b><div id="tt"></div></div></div>`;
+function add(t,x,y){const p={id:nid++,t,x:x??Kit.rand(250,600),y:y??Kit.rand(80,480),on:false,lab:''};if(t==='SW')p.lab='ABCD'[parts.filter(q=>q.t==='SW').length]||'?';parts.push(p);return p}
+const W=p=>p.t==='SW'||p.t==='LAMP'?84:110,H=()=>70;
+const inPt=(p,k)=>[p.x,p.y+(G[p.t][1]===1?H()/2:(k===0?20:H()-20))],outPt=p=>[p.x+W(p),p.y+H()/2];
+function evalAll(){const val=new Map();parts.forEach(p=>val.set(p.id,p.t==='SW'?p.on:false));
+ for(let k=0;k<30;k++){let ch=false;parts.forEach(p=>{if(p.t==='SW')return;const ins=[0,1].slice(0,G[p.t][1]).map(i=>{const w=wires.find(w=>w.to===p.id&&w.k===i);return w?!!val.get(w.from):false});const v=p.t==='LAMP'?ins[0]:!!G[p.t][3](...ins);if(val.get(p.id)!==v){val.set(p.id,v);ch=true}});if(!ch)break}
+ return val}
+function draw(){const val=evalAll();let h='';
+ wires.forEach((w,i)=>{const a=parts.find(p=>p.id===w.from),b=parts.find(p=>p.id===w.to);if(!a||!b)return;const [x1,y1]=outPt(a),[x2,y2]=inPt(b,w.k),m=Math.max(40,Math.abs(x2-x1)/2);h+=`<path class="lg-w ${val.get(a.id)?'on':''}" data-w="${i}" d="M${x1},${y1} C${x1+m},${y1} ${x2-m},${y2} ${x2},${y2}"/>`});
+ parts.forEach(p=>{const g=G[p.t],on=val.get(p.id),w=W(p);h+=`<g class="lg-g ${sel===p.id?'sel':''}" data-p="${p.id}"><rect x="${p.x}" y="${p.y}" width="${w}" height="${H()}" fill="${p.t==='LAMP'&&on?'#FFE14D':p.t==='SW'&&on?'#5DC66E':g[2]}"/>`+
+  (p.t==='SW'?`<text class="ic" x="${p.x+28}" y="${p.y+35}">${on?'🟢':'⚪'}</text><text x="${p.x+w-26}" y="${p.y+35}" style="font-size:22px">${p.lab}</text>`:p.t==='LAMP'?`<text class="ic" x="${p.x+w/2}" y="${p.y+35}">${on?'💡':'⚫'}</text>`:`<text x="${p.x+w/2}" y="${p.y+35}">${g[0]}</text>`)+'</g>';
+  for(let k=0;k<g[1];k++){const [x,y]=inPt(p,k);h+=`<circle class="lg-port ${pick&&pick.to===p.id&&pick.k===k?'pick':''}" data-in="${p.id}:${k}" cx="${x}" cy="${y}" r="9"/>`}
+  if(p.t!=='LAMP'){const [x,y]=outPt(p);h+=`<circle class="lg-port ${on?'on':''} ${pick&&pick.from===p.id?'pick':''}" data-out="${p.id}" cx="${x}" cy="${y}" r="9"/>`}});
+ $('sv').innerHTML=h;table(val);document.querySelectorAll('[data-c]').forEach((b,i)=>{b.classList.toggle('on',i===ch);b.classList.toggle('won',won.includes(i))});
+ window.__t={parts:parts.map(p=>p.t),wires:wires.length,lamps:parts.filter(p=>p.t==='LAMP').map(p=>val.get(p.id))}}
+function rows(n){return Array.from({length:1<<n},(_,i)=>Array.from({length:n},(_,k)=>!!(i>>(n-1-k)&1)))}
+function results(){const sw=parts.filter(p=>p.t==='SW'),lamps=parts.filter(p=>p.t==='LAMP'),keep=sw.map(s=>s.on);
+ const out=rows(sw.length).map(r=>{sw.forEach((s,i)=>s.on=r[i]);const v=evalAll();return [r,lamps.map(l=>v.get(l.id))]});sw.forEach((s,i)=>s.on=keep[i]);return {sw,lamps,out}}
+function table(){const {sw,lamps,out}=results();if(!sw.length||!lamps.length||sw.length>4){$('tt').innerHTML='<div class="muted" style="font-weight:700">Add switches and a lamp to see every possible answer.</div>';return}
+ const c=CH[ch];$('tt').innerHTML=`<table class="lg-tt"><tr>${sw.map(s=>`<th>${s.lab}</th>`).join('')}${lamps.map((l,i)=>`<th>💡${lamps.length>1?i+1:''}</th>`).join('')}${sw.length===c[2]?'<th>🎯 Goal</th>':''}</tr>${out.map(([r,o])=>{const g=sw.length===c[2]?c[3](r.map(Number)):null;return `<tr>${r.map(v=>`<td class="${v?'one':''}">${+v}</td>`).join('')}${o.map((v,i)=>`<td class="${g===null||i?(v?'one':''):(!!v===!!g?'ok':'bad')}">${+v}</td>`).join('')}${g!==null?`<td>${+!!g}</td>`:''}</tr>`}).join('')}</table>`}
+function svgPt(e){const r=$('sv').getBoundingClientRect();return [(e.clientX-r.left)/r.width*960,(e.clientY-r.top)/r.height*600]}
+function check(){const c=CH[ch],{sw,lamps,out}=results();if(sw.length!==c[2]){msg(`This challenge needs exactly ${c[2]} switch${c[2]>1?'es':''}.`);return false}if(lamps.length!==1){msg('Use exactly one lamp.');return false}
+ const ok=out.every(([r,o])=>!!o[0]===!!c[3](r.map(Number)));if(ok){if(!won.includes(ch)){won.push(ch);Kit.set('lg-won',won)}Kit.tada();Kit.confetti(60);msg(`🎉 It works for every combination of switches! (${won.length}/${CH.length} solved)`)}else{Kit.tone(200,.25,'triangle',.15);msg('Not yet. Look for red rows in the truth table.')}draw();return ok}
+function msg(t){$('msg').textContent=t}
+function setup(i){ch=i;parts=[];wires=[];sel=null;pick=null;for(let k=0;k<CH[i][2];k++)add('SW',40,60+k*(480/CH[i][2]));add('LAMP',840,265);msg(CH[i][1]);draw()}
+$('pl').onclick=e=>{const b=e.target.closest('[data-g]');if(b){if(parts.length>=24)return;add(b.dataset.g);Kit.tick();draw();return}if(e.target.closest('[data-del]')&&sel){wires=wires.filter(w=>w.from!==sel&&w.to!==sel);parts=parts.filter(p=>p.id!==sel);sel=null;draw()}};
+$('sv').addEventListener('pointerdown',e=>{const port=e.target.closest('[data-in],[data-out]'),g=e.target.closest('[data-p]'),w=e.target.closest('[data-w]');
+ if(port){if(port.dataset.out){pick={from:+port.dataset.out}}else{const [id,k]=port.dataset.in.split(':').map(Number);if(pick&&pick.from!=null&&pick.from!==id){wires=wires.filter(x=>!(x.to===id&&x.k===k));wires.push({from:pick.from,to:id,k});pick=null;Kit.ding()}else{const old=wires.findIndex(x=>x.to===id&&x.k===k);if(old>=0)wires.splice(old,1);pick=null}}draw();return}
+ if(w){wires.splice(+w.dataset.w,1);draw();return}
+ if(g){const p=parts.find(q=>q.id===+g.dataset.p),[x,y]=svgPt(e);drag={p,dx:x-p.x,dy:y-p.y,moved:false};sel=p.id;$('sv').setPointerCapture(e.pointerId);return}
+ pick=null;sel=null;draw()});
+$('sv').addEventListener('pointermove',e=>{if(!drag)return;const [x,y]=svgPt(e);const nx=Math.max(0,Math.min(960-W(drag.p),x-drag.dx)),ny=Math.max(0,Math.min(530,y-drag.dy));if(Math.abs(nx-drag.p.x)+Math.abs(ny-drag.p.y)>2)drag.moved=true;drag.p.x=nx;drag.p.y=ny;draw()});
+$('sv').addEventListener('pointerup',()=>{if(drag&&!drag.moved&&drag.p.t==='SW'){drag.p.on=!drag.p.on;Kit.tone(drag.p.on?660:440,.06,'square',.08)}drag=null;draw()});
+$('ch').onclick=e=>{const b=e.target.closest('[data-c]');if(b)setup(+b.dataset.c)};$('ck').onclick=check;$('cl').onclick=()=>setup(ch);
+window.__lg={add:(t,x,y)=>{const p=add(t,x,y);draw();return p.id},wire:(a,b,k=0)=>{wires.push({from:a,to:b,k});draw()},flip:id=>{const p=parts.find(q=>q.id===id);p.on=!p.on;draw()},check,setup,ids:()=>parts.map(p=>[p.id,p.t])};
+setup(0);
+</script>
+</body></html>

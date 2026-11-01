@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>CPU Scheduling Simulator</title>
+<style>
+main{max-width:1600px}
+.cs-intro{text-align:center;color:#fff;font-weight:800;text-shadow:2px 2px 0 var(--ink);margin-bottom:10px}
+.cs{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.cs{grid-template-columns:1fr}}
+.cs-k{background:#FFF6E5;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);padding:12px;display:grid;gap:10px}
+.cs-chef{display:flex;align-items:center;gap:12px;background:#fff;border:4px solid var(--ink);border-radius:18px;padding:10px}
+.cs-chef .ic{font-size:3.2rem}.cs-chef .now{flex:1;font-weight:800}
+.cs-chef .bar{height:16px;border:3px solid var(--ink);border-radius:99px;overflow:hidden;background:#E3E8F2;margin-top:4px}.cs-chef .bar i{display:block;height:100%;background:#5DC66E;transition:width .2s}
+.cs-line{display:flex;gap:8px;flex-wrap:wrap;min-height:70px;align-items:center;border:3px dashed #C3CBDB;border-radius:14px;padding:6px}
+.cs-o{border:3px solid var(--ink);border-radius:12px;padding:4px 8px;background:var(--oc);font-weight:800;text-align:center;line-height:1.1;position:relative}
+.cs-o b{font-size:1.5rem;display:block}.cs-o small{font-size:.72rem}
+.cs-o .vip{position:absolute;right:-8px;top:-10px}
+.cs-done{display:flex;gap:6px;flex-wrap:wrap}
+.cs-clock{font-size:1.6rem;font-weight:900;text-align:center}
+.cs-gantt{position:relative;height:46px;border:4px solid var(--ink);border-radius:12px;background:#fff;overflow:hidden}
+.cs-gantt i{position:absolute;top:0;bottom:0;background:var(--oc);border-right:2px solid var(--ink);display:grid;place-items:center;font-style:normal;font-size:1.1rem}
+.cs-ticks{position:relative;height:18px;font-size:.72rem;font-weight:800;color:#55607E}.cs-ticks span{position:absolute;transform:translateX(-50%)}
+.cs-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:8px}
+.cs-alg{display:grid;gap:6px}.cs-alg button{font:inherit;font-weight:800;border:3px solid var(--ink);border-radius:12px;padding:5px 9px;background:#fff;cursor:pointer;text-align:left;color:var(--ink)}
+.cs-alg button.on{background:var(--sun)}.cs-alg small{display:block;font-weight:600;color:#55607E}
+.cs-tab{width:100%;border-collapse:collapse;font-weight:700;font-size:.9rem}.cs-tab td,.cs-tab th{border:2px solid #C3CBDB;padding:3px 5px;text-align:center}
+.cs-tab input{width:46px;padding:2px;text-align:center}
+.cs-cmp div{display:flex;align-items:center;gap:6px;font-weight:800;margin:3px 0}.cs-cmp i{display:block;height:18px;border:2px solid var(--ink);border-radius:6px;background:var(--sun)}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("⚡", "CPU Scheduling Simulator");
+const $=id=>document.getElementById(id);
+const FOOD=[['🍕','#FFB3AA'],['🍔','#FFD27F'],['🌮','#C9E58A'],['🍜','#9FD8FF'],['🥗','#8BE09A'],['🍰','#FF9FCB'],['🌭','#FFC98B'],['🍣','#D6C2FF']];
+const ALG={fcfs:['🚶 First come, first served','Cook orders in the order they arrived.'],sjf:['⚡ Shortest job first','When the chef is free, cook the quickest order waiting.'],rr:['🔄 Round robin','Cook each order for 2 minutes, then move to the back of the line. Fair for everyone!'],pri:['⭐ Priority','VIP orders (⭐) go first.']};
+let orders=[],alg='fcfs',plan=null,t=0,timer=0;
+document.querySelector('main').innerHTML=`<div class="cs-intro">The CPU is like a chef who can only cook one order at a time. The scheduler decides which order goes next!</div>
+<div class="cs"><div class="cs-k"><div class="cs-clock">⏱️ Minute <span id="tm">0</span></div><div class="cs-chef"><div class="ic">🧑‍🍳</div><div class="now" id="nw">Waiting for orders…<div class="bar"><i id="pb" style="width:0"></i></div></div></div>
+<b>🧾 Waiting in line</b><div class="cs-line" id="ln"></div><b>✅ Served</b><div class="cs-done" id="dn"></div><b>📊 What the chef did each minute</b><div><div class="cs-gantt" id="gt"></div><div class="cs-ticks" id="tk"></div></div>
+<div class="row" style="justify-content:center;gap:6px"><button class="btn green" id="go">▶ Start cooking</button><button class="btn white small" id="sk">⏭️ Skip to end</button><label style="font-weight:800">🐢 <input type="range" id="sp" min="1" max="10" value="5" style="width:90px;vertical-align:middle"> 🐇</label></div></div>
+<div class="cs-p"><b>🧠 Scheduler</b><div class="cs-alg" id="al">${Object.entries(ALG).map(([k,a])=>`<button data-a="${k}">${a[0]}<small>${a[1]}</small></button>`).join('')}</div>
+<b>🧾 Orders</b><table class="cs-tab" id="ot"></table><div class="row" style="gap:6px"><button class="btn white small" id="ad">➕ Add order</button><button class="btn white small" id="rd">🎲 New orders</button></div>
+<b>🏆 Average wait for each scheduler</b><div class="cs-cmp" id="cm"></div></div></div>`;
+function newOrders(){orders=[];const n=5;for(let i=0;i<n;i++)orders.push(mk(i===0?0:Kit.rand(0,8)));orders.sort((a,b)=>a.arr-b.arr);reset()}
+function mk(arr){const f=FOOD[orders.length%FOOD.length];return {e:f[0],c:f[1],arr,len:Kit.rand(1,7),vip:Math.random()<.3}}
+// build the whole timeline for one scheduler: a list of [order index, start, end]
+function schedule(a){const rem=orders.map(o=>o.len),seg=[],fin=[];let time=0,q=[],arrived=new Set(),cur=null,slice=0;const done=()=>fin.filter(x=>x!=null).length;
+ const arrive=()=>orders.forEach((o,i)=>{if(o.arr<=time&&!arrived.has(i)){arrived.add(i);q.push(i)}});
+ while(done()<orders.length&&time<200){arrive();
+  if(cur===null||(a==='rr'&&slice>=2)){if(cur!==null&&rem[cur]>0){q.push(cur)}cur=null;slice=0;
+   if(q.length){if(a==='sjf')q.sort((x,y)=>rem[x]-rem[y]||orders[x].arr-orders[y].arr);if(a==='pri')q.sort((x,y)=>(orders[y].vip-orders[x].vip)||orders[x].arr-orders[y].arr);cur=q.shift()}}
+  if(cur===null){seg.push([-1,time,time+1]);time++;continue}
+  const last=seg[seg.length-1];if(last&&last[0]===cur&&last[2]===time)last[2]++;else seg.push([cur,time,time+1]);rem[cur]--;slice++;time++;
+  if(rem[cur]===0){fin[cur]=time;cur=null;slice=0}}
+ const wait=orders.map((o,i)=>fin[i]-o.arr-o.len);return {seg,fin,wait,avg:wait.reduce((s,x)=>s+x,0)/orders.length,end:time}}
+function reset(){clearInterval(timer);timer=0;t=0;plan=schedule(alg);$('go').textContent='▶ Start cooking';table();compare();draw()}
+function table(){$('ot').innerHTML=`<tr><th>Order</th><th>Arrives</th><th>Cook time</th><th>VIP</th><th></th></tr>`+orders.map((o,i)=>`<tr><td style="font-size:1.3rem">${o.e}</td><td><input type="number" min="0" max="20" value="${o.arr}" data-k="arr" data-i="${i}"></td><td><input type="number" min="1" max="9" value="${o.len}" data-k="len" data-i="${i}"></td><td><input type="checkbox" ${o.vip?'checked':''} data-k="vip" data-i="${i}"></td><td><button class="btn white small" data-x="${i}" style="padding:0 6px">✖</button></td></tr>`).join('')}
+function compare(){const r=Object.keys(ALG).map(k=>[k,schedule(k).avg]),mx=Math.max(...r.map(x=>x[1]),1),best=Math.min(...r.map(x=>x[1]));
+ $('cm').innerHTML=r.map(([k,v])=>`<div><span style="width:30px">${ALG[k][0].split(' ')[0]}</span><i style="width:${Math.max(4,v/mx*70)}%;${v===best?'background:#5DC66E':''}"></i>${v.toFixed(1)} min${v===best?' 🏆':''}</div>`).join('')}
+function draw(){const P=plan,end=P.end;$('tm').textContent=t;const now=P.seg.find(s=>s[1]<=t&&t<s[2]);
+ const served=orders.map((o,i)=>i).filter(i=>P.fin[i]<=t),waiting=orders.map((o,i)=>i).filter(i=>orders[i].arr<=t&&P.fin[i]>t&&!(now&&now[0]===i));
+ if(now&&now[0]>=0){const o=orders[now[0]],doneSoFar=P.seg.filter(s=>s[0]===now[0]&&s[1]<t).reduce((s,x)=>s+Math.min(x[2],t)-x[1],0);$('nw').innerHTML=`Cooking ${o.e} (${doneSoFar}/${o.len} min)<div class="bar"><i style="width:${doneSoFar/o.len*100}%"></i></div>`}
+ else $('nw').innerHTML=`${t>=end?'All done! 🎉':'Nothing to cook right now…'}<div class="bar"><i style="width:${t>=end?100:0}%"></i></div>`;
+ const ob=i=>`<div class="cs-o" style="--oc:${orders[i].c}"><b>${orders[i].e}</b><small>${orders[i].len} min</small>${orders[i].vip?'<span class="vip">⭐</span>':''}</div>`;
+ $('ln').innerHTML=waiting.map(ob).join('')||'<span class="muted">Nobody waiting</span>';$('dn').innerHTML=served.map(i=>`<div class="cs-o" style="--oc:${orders[i].c}"><b>${orders[i].e}</b><small>waited ${P.wait[i]}</small></div>`).join('');
+ $('gt').innerHTML=P.seg.filter(s=>s[1]<t).map(s=>`<i style="left:${s[1]/end*100}%;width:${(Math.min(s[2],t)-s[1])/end*100}%;--oc:${s[0]<0?'#eee':orders[s[0]].c}">${s[0]<0?'💤':orders[s[0]].e}</i>`).join('');
+ $('tk').innerHTML=Array.from({length:end+1},(_,k)=>k).filter(k=>k%(end>24?5:2)===0).map(k=>`<span style="left:${k/end*100}%">${k}</span>`).join('');
+ document.querySelectorAll('[data-a]').forEach(b=>b.classList.toggle('on',b.dataset.a===alg));window.__t={t,end,avg:P.avg,served:served.length,alg}}
+function tick(){if(t>=plan.end){clearInterval(timer);timer=0;$('go').textContent='🔁 Again';Kit.tada();return}t++;Kit.tick();draw()}
+$('go').onclick=()=>{if(timer){clearInterval(timer);timer=0;$('go').textContent='▶ Keep cooking';return}if(t>=plan.end)t=0;timer=setInterval(tick,1100-$('sp').value*100);$('go').textContent='⏸ Pause'};
+$('sk').onclick=()=>{clearInterval(timer);timer=0;t=plan.end;draw();$('go').textContent='🔁 Again'};
+$('al').onclick=e=>{const b=e.target.closest('[data-a]');if(b){alg=b.dataset.a;reset()}};
+$('ot').onchange=e=>{const x=e.target;if(!x.dataset.k)return;const o=orders[+x.dataset.i];if(x.dataset.k==='vip')o.vip=x.checked;else o[x.dataset.k]=Math.max(x.dataset.k==='len'?1:0,Math.min(x.dataset.k==='len'?9:20,parseInt(x.value)||0));reset()};
+$('ot').onclick=e=>{const b=e.target.closest('[data-x]');if(b&&orders.length>1){orders.splice(+b.dataset.x,1);reset()}};
+$('ad').onclick=()=>{if(orders.length<8){orders.push(mk(Kit.rand(0,10)));reset()}};$('rd').onclick=newOrders;
+window.__c={sched:a=>schedule(a),set:list=>{orders=list.map((o,i)=>({e:FOOD[i][0],c:FOOD[i][1],arr:o[0],len:o[1],vip:!!o[2]}));reset()}};
+newOrders();
+</script>
+</body></html>

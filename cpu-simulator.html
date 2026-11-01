@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>CPU Simulator</title>
+<style>
+main{max-width:1600px}
+.cu-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:12px}
+.cu{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:16px;align-items:start}
+@media (max-width:960px){.cu{grid-template-columns:1fr}}
+.cu-chip{background:#2B3A67;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);padding:14px;color:#fff;display:grid;gap:10px;position:relative}
+.cu-chip h3{margin:0;text-align:center;letter-spacing:.1em}
+.cu-regs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.cu-reg{background:#1D2B53;border:3px solid #7F8FB8;border-radius:14px;padding:6px 10px;text-align:center}
+.cu-reg small{display:block;color:#9FB2DA;font-weight:800;font-size:.75rem}
+.cu-reg b{font-family:ui-monospace,Menlo,monospace;font-size:1.6rem}
+.cu-reg.flash{border-color:#FFD84D;background:#4A4320}
+.cu-phase{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.cu-phase div{border:3px solid #7F8FB8;border-radius:12px;padding:6px;text-align:center;font-weight:800;font-size:.9rem;color:#9FB2DA}
+.cu-phase div.on{background:#FFD84D;color:var(--ink);border-color:#FFD84D}
+.cu-say{background:#fff;color:var(--ink);border-radius:14px;padding:8px 10px;font-weight:800;min-height:3em}
+.cu-out{background:#111a35;border:3px solid #7F8FB8;border-radius:12px;padding:8px;font-family:ui-monospace,Menlo,monospace;font-size:1.3rem;font-weight:800;color:#8BFFB0;min-height:2em;word-break:break-all}
+.cu-mem{background:#fff;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);padding:12px}
+.cu-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.cu-c{border:3px solid var(--ink);border-radius:12px;padding:4px 6px;cursor:pointer;background:#F4FAFF;font-family:ui-monospace,Menlo,monospace;font-weight:800;position:relative;min-height:58px}
+.cu-c small{position:absolute;right:5px;top:2px;font-size:.7rem;color:#9FA9C4}
+.cu-c .op{display:block;font-size:.95rem;color:#9B6BF2}.cu-c .num{display:block;font-size:1.3rem;color:#1D2B53}
+.cu-c.pc{outline:5px solid #E5533F;outline-offset:1px;background:#FFF1D6}.cu-c.rd{background:#FFF6A8}.cu-c.wr{background:#B8F0C2}
+.cu-c.sel{outline:4px dashed #9B6BF2}
+.cu-ed{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:10px;background:#F4FAFF;border:3px solid var(--ink);border-radius:14px;padding:8px}
+.cu-help{font-size:.85rem;font-weight:700;color:#55607E;margin-top:8px;line-height:1.5}
+.cu-help code{background:#EDE4FF;color:#5B3BB0;border-radius:6px;padding:0 4px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🖥️", "CPU Simulator");
+const $=id=>document.getElementById(id);
+const OPS={LOAD:'Copy the number in box X into A',ADD:'Add the number in box X to A',SUB:'Subtract the number in box X from A',STORE:'Copy A into box X',OUT:'Show A on the screen',JUMP:'Go to box X next',JUMPZ:'If A is 0, go to box X next',HALT:'Stop the program'};
+const NOARG=['OUT','HALT'];
+const PROGS={'➕ Add two numbers':[[0,'LOAD',6],[1,'ADD',7],[2,'OUT'],[3,'HALT'],[6,5],[7,3]],
+ '⏬ Countdown':[[0,'LOAD',8],[1,'OUT'],[2,'SUB',9],[3,'JUMPZ',5],[4,'JUMP',1],[5,'OUT'],[6,'HALT'],[8,5],[9,1]],
+ '✖️ Multiply by adding':[[0,'LOAD',14],[1,'ADD',12],[2,'STORE',14],[3,'LOAD',13],[4,'SUB',15],[5,'STORE',13],[6,'JUMPZ',8],[7,'JUMP',0],[8,'LOAD',14],[9,'OUT'],[10,'HALT'],[12,4],[13,3],[14,0],[15,1]],
+ '🎯 Challenge: show 10':[[0,'LOAD',8],[1,'HALT'],[8,4],[9,6]]};
+let mem=[],A=0,PC=0,IR='—',out=[],phase=-1,halted=false,timer=0,sel=null,hl={},prog=Object.keys(PROGS)[0],cycles=0;
+document.querySelector('main').innerHTML=`<div class="cu-top"><select id="pg" style="width:auto">${Object.keys(PROGS).map(k=>`<option>${k}</option>`).join('')}</select><button class="btn green" id="st">👣 Step</button><button class="btn white" id="rn">▶ Run</button><button class="btn white small" id="rs">↺ Reset</button><label style="color:#fff;font-weight:800">🐢 <input type="range" id="sp" min="1" max="10" value="5" style="width:100px;vertical-align:middle"> 🐇</label></div>
+<div class="cu"><div class="cu-chip"><h3>🧠 CPU</h3><div class="cu-regs"><div class="cu-reg" id="rpc"><small>PC: which box is next</small><b id="vpc">0</b></div><div class="cu-reg" id="ra"><small>A: the CPU's hand</small><b id="va">0</b></div><div class="cu-reg" id="rir" style="grid-column:1/-1"><small>Instruction it's working on</small><b id="vir" style="font-size:1.2rem">—</b></div></div>
+<div class="cu-phase" id="ph"><div>1️⃣ Fetch</div><div>2️⃣ Decode</div><div>3️⃣ Execute</div></div><div class="cu-say" id="say"></div><div><b>🖥️ Screen</b><div class="cu-out" id="out"></div></div><div style="font-weight:700;color:#9FB2DA">⏱️ Clock ticks: <b id="cy">0</b></div></div>
+<div class="cu-mem"><b>💾 Memory: 16 numbered boxes. Tap a box to change it.</b><div class="cu-grid" id="mm" style="margin-top:8px"></div><div class="cu-ed" id="ed" hidden></div>
+<div class="cu-help">${Object.entries(OPS).map(([k,v])=>`<code>${k}${NOARG.includes(k)?'':' X'}</code> ${v}`).join(' · ')}</div></div></div>`;
+function load(){prog=$('pg').value;mem=Array(16).fill(0).map(()=>({n:0}));PROGS[prog].forEach(([i,a,b])=>mem[i]=typeof a==='string'?{op:a,x:b}:{n:a});reset();
+ say(prog.startsWith('🎯')?'Challenge: change the program so the screen shows 10. (Hint: you need ADD and OUT!)':'Press Step to watch the CPU fetch, decode and execute one instruction at a time.')}
+function reset(){clearInterval(timer);timer=0;A=0;PC=0;IR='—';out=[];phase=-1;halted=false;hl={};cycles=0;$('rn').textContent='▶ Run';draw()}
+function cell(c){return c.op?`<span class="op">${c.op}</span><span class="num">${NOARG.includes(c.op)?'&nbsp;':c.x}</span>`:`<span class="op">&nbsp;</span><span class="num">${c.n}</span>`}
+function draw(){$('mm').innerHTML=mem.map((c,i)=>`<div class="cu-c ${i===PC&&!halted?'pc':''} ${hl.rd===i?'rd':''} ${hl.wr===i?'wr':''} ${sel===i?'sel':''}" data-i="${i}"><small>${i}</small>${cell(c)}</div>`).join('');
+ $('vpc').textContent=PC;$('va').textContent=A;$('vir').textContent=IR;$('out').textContent=out.join('  ');$('cy').textContent=cycles;
+ [...$('ph').children].forEach((d,i)=>d.classList.toggle('on',i===phase));['rpc','ra','rir'].forEach(id=>$(id).classList.toggle('flash',hl.reg===id));window.__t={A,PC,out:[...out],halted,phase,cycles}}
+function say(t){$('say').textContent=t}
+function step(){if(halted)return;hl={};cycles++;
+ if(cycles>400){halted=true;say('⛔ Stopped after 400 ticks. Is the program stuck in a loop forever?');draw();return}
+ phase=(phase+1)%3;const c=mem[PC];
+ if(phase===0){IR=c.op?`${c.op}${NOARG.includes(c.op)?'':' '+c.x}`:`${c.n} (just a number)`;hl={rd:PC,reg:'rir'};say(`FETCH: the CPU reads box ${PC} and gets "${IR}".`)}
+ else if(phase===1){if(!c.op){say(`DECODE: box ${PC} holds a plain number, not an instruction! The CPU gets confused and stops.`);halted=true}else say(`DECODE: "${c.op}" means: ${OPS[c.op].replace(/box X/g,'box '+c.x)}.`);hl={reg:'rir'}}
+ else{let next=PC+1;const v=k=>mem[k].op?0:mem[k].n;
+  switch(c.op){case'LOAD':A=v(c.x);hl={rd:c.x,reg:'ra'};say(`EXECUTE: A is now ${A}.`);break;case'ADD':A=v(c.x)+A;hl={rd:c.x,reg:'ra'};say(`EXECUTE: A + ${v(c.x)} = ${A}.`);break;
+   case'SUB':A=A-v(c.x);hl={rd:c.x,reg:'ra'};say(`EXECUTE: A − ${v(c.x)} = ${A}.`);break;case'STORE':mem[c.x]={n:A};hl={wr:c.x};say(`EXECUTE: box ${c.x} now holds ${A}.`);break;
+   case'OUT':out.push(A);Kit.ding();say(`EXECUTE: the screen shows ${A}.`);break;case'JUMP':next=c.x;hl={reg:'rpc'};say(`EXECUTE: jump! The next box will be ${c.x}.`);break;
+   case'JUMPZ':if(A===0){next=c.x;say(`EXECUTE: A is 0, so jump to box ${c.x}.`)}else say(`EXECUTE: A is ${A}, not 0, so no jump.`);hl={reg:'rpc'};break;
+   case'HALT':halted=true;next=PC;say(`EXECUTE: HALT. The program is finished after ${cycles} clock ticks!`);Kit.tada();
+    if(prog.startsWith('🎯')&&out.includes(10)){Kit.confetti(60);say('🎉 Challenge complete! The screen shows 10.')}break}
+  PC=next%16;if(!halted)hl.reg=hl.reg||'rpc'}
+ Kit.tick();draw();if(halted){clearInterval(timer);timer=0;$('rn').textContent='▶ Run'}}
+function edit(i){sel=i;const c=mem[i];$('ed').hidden=false;$('ed').innerHTML=`<b>Box ${i}:</b><select id="eo" style="width:auto"><option value="">a plain number</option>${Object.keys(OPS).map(k=>`<option ${c.op===k?'selected':''}>${k}</option>`).join('')}</select><input id="ex" type="number" min="${c.op?0:-99}" max="99" value="${c.op?c.x??0:c.n}" style="width:80px"><button class="btn green small" id="es">💾 Save</button><button class="btn white small" id="ec">✖</button>`;
+ const sync=()=>{$('ex').style.display=NOARG.includes($('eo').value)?'none':''};sync();$('eo').onchange=sync;
+ $('es').onclick=()=>{const o=$('eo').value,x=parseInt($('ex').value)||0;mem[i]=o?{op:o,x:Math.max(0,Math.min(15,x))}:{n:Math.max(-99,Math.min(99,x))};sel=null;$('ed').hidden=true;reset()};$('ec').onclick=()=>{sel=null;$('ed').hidden=true;draw()};draw()}
+$('mm').onclick=e=>{const c=e.target.closest('[data-i]');if(c&&!timer)edit(+c.dataset.i)};
+$('st').onclick=()=>{if(halted)reset();step()};$('rs').onclick=reset;$('pg').onchange=load;
+$('rn').onclick=()=>{if(timer){clearInterval(timer);timer=0;$('rn').textContent='▶ Run';return}if(halted)reset();timer=setInterval(step,window.__fast?1:1100-$('sp').value*100);$('rn').textContent='⏸ Pause'};
+window.__u={runAll:()=>{let g=0;if(halted)reset();while(!halted&&g++<2000)step();return out},set:(i,o,x)=>{mem[i]=o?{op:o,x}:{n:x};reset()},prog:k=>{$('pg').value=k;load()}};
+load();
+</script>
+</body></html>

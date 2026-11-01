@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Stack & Queue Visualizer</title>
+<style>
+main{max-width:1600px}
+.sq-tabs{display:flex;gap:8px;justify-content:center;margin-bottom:12px;flex-wrap:wrap}
+.sq{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media (max-width:860px){.sq{grid-template-columns:1fr}}
+.sq-box{background:#fff;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);padding:12px;display:grid;gap:10px}
+.sq-box h2{margin:0;text-align:center}
+.sq-box .how{text-align:center;font-weight:700;color:#55607E}
+.sq-stack{height:330px;display:flex;flex-direction:column-reverse;align-items:center;justify-content:flex-start;gap:3px;padding:6px;background:linear-gradient(#FFF 0 92%,#C99A63 92%);border-radius:14px;border:3px dashed #C3CBDB;position:relative}
+.sq-stack .it{width:min(220px,80%);height:34px;border:4px solid var(--ink);border-radius:50%/40%;background:var(--ic);display:grid;place-items:center;font-weight:900;font-size:1.1rem;animation:fall .35s;flex:none}
+@keyframes fall{0%{transform:translateY(-120px);opacity:0}}
+.sq-stack .it.top{outline:4px solid #E5533F;outline-offset:2px}
+.sq-line{height:150px;display:flex;align-items:flex-end;gap:6px;padding:8px;border-radius:14px;border:3px dashed #C3CBDB;overflow-x:auto;background:linear-gradient(#fff 0 80%,#E3E8F2 80%)}
+.sq-line .it{flex:none;width:62px;display:grid;justify-items:center;font-weight:900;animation:walk .4s}
+.sq-line .it span{font-size:2.3rem}.sq-line .it b{border:3px solid var(--ink);border-radius:10px;background:var(--ic);padding:0 8px}
+.sq-line .it.front b{outline:4px solid #E5533F;outline-offset:1px}
+@keyframes walk{0%{transform:translateX(80px);opacity:0}}
+.sq-door{display:flex;justify-content:space-between;font-weight:800;color:#55607E;font-size:.85rem}
+.sq-out{display:flex;gap:4px;flex-wrap:wrap;min-height:38px;align-items:center;border-top:3px dashed #C3CBDB;padding-top:6px;font-weight:800}
+.sq-out span{border:3px solid var(--ink);border-radius:8px;padding:0 8px;background:var(--ic)}
+.sq-big{background:#fff;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);padding:16px;max-width:860px;margin:0 auto;display:grid;gap:12px;text-align:center}
+.sq-ops{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;font-family:ui-monospace,Menlo,monospace;font-weight:800}
+.sq-ops span{border:3px solid var(--ink);border-radius:10px;padding:4px 10px;background:#F4FAFF}
+.sq-ch{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+.sq-ch button{font:inherit;font-weight:900;font-size:1.3rem;border:4px solid var(--ink);border-radius:14px;padding:10px;background:#fff;cursor:pointer;color:var(--ink)}
+.sq-ch button.yes{background:#8BE09A}.sq-ch button.no{background:#FFB3AA}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🧠", "Stack & Queue Visualizer");
+const $=id=>document.getElementById(id);
+const FOOD=[['🥞','#FFD27F'],['🍪','#D9A066'],['🍩','#FFB3D1'],['🧇','#F2C46D'],['🍔','#E8A06A']],KIDS=['🧒','👧','👦','🧑','👩','👨','🧕','👱'];
+let S=[],Q=[],so=[],qo=[],tab='play',n=1,quizQ=null,qs=0,qn=0;
+document.querySelector('main').innerHTML=`<div class="sq-tabs"><button class="btn" data-t="play">🥞 Play</button><button class="btn white" data-t="quiz">🤔 Predict the output</button></div><div id="bd"></div>`;
+function play(){$('bd').innerHTML=`<div class="sq"><div class="sq-box"><h2>🥞 Stack</h2><div class="how">Last in, first out (LIFO). You can only take the pancake on top!</div><div class="sq-stack" id="st"></div><div class="row" style="justify-content:center;gap:6px"><button class="btn green" id="push">⬇ Push</button><button class="btn white" id="pop">⬆ Pop</button><button class="btn white small" id="peek">👀 Peek</button></div><div class="sq-out" id="so">Popped:</div></div>
+<div class="sq-box"><h2>🧑‍🤝‍🧑 Queue</h2><div class="how">First in, first out (FIFO). Like a lunch line: the first one in line is served first.</div><div class="sq-door"><span>⬅ Front: served first</span><span>Back: join here ⬅</span></div><div class="sq-line" id="ql"></div><div class="row" style="justify-content:center;gap:6px"><button class="btn green" id="enq">➕ Enqueue</button><button class="btn white" id="deq">🍽️ Dequeue</button><button class="btn white small" id="front">👀 Front</button></div><div class="sq-out" id="qo">Served:</div></div></div>
+<div class="row" style="justify-content:center;margin-top:12px"><button class="btn white" id="both">➕ Add the same number to both</button><button class="btn white" id="take">➖ Take one from both</button><button class="btn white small" id="clr">🧽 Clear</button></div>`;
+ $('push').onclick=()=>{if(S.length>=8)return Kit.tone(200,.2,'triangle',.15);S.push(item());Kit.tick();draw()};$('pop').onclick=()=>{if(!S.length)return Kit.tone(200,.2,'triangle',.15);so.push(S.pop());Kit.ding();draw()};
+ $('enq').onclick=()=>{if(Q.length>=9)return Kit.tone(200,.2,'triangle',.15);Q.push(item());Kit.tick();draw()};$('deq').onclick=()=>{if(!Q.length)return Kit.tone(200,.2,'triangle',.15);qo.push(Q.shift());Kit.ding();draw()};
+ $('peek').onclick=()=>{const t=$('st').querySelector('.top');t&&t.animate([{transform:'scale(1.15)'},{transform:'scale(1)'}],400)};$('front').onclick=()=>{const t=$('ql').querySelector('.front');t&&t.animate([{transform:'translateY(-12px)'},{transform:'none'}],400)};
+ $('both').onclick=()=>{if(S.length>=8||Q.length>=9)return;const it=item();S.push(it);Q.push({...it});Kit.tick();draw()};$('take').onclick=()=>{if(!S.length)return;so.push(S.pop());qo.push(Q.shift());Kit.ding();draw()};$('clr').onclick=()=>{S=[];Q=[];so=[];qo=[];n=1;draw()};if(!S.length&&!Q.length&&n===1)for(let i=0;i<3;i++){const it=item();S.push(it);Q.push({...it})}draw()}
+function item(){const f=FOOD[(n-1)%FOOD.length];return {n:n++,e:f[0],c:f[1],k:KIDS[(n-2)%KIDS.length]}}
+function draw(){$('st').innerHTML=S.map((x,i)=>`<div class="it ${i===S.length-1?'top':''}" style="--ic:${x.c}">${x.e} ${x.n}</div>`).join('')||'<div class="muted" style="margin:auto;font-weight:700">Empty plate</div>';
+ $('ql').innerHTML=Q.map((x,i)=>`<div class="it ${i===0?'front':''}" style="--ic:${x.c}"><span>${x.k}</span><b>${x.n}</b></div>`).join('')||'<div class="muted" style="margin:auto;font-weight:700">Nobody in line</div>';
+ $('so').innerHTML='Popped: '+so.map(x=>`<span style="--ic:${x.c}">${x.n}</span>`).join('');$('qo').innerHTML='Served: '+qo.map(x=>`<span style="--ic:${x.c}">${x.n}</span>`).join('');
+ window.__t={S:S.map(x=>x.n),Q:Q.map(x=>x.n),so:so.map(x=>x.n),qo:qo.map(x=>x.n)}}
+function quiz(){const kind=Kit.pick(['stack','queue']),ops=[],st=[];let v=1,out=null;const len=Kit.rand(4,7);
+ for(let i=0;i<len;i++){if(st.length&&Math.random()<.35){ops.push(kind==='stack'?'pop()':'dequeue()');out=kind==='stack'?st.pop():st.shift()}else{ops.push(`${kind==='stack'?'push':'enqueue'}(${v})`);st.push(v++)}}
+ // finish with a removal: what comes out?
+ if(!st.length){ops.push(`${kind==='stack'?'push':'enqueue'}(${v})`);st.push(v++)}ops.push(kind==='stack'?'pop()':'dequeue()');const ans=kind==='stack'?st[st.length-1]:st[0];
+ const opts=Kit.shuffle([...new Set([ans,...Kit.shuffle([...Array(v-1)].map((_,i)=>i+1).filter(x=>x!==ans)).slice(0,3)])]);quizQ={ans};
+ $('bd').innerHTML=`<div class="sq-big"><div class="ln-pill" style="justify-self:center">✅ ${qs} / ${qn}</div><h2 style="margin:0">${kind==='stack'?'🥞 A stack':'🧑‍🤝‍🧑 A queue'} starts empty. Then:</h2><div class="sq-ops">${ops.map((o,i)=>`<span ${i===ops.length-1?'style="background:#FFF6C9"':''}>${o}</span>`).join('➜')}</div><h3 style="margin:0">Which number comes out with the last ${kind==='stack'?'pop()':'dequeue()'}?</h3><div class="sq-ch" id="qc">${opts.map(o=>`<button data-a="${o}">${o}</button>`).join('')}</div><div id="qr" style="font-weight:800;min-height:1.4em"></div><button class="btn green" id="qn" hidden>Next ➜</button></div>`;
+ window.__q=ans;$('qc').onclick=e=>{const b=e.target.closest('[data-a]');if(!b||!quizQ)return;qn++;if(+b.dataset.a===ans){qs++;b.classList.add('yes');Kit.ding();$('qr').textContent=`✅ Yes! ${kind==='stack'?'A stack gives back the newest item first.':'A queue gives back the oldest item first.'}`}else{b.classList.add('no');[...$('qc').children].find(x=>+x.dataset.a===ans).classList.add('yes');Kit.tone(200,.2,'triangle',.15);$('qr').textContent=`It was ${ans}. ${kind==='stack'?'Stack: the last one pushed is the first one popped.':'Queue: the first one in is the first one out.'}`}quizQ=null;$('qn').hidden=false};$('qn').onclick=quiz}
+document.querySelector('.sq-tabs').onclick=e=>{const b=e.target.closest('[data-t]');if(!b)return;tab=b.dataset.t;document.querySelectorAll('[data-t]').forEach(x=>x.className='btn '+(x.dataset.t===tab?'':'white'));tab==='play'?play():quiz()};
+play();
+</script>
+</body></html>

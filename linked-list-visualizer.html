@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Linked List Visualizer</title>
+<style>
+main{max-width:1600px}
+.ll-track{background:linear-gradient(#DDF3FF 0 70%,#B8E07A 70%);border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);padding:24px 14px 30px;overflow-x:auto;position:relative;min-height:220px}
+.ll-row{display:flex;align-items:center;gap:0;min-width:max-content;position:relative}
+.ll-head{font-weight:900;background:#E5533F;color:#fff;border:4px solid var(--ink);border-radius:12px;padding:6px 10px;margin-right:6px;text-align:center;line-height:1.1}
+.ll-head small{display:block;font-size:.7rem}
+.ll-car{display:flex;border:4px solid var(--ink);border-radius:14px;overflow:hidden;cursor:pointer;background:#fff;box-shadow:0 6px 0 #1D2B53;position:relative;transition:transform .25s}
+.ll-car .v{padding:14px 16px;font-weight:900;font-size:1.6rem;background:var(--cc);min-width:62px;text-align:center}
+.ll-car .p{padding:4px 6px;font-weight:800;font-size:.7rem;display:grid;place-items:center;background:#F4FAFF;border-left:3px dashed var(--ink);line-height:1.1;text-align:center}
+.ll-car.sel{transform:translateY(-10px);outline:5px solid var(--sun);outline-offset:2px}
+.ll-car.at .v{background:#FFD84D}
+.ll-car.new{animation:drop .45s}@keyframes drop{0%{transform:translateY(-70px);opacity:0}}
+.ll-car::after{content:"";position:absolute;bottom:-14px;left:12px;width:14px;height:14px;border-radius:50%;background:#333;border:3px solid #777;box-shadow:calc(var(--w,80px) - 40px) 0 0 #333}
+.ll-ar{width:44px;height:6px;background:var(--ink);position:relative;margin:0 2px}
+.ll-ar::after{content:"";position:absolute;right:-4px;top:-7px;border:10px solid transparent;border-left:14px solid var(--ink);border-right:0}
+.ll-ar.flip{transform:scaleX(-1)}
+.ll-null{font-weight:900;background:#C3CBDB;border:4px dashed var(--ink);border-radius:12px;padding:10px 12px;color:#55607E}
+.ll-ctl{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:14px;margin-top:14px}
+@media (max-width:860px){.ll-ctl{grid-template-columns:1fr}}
+.ll-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:8px}
+.ll-p .row{gap:6px}
+.ll-msg{font-weight:800;font-size:1.1rem;min-height:1.4em}
+.ll-goal{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-weight:900}
+.ll-goal span{border:3px solid var(--ink);border-radius:10px;padding:2px 10px;background:#FFF6C9}
+.ll-code{font-family:ui-monospace,Menlo,Consolas,monospace;background:#1D2B53;color:#CFF5FF;border-radius:12px;padding:8px 10px;font-size:.9rem;white-space:pre-wrap;min-height:3em}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🔗", "Linked List Visualizer");
+const $=id=>document.getElementById(id);
+const COLS=['#9FD8FF','#8BE09A','#FFB3AA','#D6C2FF','#FFC98B','#FFE58F','#B8F0E6'];
+// nodes live in a pool; the list is only the chain of "next" pointers starting at head
+let pool=[],head=null,sel=null,at=null,busy=false,goal=null,ops=0,nid=0;
+const mk=v=>{const n={id:nid++,v,next:null,c:COLS[nid%COLS.length]};pool.push(n);return n};
+function chain(){const a=[];let n=head,g=0;while(n&&g++<50){a.push(n);n=n.next}return a}
+document.querySelector('main').innerHTML=`<div class="ll-track"><div class="ll-row" id="rw"></div></div>
+<div class="ll-ctl"><div class="ll-p"><div class="ll-msg" id="msg"></div><div class="row"><input id="iv" type="number" min="0" max="99" value="7" style="width:80px"><button class="btn green small" id="af">⬅ Add to front</button><button class="btn green small" id="ab">Add to end ➡</button><button class="btn white small" id="aa" disabled>Insert after 🟨</button></div>
+<div class="row"><button class="btn white small" id="dl" disabled>🗑️ Remove 🟨</button><button class="btn white small" id="fd">🔎 Find</button><button class="btn white small" id="rv">🔁 Reverse</button><button class="btn white small" id="ct">🔢 Count</button><button class="btn white small" id="cl">🧽 Empty</button></div>
+<b>👩‍💻 What the computer does</b><div class="ll-code" id="cd"></div></div>
+<div class="ll-p"><b>🎯 Challenge: build this train</b><div class="ll-goal" id="gl"></div><div class="muted" style="font-weight:700">Moves: <b id="ops">0</b>. Can you do it in <b id="par">?</b>?</div><div class="row"><button class="btn white small" id="ng">🎲 New challenge</button></div>
+<div class="muted" style="font-weight:600">Tap a car to select it 🟨. Each car only knows the car right after it, so finding anything means starting at HEAD and following the arrows.</div></div></div>`;
+function draw(cls={}){const a=chain();$('rw').innerHTML=`<div class="ll-head">HEAD<small>start here</small></div><div class="ll-ar"></div>`+a.map((n,i)=>`<div class="ll-car ${n===sel?'sel':''} ${n===at?'at':''} ${cls[n.id]||''}" data-id="${n.id}" style="--cc:${n.c}"><div class="v">${n.v}</div><div class="p">next<br>➡</div></div><div class="ll-ar"></div>`).join('')+`<div class="ll-null">null 🛑</div>`;
+ $('aa').disabled=$('dl').disabled=!sel;$('ops').textContent=ops;
+ if(goal){const ok=a.length===goal.length&&a.every((n,i)=>n.v===goal[i]);$('gl').innerHTML=goal.map(v=>`<span>${v}</span>`).join('➡')+(ok?' ✅':'');if(ok&&!goal.done){goal.done=true;Kit.tada();Kit.confetti(60);msg(ops<=goal.par?`🎉 Built it in ${ops} moves, as good as it gets!`:`🎉 Built it in ${ops} moves! Can you do it in ${goal.par}?`)}}
+ window.__t={vals:a.map(n=>n.v),sel:sel&&sel.v,ops,ok:goal&&goal.done}}
+function msg(t){$('msg').textContent=t}
+function code(t){$('cd').textContent=t}
+const val=()=>{const v=parseInt($('iv').value);return isNaN(v)?Kit.rand(0,99):Math.max(0,Math.min(99,v))};
+async function walkTo(stop){// follow the arrows from head, one car at a time
+ let n=head,steps=0;while(n){at=n;steps++;draw();Kit.tick();await Kit.sleep(window.__fast?1:320);if(stop(n))break;n=n.next}at=null;return [n,steps]}
+function op(){ops++;if(goal&&!goal.done)$('ops').textContent=ops}
+$('af').onclick=()=>{if(busy)return;const n=mk(val());n.next=head;head=n;op();code(`new = Car(${n.v})\nnew.next = head\nhead = new`);msg(`Added ${n.v} at the front. That's fast: only 2 arrows changed!`);draw({[n.id]:'new'});$('iv').value=Kit.rand(0,99)};
+$('ab').onclick=async()=>{if(busy)return;busy=true;const n=mk(val());op();if(!head){head=n;code(`head = Car(${n.v})`)}else{const [last,steps]=await walkTo(x=>!x.next);last.next=n;code(`walk from head to the last car (${steps} steps)\nlast.next = Car(${n.v})`);msg(`Added ${n.v} at the end. We had to walk past ${steps} cars to find the end!`)}draw({[n.id]:'new'});busy=false;$('iv').value=Kit.rand(0,99)};
+$('aa').onclick=()=>{if(busy||!sel)return;const n=mk(val());n.next=sel.next;sel.next=n;op();code(`new = Car(${n.v})\nnew.next = selected.next\nselected.next = new`);msg(`Inserted ${n.v} after ${sel.v}. First point the new car at the next one, then point ${sel.v} at the new car.`);sel=null;draw({[n.id]:'new'});$('iv').value=Kit.rand(0,99)};
+$('dl').onclick=async()=>{if(busy||!sel)return;busy=true;const t=sel;op();if(head===t){head=t.next;code('head = head.next');msg(`Removed ${t.v}. HEAD now points at the next car.`)}else{const [prev,steps]=await walkTo(x=>x.next===t);prev.next=t.next;code(`walk to the car before ${t.v} (${steps} steps)\nbefore.next = ${t.v}.next`);msg(`Removed ${t.v}: the car before it now skips over it.`)}sel=null;draw();busy=false};
+$('fd').onclick=async()=>{if(busy)return;busy=true;const v=val();const [n,steps]=await walkTo(x=>x.v===v);code(`car = head\nwhile car and car.value != ${v}:\n    car = car.next`);msg(n?`Found ${v} after ${steps} steps.`:`${v} is not in the list (checked ${steps} cars).`);if(n){sel=n}draw();busy=false;window.__t.steps=steps};
+$('rv').onclick=async()=>{if(busy||!head)return;busy=true;op();let prev=null,n=head;while(n){const nx=n.next;n.next=prev;prev=n;at=n;n=nx;await Kit.sleep(window.__fast?1:250)}head=prev;at=null;code('prev = null\nwhile car:\n    next = car.next\n    car.next = prev   # flip the arrow\n    prev = car\n    car = next\nhead = prev');msg('Reversed! Every arrow was flipped to point the other way.');draw();busy=false};
+$('ct').onclick=async()=>{if(busy)return;busy=true;const [,steps]=await walkTo(()=>false);code('count = 0\ncar = head\nwhile car:\n    count += 1\n    car = car.next');msg(`There are ${head?steps:0} cars. A linked list has to walk every car to count them.`);draw();busy=false};
+$('cl').onclick=()=>{head=null;sel=null;op();code('head = null');msg('Empty! HEAD points at nothing (null).');draw()};
+$('rw').onclick=e=>{const c=e.target.closest('[data-id]');if(!c||busy)return;const n=pool.find(p=>p.id===+c.dataset.id);sel=sel===n?null:n;Kit.tick();draw()};
+function challenge(){const a=chain().map(n=>n.v);let g=[...a],par=0;
+ // make the goal by applying 2-3 random edits to the current list
+ for(let k=0;k<Kit.rand(2,3);k++){const r=Math.random();if(r<.4||g.length<2){g.unshift(Kit.rand(0,99))}else if(r<.7){g.push(Kit.rand(0,99))}else if(r<.85){g.splice(Kit.rand(0,g.length-1),1)}else{g.splice(Kit.rand(1,g.length),0,Kit.rand(0,99))}par++}
+ if(g.join()===a.join())return challenge();goal=g;goal.par=par;ops=0;$('par').textContent=par+' moves';$('iv').value=g.find(v=>!a.includes(v))??$('iv').value;draw();msg('Change the train so it matches the challenge!')}
+$('ng').onclick=challenge;
+window.__l={val:v=>$('iv').value=v,sel:v=>{sel=chain().find(n=>n.v===v)||null;draw()}};
+[3,8,5].forEach(v=>{const n=mk(v);if(!head)head=n;else chain().pop().next=n});code('head ➡ 3 ➡ 8 ➡ 5 ➡ null');challenge();
+</script>
+</body></html>
