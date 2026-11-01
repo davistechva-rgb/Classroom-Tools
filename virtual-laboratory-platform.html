@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Virtual Laboratory Platform</title>
+<style>
+main{max-width:1800px}
+.vp-top{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:12px}
+.vp-top button{font:inherit;font-weight:900;border:4px solid var(--ink);border-radius:99px;padding:6px 14px;background:#fff;cursor:pointer;color:var(--ink)}.vp-top button.on{background:var(--sun)}
+.vp{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:980px){.vp{grid-template-columns:minmax(0,1fr)}}
+.vp-bench{background:linear-gradient(#EAF6FF 0 78%,#C9A06B 78%);border:6px solid var(--ink);border-radius:26px;box-shadow:8px 8px 0 var(--ink);padding:12px;display:grid;gap:10px}
+.vp-bench svg{width:100%;height:auto;background:#fff8;border-radius:16px}
+.vp-ctl{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center;font-weight:900;background:#fff;border:4px solid var(--ink);border-radius:16px;padding:8px}
+.vp-ctl input[type=range]{width:min(260px,60vw)}
+.vp-res{font:900 1.4rem Fredoka,sans-serif;text-align:center;min-height:1.6em}
+.vp-nb{background:#FFFDF2;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:8px;background-image:repeating-linear-gradient(transparent 0 27px,#D6E4F5 27px 28px)}
+.vp-nb label{display:block;font-weight:900}
+.vp-nb textarea{display:block;width:100%;margin-top:3px;font:600 1rem inherit;font-family:inherit;padding:6px 8px;border:3px solid var(--ink);border-radius:10px;min-height:52px;background:#fff}
+.vp-tbl{width:100%;border-collapse:collapse;font-weight:800;background:#fff}
+.vp-tbl th{background:var(--ink);color:#fff;padding:4px}.vp-tbl td{border-bottom:2px solid #E3E8F2;padding:3px;text-align:center}
+.vp-tbl button{border:0;background:none;cursor:pointer}
+.vp-nb svg{width:100%;height:auto;background:#fff;border:3px solid var(--ink);border-radius:12px}
+.vp-info{font-weight:700;background:#fff;border-radius:12px;padding:6px 10px;border:3px solid var(--ink)}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🧪", "Virtual Laboratory Platform");
+const $=id=>document.getElementById(id);
+const noise=(v,p)=>v*(1+(Math.random()-.5)*p);
+const EX={pend:{n:'🕰️ Pendulum swing',q:'Does a longer string make a pendulum swing slower?',v:['String length','cm',10,100,10,40],out:['Time for 1 swing','s'],f:L=>+(2*Math.PI*Math.sqrt(L/100/9.8)*noise(1,.04)).toFixed(2),info:'A pendulum is a weight on a string. Time one full swing back and forth.'},
+ ramp:{n:'🚗 Ramp racer',q:'Does a higher ramp make a car roll farther?',v:['Ramp height','cm',5,50,5,20],out:['Distance rolled','cm'],f:h=>Math.round(noise(h*7.5+10,.12)),info:'Let the car go from the top of the ramp. Measure how far it rolls on the floor.'},
+ plant:{n:'🌱 Plant and light',q:'How do hours of sunlight change how tall a plant grows?',v:['Light per day','hours',0,16,2,8],out:['Height after 2 weeks','cm'],f:h=>+Math.max(0,noise(h<=12?h*1.1+0.5:13.7-(h-12)*.4,.15)).toFixed(1),info:'Grow bean plants for two weeks with different amounts of light.'},
+ sugar:{n:'🍬 Dissolving sugar',q:'Does sugar dissolve faster in warmer water?',v:['Water temperature','°C',5,85,10,25],out:['Time to dissolve','s'],f:t=>Math.round(noise(200*Math.exp(-t/38)+8,.1)),info:'Stir one spoon of sugar into a cup of water. Time how long until you can\'t see it.'}};
+let ex=Kit.get('vp-ex','pend'),NB=Kit.get('vp-nb',{}),val=null,busy=false,last=null;
+function nb(){return NB[ex]||(NB[ex]={hyp:'',data:[],con:''})}
+function save(){Kit.set('vp-nb',NB)}
+document.querySelector('main').innerHTML=`<div class="vp-top" id="tp">${Object.entries(EX).map(([k,e])=>`<button data-e="${k}">${e.n}</button>`).join('')}</div><div class="vp"><div class="vp-bench"><div class="vp-info" id="in"></div><svg id="sv" viewBox="0 0 600 340"></svg><div class="vp-ctl"><span id="vl"></span><input type="range" id="rg"><button class="btn green" id="go">▶ Run trial</button></div><div class="vp-res" id="rs"></div></div>
+<div class="vp-nb"><b style="font-size:1.25rem">📓 Lab notebook</b><div style="font-weight:800" id="qq"></div><label>🤔 My hypothesis (I think…)<textarea id="hy"></textarea></label><b>📋 Data</b><div style="overflow:auto"><table class="vp-tbl" id="tb"></table></div><b>📈 Graph</b><svg id="gr" viewBox="0 0 400 240"></svg><label>✅ My conclusion (I found…)<textarea id="cn"></textarea></label><div class="row" style="gap:6px"><button class="btn white small" id="cl">🧽 Clear data</button><button class="btn white small" id="pr">🖨️ Print notebook</button></div></div></div>`;
+function scene(v,t){const E=EX[ex];if(ex==='pend'){const L=v*2.2,a=Math.sin(t*Math.PI*2/Math.max(.3,E.f? 2*Math.PI*Math.sqrt(v/100/9.8):1))*.5;const x=300+Math.sin(a)*L,y=20+Math.cos(a)*L;return `<line x1="200" y1="20" x2="400" y2="20" stroke="#8B5A2B" stroke-width="10"/><line x1="300" y1="20" x2="${x}" y2="${y}" stroke="#1D2B53" stroke-width="3"/><circle cx="${x}" cy="${y}" r="18" fill="#E5533F" stroke="#1D2B53" stroke-width="4"/><text x="430" y="60" font-size="18" font-weight="800">${v} cm</text>`}
+ if(ex==='ramp'){const h=v*4,d=t*(last||0)*2;return `<polygon points="20,300 ${20+200},300 20,${300-h}" fill="#C9A06B" stroke="#1D2B53" stroke-width="4"/><line x1="0" y1="300" x2="600" y2="300" stroke="#1D2B53" stroke-width="4"/>${[0,100,200,300,400].map(c=>`<text x="${220+c*0.9}" y="325" font-size="13" font-weight="800">${c}</text>`).join('')}<text x="${t<0.5?30+t*2*190:220+Math.min(360,(t-.5)*2*(last||0)*0.9)}" y="${t<0.5?300-h+t*2*h-8:292}" font-size="34">🚗</text>`}
+ if(ex==='plant'){const H=t*(last||0)*14;return `<rect x="250" y="250" width="100" height="60" fill="#C9763A" stroke="#1D2B53" stroke-width="4"/><line x1="300" y1="250" x2="300" y2="${250-H}" stroke="#2E7D4F" stroke-width="6"/>${H>20?`<ellipse cx="285" cy="${250-H*.6}" rx="16" ry="8" fill="#5DC66E"/><ellipse cx="315" cy="${250-H*.4}" rx="16" ry="8" fill="#5DC66E"/>`:''}<text x="430" y="70" font-size="40">${v>=8?'☀️':v>0?'🌤️':'🌑'}</text><text x="420" y="110" font-size="18" font-weight="800">${v} h/day</text>`}
+ const fill=Math.max(0,1-t);return `<path d="M220 80 L230 300 L370 300 L380 80" fill="${v>50?'#FFE3DE':'#E3F6FF'}" stroke="#1D2B53" stroke-width="5"/>${[...Array(14)].map((_,i)=>`<rect x="${250+(i*37)%100}" y="${270-((i*23)%60)*fill}" width="8" height="8" fill="#fff" stroke="#9AA6C0" opacity="${fill}"/>`).join('')}<text x="420" y="90" font-size="40">🌡️</text><text x="420" y="130" font-size="18" font-weight="800">${v} °C</text>`}
+function chart(){const D=nb().data,E=EX[ex];if(!D.length)return `<text x="200" y="125" text-anchor="middle" font-weight="800" fill="#55607E">Run some trials to see your graph!</text>`;
+ const xs=[E.v[2],E.v[3]],ym=Math.max(...D.map(d=>d[1]))*1.15||1;const X=v=>40+(v-xs[0])/(xs[1]-xs[0])*340,Y=v=>210-v/ym*190;
+ let h=`<line x1="40" y1="210" x2="390" y2="210" stroke="#1D2B53" stroke-width="2"/><line x1="40" y1="10" x2="40" y2="210" stroke="#1D2B53" stroke-width="2"/><text x="215" y="236" text-anchor="middle" font-size="12" font-weight="800">${E.v[0]} (${E.v[1]})</text><text x="12" y="110" font-size="12" font-weight="800" transform="rotate(-90 12 110)" text-anchor="middle">${E.out[0]} (${E.out[1]})</text>`;
+ // average per x
+ const g={};D.forEach(d=>{(g[d[0]]=g[d[0]]||[]).push(d[1])});const av=Object.entries(g).map(([x,a])=>[+x,a.reduce((s,v)=>s+v,0)/a.length]).sort((a,b)=>a[0]-b[0]);
+ h+=`<polyline points="${av.map(p=>`${X(p[0])},${Y(p[1])}`).join(' ')}" fill="none" stroke="#9B6BF2" stroke-width="3"/>`+D.map(d=>`<circle cx="${X(d[0])}" cy="${Y(d[1])}" r="5" fill="#E5533F" stroke="#1D2B53" stroke-width="2"/>`).join('');return h}
+function draw(){const E=EX[ex],N=nb();document.querySelectorAll('[data-e]').forEach(b=>b.classList.toggle('on',b.dataset.e===ex));if(val==null)val=E.v[5];
+ $('in').textContent=`🔬 ${E.info}`;$('rg').min=E.v[2];$('rg').max=E.v[3];$('rg').step=E.v[4];$('rg').value=val;$('vl').textContent=`${E.v[0]}: ${val} ${E.v[1]}`;$('sv').innerHTML=scene(val,0);
+ $('qq').textContent=`❓ ${E.q}`;if(document.activeElement!==$('hy'))$('hy').value=N.hyp;if(document.activeElement!==$('cn'))$('cn').value=N.con;
+ $('tb').innerHTML=`<tr><th>Trial</th><th>${E.v[0]} (${E.v[1]})</th><th>${E.out[0]} (${E.out[1]})</th><th></th></tr>`+(N.data.map((d,i)=>`<tr><td>${i+1}</td><td>${d[0]}</td><td>${d[1]}</td><td><button data-x="${i}" aria-label="Delete trial">✕</button></td></tr>`).join('')||`<tr><td colspan="4" style="color:#55607E">No trials yet.</td></tr>`);$('gr').innerHTML=chart();
+ window.__t={ex,val,trials:N.data.length,last}}
+$('rg').oninput=()=>{val=+$('rg').value;$('vl').textContent=`${EX[ex].v[0]}: ${val} ${EX[ex].v[1]}`;$('sv').innerHTML=scene(val,0)};
+$('go').onclick=async()=>{if(busy)return;busy=true;const E=EX[ex];last=E.f(val);$('rs').textContent='🔬 Running…';const T=window.__fast?0:1600,t0=performance.now();
+ await new Promise(r=>{function fr(){const t=Math.min(1,(performance.now()-t0)/Math.max(1,T));$('sv').innerHTML=scene(val,ex==='pend'?t*3:t);if(t<1)requestAnimationFrame(fr);else r()}fr()});
+ nb().data.push([val,last]);save();$('rs').textContent=`📏 ${E.out[0]}: ${last} ${E.out[1]}`;Kit.ding();busy=false;draw()};
+$('tb').onclick=e=>{const b=e.target.closest('[data-x]');if(b){nb().data.splice(+b.dataset.x,1);save();draw()}};
+$('hy').oninput=()=>{nb().hyp=$('hy').value;save()};$('cn').oninput=()=>{nb().con=$('cn').value;save()};
+$('cl').onclick=()=>{if(confirm('Clear all the data for this experiment?')){nb().data=[];save();draw()}};$('pr').onclick=()=>window.print();
+$('tp').onclick=e=>{const b=e.target.closest('[data-e]');if(b){ex=b.dataset.e;Kit.set('vp-ex',ex);val=null;last=null;$('rs').textContent='';draw()}};
+draw();
+</script>
+</body></html>

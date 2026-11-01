@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Classroom Achievement Platform</title>
+<style>
+main{max-width:1800px}
+.ap-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:12px}
+.ap-top .tb{font:inherit;font-weight:900;border:4px solid var(--ink);border-radius:99px;padding:6px 14px;background:#fff;cursor:pointer;color:var(--ink)}.ap-top .tb.on{background:var(--sun)}
+.ap{display:grid;grid-template-columns:minmax(0,230px) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.ap{grid-template-columns:minmax(0,1fr)}}
+.ap-p{background:#fff;border:5px solid var(--ink);border-radius:22px;padding:12px;display:grid;gap:8px}
+.ap-kids{display:grid;gap:4px;max-height:560px;overflow:auto}
+.ap-kids button{font:inherit;font-weight:800;border:3px solid var(--ink);border-radius:12px;padding:4px 9px;background:#fff;cursor:pointer;text-align:left;color:var(--ink);display:flex;justify-content:space-between}
+.ap-kids button.on{background:#9FD8FF}
+.ap-tree{background:linear-gradient(#F3EEFF,#E3F6FF);border:6px solid var(--ink);border-radius:26px;box-shadow:8px 8px 0 var(--ink);padding:14px;position:relative;overflow-x:auto}
+.ap-tree h2{margin:0 0 6px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;align-items:center}
+.ap-svg{position:absolute;inset:0;pointer-events:none}
+.ap-rows{display:grid;gap:44px;position:relative;min-width:520px;padding:10px 0}
+.ap-row{display:flex;justify-content:space-around;gap:10px}
+.ap-n{width:118px;border:5px solid var(--ink);border-radius:20px;background:#fff;display:grid;justify-items:center;padding:6px 4px;cursor:pointer;position:relative;z-index:1;font-weight:800;font-size:.85rem;text-align:center;box-shadow:0 5px 0 var(--ink);transition:transform .15s}
+.ap-n .e{font-size:2.4rem;line-height:1.1}
+.ap-n.lock{background:#E3E8F2;filter:grayscale(1);opacity:.6;cursor:not-allowed}
+.ap-n.ready{background:#FFF6C9;animation:gl 1.2s infinite alternate}@keyframes gl{to{box-shadow:0 5px 0 var(--ink),0 0 0 6px #FFC93C88}}
+.ap-n.done{background:#C8F3D0}.ap-n.done::after{content:"✔";position:absolute;top:-12px;right:-10px;background:#2E9E47;color:#fff;border:3px solid var(--ink);border-radius:50%;width:28px;height:28px;display:grid;place-items:center;font-size:.9rem}
+.ap-n small{font-size:.7rem;color:#55607E}
+.ap-cert{background:#FFFDF2;border:10px double #C8961E;border-radius:12px;padding:24px;text-align:center;display:grid;gap:8px}
+.ap-cert h2{font-size:2rem;margin:0}.ap-cert .e{font-size:4rem}
+.ap-p textarea{width:100%;min-height:220px;font:600 .95rem ui-monospace,Menlo,monospace;border:3px solid var(--ink);border-radius:12px;padding:8px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script><script src="rewards.js"></script>
+<script>
+Kit.mount("🏅", "Classroom Achievement Platform");
+const $=id=>document.getElementById(id);
+const T0=[{id:1,n:'📖 Reading Explorer',c:`a | 🔤 | Letter sounds |
+b | 📗 | First book read | a
+c | 🗣️ | Reads aloud smoothly | a
+d | 📚 | 10 books read | b
+e | ❓ | Asks good questions | b,c
+f | ✍️ | Writes a book review | d,e
+g | 🏆 | Reading Champion | f`},{id:2,n:'🧮 Math Climber',c:`a | ➕ | Adding facts |
+b | ➖ | Subtracting facts | a
+c | ✖️ | Times tables to 5 | a
+d | 🔟 | Times tables to 10 | c
+e | 🍕 | Fraction basics | b,c
+f | 🧩 | Solves word problems | d,e
+g | 🏔️ | Math Summit | f`},{id:3,n:'🤝 Super Citizen',c:`a | 👋 | Kind greeter |
+b | 🧹 | Class helper | a
+c | 👂 | Great listener | a
+d | 🤝 | Team player | b,c
+e | 🌟 | Classroom leader | d`}];
+let trees=Kit.get('ap-trees',null)||T0,cur=trees[0].id,who=null,done=Kit.get('ap-done',{}),view='tree';
+const tree=()=>trees.find(t=>t.id===cur)||trees[0];
+function nodes(){return Kit.lines(tree().c).map(l=>{const p=l.split('|').map(s=>s.trim());return {id:p[0],e:p[1]||'⭐',n:p[2]||p[0],req:(p[3]||'').split(',').map(s=>s.trim()).filter(Boolean)}}).filter(x=>x.id)}
+function depthOf(N){const d={};const f=(n,seen=new Set())=>{if(d[n.id]!=null)return d[n.id];if(seen.has(n.id))return 0;seen.add(n.id);const ps=n.req.map(r=>N.find(x=>x.id===r)).filter(Boolean);return d[n.id]=ps.length?1+Math.max(...ps.map(p=>f(p,seen))):0};N.forEach(n=>f(n));return d}
+const has=(k,id)=>!!(((done[k]||{})[cur]||{})[id]);
+function state(k,n){if(has(k,n.id))return 'done';return n.req.every(r=>has(k,r))?'ready':'lock'}
+function save(){Kit.set('ap-done',done)}
+document.querySelector('main').innerHTML=`<div class="ap-top" id="tp"></div><div class="ap"><div class="ap-p"><b>🧒 Students</b><div class="ap-kids" id="ks"></div></div><div id="bd"></div></div>`;
+function draw(){const K=RW.kids();if(!K.includes(who))who=K[0];const N=nodes();
+ $('tp').innerHTML=trees.map(t=>`<button class="tb ${t.id===cur?'on':''}" data-tr="${t.id}">${Kit.esc(t.n)}</button>`).join('')+`<button class="btn white small" id="vc">${view==='class'?'🌳 Tree view':'👥 Class view'}</button><button class="btn white small" id="ed">✏️ Edit pathways</button>`;
+ $('ks').innerHTML=K.map(k=>{const c=N.filter(n=>has(k,n.id)).length;return `<button data-k="${Kit.esc(k)}" class="${k===who?'on':''}"><span>${Kit.esc(k)}</span><span>${c}/${N.length}</span></button>`}).join('');
+ if(view==='edit'){$('bd').innerHTML=`<div class="ap-p"><b>✏️ Pathway: <input id="tn" value="${Kit.esc(tree().n)}" style="font:inherit;font-weight:800;padding:3px 8px;border:3px solid var(--ink);border-radius:10px"></b><div class="muted" style="font-weight:700">One badge per line: <b>id | emoji | name | needs (ids, comma separated)</b>. Badges with nothing in "needs" are where students start.</div><textarea id="tc">${Kit.esc(tree().c)}</textarea><div class="row" style="gap:6px"><button class="btn green" id="ts">💾 Save</button><button class="btn white small" id="tnw">➕ New pathway</button><button class="btn white small" id="tdl">🗑️ Delete pathway</button><button class="btn white small" id="tbk">⬅ Back</button></div></div>`;
+  $('ts').onclick=()=>{tree().n=$('tn').value.trim()||'Pathway';tree().c=$('tc').value;Kit.set('ap-trees',trees);view='tree';Kit.ding();draw()};$('tbk').onclick=()=>{view='tree';draw()};
+  $('tnw').onclick=()=>{const t={id:Date.now(),n:'🌟 New pathway',c:'a | ⭐ | First step |\nb | 🌟 | Next step | a'};trees.push(t);cur=t.id;Kit.set('ap-trees',trees);draw()};$('tdl').onclick=()=>{if(trees.length<2)return;if(confirm('Delete this pathway?')){trees=trees.filter(t=>t.id!==cur);cur=trees[0].id;Kit.set('ap-trees',trees);view='tree';draw()}};window.__t={view};return}
+ if(view==='class'){$('bd').innerHTML=`<div class="ap-tree"><h2>👥 ${Kit.esc(tree().n)}: whole class</h2><div style="overflow:auto"><table style="border-collapse:collapse;font-weight:800;width:100%"><tr><th style="text-align:left;padding:4px">Student</th>${N.map(n=>`<th title="${Kit.esc(n.n)}" style="font-size:1.5rem">${n.e}</th>`).join('')}</tr>${K.map(k=>`<tr><td style="padding:4px">${Kit.esc(k)}</td>${N.map(n=>{const s=state(k,n);return `<td style="text-align:center;font-size:1.2rem">${s==='done'?'✅':s==='ready'?'🟡':'·'}</td>`}).join('')}</tr>`).join('')}<tr><td style="padding:4px">Total</td>${N.map(n=>`<td style="text-align:center">${K.filter(k=>has(k,n.id)).length}</td>`).join('')}</tr></table></div></div>`;window.__t={view};return}
+ const D=depthOf(N),maxD=Math.max(0,...Object.values(D)),rows=[...Array(maxD+1)].map((_,d)=>N.filter(n=>D[n.id]===d)),all=N.length&&N.every(n=>has(who,n.id));
+ $('bd').innerHTML=`<div class="ap-tree" id="tr"><h2><span>${Kit.esc(tree().n)} · ${Kit.esc(who||'')}</span>${all?'<button class="btn green small" id="ct">📜 Certificate</button>':''}</h2><div class="ap-rows" id="rw">${rows.map(r=>`<div class="ap-row">${r.map(n=>{const s=state(who,n);return `<div class="ap-n ${s}" data-n="${Kit.esc(n.id)}"><span class="e">${n.e}</span>${Kit.esc(n.n)}<small>${s==='lock'?'🔒 locked':s==='ready'?'tap to award':'earned!'}</small></div>`}).join('')}</div>`).join('')}<svg class="ap-svg" id="ln"></svg></div><div class="muted" style="font-weight:700">🟡 Glowing badges are ready to earn. Tap to award (tap again to take back). Each badge gives 10 XP.</div></div>`;
+ requestAnimationFrame(lines);if($('ct'))$('ct').onclick=cert;
+ window.__t={view,who,tree:tree().n,done:N.filter(n=>has(who,n.id)).length,total:N.length,states:Object.fromEntries(N.map(n=>[n.id,state(who,n)]))}}
+function lines(){const box=$('rw');if(!box)return;const r0=box.getBoundingClientRect();let h='';nodes().forEach(n=>{const a=box.querySelector(`[data-n="${CSS.escape(n.id)}"]`);n.req.forEach(q=>{const b=box.querySelector(`[data-n="${CSS.escape(q)}"]`);if(!a||!b)return;const ra=a.getBoundingClientRect(),rb=b.getBoundingClientRect();const x1=rb.left+rb.width/2-r0.left,y1=rb.bottom-r0.top,x2=ra.left+ra.width/2-r0.left,y2=ra.top-r0.top;h+=`<path d="M${x1} ${y1} C${x1} ${(y1+y2)/2} ${x2} ${(y1+y2)/2} ${x2} ${y2}" fill="none" stroke="${has(who,q)?'#2E9E47':'#9AA6C0'}" stroke-width="5" stroke-dasharray="${has(who,q)?'0':'8 6'}"/>`})});const s=$('ln');s.setAttribute('width',box.scrollWidth);s.setAttribute('height',box.scrollHeight);s.innerHTML=h}
+function cert(){Kit.modal(`<div class="ap-cert"><div class="e">🏆</div><h2>Certificate of Achievement</h2><div style="font-weight:700">This is to celebrate</div><div style="font:900 2.2rem Fredoka,sans-serif">${Kit.esc(who)}</div><div style="font-weight:700">for completing every badge in</div><div style="font-weight:900;font-size:1.4rem">${Kit.esc(tree().n)}</div><div style="font-weight:700">${new Date().toLocaleDateString(undefined,{month:'long',day:'numeric',year:'numeric'})}</div><button class="btn white small" onclick="window.print()">🖨️ Print</button></div>`)}
+$('bd').addEventListener('click',e=>{const n=e.target.closest('.ap-n');if(!n)return;const N=nodes(),nd=N.find(x=>x.id===n.dataset.n),s=state(who,nd);if(s==='lock'){Kit.tone(200,.15,'triangle',.08);return}
+ done[who]=done[who]||{};done[who][cur]=done[who][cur]||{};if(s==='done'){const D=done[who][cur];delete D[nd.id];let ch=true;while(ch){ch=false;N.forEach(x=>{if(D[x.id]&&!x.req.every(r=>D[r])){delete D[x.id];ch=true}})}}else{done[who][cur][nd.id]=Date.now();RW.addXP(who,10,`Badge: ${nd.n}`);Kit.tada();Kit.confetti(60)}save();draw();
+ if(N.every(x=>has(who,x.id))){Kit.confetti(200);setTimeout(cert,window.__fast?1:600)}});
+$('tp').onclick=e=>{const b=e.target.closest('[data-tr]');if(b){cur=+b.dataset.tr;if(view==='edit')view='tree';draw()}if(e.target.id==='vc'){view=view==='class'?'tree':'class';draw()}if(e.target.id==='ed'){view='edit';draw()}};
+$('ks').onclick=e=>{const b=e.target.closest('[data-k]');if(b){who=b.dataset.k;if(view!=='class')view='tree';draw()}};
+addEventListener('resize',()=>lines());
+draw();
+</script>
+</body></html>

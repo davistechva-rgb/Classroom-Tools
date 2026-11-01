@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Classroom Game Show Platform</title>
+<style>
+main{max-width:1800px}
+.gs-stage{background:radial-gradient(ellipse at 50% 0,#6B3FA0,#1D1440 70%);border:6px solid var(--ink);border-radius:28px;box-shadow:8px 8px 0 var(--ink);padding:16px;color:#fff;display:grid;gap:14px;min-height:480px;align-content:start;position:relative;overflow:hidden}
+.gs-lights{position:absolute;inset:0 0 auto 0;height:14px;background:repeating-linear-gradient(90deg,#FFC93C 0 14px,transparent 14px 30px);animation:mv 1s linear infinite;opacity:.8}@keyframes mv{to{background-position:30px 0}}
+.gs-title{font:900 clamp(1.8rem,5vw,3.4rem) Fredoka,sans-serif;text-align:center;text-shadow:4px 4px 0 #000;margin-top:8px}
+.gs-rounds{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.gs-rounds span{border:3px solid #fff;border-radius:99px;padding:3px 12px;font-weight:900;opacity:.45}.gs-rounds span.on{opacity:1;background:#FFC93C;color:#1D2B53}.gs-rounds span.done{opacity:.8;text-decoration:line-through}
+.gs-q{background:#fff;color:var(--ink);border:6px solid var(--ink);border-radius:20px;padding:16px;font:900 clamp(1.3rem,3.6vw,2.2rem) Fredoka,sans-serif;text-align:center}
+.gs-a{background:#C8F3D0;color:var(--ink);border:4px solid var(--ink);border-radius:16px;padding:8px;text-align:center;font:900 1.4rem Fredoka,sans-serif}
+.gs-teams{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:10px}
+@media (max-width:700px){.gs-teams{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.gs-team{background:var(--c);border:5px solid var(--ink);border-radius:18px;padding:8px;text-align:center;color:#fff;text-shadow:2px 2px 0 #0007;cursor:pointer;display:grid;gap:2px}
+.gs-team input{font:900 1.05rem Fredoka,sans-serif;background:transparent;border:0;color:#fff;text-align:center;width:100%;text-shadow:inherit}
+.gs-team .sc{font:900 2rem Fredoka,sans-serif}
+.gs-team.buzz{outline:8px solid #FFC93C;animation:bz .3s 3}@keyframes bz{50%{transform:scale(1.06)}}
+.gs-board{display:grid;grid-template-columns:repeat(var(--c),minmax(0,1fr));gap:6px}
+.gs-board div{background:#1E3FA0;border:4px solid var(--ink);border-radius:12px;text-align:center;font-weight:900;padding:6px;font-size:clamp(.75rem,1.8vw,1rem)}
+.gs-board button{font:900 clamp(1.2rem,3vw,1.8rem) Fredoka,sans-serif;color:#FFC93C;background:#1E3FA0;border:4px solid var(--ink);border-radius:12px;padding:10px 0;cursor:pointer;text-shadow:2px 2px 0 #000}
+.gs-board button:disabled{opacity:.15;cursor:default}
+.gs-wheel{width:min(300px,70vw);aspect-ratio:1;margin:0 auto;position:relative}
+.gs-wheel svg{width:100%;height:100%;transition:transform 3s cubic-bezier(.2,.8,.2,1)}
+.gs-wheel::after{content:"▼";position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-size:2rem;color:#FFC93C;text-shadow:2px 2px 0 #000}
+.gs-host{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.gs-p{background:#fff;border:5px solid var(--ink);border-radius:22px;padding:12px;display:grid;gap:8px;margin-top:14px}
+.gs-wager{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}.gs-wager label{font-weight:900;background:var(--c);border:3px solid var(--ink);border-radius:12px;padding:4px 8px}.gs-wager input{width:80px;font:inherit;border:3px solid var(--ink);border-radius:8px;padding:2px 4px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🎤", "Classroom Game Show Platform");
+const $=id=>document.getElementById(id);
+const QB0=`What is 8 × 7? | 56
+What is the capital of France? | Paris
+How many legs does an insect have? | 6
+What planet is closest to the sun? | Mercury
+What is the plural of "mouse"? | mice
+What gas do plants breathe in? | carbon dioxide
+How many minutes are in an hour? | 60
+What is the largest mammal? | blue whale
+What shape has 5 sides? | pentagon
+What is frozen water called? | ice
+Who wrote "Green Eggs and Ham"? | Dr. Seuss
+What is 100 − 37? | 63`;
+const R={buzz:'⚡ Buzzer round',board:'🟦 Points board',wheel:'🎡 Spin the wheel',final:'💰 Final wager'};
+const COLS=['#E5533F','#1E7FD0','#2E9E47','#9B6BF2'];const KEYS=['a','l','q','p'];
+let S=Kit.get('gs-show',null)||{name:'Brain Blast Live!',teams:['Red Rockets','Blue Comets','Green Giants'].map((n,i)=>({n,s:0})),order:['buzz','board','wheel','final'],ri:-1},st={},used=new Set();
+function save(){Kit.set('gs-show',S)}
+function bank(){const sets=Kit.get('qe-sets',null);const t=sets?sets.map(s=>s.q).join('\n'):QB0;return Kit.lines(t).map(l=>{const p=l.split('|').map(s=>s.trim());return {q:p[0],a:p[1]}}).filter(x=>x.q&&x.a)}
+function pick(){const B=bank().filter(x=>!used.has(x.q));const x=Kit.pick(B.length?B:bank());used.add(x.q);return x}
+document.querySelector('main').innerHTML=`<div class="gs-stage" id="sg"></div><div class="gs-p" id="hp"></div>`;
+function teams(){return `<div class="gs-teams" style="--n:${S.teams.length}">${S.teams.map((t,i)=>`<div class="gs-team ${st.buzz===i?'buzz':''}" data-t="${i}" style="--c:${COLS[i]}"><input value="${Kit.esc(t.n)}" data-n="${i}" aria-label="Team name"><span class="sc">${t.s}</span><small>key: ${KEYS[i].toUpperCase()}</small></div>`).join('')}</div>`}
+function draw(){const r=S.order[S.ri];let h=`<div class="gs-lights"></div><div class="gs-title">🎤 ${Kit.esc(S.name)}</div><div class="gs-rounds">${S.order.map((k,i)=>`<span class="${i===S.ri?'on':i<S.ri?'done':''}">${R[k]}</span>`).join('')}</div>`;
+ if(S.ri<0)h+=`<div class="gs-q">Welcome to the show! 🎉<br><span style="font-size:.6em">Meet our teams…</span></div>${teams()}<div class="gs-host"><button class="btn big" style="background:var(--sun)" id="nr">🎬 Start the show</button></div>`;
+ else if(S.ri>=S.order.length){const w=[...S.teams].sort((a,b)=>b.s-a.s);h+=`<div class="gs-q">🏆 ${Kit.esc(w[0].n)} wins with ${w[0].s} points!</div>${teams()}<div class="gs-host"><button class="btn big" style="background:var(--sun)" id="ag">🔁 New show</button></div>`}
+ else{if(r==='buzz'){if(!st.q){st.q=pick();st.n=(st.n||0)}h+=`<div style="text-align:center;font-weight:900">Question ${st.n+1} of 5 · 10 points</div><div class="gs-q">${Kit.esc(st.q.q)}</div>${st.show?`<div class="gs-a">✅ ${Kit.esc(st.q.a)}</div>`:''}${teams()}<div class="gs-host">${st.buzz!=null?`<button class="btn green" id="ok">✅ Right (+10)</button><button class="btn" style="background:#FFD3CC" id="no">❌ Wrong (−5)</button>`:'<span style="font-weight:900">Teams: press your key or tap your team to buzz in!</span>'}<button class="btn white small" id="sh">👀 Show answer</button><button class="btn white small" id="nq">⏭ Next question</button></div>`}
+  if(r==='board'){if(!st.cells){const cats=['Brainy','Quick','Tricky'];st.cats=cats;st.cells=cats.flatMap((c,ci)=>[100,200,300].map(p=>({ci,p,q:pick(),done:false})))}
+   h+=st.open!=null?`<div style="text-align:center;font-weight:900">${st.cells[st.open].p} points</div><div class="gs-q">${Kit.esc(st.cells[st.open].q.q)}</div>${st.show?`<div class="gs-a">✅ ${Kit.esc(st.cells[st.open].q.a)}</div>`:''}${teams()}<div class="gs-host"><span style="font-weight:900">Tap the team that got it:</span><button class="btn white small" id="sh">👀 Show answer</button><button class="btn white small" id="nb">❌ Nobody</button></div>`:`<div class="gs-board" style="--c:3">${st.cats.map(c=>`<div>${c}</div>`).join('')}${[100,200,300].map(p=>st.cats.map((_,ci)=>{const k=st.cells.findIndex(x=>x.ci===ci&&x.p===p);return `<button data-c="${k}" ${st.cells[k].done?'disabled':''}>${p}</button>`}).join('')).join('')}</div>${teams()}<div class="gs-host"><button class="btn white small" id="nr">⏭ Next round</button></div>`}
+  if(r==='wheel'){const segs=[50,100,'2×',25,200,'Lose 50',75,150];st.segs=segs;if(st.turn==null)st.turn=0;const t=S.teams[st.turn%S.teams.length];
+   h+=`<div style="text-align:center;font-weight:900;font-size:1.3rem">🎡 ${Kit.esc(t.n)}'s spin!</div><div class="gs-wheel"><svg viewBox="-100 -100 200 200" id="wh" style="transform:rotate(${st.rot||0}deg)">${segs.map((s,i)=>{const a0=i/8*Math.PI*2-Math.PI/2,a1=(i+1)/8*Math.PI*2-Math.PI/2;return `<path d="M0 0 L${Math.cos(a0)*95} ${Math.sin(a0)*95} A95 95 0 0 1 ${Math.cos(a1)*95} ${Math.sin(a1)*95}Z" fill="${['#E5533F','#FFC93C','#1E7FD0','#5DC66E','#9B6BF2','#55607E','#FF9F43','#22C3E6'][i]}" stroke="#1D2B53" stroke-width="2"/><text transform="rotate(${(i+.5)*45} 0 0) translate(0 -62)" text-anchor="middle" font-size="13" font-weight="900" fill="#fff" stroke="#000" stroke-width=".6">${s}</text>`}).join('')}<circle r="12" fill="#1D2B53"/></svg></div>${st.prize!=null?`<div style="text-align:center;font-weight:900;font-size:1.3rem">Playing for: ${st.prize}</div><div class="gs-q">${Kit.esc(st.q.q)}</div>${st.show?`<div class="gs-a">✅ ${Kit.esc(st.q.a)}</div>`:''}`:''}${teams()}<div class="gs-host">${st.prize==null?'<button class="btn big" style="background:var(--sun)" id="sp">🎡 SPIN!</button>':'<button class="btn green" id="wok">✅ Right</button><button class="btn" style="background:#FFD3CC" id="wno">❌ Wrong</button><button class="btn white small" id="sh">👀 Show answer</button>'}<button class="btn white small" id="nr">⏭ Next round</button></div>`}
+  if(r==='final'){if(!st.q)st.q=pick();h+=st.phase==='q'?`<div class="gs-q">${Kit.esc(st.q.q)}</div>${st.show?`<div class="gs-a">✅ ${Kit.esc(st.q.a)}</div>`:''}<div class="gs-wager">${S.teams.map((t,i)=>`<label style="--c:${COLS[i]}">${Kit.esc(t.n)} (${st.w[i]}) <button class="btn green small" data-fw="${i}" data-r="1">✅</button><button class="btn small" style="background:#FFD3CC" data-fw="${i}" data-r="0">❌</button></label>`).join('')}</div>${teams()}<div class="gs-host"><button class="btn white small" id="sh">👀 Show answer</button><button class="btn big" style="background:var(--sun)" id="nr">🏁 Finish the show</button></div>`
+   :`<div class="gs-q">💰 Final round! Each team bets some of their points.<br><span style="font-size:.6em">Right answer wins the bet. Wrong answer loses it.</span></div><div class="gs-wager">${S.teams.map((t,i)=>`<label style="--c:${COLS[i]}">${Kit.esc(t.n)} bets <input type="number" min="0" max="${Math.max(0,t.s)}" value="0" data-w="${i}"></label>`).join('')}</div>${teams()}<div class="gs-host"><button class="btn big" style="background:var(--sun)" id="rv">🔓 Reveal the question</button></div>`}}
+ $('sg').innerHTML=h;
+ $('hp').innerHTML=`<b>🎬 Show setup</b><div class="row" style="gap:8px;align-items:center"><label style="font-weight:800">Show name <input id="sn" value="${Kit.esc(S.name)}" style="font:inherit;padding:4px 8px;border:3px solid var(--ink);border-radius:10px"></label><select id="tn" style="width:auto">${[2,3,4].map(n=>`<option ${n===S.teams.length?'selected':''}>${n}</option>`).join('')}</select> teams</div><div style="font-weight:800">Rounds: ${Object.entries(R).map(([k,v])=>`<label style="margin-right:10px"><input type="checkbox" data-r="${k}" ${S.order.includes(k)?'checked':''}> ${v}</label>`).join('')}</div><div class="row" style="gap:6px"><button class="btn white small" id="pz">⏮ Back to the start</button><span class="muted" style="font-weight:700">Questions come from the 🎯 Question Bank tool (or a built-in set). Tap a team's score to fix it.</span></div>`;
+ bind();window.__t={ri:S.ri,round:r,scores:S.teams.map(t=>t.s),buzz:st.buzz,q:st.q&&st.q.a,open:st.open,prize:st.prize}}
+function score(i,d){S.teams[i].s+=d;save();d>0?Kit.ding():Kit.tone(180,.25,'sawtooth',.08)}
+function next(){S.ri++;st={};save();Kit.tada();draw()}
+function bind(){const g=$('sg'),on=(id,f)=>{const e=$(id);if(e)e.onclick=f};
+ on('nr',next);on('ag',()=>{S.ri=-1;S.teams.forEach(t=>t.s=0);used.clear();st={};save();draw()});on('sh',()=>{st.show=true;draw()});
+ on('ok',()=>{score(st.buzz,10);st.n++;st.q=null;st.buzz=null;st.show=false;if(st.n>=5)return next();draw()});on('no',()=>{score(st.buzz,-5);st.buzz=null;draw()});on('nq',()=>{st.n++;st.q=null;st.buzz=null;st.show=false;if(st.n>=5)return next();draw()});
+ on('nb',()=>{st.cells[st.open].done=true;st.open=null;st.show=false;if(st.cells.every(c=>c.done))return next();draw()});
+ on('sp',()=>{const k=Kit.rand(0,7);st.rot=(st.rot||0)+1440+(360-(k+.5)*45-((st.rot||0)%360));draw();Kit.tone(500,.1,'square',.05);setTimeout(()=>{st.prize=st.segs[k];st.q=pick();if(st.prize==='Lose 50'){score(st.turn%S.teams.length,-50);st.prize=null;st.turn++}draw()},window.__fast?1:3100)});
+ const wres=ok=>{const i=st.turn%S.teams.length,p=st.prize;if(ok){if(p==='2×')score(i,S.teams[i].s);else score(i,+p)}else Kit.tone(180,.25,'sawtooth',.08);st.prize=null;st.show=false;st.turn++;draw()};on('wok',()=>wres(true));on('wno',()=>wres(false));
+ on('rv',()=>{st.w=S.teams.map((t,i)=>{const v=+(g.querySelector(`[data-w="${i}"]`).value)||0;return Math.max(0,Math.min(Math.max(0,t.s),v))});st.phase='q';draw()});
+ g.querySelectorAll('[data-fw]').forEach(b=>b.onclick=()=>{const i=+b.dataset.fw;if(st.done&&st.done[i])return;st.done=st.done||{};st.done[i]=1;score(i,b.dataset.r==='1'?st.w[i]:-st.w[i]);draw()});
+ g.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{st.open=+b.dataset.c;st.show=false;Kit.tick();draw()});
+ g.querySelectorAll('.gs-team').forEach(el=>el.onclick=e=>{if(e.target.tagName==='INPUT')return;const i=+el.dataset.t,r=S.order[S.ri];
+  if(r==='buzz'&&st.buzz==null){st.buzz=i;Kit.tone(880,.2,'square',.1);draw()}else if(r==='board'&&st.open!=null){score(i,st.cells[st.open].p);st.cells[st.open].done=true;st.open=null;st.show=false;if(st.cells.every(c=>c.done))return next();draw()}
+  else if(S.ri<0||S.ri>=S.order.length||r==='wheel'||r==='final'){const v=prompt(`Fix ${S.teams[i].n}'s score`,S.teams[i].s);if(v!=null&&!isNaN(+v)){S.teams[i].s=+v;save();draw()}}});
+ g.querySelectorAll('[data-n]').forEach(n=>n.oninput=()=>{S.teams[+n.dataset.n].n=n.value;save()});
+ $('sn').oninput=()=>{S.name=$('sn').value;save();g.querySelector('.gs-title').textContent='🎤 '+S.name};
+ $('tn').onchange=()=>{const n=+$('tn').value;while(S.teams.length<n)S.teams.push({n:['Purple Pandas','Gold Stars'][S.teams.length-2]||'Team',s:0});S.teams=S.teams.slice(0,n);save();draw()};
+ $('hp').querySelectorAll('[data-r]').forEach(c=>c.onchange=()=>{S.order=Object.keys(R).filter(k=>$('hp').querySelector(`[data-r="${k}"]`).checked);if(!S.order.length)S.order=['buzz'];S.ri=-1;st={};save();draw()});
+ on('pz',()=>{S.ri=-1;st={};save();draw()})}
+document.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;const i=KEYS.indexOf(e.key.toLowerCase());if(i<0||i>=S.teams.length)return;if(S.order[S.ri]==='buzz'&&st.buzz==null){st.buzz=i;Kit.tone(880,.2,'square',.1);draw()}});
+draw();
+</script>
+</body></html>

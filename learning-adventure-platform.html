@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Learning Adventure Platform</title>
+<style>
+main{max-width:1800px}
+.la-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:12px}
+.la{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:980px){.la{grid-template-columns:minmax(0,1fr)}}
+.la-map{position:relative;border:6px solid var(--ink);border-radius:28px;box-shadow:8px 8px 0 var(--ink);overflow:hidden;background:var(--bg)}
+.la-map svg{display:block;width:100%;height:auto}
+.la-node{cursor:pointer}
+.la-p{background:#fff;border:5px solid var(--ink);border-radius:22px;padding:12px;display:grid;gap:10px}
+.la-kids{display:flex;flex-wrap:wrap;gap:4px}.la-kids button{font:inherit;font-weight:800;font-size:.85rem;border:3px solid var(--ink);border-radius:99px;padding:2px 10px;background:#fff;cursor:pointer;color:var(--ink)}.la-kids button.on{background:var(--sun)}
+.la-card{border:4px solid var(--ink);border-radius:18px;padding:12px;background:#FFF6E0;display:grid;gap:8px;text-align:center}
+.la-card .e{font-size:3rem;line-height:1}
+.la-ch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.la-ch button{font:inherit;font-weight:800;border:3px solid var(--ink);border-radius:12px;padding:8px;background:#fff;cursor:pointer;color:var(--ink)}
+.la-ch button.ok{background:#C8F3D0}.la-ch button.no{background:#FFD3CC}
+.la-p textarea{width:100%;min-height:240px;font:600 .95rem ui-monospace,Menlo,monospace;border:3px solid var(--ink);border-radius:12px;padding:8px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script><script src="rewards.js"></script>
+<script>
+Kit.mount("🗺️", "Learning Adventure Platform");
+const $=id=>document.getElementById(id);
+const THEMES={jungle:['🌴 Jungle','#7CC86B','#4E9A3A','🌴🌿🐒🦜🌺'],space:['🚀 Space','#2A2F6B','#141C3A','⭐🪐🌙☄️🛰️'],ocean:['🌊 Ocean','#5FD0F0','#1E7FD0','🐠🐙🪸🐚🦈'],castle:['🏰 Kingdom','#BFE8A0','#7BB55E','🏰🐉🌲⛰️👑']};
+const U0=`📖 | Meet the characters | lesson | Read pages 1–10 together
+❓ | Character quiz | quiz | 3
+✍️ | Write a character sketch | lesson | Describe the main character
+🎨 | Draw the setting | lesson | Draw where the story happens
+❓ | Vocabulary check | quiz | 3
+🧩 | Plot puzzle | lesson | Put the events in order
+🐉 | BOSS: Unit test | boss | 5
+🏆 | Celebration! | lesson | You finished the adventure!`;
+const QB0=`What is a noun? | a person, place or thing | an action | a describing word | a sentence
+What is the setting of a story? | where and when it happens | the main character | the ending | the title
+What is a verb? | an action word | a naming word | a describing word | a question
+Who is the main character? | the person the story is mostly about | the author | the reader | the villain
+What is a synonym for "happy"? | glad | sad | angry | tired
+What comes at the end of a sentence? | punctuation | a capital | a title | a noun`;
+let U=Kit.get('lap-unit',null)||{name:'The Story Adventure',theme:'jungle',steps:U0},P=Kit.get('lap-prog',{}),who=null,sel=0,quiz=null,view='map';
+const steps=()=>Kit.lines(U.steps).map(l=>{const p=l.split('|').map(s=>s.trim());return {e:p[0]||'⭐',t:p[1]||'Step',k:['lesson','quiz','boss'].includes(p[2])?p[2]:'lesson',x:p[3]||''}});
+function bank(){const sets=Kit.get('qe-sets',null);const t=sets?sets.map(s=>s.q).join('\n'):QB0;return Kit.lines(t).map(l=>{const p=l.split('|').map(s=>s.trim());return {q:p[0],a:p[1],w:p.slice(2).filter(Boolean)}}).filter(x=>x.q&&x.a)}
+const at=k=>P[k]||0;function save(){Kit.set('lap-prog',P);Kit.set('lap-unit',U)}
+function pts(n){const W=900,o=[];for(let i=0;i<n;i++){const row=Math.floor(i/4),c=i%4,x=row%2?W-120-c*220:120+c*220,y=130+row*160;o.push([x,y])}return o}
+document.querySelector('main').innerHTML=`<div class="la-top"><select id="th" style="width:auto">${Object.entries(THEMES).map(([k,v])=>`<option value="${k}">${v[0]}</option>`).join('')}</select><button class="btn white small" id="ed">✏️ Edit the adventure</button></div><div class="la"><div class="la-map" id="mp"></div><div class="la-p" id="sd"></div></div>`;
+function draw(){const S=steps(),T=THEMES[U.theme],K=RW.kids();sel=Math.max(0,Math.min(sel,S.length-1));if(!K.includes(who))who=K[0];$('th').value=U.theme;const XY=pts(S.length);const H=Math.max(...XY.map(p=>p[1]))+110;
+ $('mp').style.setProperty('--bg',`linear-gradient(${T[1]},${T[2]})`);
+ let h=`<svg viewBox="0 0 900 ${H}"><text x="450" y="34" text-anchor="middle" font-size="28" font-weight="900" fill="#fff" stroke="#1D2B53" stroke-width="6" paint-order="stroke">${Kit.esc(U.name)}</text>`;
+ [...T[3]].filter(c=>c.trim()).forEach((d,i)=>{h+=`<text x="${i<2?30+i*60:900-60-(i-2)*60}" y="48" font-size="34" opacity=".7">${d}</text>`});
+ h+=`<polyline points="${XY.map(p=>p.join(',')).join(' ')}" fill="none" stroke="#FFF6C9" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2 24"/>`;
+ const me=at(who);S.forEach((s,i)=>{const [x,y]=XY[i],st=i<me?'done':i===me?'now':'lock';h+=`<g class="la-node" data-s="${i}"><circle cx="${x}" cy="${y}" r="${s.k==='boss'?46:38}" fill="${st==='done'?'#C8F3D0':st==='now'?'#FFC93C':'#E3E8F2'}" stroke="#1D2B53" stroke-width="6" ${i===sel?'stroke-dasharray="10 6"':''}/><text x="${x}" y="${y+14}" font-size="${s.k==='boss'?44:36}" text-anchor="middle" opacity="${st==='lock'?.45:1}">${st==='done'?'✅':s.e}</text><text x="${x}" y="${y+(s.k==='boss'?70:62)}" text-anchor="middle" font-size="16" font-weight="900" fill="#fff" stroke="#1D2B53" stroke-width="5" paint-order="stroke">${Kit.esc(s.t.length>22?s.t.slice(0,21)+"…":s.t)}</text></g>`});
+ // class tokens: everyone's position, small initials
+ const groups={};K.forEach(k=>{const p=Math.min(at(k),S.length-1);(groups[p]=groups[p]||[]).push(k)});Object.entries(groups).forEach(([p,ks])=>{const [x,y]=XY[p];ks.slice(0,6).forEach((k,j)=>{h+=`<g><circle cx="${x-50+j*20}" cy="${y-56}" r="11" fill="${k===who?'#E5533F':'#fff'}" stroke="#1D2B53" stroke-width="2.5"/><text x="${x-50+j*20}" y="${y-51}" font-size="11" font-weight="900" text-anchor="middle" fill="${k===who?'#fff':'#1D2B53'}">${Kit.esc(k[0])}</text></g>`});if(ks.length>6)h+=`<text x="${x+72}" y="${y-51}" font-size="13" font-weight="900" fill="#fff">+${ks.length-6}</text>`});
+ $('mp').innerHTML=h+'</svg>';
+ if(view==='edit'){$('sd').innerHTML=`<b>✏️ Edit the adventure</b><label style="font-weight:800">Name <input id="un" value="${Kit.esc(U.name)}" style="font:inherit;padding:4px 8px;border:3px solid var(--ink);border-radius:10px;width:100%"></label><div class="muted" style="font-weight:700">One step per line: <b>emoji | title | lesson, quiz or boss | what to do</b> (for quiz/boss: how many questions to get right). Questions come from the 🎯 Question Bank tool.</div><textarea id="us">${Kit.esc(U.steps)}</textarea><div class="row" style="gap:6px"><button class="btn green" id="usv">💾 Save</button><button class="btn white small" id="ubk">⬅ Back</button><button class="btn white small" id="urs">🔄 Reset everyone</button></div>`;
+  $('usv').onclick=()=>{U.name=$('un').value||'Adventure';U.steps=$('us').value;save();view='map';draw()};$('ubk').onclick=()=>{view='map';draw()};$('urs').onclick=()=>{if(confirm('Send everyone back to the start?')){P={};save();draw()}};window.__t={view};return}
+ const s=S[sel],st=sel<me?'done':sel===me?'now':'lock';
+ $('sd').innerHTML=`<b>🧒 Explorer</b><div class="la-kids" id="ks">${K.map(k=>`<button data-k="${Kit.esc(k)}" class="${k===who?'on':''}">${Kit.esc(k)} ${at(k)>=S.length?'🏆':at(k)}</button>`).join('')}</div>
+ <div class="la-card"><span class="e">${s.e}</span><b style="font-size:1.3rem">${Kit.esc(s.t)}</b><span style="font-weight:700">${s.k==='lesson'?Kit.esc(s.x):`${s.k==='boss'?'🐉 Boss battle!':'❓ Quiz'} Get ${+s.x||3} right to pass.`}</span>
+ ${st==='lock'?'<b>🔒 Finish the steps before this one first.</b>':st==='done'?'<b>✅ Done!</b>':s.k==='lesson'?'<button class="btn green" id="dn">✅ Mark as done</button>':quiz?qhtml():'<button class="btn big green" id="sq">▶ Start</button>'}</div>
+ <div style="font-weight:800">${Kit.esc(who||'')} is on step ${Math.min(me+1,S.length)} of ${S.length}${me>=S.length?' · 🏆 Finished!':''}</div><div class="row" style="gap:6px"><button class="btn white small" id="bk">↶ Move back a step</button><button class="btn white small" id="al">⏩ Move whole class to here</button></div>`;
+ bind();window.__t={view,who,at:at(who),sel,steps:S.length,quiz:quiz&&{need:quiz.need,got:quiz.got,a:quiz.q.a}}}
+function qhtml(){return `<div style="font-weight:900">✅ ${quiz.got} / ${quiz.need} · ❤️ ${quiz.lives}</div><div style="font-weight:900;font-size:1.15rem">${Kit.esc(quiz.q.q)}</div><div class="la-ch" id="ch">${quiz.q.ch.map((c,i)=>`<button data-i="${i}">${Kit.esc(c)}</button>`).join('')}</div>`}
+function newQ(){const B=bank(),x=Kit.pick(B);const wr=x.w.length?x.w:Kit.shuffle(B.filter(y=>y.a!==x.a).map(y=>y.a)).slice(0,3);return {...x,ch:Kit.shuffle([x.a,...wr.slice(0,3)])}}
+function finish(){P[who]=at(who)+1;quiz=null;save();RW.addXP(who,steps()[sel].k==='boss'?20:5,`Adventure: ${steps()[sel].t}`);Kit.tada();Kit.confetti(steps()[sel].k==='boss'?180:70);if(sel<steps().length-1)sel++;draw()}
+function bind(){const on=(id,f)=>{const e=$(id);if(e)e.onclick=f};
+ $('ks').onclick=e=>{const b=e.target.closest('[data-k]');if(b){who=b.dataset.k;sel=Math.min(at(who),steps().length-1);quiz=null;draw()}};
+ on('dn',finish);on('sq',()=>{const s=steps()[sel];quiz={need:+s.x||3,got:0,lives:s.k==='boss'?3:5,q:newQ()};draw()});
+ on('bk',()=>{P[who]=Math.max(0,at(who)-1);sel=Math.min(sel,P[who]);save();draw()});on('al',()=>{RW.kids().forEach(k=>P[k]=sel);save();draw()});
+ const ch=$('ch');if(ch)ch.onclick=e=>{const b=e.target.closest('[data-i]');if(!b||quiz.wait)return;const ok=quiz.q.ch[+b.dataset.i]===quiz.q.a;b.classList.add(ok?'ok':'no');quiz.wait=true;ok?(quiz.got++,Kit.ding()):(quiz.lives--,Kit.tone(170,.25,'sawtooth',.08));
+  setTimeout(()=>{quiz.wait=false;if(quiz.got>=quiz.need)return finish();if(quiz.lives<=0){quiz=null;Kit.modal('<div style="text-align:center"><div style="font-size:4rem">💪</div><h2>So close! Try again.</h2></div>');draw();return}quiz.q=newQ();draw()},window.__fast?1:700)}}
+$('mp').onclick=e=>{const n=e.target.closest('[data-s]');if(n){sel=+n.dataset.s;quiz=null;draw()}};
+$('th').onchange=()=>{U.theme=$('th').value;save();draw()};$('ed').onclick=()=>{view=view==='edit'?'map':'edit';draw()};
+draw();
+</script>
+</body></html>

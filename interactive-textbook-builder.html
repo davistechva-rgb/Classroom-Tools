@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Interactive Textbook Builder</title>
+<style>
+main{max-width:1700px}
+.tb-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:12px}
+.tb{display:grid;grid-template-columns:minmax(0,240px) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.tb{grid-template-columns:minmax(0,1fr)}}
+.tb-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:10px;display:grid;gap:8px}
+.tb-toc{display:grid;gap:3px}
+.tb-toc b{margin-top:6px}
+.tb-toc button{font:inherit;font-weight:700;font-size:.9rem;border:0;border-radius:10px;padding:4px 8px;background:none;cursor:pointer;text-align:left;color:var(--ink);display:flex;justify-content:space-between}
+.tb-toc button.on{background:var(--sun)}.tb-toc button.rd::after{content:"✓";color:#2E9E47;font-weight:900}
+.tb-book{background:#FFFDF6;border:6px solid var(--ink);border-radius:8px 26px 26px 8px;box-shadow:8px 8px 0 var(--ink),inset 14px 0 0 #E8C38A;padding:clamp(16px,3vw,36px) clamp(16px,4vw,48px) 20px clamp(30px,5vw,60px);min-height:520px;display:grid;gap:12px;align-content:start;position:relative}
+.tb-book.turn{animation:turn .35s}@keyframes turn{0%{transform:perspective(1200px) rotateY(-14deg);opacity:.4}}
+.tb-chap{font-weight:900;color:#9B6BF2;letter-spacing:.06em;font-size:.9rem;text-transform:uppercase}
+.tb-book h2{margin:0;font:900 clamp(1.6rem,4vw,2.4rem) Fredoka,sans-serif}
+.tb-pic{font-size:clamp(3.4rem,10vw,6rem);text-align:center;line-height:1.1}
+.tb-text{font-size:clamp(1.05rem,2.2vw,1.3rem);line-height:1.7;font-weight:600}
+.tb-text p{margin:0 0 .7em}
+.tb-v{background:#FFF1A8;border-bottom:3px dotted #C8961E;cursor:help;padding:0 3px;border-radius:4px;font-weight:800;position:relative}
+.tb-pop{position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%);background:#1D2B53;color:#fff;border-radius:12px;padding:8px 12px;width:max-content;max-width:260px;font-size:.95rem;font-weight:700;z-index:5;box-shadow:0 6px 0 #0004}
+.tb-check{background:#E3F6FF;border:4px solid var(--ink);border-radius:16px;padding:10px;display:grid;gap:6px}
+.tb-check button{font:inherit;font-weight:800;border:3px solid var(--ink);border-radius:12px;padding:6px 10px;background:#fff;cursor:pointer;text-align:left;color:var(--ink)}
+.tb-check button.ok{background:#C8F3D0}.tb-check button.no{background:#FFD3CC}
+.tb-nav{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px;font-weight:900}
+.tb-prog{height:10px;border-radius:99px;background:#E3E8F2;overflow:hidden}.tb-prog i{display:block;height:100%;background:#9B6BF2}
+.tb-gl{display:grid;gap:4px;max-height:200px;overflow:auto;font-size:.9rem}.tb-gl div{background:#FFF6C9;border-radius:8px;padding:3px 8px}
+.tb-ed{display:grid;gap:8px}.tb-ed label{display:block;font-weight:800}
+.tb-ed input,.tb-ed textarea{display:block;width:100%;margin-top:3px;font:inherit;font-weight:600;padding:6px 9px;border:3px solid var(--ink);border-radius:10px}
+.tb-ed textarea{min-height:170px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("📖", "Interactive Textbook Builder");
+const $=id=>document.getElementById(id);
+const B0={title:'🌍 Our Amazing Planet',chapters:[{t:'The Water Cycle',pages:[{h:'Where does rain come from?',e:'🌧️',x:'Water on Earth is always moving. The sun warms oceans and lakes, and the water turns into a gas called [[vapor|water as an invisible gas]]. This is called [[evaporation|when a liquid turns into a gas]].\nThe vapor rises high into the sky, where it is cold.',q:'What makes water evaporate? | The sun\'s heat | The wind | The moon | Fish'},{h:'Clouds form',e:'☁️',x:'High in the sky, the vapor cools down and turns back into tiny drops. This is called [[condensation|when a gas turns back into a liquid]]. Billions of tiny drops make a cloud!',q:'What is condensation? | Gas turning into liquid | Liquid turning into gas | Ice melting | Rain falling'},{h:'Rain falls',e:'💧',x:'When the drops in a cloud get big and heavy, they fall as [[precipitation|water falling from clouds: rain, snow, sleet or hail]]. Then the cycle starts all over again!',q:''}]},{t:'Amazing Animals',pages:[{h:'Habitats',e:'🦁',x:'Every animal has a [[habitat|the natural home of an animal or plant]]. A habitat gives animals food, water and shelter.\nPolar bears live in the cold Arctic. Camels live in hot deserts.',q:'What does a habitat give an animal? | Food, water and shelter | Toys | A school | Money'}]}]};
+let BK=Kit.get('tb-book',null)||B0,c=0,p=0,mode='read',read=Kit.get('tb-read',{}),pop=null,ans=null;
+function save(){Kit.set('tb-book',BK)}
+const say=t=>{try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.rate=.9;speechSynthesis.speak(u)}catch(e){}};
+const flat=()=>BK.chapters.flatMap((ch,ci)=>ch.pages.map((pg,pi)=>[ci,pi]));
+const page=()=>BK.chapters[c]&&BK.chapters[c].pages[p];
+function rich(x){return Kit.esc(x).split('\n').map(par=>`<p>${par.replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g,(m,w,d)=>`<span class="tb-v" data-v="${w}" data-d="${d}">${w}</span>`)}</p>`).join('')}
+function plain(x){return x.replace(/\[\[([^|\]]+)\|[^\]]+\]\]/g,'$1')}
+function glossary(){const g=[];BK.chapters.forEach(ch=>ch.pages.forEach(pg=>{(pg.x.match(/\[\[([^|\]]+)\|([^\]]+)\]\]/g)||[]).forEach(m=>{const [,w,d]=m.match(/\[\[([^|\]]+)\|([^\]]+)\]\]/);if(!g.some(x=>x[0]===w))g.push([w,d])})}));return g.sort((a,b)=>a[0].localeCompare(b[0]))}
+document.querySelector('main').innerHTML=`<div class="tb-top"><button class="btn" data-m="read">📖 Read</button><button class="btn white" data-m="edit">✏️ Write</button><button class="btn white small" id="pr">🖨️ Print book</button></div><div class="tb"><div class="tb-p" id="side"></div><div id="bd"></div></div>`;
+function draw(){document.querySelectorAll('[data-m]').forEach(b=>b.className='btn '+(b.dataset.m===mode?'':'white'));const F=flat(),idx=F.findIndex(f=>f[0]===c&&f[1]===p);
+ $('side').innerHTML=`<b style="font-size:1.1rem">${Kit.esc(BK.title)}</b><div class="tb-prog"><i style="width:${F.length?Object.keys(read).filter(k=>F.some(f=>f.join('-')===k)).length/F.length*100:0}%"></i></div><div class="tb-toc">${BK.chapters.map((ch,ci)=>`<b>${ci+1}. ${Kit.esc(ch.t)}</b>${ch.pages.map((pg,pi)=>`<button data-c="${ci}" data-p="${pi}" class="${ci===c&&pi===p?'on':''} ${read[ci+'-'+pi]?'rd':''}">${Kit.esc(pg.h)}</button>`).join('')}`).join('')}</div>${mode==='edit'?'<div class="row" style="gap:4px"><button class="btn white small" id="ac">➕ Chapter</button><button class="btn white small" id="ap">➕ Page</button></div>':''}<b>📚 Glossary</b><div class="tb-gl">${glossary().map(([w,d])=>`<div><b>${Kit.esc(w)}</b>: ${Kit.esc(d)}</div>`).join('')||'<div>Add words with [[word|meaning]].</div>'}</div>`;
+ const pg=page();if(!pg){$('bd').innerHTML='<div class="tb-book"><h2>Add a page ➕</h2></div>';bindSide();return}
+ if(mode==='read'){const q=pg.q?pg.q.split('|').map(s=>s.trim()):null;if(q&&!pg._ch)pg._ch=Kit.shuffle(q.slice(1).filter(Boolean));
+  $('bd').innerHTML=`<div class="tb-book" id="bk"><div class="tb-chap">Chapter ${c+1} · ${Kit.esc(BK.chapters[c].t)}</div><h2>${Kit.esc(pg.h)}</h2>${pg.e?`<div class="tb-pic">${pg.e}</div>`:''}<div class="tb-text" id="tx">${rich(pg.x)}</div>${q?`<div class="tb-check" id="ck"><b>🤔 Check: ${Kit.esc(q[0])}</b>${pg._ch.map((x,i)=>`<button data-i="${i}" class="${ans!=null?(x===q[1]?'ok':x===ans?'no':''):''}">${Kit.esc(x)}</button>`).join('')}</div>`:''}<div class="tb-nav"><button class="btn white small" id="pv" ${idx<=0?'disabled':''}>◀ Back</button><button class="btn white small" id="sp">🔊 Read to me</button><span>Page ${idx+1} of ${F.length}</span><button class="btn green small" id="nx" ${idx>=F.length-1?'disabled':''}>Next ▶</button></div></div>`;
+  read[c+'-'+p]=read[c+'-'+p]||(!q?1:0);Kit.set('tb-read',read)}
+ else{$('bd').innerHTML=`<div class="tb-p tb-ed"><label>Book title<input id="bt" value="${Kit.esc(BK.title)}"></label><label>Chapter ${c+1} name<input id="ct" value="${Kit.esc(BK.chapters[c].t)}"></label><label>Page heading<input data-f="h" value="${Kit.esc(pg.h)}"></label><label>Picture (emoji)<input data-f="e" value="${Kit.esc(pg.e||'')}"></label><label>Words <span class="muted">(new line = new paragraph · vocabulary: [[word|meaning]])</span><textarea data-f="x">${Kit.esc(pg.x)}</textarea></label><label>Check question <span class="muted">(question | right answer | wrong | wrong… or leave empty)</span><input data-f="q" value="${Kit.esc(pg.q||'')}"></label><div class="row" style="gap:6px"><button class="btn white small" id="dp">🗑️ Delete page</button><button class="btn white small" id="dc">🗑️ Delete chapter</button><button class="btn green small" id="vw">👀 See it</button></div></div>`}
+ bindSide();bind();window.__t={mode,c,p,idx,pages:F.length,read:Object.keys(read).length,gloss:glossary().length,a:pg.q?pg.q.split('|')[1].trim():null}}
+function go(ci,pi){c=ci;p=pi;ans=null;pop=null;draw();const b=$('bk');if(b){b.classList.remove('turn');void b.offsetWidth;b.classList.add('turn')}Kit.tone(500,.05,'triangle',.05)}
+function bindSide(){$('side').onclick=e=>{const b=e.target.closest('[data-c]');if(b)go(+b.dataset.c,+b.dataset.p)};const on=(id,f)=>{const x=$(id);if(x)x.onclick=f};
+ on('ac',()=>{BK.chapters.push({t:'New chapter',pages:[{h:'New page',e:'📄',x:'Write here.',q:''}]});save();go(BK.chapters.length-1,0)});on('ap',()=>{BK.chapters[c].pages.splice(p+1,0,{h:'New page',e:'📄',x:'Write here.',q:''});save();go(c,p+1)})}
+function bind(){const on=(id,f)=>{const x=$(id);if(x)x.onclick=f},F=flat(),idx=F.findIndex(f=>f[0]===c&&f[1]===p);
+ if(mode==='read'){on('pv',()=>go(...F[idx-1]));on('nx',()=>go(...F[idx+1]));on('sp',()=>say(`${page().h}. ${plain(page().x)}`));
+  $('tx').onclick=e=>{const v=e.target.closest('.tb-v');document.querySelectorAll('.tb-pop').forEach(x=>x.remove());if(!v)return;const d=document.createElement('span');d.className='tb-pop';d.textContent=`📘 ${v.dataset.v}: ${v.dataset.d}`;v.appendChild(d);say(`${v.dataset.v}. ${v.dataset.d}`);window.__t.pop=v.dataset.v};
+  const ck=$('ck');if(ck)ck.onclick=e=>{const b=e.target.closest('[data-i]');if(!b||ans!=null)return;const pg=page(),right=pg.q.split('|')[1].trim();ans=pg._ch[+b.dataset.i];if(ans===right){read[c+'-'+p]=1;Kit.set('tb-read',read);Kit.tada();Kit.confetti(60)}else{Kit.tone(170,.25,'sawtooth',.08);setTimeout(()=>{ans=null;draw()},window.__fast?1:1200)}draw()}}
+ else{$('bt').oninput=()=>{BK.title=$('bt').value;save()};$('ct').oninput=()=>{BK.chapters[c].t=$('ct').value;save()};
+  $('bd').querySelectorAll('[data-f]').forEach(n=>n.oninput=()=>{const pg=page();pg[n.dataset.f]=n.value;delete pg._ch;save()});
+  $('bd').querySelectorAll('[data-f],#bt,#ct').forEach(n=>n.addEventListener('change',()=>setTimeout(draw,0)));
+  on('dp',()=>{if(BK.chapters[c].pages.length<2&&BK.chapters.length<2)return;BK.chapters[c].pages.splice(p,1);if(!BK.chapters[c].pages.length)BK.chapters.splice(c,1);c=Math.min(c,BK.chapters.length-1);p=0;save();draw()});
+  on('dc',()=>{if(BK.chapters.length<2)return;if(confirm('Delete this whole chapter?')){BK.chapters.splice(c,1);c=0;p=0;save();draw()}});on('vw',()=>{mode='read';draw()})}}
+document.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{mode=b.dataset.m;draw()});
+$('pr').onclick=()=>{const w=document.createElement('div');w.className='tb-printall';w.innerHTML=BK.chapters.map((ch,ci)=>`<h1>${ci+1}. ${Kit.esc(ch.t)}</h1>`+ch.pages.map(pg=>`<h2>${pg.e||''} ${Kit.esc(pg.h)}</h2>${rich(pg.x)}`).join('')).join('');Kit.modal(`<h1 style="margin-top:0">${Kit.esc(BK.title)}</h1>${w.innerHTML}<button class="btn" onclick="window.print()">🖨️ Print</button>`)};
+document.addEventListener('keydown',e=>{if(mode!=='read'||/INPUT|TEXTAREA/.test(e.target.tagName))return;const F=flat(),i=F.findIndex(f=>f[0]===c&&f[1]===p);if(e.key==='ArrowRight'&&i<F.length-1)go(...F[i+1]);if(e.key==='ArrowLeft'&&i>0)go(...F[i-1])});
+draw();
+</script>
+</body></html>

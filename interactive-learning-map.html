@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Interactive Learning Map</title>
+<style>
+main{max-width:1800px}
+.lm-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:12px}
+.lm{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:980px){.lm{grid-template-columns:minmax(0,1fr)}}
+.lm-map{background:#9FD8FF;border:6px solid var(--ink);border-radius:26px;box-shadow:8px 8px 0 var(--ink);overflow:hidden;position:relative}
+.lm-map svg{display:block;width:100%;height:auto;aspect-ratio:2/1}
+.lm-p{background:#fff;border:5px solid var(--ink);border-radius:22px;padding:12px;display:grid;gap:10px}
+.lm-kids{display:flex;flex-wrap:wrap;gap:4px}.lm-kids button{font:inherit;font-weight:800;font-size:.85rem;border:3px solid var(--ink);border-radius:99px;padding:2px 10px;background:#fff;cursor:pointer;color:var(--ink)}.lm-kids button.on{background:var(--sun)}
+.lm-card{border:4px solid var(--ink);border-radius:18px;padding:12px;background:#FFF6E0;display:grid;gap:8px;text-align:center}
+.lm-card .e{font-size:3rem;line-height:1}
+.lm-ch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.lm-ch button{font:inherit;font-weight:800;border:3px solid var(--ink);border-radius:12px;padding:8px;background:#fff;cursor:pointer;color:var(--ink)}
+.lm-ch button.ok{background:#C8F3D0}.lm-ch button.no{background:#FFD3CC}
+.lm-pass{background:#1E3F7A;border:6px solid var(--ink);border-radius:18px;padding:12px;color:#FFD84D;display:grid;gap:8px}
+.lm-pass h3{margin:0;text-align:center;letter-spacing:.1em}
+.lm-stamps{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:6px;background:#FFFDF2;border-radius:10px;padding:8px}
+.lm-stamp{aspect-ratio:1;border:3px dashed #C9D2E3;border-radius:50%;display:grid;place-items:center;align-content:center;font-size:.62rem;font-weight:900;color:#9AA6C0;text-align:center;padding:4px}
+.lm-stamp.got{border:4px double var(--c);color:var(--c);transform:rotate(var(--r));animation:st .4s}@keyframes st{0%{transform:scale(2) rotate(var(--r));opacity:0}}
+.lm-stamp .e{font-size:1.6rem;line-height:1}
+.lm-p textarea{width:100%;min-height:220px;font:600 .85rem ui-monospace,Menlo,monospace;border:3px solid var(--ink);border-radius:12px;padding:8px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="geo.js"></script><script src="learn.js"></script><script src="rewards.js"></script>
+<script>
+Kit.mount("🗺️", "Interactive Learning Map");
+const $=id=>document.getElementById(id);
+const P0=`🗼 | Paris, France | 2.35 | 48.86 | The Eiffel Tower was built in 1889 for a world's fair. | What is the capital of France? | Paris | Rome | Madrid
+🐼 | Chengdu, China | 104.07 | 30.67 | Giant pandas live in the mountains of central China. | What do pandas mostly eat? | Bamboo | Fish | Apples
+🦘 | Sydney, Australia | 151.2 | -33.87 | Kangaroos carry their babies in a pouch. | What is a baby kangaroo called? | A joey | A cub | A kit
+🏔️ | Kathmandu, Nepal | 85.3 | 27.7 | Mount Everest is the tallest mountain on Earth. | What is the tallest mountain? | Mount Everest | Mount Fuji | Kilimanjaro
+🐪 | Cairo, Egypt | 31.24 | 30.04 | The pyramids of Giza are over 4,500 years old. | Which river flows through Egypt? | The Nile | The Amazon | The Thames
+🌎 | Manaus, Brazil | -60.02 | -3.12 | The Amazon rainforest makes lots of the world's oxygen. | What is the largest rainforest? | The Amazon | The Sahara | The Arctic
+🗽 | New York, USA | -74 | 40.71 | The Statue of Liberty was a gift from France. | Which country gave the USA the Statue of Liberty? | France | Spain | Japan
+🐧 | Antarctica | 0 | -78 | Antarctica is the coldest place on Earth. | Which animal lives in Antarctica? | Penguin | Polar bear | Camel
+🍣 | Tokyo, Japan | 139.69 | 35.69 | Tokyo is the biggest city in the world. | What is the capital of Japan? | Tokyo | Beijing | Seoul
+🦁 | Nairobi, Kenya | 36.82 | -1.29 | Kenya has huge savannas full of lions and zebras. | On which continent is Kenya? | Africa | Asia | Europe`;
+Kit.editable({key:'lm-pins',title:'Map stops',help:'(one per line: emoji | place | longitude | latitude | fun fact | question | right answer | wrong | wrong)',def:P0,onSave:()=>draw()});
+const pins=()=>Kit.lines(Kit.get('ed:lm-pins',P0)).map(l=>{const p=l.split('|').map(s=>s.trim());return {e:p[0],n:p[1],ll:[+p[2],+p[3]],f:p[4]||'',q:p[5]||'',a:p[6]||'',w:p.slice(7).filter(Boolean)}}).filter(x=>x.n&&!isNaN(x.ll[0])&&!isNaN(x.ll[1]));
+let PS=Kit.get('lm-pass',{}),who=null,sel=null,ch=null,ans=null;
+const COLS=['#E5533F','#1E7FD0','#2E9E47','#9B6BF2','#E8A317','#FF6B9A'];
+const got=(k,n)=>!!((PS[k]||{})[n]);
+document.querySelector('main').innerHTML=`<div class="lm"><div><div class="lm-map" id="mw"><svg id="sv"></svg></div></div><div class="lm-p" id="sd"></div></div>`;
+const M=GEO.world($('sv'),{});GEO.zoomButtons&&GEO.zoomButtons($('mw'),M);
+function draw(){const K=RW.kids();if(!K.includes(who))who=K[0];const Pn=pins();
+ let h='';Pn.forEach((p,i)=>{const [x,y]=GEO.xy(...p.ll),g=got(who,p.n);h+=`<g data-p="${i}" style="cursor:pointer"><circle cx="${x}" cy="${y}" r="${i===sel?24:19}" fill="${g?'#5DC66E':'#fff'}" stroke="#1D2B53" stroke-width="3" vector-effect="non-scaling-stroke"/><text x="${x}" y="${y+8}" font-size="22" text-anchor="middle">${p.e}</text></g>`});M.ovl().innerHTML=h;
+ const n=Pn.filter(p=>got(who,p.n)).length,p=Pn[sel];
+ $('sd').innerHTML=`<b>🧳 Traveler</b><div class="lm-kids" id="ks">${K.map(k=>`<button data-k="${Kit.esc(k)}" class="${k===who?'on':''}">${Kit.esc(k)} ${Pn.filter(x=>got(k,x.n)).length}</button>`).join('')}</div>
+ ${p?`<div class="lm-card"><span class="e">${p.e}</span><b style="font-size:1.3rem">${Kit.esc(p.n)}</b><span style="font-weight:700">💡 ${Kit.esc(p.f)}</span>${got(who,p.n)?'<b>🛂 Stamped! ✅</b>':p.q?`<b>${Kit.esc(p.q)}</b><div class="lm-ch" id="ch">${ch.map((c,i)=>`<button data-i="${i}" class="${ans!=null?(c===p.a?'ok':c===ans?'no':''):''}">${Kit.esc(c)}</button>`).join('')}</div>`:'<button class="btn green" id="st">🛂 Stamp my passport</button>'}</div>`:'<div class="lm-card"><span class="e">🌍</span><b>Tap a place on the map to visit it!</b></div>'}
+ <div class="lm-pass"><h3>🛂 PASSPORT · ${Kit.esc((who||'').toUpperCase())}</h3><div class="lm-stamps">${Pn.map((x,i)=>`<div class="lm-stamp ${got(who,x.n)?'got':''}" style="--c:${COLS[i%6]};--r:${(i*37%30)-15}deg">${got(who,x.n)?`<span class="e">${x.e}</span>${Kit.esc(x.n.split(',')[0])}`:'?'}</div>`).join('')}</div><div style="text-align:center;font-weight:900">${n} of ${Pn.length} stamps${n===Pn.length&&n?' 🏆 World traveler!':''}</div></div><button class="btn white small" id="rs">🧽 Clear ${Kit.esc(who||'')}'s passport</button>`;
+ bind();window.__t={who,sel,stamps:n,total:Pn.length,a:p&&p.a}}
+function open(i){const p=pins()[i];sel=i;ans=null;const wr=p.w.length?p.w:Kit.shuffle(pins().filter(x=>x.a&&x.a!==p.a).map(x=>x.a)).slice(0,2);ch=Kit.shuffle([p.a,...wr]);Kit.tick();draw()}
+function stamp(){const p=pins()[sel];PS[who]=PS[who]||{};PS[who][p.n]=Date.now();Kit.set('lm-pass',PS);RW.addXP(who,5,`Visited ${p.n}`);Kit.tada();Kit.confetti(70);draw()}
+function bind(){$('ks').onclick=e=>{const b=e.target.closest('[data-k]');if(b){who=b.dataset.k;ans=null;draw()}};
+ const c=$('ch');if(c)c.onclick=e=>{const b=e.target.closest('[data-i]');if(!b||ans!=null)return;ans=ch[+b.dataset.i];const ok=ans===pins()[sel].a;if(ok)stamp();else{Kit.tone(170,.25,'sawtooth',.08);draw();setTimeout(()=>{ans=null;ch=Kit.shuffle(ch);draw()},window.__fast?1:1200)}};
+ if($('st'))$('st').onclick=stamp;$('rs').onclick=()=>{if(confirm('Clear this passport?')){delete PS[who];Kit.set('lm-pass',PS);draw()}}}
+$('sv').addEventListener('click',e=>{const g=e.target.closest('[data-p]');if(g)open(+g.dataset.p)});
+window.__lm={open};
+draw();
+</script>
+</body></html>

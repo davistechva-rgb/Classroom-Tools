@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Interactive Lesson Builder</title>
+<style>
+main{max-width:1800px}
+.il-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:12px}
+.il{display:grid;grid-template-columns:minmax(0,230px) minmax(0,1fr) minmax(0,330px);gap:14px;align-items:start}
+@media (max-width:1100px){.il{grid-template-columns:minmax(0,200px) minmax(0,1fr)}.il-ed{grid-column:1/-1}}
+@media (max-width:700px){.il{grid-template-columns:minmax(0,1fr)}}
+.il-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:10px;display:grid;gap:8px}
+.il-list{display:grid;gap:5px;max-height:520px;overflow:auto}
+.il-list button{font:inherit;font-weight:800;font-size:.9rem;border:3px solid var(--ink);border-radius:12px;padding:5px 8px;background:#fff;cursor:pointer;text-align:left;color:var(--ink);display:flex;gap:6px;align-items:center}
+.il-list button.on{background:var(--sun)}
+.il-slide{aspect-ratio:16/10;background:var(--bg,#FFFDF6);border:6px solid var(--ink);border-radius:24px;box-shadow:8px 8px 0 var(--ink);padding:clamp(12px,3vw,32px);display:grid;align-content:center;justify-items:center;gap:12px;text-align:center;overflow:hidden;position:relative}
+.il-slide h1{margin:0;font:900 clamp(1.6rem,4.5vw,3.4rem) Fredoka,sans-serif;line-height:1.1}
+.il-slide .big{font-size:clamp(3rem,10vw,7rem);line-height:1}
+.il-slide p{margin:0;font-weight:700;font-size:clamp(1rem,2.4vw,1.6rem);max-width:90%}
+.il-opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:min(720px,100%)}
+.il-opts button{font:inherit;font-weight:900;font-size:clamp(.95rem,2.2vw,1.3rem);border:4px solid var(--ink);border-radius:16px;padding:10px;background:var(--c);color:#fff;text-shadow:1px 1px 0 #0006;cursor:pointer;position:relative;overflow:hidden;text-align:left}
+.il-opts button i{position:absolute;left:0;top:0;bottom:0;background:#fff4;transition:width .4s}
+.il-opts button b{position:relative}
+.il-opts button.ok{outline:6px solid #5DC66E}.il-opts button.dim{opacity:.4}
+.il-cv{width:100%;height:100%;background:#fff;border:3px dashed #B8C2D6;border-radius:14px;touch-action:none}
+.il-tm{font:900 clamp(3rem,10vw,6rem) Fredoka,sans-serif}
+.il-nav{display:flex;gap:8px;justify-content:center;align-items:center;margin-top:12px;font-weight:900;color:#fff;text-shadow:2px 2px 0 var(--ink)}
+.il-ed label{display:grid;gap:3px;font-weight:800}
+.il-ed input,.il-ed textarea,.il-ed select{font:inherit;font-weight:600;padding:5px 8px;border:3px solid var(--ink);border-radius:10px;width:100%}
+.il-ed textarea{min-height:90px}
+.il-show{position:fixed;inset:0;z-index:100;background:#1D2B53;display:grid;grid-template-rows:1fr auto;padding:16px;gap:10px}
+.il-show .il-slide{aspect-ratio:auto;height:100%}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("📚", "Interactive Lesson Builder");
+const $=id=>document.getElementById(id);
+const TYPES={title:'🎬 Title',text:'📝 Big idea',poll:'📊 Class poll',quiz:'❓ Quick check',draw:'✏️ Draw it',timer:'⏱️ Timed activity',think:'💭 Think-pair-share'};
+const BG=['#FFFDF6','#FFF1C9','#E3F6FF','#E6F8EA','#F3EEFF','#FFE7EE'];
+const L0={id:1,name:'🌱 Plants need…',slides:[{t:'title',h:'What do plants need?',e:'🌱',bg:2},{t:'think',h:'Think about it',b:'What would happen to a plant in a dark closet?',e:'🤔',bg:4},{t:'poll',h:'Which one do plants NOT need?',o:'Water\nSunlight\nCandy\nAir',bg:0},{t:'text',h:'Plants need 4 things',b:'Water, sunlight, air and nutrients from soil.',e:'💧☀️💨🪱',bg:3},{t:'quiz',h:'Where do plants get nutrients?',o:'From the soil\nFrom the moon\nFrom rocks\nFrom candy',a:0,bg:1},{t:'draw',h:'Draw a happy plant and what it needs',bg:0},{t:'timer',h:'Plant a seed with your partner',b:'Fill the cup, plant the seed, water it.',s:180,e:'🪴',bg:3}]};
+let lessons=Kit.get('il-lessons',null)||[L0],cur=lessons[0].id,at=0,show=false,live={};
+const les=()=>lessons.find(l=>l.id===cur)||lessons[0];const sl=()=>les().slides[at];
+function save(){Kit.set('il-lessons',lessons)}
+const COL=['#E5533F','#1E7FD0','#E8A317','#2E9E47','#9B6BF2','#FF6B9A'];
+document.querySelector('main').innerHTML=`<div class="il-top"><select id="ls" style="width:auto"></select><button class="btn white small" id="nl">➕ New lesson</button><button class="btn green" id="pr">▶ Present</button></div>
+<div class="il"><div class="il-p"><b>🎞️ Slides</b><div class="il-list" id="sl"></div><select id="ad"><option value="">➕ Add a slide…</option>${Object.entries(TYPES).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></div><div><div id="st"></div><div class="il-nav"><button class="btn white small" id="pv">◀</button><span id="nm"></span><button class="btn white small" id="nx">▶</button></div></div><div class="il-p il-ed" id="ed"></div></div>`;
+function slideHTML(s,i){const k=`${cur}-${i}`,L=live[k]||(live[k]={votes:[],pick:null,left:s.s||60,run:null,paths:[]});
+ let h=`<div class="il-slide" style="--bg:${BG[s.bg||0]}" data-k="${k}">`;const o=(s.o||'').split('\n').filter(Boolean);
+ if(s.t==='title')h+=`<span class="big">${s.e||'📚'}</span><h1>${Kit.esc(s.h||'')}</h1>`;
+ if(s.t==='text'||s.t==='think')h+=`${s.e?`<span class="big">${s.e}</span>`:''}<h1>${Kit.esc(s.h||'')}</h1><p>${Kit.esc(s.b||'')}</p>${s.t==='think'?`<p style="font-size:1.1rem">🤔 Think (1 min) → 👥 Pair (2 min) → 🙋 Share</p>`:''}`;
+ if(s.t==='poll'){const tot=L.votes.reduce((a,b)=>a+b,0)||0;h+=`<h1>${Kit.esc(s.h||'')}</h1><div class="il-opts">${o.map((x,j)=>`<button data-v="${j}" style="--c:${COL[j%6]}"><i style="width:${tot?(L.votes[j]||0)/tot*100:0}%"></i><b>${Kit.esc(x)} · ${L.votes[j]||0}</b></button>`).join('')}</div><p style="font-size:1rem">Tap an answer for each vote. ${tot} vote${tot===1?'':'s'}</p>`}
+ if(s.t==='quiz')h+=`<h1>${Kit.esc(s.h||'')}</h1><div class="il-opts">${o.map((x,j)=>`<button data-q="${j}" style="--c:${COL[j%6]}" class="${L.pick!=null?(j===(+s.a||0)?'ok':'dim'):''}"><b>${'ABCDEF'[j]}. ${Kit.esc(x)}</b></button>`).join('')}</div>${L.pick!=null?`<p>${L.pick===(+s.a||0)?'🎉 Correct!':'The answer is '+'ABCDEF'[+s.a||0]+'.'}</p>`:''}`;
+ if(s.t==='draw')h+=`<h1 style="font-size:clamp(1.2rem,3vw,2rem)">${Kit.esc(s.h||'')}</h1><canvas class="il-cv" width="900" height="420"></canvas><button class="btn white small" data-clr="1">🧽 Clear</button>`;
+ if(s.t==='timer')h+=`${s.e?`<span class="big" style="font-size:clamp(2rem,6vw,4rem)">${s.e}</span>`:''}<h1>${Kit.esc(s.h||'')}</h1><p>${Kit.esc(s.b||'')}</p><span class="il-tm">${Math.floor(L.left/60)}:${String(L.left%60).padStart(2,'0')}</span><button class="btn green" data-tm="1">${L.run?'⏸ Pause':'▶ Start'}</button>`;
+ return h+'</div>'}
+function wire(root){const s=sl(),k=`${cur}-${at}`,L=live[k];const box=root.querySelector('.il-slide');if(!box)return;
+ box.onclick=e=>{const v=e.target.closest('[data-v]'),q=e.target.closest('[data-q]');if(v){L.votes[+v.dataset.v]=(L.votes[+v.dataset.v]||0)+1;Kit.tick();render()}if(q&&L.pick==null){L.pick=+q.dataset.q;L.pick===(+s.a||0)?(Kit.tada(),Kit.confetti(80)):Kit.tone(180,.25,'sawtooth',.08);render()}
+  if(e.target.closest('[data-tm]')){if(L.run){clearInterval(L.run);L.run=null}else{if(L.left<=0)L.left=s.s||60;L.run=setInterval(()=>{L.left--;if(L.left<=0){clearInterval(L.run);L.run=null;Kit.alarm&&Kit.alarm()}const t=document.querySelectorAll('.il-tm');t.forEach(x=>x.textContent=`${Math.floor(L.left/60)}:${String(Math.max(0,L.left)%60).padStart(2,'0')}`)},1000)}render()}
+  if(e.target.closest('[data-clr]')){L.paths=[];render()}};
+ const cv=box.querySelector('canvas');if(cv){const x=cv.getContext('2d');const paint=()=>{x.clearRect(0,0,900,420);x.lineCap=x.lineJoin='round';x.lineWidth=8;x.strokeStyle='#1D2B53';L.paths.forEach(p=>{x.beginPath();p.forEach((q,i)=>i?x.lineTo(...q):x.moveTo(...q));x.stroke()})};paint();let cur2=null;const pos=e=>{const r=cv.getBoundingClientRect();return [(e.clientX-r.left)*900/r.width,(e.clientY-r.top)*420/r.height]};
+  cv.onpointerdown=e=>{cv.setPointerCapture(e.pointerId);cur2=[pos(e)];L.paths.push(cur2)};cv.onpointermove=e=>{if(cur2){cur2.push(pos(e));paint()}};cv.onpointerup=()=>cur2=null}}
+function render(){const S=les().slides;at=Math.max(0,Math.min(at,S.length-1));
+ $('ls').innerHTML=lessons.map(l=>`<option value="${l.id}" ${l.id===cur?'selected':''}>${Kit.esc(l.name)}</option>`).join('');
+ $('sl').innerHTML=S.map((s,i)=>`<button data-i="${i}" class="${i===at?'on':''}">${i+1}. ${TYPES[s.t].split(' ')[0]} ${Kit.esc((s.h||'').slice(0,22))}</button>`).join('');
+ $('st').innerHTML=S.length?slideHTML(sl(),at):'<div class="il-slide"><h1>Add a slide ➕</h1></div>';$('nm').textContent=`${S.length?at+1:0} / ${S.length}`;if(S.length)wire($('st'));
+ const sh=document.querySelector('.il-show');if(sh){sh.querySelector('.ss').innerHTML=slideHTML(sl(),at);wire(sh);sh.querySelector('.cnt').textContent=`${at+1} / ${S.length}`}
+ editor();window.__t={lesson:les().name,slides:S.length,at,type:S[at]&&S[at].t,live:JSON.parse(JSON.stringify(live[`${cur}-${at}`]||{},(k,v)=>k==='run'?undefined:v)),show:!!sh}}
+function editor(){const s=sl();if(!s){$('ed').innerHTML='<b>✏️ Lesson</b><label>Lesson name<input id="ln" value="'+Kit.esc(les().name)+'"></label>';$('ln').oninput=()=>{les().name=$('ln').value;save()};return}
+ const f=(k,lab,ta)=>`<label>${lab}${ta?`<textarea data-f="${k}">${Kit.esc(s[k]||'')}</textarea>`:`<input data-f="${k}" value="${Kit.esc(s[k]??'')}">`}</label>`;
+ $('ed').innerHTML=`<b>✏️ Edit slide ${at+1}: ${TYPES[s.t]}</b><label>Lesson name<input id="ln" value="${Kit.esc(les().name)}"></label>${f('h','Heading')}${['text','think','timer'].includes(s.t)?f('b','Words',true):''}${['title','text','think','timer'].includes(s.t)?f('e','Emoji'):''}${['poll','quiz'].includes(s.t)?f('o','Answers (one per line)',true):''}${s.t==='quiz'?`<label>Right answer<select data-f="a">${(s.o||'').split('\n').filter(Boolean).map((x,j)=>`<option value="${j}" ${(+s.a||0)===j?'selected':''}>${'ABCDEF'[j]}. ${Kit.esc(x)}</option>`).join('')}</select></label>`:''}${s.t==='timer'?`<label>Seconds<input data-f="s" type="number" min="10" value="${s.s||60}"></label>`:''}
+ <label>Background<select data-f="bg">${BG.map((b,i)=>`<option value="${i}" ${(s.bg||0)==i?'selected':''}>${['Cream','Sunny','Sky','Mint','Lilac','Pink'][i]}</option>`).join('')}</select></label><div class="row" style="gap:5px"><button class="btn white small" id="mu">⬆</button><button class="btn white small" id="md">⬇</button><button class="btn white small" id="du">📄 Copy</button><button class="btn white small" id="dl">🗑️</button></div>`;
+ $('ln').oninput=()=>{les().name=$('ln').value;save();$('ls').selectedOptions[0].textContent=les().name};
+ $('ed').querySelectorAll('[data-f]').forEach(n=>n.oninput=n.onchange=()=>{const k=n.dataset.f;s[k]=['a','s','bg'].includes(k)?+n.value:n.value;save();const keep=document.activeElement===n;$('st').innerHTML=slideHTML(s,at);wire($('st'));$('sl').children[at].textContent=`${at+1}. ${TYPES[s.t].split(' ')[0]} ${(s.h||'').slice(0,22)}`});
+ const S=les().slides;$('mu').onclick=()=>{if(at>0){[S[at-1],S[at]]=[S[at],S[at-1]];at--;save();render()}};$('md').onclick=()=>{if(at<S.length-1){[S[at+1],S[at]]=[S[at],S[at+1]];at++;save();render()}};
+ $('du').onclick=()=>{S.splice(at+1,0,JSON.parse(JSON.stringify(s)));at++;save();render()};$('dl').onclick=()=>{S.splice(at,1);save();render()}}
+$('sl').onclick=e=>{const b=e.target.closest('[data-i]');if(b){at=+b.dataset.i;render()}};
+$('ad').onchange=()=>{const t=$('ad').value;if(!t)return;const d={title:{h:'New lesson',e:'📚'},text:{h:'Big idea',b:'Write it here.',e:'💡'},poll:{h:'What do you think?',o:'Yes\nNo\nMaybe'},quiz:{h:'Quick check',o:'Answer A\nAnswer B\nAnswer C',a:0},draw:{h:'Draw it!'},timer:{h:'Work time',b:'',s:120,e:'⏱️'},think:{h:'Think about it',b:'Your question here',e:'💭'}}[t];les().slides.splice(at+1,0,{t,bg:0,...d});at=les().slides.length?Math.min(at+1,les().slides.length-1):0;$('ad').value='';save();render()};
+$('pv').onclick=()=>{at--;render()};$('nx').onclick=()=>{at++;render()};
+$('ls').onchange=()=>{cur=+$('ls').value;at=0;render()};$('nl').onclick=()=>{const l={id:Date.now(),name:'📒 New lesson',slides:[{t:'title',h:'New lesson',e:'📚',bg:0}]};lessons.push(l);cur=l.id;at=0;save();render()};
+$('pr').onclick=()=>{const d=document.createElement('div');d.className='il-show';d.innerHTML=`<div class="ss"></div><div class="il-nav"><button class="btn white" data-n="-1">◀ Back</button><span class="cnt"></span><button class="btn white" data-n="1">Next ▶</button><button class="btn white small" data-x="1">✕ Exit</button></div>`;document.body.appendChild(d);d.onclick=e=>{const n=e.target.closest('[data-n]');if(n){at+= +n.dataset.n;render()}if(e.target.closest('[data-x]')){d.remove();render()}};render();try{d.requestFullscreen&&d.requestFullscreen().catch(()=>{})}catch(e){}};
+document.addEventListener('keydown',e=>{if(!document.querySelector('.il-show'))return;if(e.key==='ArrowRight'||e.key===' '){at++;render()}if(e.key==='ArrowLeft'){at--;render()}if(e.key==='Escape'){document.querySelector('.il-show').remove();render()}});
+render();
+</script>
+</body></html>

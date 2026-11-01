@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Virtual Classroom Economy</title>
+<style>
+main{max-width:1800px}
+.ve-tabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
+.ve{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:980px){.ve{grid-template-columns:minmax(0,1fr)}}
+.ve-p{background:#fff;border:5px solid var(--ink);border-radius:22px;padding:12px;display:grid;gap:10px;align-content:start}
+.ve-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
+@media (max-width:760px){.ve-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.ve-stat{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:10px;text-align:center;box-shadow:5px 5px 0 var(--ink)}
+.ve-stat b{display:block;font:900 clamp(1.4rem,3.5vw,2.1rem) Fredoka,sans-serif}
+.ve-stat span{font-weight:800;color:#55607E;font-size:.9rem}
+.ve-biz{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.ve-b{border:4px solid var(--ink);border-radius:18px;padding:10px;background:linear-gradient(#FFF6C9,#fff);display:grid;gap:5px;box-shadow:0 4px 0 var(--ink)}
+.ve-b .e{font-size:2.4rem;line-height:1}
+.ve-b select{font:inherit;font-weight:700;padding:3px;border:2px solid var(--ink);border-radius:8px}
+.ve-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.ve-form input,.ve-form select{font:inherit;font-weight:700;padding:5px 8px;border:3px solid var(--ink);border-radius:10px;min-width:0}
+.ve-chart{display:flex;align-items:flex-end;gap:3px;height:150px;border-bottom:3px solid var(--ink);border-left:3px solid var(--ink);padding:4px}
+.ve-chart div{flex:1;background:var(--c,#22C3E6);border-radius:4px 4px 0 0;min-height:2px;position:relative}
+.ve-chart div span{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);font-size:.65rem;font-weight:900}
+.ve-log{max-height:300px;overflow:auto;display:grid;gap:3px;font-weight:700;font-size:.9rem}.ve-log div{background:#F4FAFF;border-radius:8px;padding:2px 8px}
+.ve-ev{background:#2A2350;color:#fff;border:5px solid var(--ink);border-radius:20px;padding:14px;text-align:center;display:grid;gap:6px}
+.ve-ev .e{font-size:3rem}
+.ve-row{display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:800}
+.ve-row input{width:80px;font:inherit;padding:3px 6px;border:3px solid var(--ink);border-radius:8px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script><script src="rewards.js"></script>
+<script>
+Kit.mount("🪙", "Virtual Classroom Economy");
+const $=id=>document.getElementById(id);
+const EVENTS=[['🎉','Holiday bonus!','Everyone gets 3 coins from the treasury.',S=>{RW.kids().forEach(k=>{if(S.treasury>=3){S.treasury-=3;RW.addCoins(k,3,'Holiday bonus')}})}],['🌧️','Rainy week','Umbrella businesses earn double this week! (Just for fun.)',S=>{}],['📉','Price drop','All businesses lower prices by 1 coin.',S=>{S.biz.forEach(b=>b.p=Math.max(1,b.p-1))}],['📈','Big demand','All businesses raise prices by 1 coin.',S=>{S.biz.forEach(b=>b.p+=1)}],['🏗️','Class project','The treasury pays 10 coins to build something together!',S=>{S.treasury=Math.max(0,S.treasury-10)}],['💡','Great idea award','A random student gets 5 coins from the treasury.',S=>{const k=Kit.pick(RW.kids());if(k&&S.treasury>=5){S.treasury-=5;RW.addCoins(k,5,'Great idea award')}}]];
+let S=Kit.get('ve-state',null)||{rent:5,tax:10,treasury:0,biz:[{id:1,o:'Mia',n:'Mia\'s Bookmarks',e:'🔖',p:3,sold:0},{id:2,o:'Leo',n:'Leo\'s Joke Shop',e:'🤡',p:2,sold:0}],hist:[],log:[],owe:{},ev:null},tab='overview';
+function save(){Kit.set('ve-state',S)}
+function log(t){S.log.unshift(`${new Date().toLocaleDateString(undefined,{month:'short',day:'numeric'})} · ${t}`);S.log=S.log.slice(0,80)}
+function supply(){return RW.kids().reduce((s,k)=>s+RW.coins(k),0)}
+function snap(){const d=new Date().toISOString().slice(0,10);const v=supply();const L=S.hist.find(h=>h[0]===d);if(L){L[1]=v;L[2]=S.treasury}else S.hist.push([d,v,S.treasury]);S.hist=S.hist.slice(-20)}
+const cn=()=>RW.coinName().split(' ')[0];
+document.querySelector('main').innerHTML=`<div class="ve-tabs">${[['overview','📊 Economy'],['biz','🏪 Businesses'],['gov','🏛️ Rent & taxes'],['ev','🎲 Events']].map(([k,v])=>`<button class="btn white" data-t="${k}">${v}</button>`).join('')}</div><div class="ve-stats" id="st"></div><div id="bd"></div><div id="ro" style="margin-top:12px;background:#fff;border:4px solid var(--ink);border-radius:16px;padding:8px"></div>`;
+Learn.rosterEditor($('ro'));$('ro').addEventListener('roster',()=>draw());
+function draw(){document.querySelectorAll('[data-t]').forEach(b=>b.className='btn '+(b.dataset.t===tab?'':'white'));const K=RW.kids(),c=cn(),tot=supply();
+ const owed=Object.values(S.owe).reduce((a,b)=>a+b,0);const rich=[...K].sort((a,b)=>RW.coins(b)-RW.coins(a));
+ $('st').innerHTML=`<div class="ve-stat"><b>${c} ${tot}</b><span>Money in wallets</span></div><div class="ve-stat"><b>🏛️ ${S.treasury}</b><span>Class treasury</span></div><div class="ve-stat"><b>🏪 ${S.biz.length}</b><span>Businesses</span></div><div class="ve-stat"><b>${owed?'🧾 '+owed:'✅ 0'}</b><span>Rent owed</span></div>`;
+ if(tab==='overview'){const H=S.hist.length?S.hist:[[new Date().toISOString().slice(0,10),tot,S.treasury]],mx=Math.max(1,...H.map(h=>h[1]));const W=rich.map(k=>RW.coins(k)),mw=Math.max(1,...W);
+  $('bd').innerHTML=`<div class="ve"><div class="ve-p"><b>📈 Money over time</b><div class="ve-chart">${H.map(h=>`<div style="height:${h[1]/mx*100}%"><span>${h[1]}</span></div>`).join('')}</div><div class="muted" style="font-weight:700">A new bar is saved each day you use this page.</div><b>👛 Who has what</b><div class="ve-chart" style="--c:#FFC93C">${W.map((w,i)=>`<div style="height:${w/mw*100}%" title="${Kit.esc(rich[i])}: ${w}"><span>${w}</span></div>`).join('')}</div><div style="font-weight:800">Richest: ${Kit.esc(rich[0]||'—')} · Average: ${K.length?Math.round(tot/K.length):0} ${c}</div></div>
+  <div class="ve-p"><b>📜 What happened</b><div class="ve-log">${S.log.map(l=>`<div>${Kit.esc(l)}</div>`).join('')||'<div>Nothing yet. Collect rent or open a business!</div>'}</div></div></div>`}
+ if(tab==='biz'){$('bd').innerHTML=`<div class="ve"><div class="ve-p"><b>🏪 Class businesses</b><div class="ve-biz">${S.biz.map(b=>`<div class="ve-b"><span class="e">${b.e}</span><b>${Kit.esc(b.n)}</b><span style="font-weight:700">Owner: ${Kit.esc(b.o)} · Price ${c} ${b.p} · Sold ${b.sold}</span><select data-buyer="${b.id}"><option value="">Who's buying?</option>${K.filter(k=>k!==b.o).map(k=>`<option>${Kit.esc(k)}</option>`).join('')}</select><div class="row" style="gap:4px"><button class="btn green small" data-buy="${b.id}">🛒 Buy</button><button class="btn white small" data-up="${b.id}">＋${c}</button><button class="btn white small" data-dn="${b.id}">−${c}</button><button class="btn white small" data-x="${b.id}">🚪 Close</button></div></div>`).join('')||'<span class="muted">No businesses yet.</span>'}</div></div>
+  <div class="ve-p"><b>✨ Open a business</b><div class="ve-form"><select id="bo">${K.map(k=>`<option>${Kit.esc(k)}</option>`).join('')}</select><input id="bn" placeholder="Business name"><input id="be" placeholder="Emoji" value="🍪" maxlength="4"><input id="bp" type="number" min="1" value="2" placeholder="Price"></div><div style="font-weight:700">Opening costs ${c} 5 (paid to the treasury). Each sale pays the owner, minus ${S.tax}% tax.</div><button class="btn green" id="bk">🏪 Open for business</button><div id="bm" style="font-weight:900"></div></div></div>`}
+ if(tab==='gov'){$('bd').innerHTML=`<div class="ve"><div class="ve-p"><b>🏛️ Rules of our economy</b><div class="ve-row">🏠 Weekly rent per student <input type="number" min="0" id="rt" value="${S.rent}"></div><div class="ve-row">🧾 Sales tax % <input type="number" min="0" max="50" id="tx" value="${S.tax}"></div><button class="btn green big" id="rc">🏠 Collect rent from everyone</button><div id="rm" style="font-weight:800"></div><b>🧾 Rent still owed</b><div class="ve-log">${Object.entries(S.owe).filter(x=>x[1]).map(([k,v])=>`<div class="ve-row"><span>${Kit.esc(k)} owes ${v}</span><button class="btn white small" data-pay="${Kit.esc(k)}">💸 Pay now</button></div>`).join('')||'<div>Nobody owes rent. 🎉</div>'}</div></div>
+  <div class="ve-p"><b>🏛️ Treasury: ${S.treasury} ${c}</b><div style="font-weight:700">Rent and taxes go into the class treasury. Spend it on things for everyone!</div><div class="ve-row">Spend <input type="number" min="1" id="sa" value="10"> on <input id="sw" placeholder="a class party" style="width:160px"></div><button class="btn white" id="sp">🎁 Spend from the treasury</button><div class="ve-row">Pay a student <select id="pk">${K.map(k=>`<option>${Kit.esc(k)}</option>`).join('')}</select><input type="number" min="1" id="pa" value="3"></div><button class="btn white" id="pp">💰 Pay from the treasury</button></div></div>`}
+ if(tab==='ev'){const e=S.ev;$('bd').innerHTML=`<div class="ve"><div class="ve-ev">${e?`<span class="e">${e[0]}</span><b style="font-size:1.6rem">${e[1]}</b><span style="font-weight:700">${e[2]}</span>`:'<span class="e">🎲</span><b style="font-size:1.4rem">Roll a surprise economy event!</b>'}<div><button class="btn big" style="background:var(--sun)" id="rl">🎲 Roll an event</button></div></div><div class="ve-p"><b>🎲 Possible events</b>${EVENTS.map(x=>`<div style="font-weight:700">${x[0]} <b>${x[1]}</b>: ${x[2]}</div>`).join('')}</div></div>`}
+ bind();snap();save();window.__t={tab,tot:supply(),treasury:S.treasury,biz:S.biz.length,owe:{...S.owe},coins:Object.fromEntries(K.map(k=>[k,RW.coins(k)]))}}
+function bind(){const on=(id,f)=>{const e=$(id);if(e)e.onclick=f},bd=$('bd'),c=cn();
+ bd.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>{const z=S.biz.find(x=>x.id==b.dataset.buy),who=bd.querySelector(`[data-buyer="${z.id}"]`).value;if(!who){Kit.tone(200,.2,'triangle',.1);return}
+  if(!RW.addCoins(who,-z.p,`Bought from ${z.n}`)){Kit.modal(`<h2>😬 ${Kit.esc(who)} doesn't have ${z.p} ${c}</h2>`);return}const tax=Math.round(z.p*S.tax/100);RW.addCoins(z.o,z.p-tax,`Sale at ${z.n}`);S.treasury+=tax;z.sold++;log(`🛒 ${who} bought from ${z.n} for ${z.p} (${tax} tax)`);Kit.ding();save();draw()});
+ bd.querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>{S.biz.find(x=>x.id==b.dataset.up).p++;save();draw()});bd.querySelectorAll('[data-dn]').forEach(b=>b.onclick=()=>{const z=S.biz.find(x=>x.id==b.dataset.dn);z.p=Math.max(1,z.p-1);save();draw()});
+ bd.querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>{const z=S.biz.find(x=>x.id==b.dataset.x);if(confirm(`Close ${z.n}?`)){S.biz=S.biz.filter(x=>x!==z);log(`🚪 ${z.n} closed.`);save();draw()}});
+ on('bk',()=>{const o=$('bo').value,n=$('bn').value.trim()||`${o}'s Shop`;if(!RW.addCoins(o,-5,'Opened a business')){$('bm').textContent=`😬 ${o} needs 5 ${c} to open a business.`;return}S.treasury+=5;S.biz.push({id:Date.now(),o,n,e:$('be').value||'🏪',p:Math.max(1,+$('bp').value||1),sold:0});log(`🏪 ${o} opened ${n}!`);Kit.tada();save();draw()});
+ if($('rt'))$('rt').onchange=()=>{S.rent=Math.max(0,+$('rt').value||0);save()};if($('tx'))$('tx').onchange=()=>{S.tax=Math.max(0,Math.min(50,+$('tx').value||0));save()};
+ on('rc',()=>{let got=0,short=[];RW.kids().forEach(k=>{if(RW.addCoins(k,-S.rent,'Rent')){got+=S.rent}else{const have=RW.coins(k);if(have)RW.addCoins(k,-have,'Rent (part)');got+=have;S.owe[k]=(S.owe[k]||0)+S.rent-have;short.push(k)}});S.treasury+=got;log(`🏠 Rent day! Collected ${got}.${short.length?` ${short.length} couldn't pay it all.`:''}`);Kit.tada();save();draw();$('rm').textContent=`✅ Collected ${got} ${c}.${short.length?` Owing: ${short.join(', ')}`:''}`});
+ bd.querySelectorAll('[data-pay]').forEach(b=>b.onclick=()=>{const k=b.dataset.pay,v=S.owe[k];const pay=Math.min(v,RW.coins(k));if(!pay){Kit.tone(200,.2,'triangle',.1);return}RW.addCoins(k,-pay,'Paid rent owed');S.owe[k]-=pay;S.treasury+=pay;log(`💸 ${k} paid ${pay} rent owed.`);save();draw()});
+ on('sp',()=>{const a=Math.max(1,+$('sa').value||0);if(a>S.treasury){Kit.modal('<h2>🏛️ The treasury doesn\'t have that much!</h2>');return}S.treasury-=a;log(`🎁 Treasury spent ${a} on ${$('sw').value||'something for the class'}.`);Kit.tada();save();draw()});
+ on('pp',()=>{const a=Math.max(1,+$('pa').value||0),k=$('pk').value;if(a>S.treasury){Kit.modal('<h2>🏛️ Not enough in the treasury!</h2>');return}S.treasury-=a;RW.addCoins(k,a,'Paid by the treasury');log(`💰 Treasury paid ${k} ${a}.`);Kit.ding();save();draw()});
+ on('rl',()=>{const e=Kit.pick(EVENTS);e[3](S);S.ev=e;log(`🎲 Event: ${e[1]}`);Kit.tada();save();draw()})}
+document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;draw()});
+draw();
+</script>
+</body></html>
