@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Shape Builder</title>
+<style>
+main{max-width:1600px}
+.sb{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.sb{grid-template-columns:1fr}}
+.sb-board{background:#C99A63;background-image:repeating-linear-gradient(90deg,rgba(0,0,0,.05) 0 3px,transparent 3px 40px);border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);padding:10px;touch-action:none}
+.sb-board svg{width:100%;display:block;aspect-ratio:1;max-height:76vh;margin:auto;user-select:none}
+.sb-peg{fill:#F4F6FB;stroke:#5B4426;stroke-width:2;cursor:pointer}
+.sb-peg:hover{fill:#FFF1A8}
+.sb-band{stroke-width:6;stroke-linejoin:round;cursor:pointer}
+.sb-v{cursor:grab;stroke:#1D2B53;stroke-width:2.5}
+.sb-ang{font-size:11px;font-weight:800;fill:#1D2B53;paint-order:stroke;stroke:#fff;stroke-width:3;text-anchor:middle;pointer-events:none}
+.sb-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:10px}
+.sb-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.sb-facts div{border:3px solid var(--ink);border-radius:12px;padding:5px 8px;background:#F4FAFF;font-weight:700}
+.sb-facts b{display:block;font-size:1.3rem}
+.sb-name{font-size:1.5rem;font-weight:900;text-align:center}
+.sb-bands{display:flex;gap:6px;flex-wrap:wrap}
+.sb-bands button[data-b]{width:34px;height:34px;border-radius:50%;border:4px solid var(--ink);background:var(--c);cursor:pointer}.sb-bands button[data-b].on{outline:4px solid var(--sun);outline-offset:2px}
+.sb-ch{display:grid;gap:6px}.sb-ch button{font:inherit;font-weight:800;border:3px solid var(--ink);border-radius:12px;padding:5px 9px;background:#fff;cursor:pointer;text-align:left;color:var(--ink)}
+.sb-ch button.on{background:var(--sun)}.sb-ch button.won::after{content:" ✅"}
+.sb-msg{font-weight:800;min-height:2.6em}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🔺", "Shape Builder");
+const $=id=>document.getElementById(id);
+const N=11,G=50,PAD=30,BC=['#E5533F','#1E7FD0','#5DC66E','#9B6BF2','#FF9F43'];
+let bands=[],cur=null,ci=0,drag=null,ch=-1,won=Kit.get('sb-won',[]);
+const CH=[['📐 Right triangle','Make a triangle with a square corner (90°).',s=>s.n===3&&s.ang.some(a=>Math.abs(a-90)<.5)],['🟦 Area of 6','Make any shape with an area of exactly 6 squares.',s=>Math.abs(s.area-6)<.01],['▭ Rectangle, perimeter 12','Make a rectangle (not a square) with a perimeter of 12.',s=>s.name.includes('Rectangle')&&Math.abs(s.per-12)<.01],['💎 Tilted square','Make a square that is turned on its corner.',s=>s.name.includes('Square')&&s.tilted],['⬡ Hexagon','Make a shape with 6 sides.',s=>s.n===6],['🔺 Same area, different shape','Make a triangle with an area of 8.',s=>s.n===3&&Math.abs(s.area-8)<.01],['➗ Half a square','Make a shape whose area is not a whole number.',s=>Math.abs(s.area-Math.round(s.area))>.1]];
+document.querySelector('main').innerHTML=`<div class="sb"><div class="sb-board"><svg id="sv" viewBox="0 0 ${PAD*2+(N-1)*G} ${PAD*2+(N-1)*G}"></svg></div>
+<div class="sb-p"><div class="sb-msg" id="msg">Tap pegs to stretch a rubber band around them. Tap the first peg again to close the shape.</div><div class="sb-bands" id="bc">${BC.map((c,i)=>`<button data-b="${i}" style="--c:${c}" title="Rubber band"></button>`).join('')}<button class="btn white small" id="del">🗑️ Remove band</button><button class="btn white small" id="clr">🧽 Clear</button></div>
+<div class="sb-name" id="nm">—</div><div class="sb-facts"><div>📏 Perimeter<b id="pe">—</b></div><div>🟦 Area<b id="ar">—</b></div><div>🔢 Sides<b id="sd">—</b></div><div>📐 Angles<b id="an" style="font-size:.95rem">—</b></div></div><label style="font-weight:800"><input type="checkbox" id="sa" checked> Show angles</label>
+<b>🎯 Challenges</b><div class="sb-ch" id="ch">${CH.map((c,i)=>`<button data-c="${i}">${c[0]}</button>`).join('')}</div></div></div>`;
+const X=i=>PAD+i*G;
+// length of a side on the grid: a whole number, or a square root like √5
+function len(a,b){const d2=(a[0]-b[0])**2+(a[1]-b[1])**2,r=Math.sqrt(d2);return {v:r,t:Number.isInteger(r)?String(r):`√${d2}`}}
+function stats(b){const p=b.p,n=p.length;if(n<3||!b.closed)return null;let A=0;for(let i=0;i<n;i++){const q=p[i],r=p[(i+1)%n];A+=q[0]*r[1]-r[0]*q[1]}const area=Math.abs(A)/2,sides=p.map((q,i)=>len(q,p[(i+1)%n])),per=sides.reduce((s,x)=>s+x.v,0);
+ const sgn=Math.sign(A)||1,ang=p.map((q,i)=>{const a=p[(i+n-1)%n],c=p[(i+1)%n],v1=[a[0]-q[0],a[1]-q[1]],v2=[c[0]-q[0],c[1]-q[1]];let t=Math.atan2(v1[0]*v2[1]-v1[1]*v2[0],v1[0]*v2[0]+v1[1]*v2[1])*180/Math.PI;t=((t*-sgn)%360+360)%360;return Math.round(t*10)/10});
+ const eq=(a,b)=>Math.abs(a-b)<1e-6,allEq=sides.every(x=>eq(x.v,sides[0].v)),right=ang.every(a=>Math.abs(a-90)<.5),tilted=!p.every((q,i)=>q[0]===p[(i+1)%n][0]||q[1]===p[(i+1)%n][1]);
+ let name=['','','','Triangle','Quadrilateral','Pentagon','Hexagon','Heptagon','Octagon'][n]||`${n}-sided polygon`;
+ if(n===3){name=ang.some(a=>Math.abs(a-90)<.5)?'Right triangle':ang.some(a=>a>90.5)?'Obtuse triangle':'Acute triangle';if(allEq)name='Equilateral triangle';else if(eq(sides[0].v,sides[1].v)||eq(sides[1].v,sides[2].v)||eq(sides[0].v,sides[2].v))name+=' (isosceles)'}
+ if(n===4){const par=(i)=>{const a=p[i],b2=p[(i+1)%4],c=p[(i+2)%4],d=p[(i+3)%4];return (b2[0]-a[0])*(c[1]-d[1])-(b2[1]-a[1])*(c[0]-d[0])===0};const pp=par(0)&&par(1),one=par(0)||par(1);name=right&&allEq?'Square':right?'Rectangle':allEq?'Rhombus':pp?'Parallelogram':one?'Trapezoid':'Quadrilateral'}
+ if(ang.some(a=>a>180.5))name+=' (concave)';return {n,area,per,sides,ang,name,tilted}}
+function draw(){let h='';for(let y=0;y<N;y++)for(let x=0;x<N;x++)h+=`<circle class="sb-peg" data-x="${x}" data-y="${y}" cx="${X(x)}" cy="${X(y)}" r="7"/>`;
+ bands.forEach((b,bi)=>{if(!b.p.length)return;const pts=b.p.map(q=>`${X(q[0])},${X(q[1])}`).join(' ');h+=b.closed?`<polygon class="sb-band" data-band="${bi}" points="${pts}" fill="${b.c}33" stroke="${b.c}"/>`:`<polyline class="sb-band" points="${pts}" fill="none" stroke="${b.c}" stroke-dasharray="${b===cur?'0':'0'}"/>`;
+  b.p.forEach((q,k)=>h+=`<circle class="sb-v" data-band="${bi}" data-k="${k}" cx="${X(q[0])}" cy="${X(q[1])}" r="${b===cur&&k===0&&!b.closed?12:9}" fill="${b.c}"/>`);
+  const s=stats(b);if(s&&$('sa').checked)b.p.forEach((q,k)=>{const n=b.p.length,a=b.p[(k+n-1)%n],c=b.p[(k+1)%n],mx=(a[0]+c[0])/2-q[0],my=(a[1]+c[1])/2-q[1],L=Math.hypot(mx,my)||1,inside=s.ang[k]<=180?1:-1;h+=`<text class="sb-ang" x="${X(q[0])+mx/L*24*inside}" y="${X(q[1])+my/L*24*inside+4}">${Math.round(s.ang[k])}°</text>`})});
+ $('sv').innerHTML=h;const b=bands[ci]||cur,s=b&&stats(b);
+ $('nm').textContent=s?s.name:cur&&!cur.closed?'Keep going… tap the first peg to close':'—';$('pe').textContent=s?`${+s.per.toFixed(2)}${s.sides.some(x=>x.t.includes('√'))?` (${s.sides.map(x=>x.t).join(' + ')})`:''}`:'—';$('ar').textContent=s?`${s.area} square${s.area===1?'':'s'}`:'—';$('sd').textContent=s?s.n:'—';$('an').textContent=s?s.ang.map(a=>Math.round(a)+'°').join(', ')+` = ${Math.round(s.ang.reduce((x,y)=>x+y,0))}°`:'—';
+ document.querySelectorAll('[data-b]').forEach((x,i)=>x.classList.toggle('on',!!(bands[ci]&&bands[ci].c===BC[i])));[...$('ch').children].forEach((x,i)=>{x.classList.toggle('on',i===ch);x.classList.toggle('won',won.includes(i))});
+ window.__t={bands:bands.length,stats:s?{n:s.n,area:s.area,per:+s.per.toFixed(3),name:s.name,ang:s.ang}:null}}
+function check(){if(ch<0)return;const b=bands[ci],s=b&&stats(b);if(s&&CH[ch][2](s)){if(!won.includes(ch)){won.push(ch);Kit.set('sb-won',won)}Kit.tada();Kit.confetti(60);$('msg').textContent=`🎉 Challenge complete: ${s.name}!`;draw()}}
+function tapPeg(x,y){if(!cur||cur.closed){if(bands.length>=5){$('msg').textContent='That\'s the most rubber bands! Remove one first.';return}cur={c:BC[bands.length%BC.length],p:[[x,y]],closed:false};bands.push(cur);ci=bands.length-1}
+ else{const f=cur.p[0];if(f[0]===x&&f[1]===y&&cur.p.length>=3){cur.closed=true;Kit.tone(660,.12,'triangle',.15);draw();check();return}if(cur.p.some(q=>q[0]===x&&q[1]===y))return;cur.p.push([x,y])}Kit.tone(400+cur.p.length*40,.05,'triangle',.12);draw()}
+function pt(e){const r=$('sv').getBoundingClientRect(),W=PAD*2+(N-1)*G;return [Math.round(((e.clientX-r.left)/r.width*W-PAD)/G),Math.round(((e.clientY-r.top)/r.height*W-PAD)/G)]}
+$('sv').addEventListener('pointerdown',e=>{const v=e.target.closest('.sb-v'),peg=e.target.closest('.sb-peg'),band=e.target.closest('polygon.sb-band');
+ if(v){const bi=+v.dataset.band,k=+v.dataset.k,b=bands[bi];if(b===cur&&!b.closed&&k===0&&b.p.length>=3){tapPeg(...b.p[0]);return}if(b.closed){ci=bi;drag={b,k};$('sv').setPointerCapture(e.pointerId);draw()}return}
+ if(band){ci=+band.dataset.band;draw();return}if(peg)tapPeg(+peg.dataset.x,+peg.dataset.y)});
+$('sv').addEventListener('pointermove',e=>{if(!drag)return;let [x,y]=pt(e);x=Math.max(0,Math.min(N-1,x));y=Math.max(0,Math.min(N-1,y));const q=drag.b.p[drag.k];if(q[0]!==x||q[1]!==y){if(drag.b.p.some((o,i)=>i!==drag.k&&o[0]===x&&o[1]===y))return;q[0]=x;q[1]=y;Kit.tick();draw()}});
+$('sv').addEventListener('pointerup',()=>{if(drag){drag=null;check()}});
+$('bc').onclick=e=>{const b=e.target.closest('[data-b]');if(b&&bands[ci]){bands[ci].c=BC[+b.dataset.b];draw()}};
+$('del').onclick=()=>{if(bands[ci]){if(bands[ci]===cur)cur=null;bands.splice(ci,1);ci=Math.max(0,bands.length-1);draw()}};$('clr').onclick=()=>{bands=[];cur=null;ci=0;draw()};$('sa').onchange=draw;
+$('ch').onclick=e=>{const b=e.target.closest('[data-c]');if(b){ch=+b.dataset.c;$('msg').textContent='🎯 '+CH[ch][1];draw();check()}};
+window.__s={make:pts=>{pts.forEach(p=>tapPeg(...p));tapPeg(...pts[0])},ch:i=>$('ch').children[i].click()};
+draw();
+</script>
+</body></html>

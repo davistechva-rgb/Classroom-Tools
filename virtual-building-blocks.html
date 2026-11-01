@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Virtual Building Blocks</title>
+<style>
+main{max-width:1700px}
+.vb{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.vb{grid-template-columns:1fr}}
+.vb-stage{background:linear-gradient(#BFE6FA,#EAF7FF);border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);overflow:hidden;touch-action:manipulation}
+.vb-stage svg{width:100%;display:block;aspect-ratio:4/3;user-select:none}
+.vb-f{stroke:rgba(29,43,83,.75);stroke-width:1.5;stroke-linejoin:round;cursor:pointer}
+.vb-f:hover{filter:brightness(1.15)}
+.vb-g{fill:#8BCB6A;stroke:#6FAE52;stroke-width:1;cursor:pointer}.vb-g:hover{fill:#A6DD88}
+.vb-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:10px}
+.vb-cols{display:flex;gap:5px;flex-wrap:wrap}.vb-cols button{width:32px;height:32px;border-radius:8px;border:3px solid var(--ink);background:var(--c);cursor:pointer}.vb-cols button.on{outline:4px solid var(--sun);outline-offset:2px}
+.vb-views{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;text-align:center;font-weight:800;font-size:.85rem}
+.vb-views svg{width:100%;aspect-ratio:1;background:#F4FAFF;border:3px solid var(--ink);border-radius:10px}
+.vb-tools{display:flex;gap:6px;flex-wrap:wrap}
+.vb-tools button.on{background:var(--sun)}
+.vb-ch{display:grid;gap:6px}.vb-ch button{font:inherit;font-weight:800;border:3px solid var(--ink);border-radius:12px;padding:5px 9px;background:#fff;cursor:pointer;text-align:left;color:var(--ink)}
+.vb-ch button.on{background:var(--sun)}.vb-ch button.won::after{content:" ✅"}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🧱", "Virtual Building Blocks");
+const $=id=>document.getElementById(id);
+const N=8,HMAX=8,TW=34,TH=17,CH=34;
+const COLS=['#E5533F','#FF9F43','#FFC93C','#5DC66E','#22C3E6','#1E7FD0','#9B6BF2','#FF6B9A','#F4F6FB','#8B5A2B'];
+const shade=(hex,f)=>{const n=parseInt(hex.slice(1),16),r=n>>16,g=n>>8&255,b=n&255;return `rgb(${Math.round(r*f)},${Math.round(g*f)},${Math.round(b*f)})`};
+const CHAL=[['🧱 10 blocks','Use exactly 10 blocks.',()=>B.size===10],['🪜 Staircase','Build stairs 4 steps high (1, 2, 3 and 4 blocks tall in a row).',()=>stairs()],['🏙️ Tall tower','Build a tower 8 blocks tall.',()=>maxH()>=8],['🟥 Cube','Build a solid 3 × 3 × 3 cube (27 blocks).',()=>cube3()],['👀 Same from every side','Make the front view and the side view look exactly the same, using at least 6 blocks.',()=>B.size>=6&&view('front').join()===view('side').join()]];
+let B=new Map(Kit.get('vb-blocks',[])),col=0,tool='add',rot=0,ch=-1,won=Kit.get('vb-won',[]);
+document.querySelector('main').innerHTML=`<div class="vb"><div><div class="vb-stage"><svg id="sv" viewBox="-300 -230 600 450"></svg></div><div class="row" style="justify-content:center;gap:6px;margin-top:10px"><button class="btn white small" id="rl">⟲ Turn</button><button class="btn white small" id="rr">⟳ Turn</button><button class="btn white small" id="un">↩️ Undo</button><button class="btn white small" id="cl">🧽 Clear</button></div></div>
+<div class="vb-p"><div class="vb-tools"><button class="btn small on" data-t="add">➕ Add</button><button class="btn white small" data-t="del">⛏️ Remove</button><button class="btn white small" data-t="paint">🖌️ Paint</button></div><div class="vb-cols" id="cs">${COLS.map((c,i)=>`<button data-c="${i}" style="--c:${c}"></button>`).join('')}</div>
+<div style="font-weight:800">🧱 <span id="nb">0</span> blocks · 📏 <span id="mh">0</span> tall</div><b>👀 Views (like a math worksheet)</b><div class="vb-views"><div><svg id="vt" viewBox="0 0 ${N} ${N}"></svg>Top</div><div><svg id="vf" viewBox="0 0 ${N} ${HMAX}"></svg>Front</div><div><svg id="vs" viewBox="0 0 ${N} ${HMAX}"></svg>Side</div></div>
+<b>🎯 Challenges</b><div class="vb-ch" id="chl">${CHAL.map((c,i)=>`<button data-ch="${i}">${c[0]}</button>`).join('')}</div><div id="msg" style="font-weight:800;min-height:1.4em">Tap the grass to place a block, then tap any side of a block to build onto it.</div></div></div>`;
+let hist=[];
+const key=(x,y,z)=>`${x},${y},${z}`;
+function save(){Kit.set('vb-blocks',[...B])}
+// turn the world for viewing; r = 0..3 quarter turns
+function tv(x,y){for(let k=0;k<rot;k++)[x,y]=[N-1-y,x];return [x,y]}
+function back(x,y){for(let k=0;k<rot;k++)[x,y]=[y,N-1-x];return [x,y]}
+const iso=(x,y,z)=>[(x-y)*TW,(x+y)*TH-z*CH-60];
+function draw(){let h='';const P=(pts)=>pts.map(p=>p.join(',')).join(' ');
+ for(let vx=0;vx<N;vx++)for(let vy=0;vy<N;vy++){const [x,y]=back(vx,vy);h+=`<polygon class="vb-g" data-g="${x},${y}" points="${P([iso(vx,vy,0),iso(vx+1,vy,0),iso(vx+1,vy+1,0),iso(vx,vy+1,0)])}"/>`}
+ const list=[...B].map(([k,c])=>{const [x,y,z]=k.split(',').map(Number),[vx,vy]=tv(x,y);return {x,y,z,vx,vy,c}}).sort((a,b)=>(a.vx+a.vy)-(b.vx+b.vy)||a.z-b.z||a.vx-b.vx);
+ const has=(vx,vy,z)=>{if(vx<0||vy<0||vx>=N||vy>=N)return false;const [x,y]=back(vx,vy);return B.has(key(x,y,z))};
+ list.forEach(b=>{const {vx,vy,z}=b,c=COLS[b.c];
+  if(!has(vx,vy+1,z))h+=`<polygon class="vb-f" data-b="${b.x},${b.y},${b.z}" data-n="${vx},${vy+1},${z}" fill="${shade(c,.72)}" points="${P([iso(vx,vy+1,z),iso(vx+1,vy+1,z),iso(vx+1,vy+1,z+1),iso(vx,vy+1,z+1)])}"/>`;
+  if(!has(vx+1,vy,z))h+=`<polygon class="vb-f" data-b="${b.x},${b.y},${b.z}" data-n="${vx+1},${vy},${z}" fill="${shade(c,.86)}" points="${P([iso(vx+1,vy,z),iso(vx+1,vy+1,z),iso(vx+1,vy+1,z+1),iso(vx+1,vy,z+1)])}"/>`;
+  if(!has(vx,vy,z+1))h+=`<polygon class="vb-f" data-b="${b.x},${b.y},${b.z}" data-n="${vx},${vy},${z+1}" fill="${c}" points="${P([iso(vx,vy,z+1),iso(vx+1,vy,z+1),iso(vx+1,vy+1,z+1),iso(vx,vy+1,z+1)])}"/>`});
+ $('sv').innerHTML=h;$('nb').textContent=B.size;$('mh').textContent=maxH();views();
+ document.querySelectorAll('[data-c]').forEach(x=>x.classList.toggle('on',+x.dataset.c===col));document.querySelectorAll('[data-t]').forEach(x=>x.className='btn small '+(x.dataset.t===tool?'on':'white'));[...$('chl').children].forEach((x,i)=>{x.classList.toggle('on',i===ch);x.classList.toggle('won',won.includes(i))});
+ window.__t={n:B.size,h:maxH(),rot,front:view('front').join(''),side:view('side').join('')}}
+function maxH(){let m=0;B.forEach((c,k)=>m=Math.max(m,+k.split(',')[2]+1));return m}
+// front view looks along y, side view looks along x; each cell is filled if any block is there
+function view(kind){const g=[];for(let z=HMAX-1;z>=0;z--)for(let a=0;a<N;a++){let f=false;for(let b=0;b<N;b++){const k=kind==='front'?key(a,b,z):key(b,a,z);if(B.has(k)){f=true;break}}g.push(f?1:0)}return g}
+function views(){let t='';for(let x=0;x<N;x++)for(let y=0;y<N;y++){let top=-1,c=0;for(let z=HMAX-1;z>=0;z--)if(B.has(key(x,y,z))){top=z;c=B.get(key(x,y,z));break}if(top>=0)t+=`<rect x="${x}" y="${y}" width="1" height="1" fill="${COLS[c]}" stroke="#1D2B53" stroke-width=".06"/><text x="${x+.5}" y="${y+.7}" font-size=".55" text-anchor="middle" font-weight="800">${top+1}</text>`}$('vt').innerHTML=t;
+ const v=(kind,el)=>{const g=view(kind);let s='';g.forEach((f,i)=>{if(f){const a=i%N,z=Math.floor(i/N);s+=`<rect x="${a}" y="${z}" width="1" height="1" fill="#9FB2DA" stroke="#1D2B53" stroke-width=".06"/>`}});$(el).innerHTML=s};v('front','vf');v('side','vs')}
+function act(e){const f=e.target.closest('[data-b]'),g=e.target.closest('[data-g]');if(!f&&!g)return;
+ if(tool==='add'){let x,y,z;if(f){const [vx,vy,nz]=f.dataset.n.split(',').map(Number);if(vx<0||vy<0||vx>=N||vy>=N||nz>=HMAX){Kit.tone(200,.15,'triangle',.12);return}[x,y]=back(vx,vy);z=nz}else{[x,y]=g.dataset.g.split(',').map(Number);z=0;while(B.has(key(x,y,z))&&z<HMAX)z++;if(z>=HMAX)return}
+  B.set(key(x,y,z),col);hist.push(['add',key(x,y,z)]);Kit.tone(300+z*60,.05,'square',.08)}
+ else if(f){const k=f.dataset.b;if(tool==='del'){hist.push(['del',k,B.get(k)]);B.delete(k);Kit.tone(200,.08,'triangle',.1)}else{hist.push(['paint',k,B.get(k)]);B.set(k,col);Kit.tick()}}
+ save();draw();check()}
+function check(){if(ch<0)return;if(CHAL[ch][1]&&CHAL[ch][2]()){if(!won.includes(ch)){won.push(ch);Kit.set('vb-won',won);Kit.tada();Kit.confetti(60);$('msg').textContent='🎉 Challenge complete!'}draw()}}
+function stairs(){for(let x=0;x<N;x++)for(let y=0;y<N;y++)for(const [dx,dy] of [[1,0],[0,1],[-1,0],[0,-1]]){let ok=true;for(let s=0;s<4;s++){const X=x+dx*s,Y=y+dy*s;if(X<0||Y<0||X>=N||Y>=N){ok=false;break}let hgt=0;while(B.has(key(X,Y,hgt)))hgt++;if(hgt!==s+1){ok=false;break}}if(ok)return true}return false}
+function cube3(){for(let x=0;x<=N-3;x++)for(let y=0;y<=N-3;y++){let ok=true;for(let a=0;a<3&&ok;a++)for(let b=0;b<3&&ok;b++)for(let z=0;z<3;z++)if(!B.has(key(x+a,y+b,z))){ok=false;break}if(ok)return true}return false}
+$('sv').addEventListener('click',act);
+$('cs').onclick=e=>{const b=e.target.closest('[data-c]');if(b){col=+b.dataset.c;if(tool==='del')tool='add';draw()}};
+document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tool=b.dataset.t;draw()});
+$('rl').onclick=()=>{rot=(rot+3)%4;draw()};$('rr').onclick=()=>{rot=(rot+1)%4;draw()};
+$('un').onclick=()=>{const h=hist.pop();if(!h)return;if(h[0]==='add')B.delete(h[1]);else B.set(h[1],h[2]);save();draw()};
+$('cl').onclick=()=>{if(!B.size||confirm('Knock everything down?')){hist=[];B.clear();save();draw()}};
+$('chl').onclick=e=>{const b=e.target.closest('[data-ch]');if(b){ch=+b.dataset.ch;$('msg').textContent='🎯 '+CHAL[ch][1];draw();check()}};
+window.__v={put:(x,y,z,c=0)=>{B.set(key(x,y,z),c);save();draw();check()},clear:()=>{B.clear();save();draw()},ch:i=>$('chl').children[i].click()};
+draw();
+</script>
+</body></html>

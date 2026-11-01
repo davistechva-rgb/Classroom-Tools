@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Sticky Note Wall</title>
+<style>
+main{max-width:1800px}
+.sn-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:12px}
+.sn-board{display:grid;gap:12px;align-items:start}
+.sn-col{background:rgba(255,255,255,.35);border:5px solid var(--ink);border-radius:20px;padding:10px;min-height:300px;display:flex;flex-direction:column;gap:8px}
+.sn-col.over{background:rgba(255,241,168,.7)}
+.sn-col h3{margin:0;display:flex;gap:6px;align-items:center}
+.sn-col h3 input{flex:1;font:inherit;font-weight:900;font-size:1.2rem;border:0;background:transparent;color:#fff;text-shadow:2px 2px 0 var(--ink);min-width:0}
+.sn-col h3 span{background:#fff;border:3px solid var(--ink);border-radius:99px;padding:0 8px;font-weight:900}
+.sn-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;flex:1;align-content:start}
+.sn-n{background:var(--nc);border-radius:4px 4px 18px 4px;box-shadow:3px 5px 0 rgba(29,43,83,.35);padding:10px 10px 30px;min-height:120px;position:relative;cursor:grab;transform:rotate(var(--r));touch-action:none;transition:transform .15s}
+.sn-n:hover{transform:rotate(0) scale(1.03);z-index:2}
+.sn-n.drag{opacity:.4}
+.sn-n .tx{font-weight:700;font-size:1.05rem;outline:none;min-height:3em;word-break:break-word;cursor:text}
+.sn-n .ft{position:absolute;left:6px;right:6px;bottom:4px;display:flex;justify-content:space-between;align-items:center}
+.sn-n .ft button{border:0;background:rgba(255,255,255,.6);border-radius:8px;cursor:pointer;font-weight:900;padding:1px 6px;color:var(--ink)}
+.sn-n .pin{position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:1.3rem}
+.sn-ghost{position:fixed;pointer-events:none;z-index:50;opacity:.9;width:160px}
+.sn-add{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+.sn-add button.cl{width:30px;height:30px;border-radius:8px;border:3px solid var(--ink);background:var(--nc);cursor:pointer}
+.sn-add button.cl.on{outline:3px solid #fff;outline-offset:1px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("📝", "Sticky Note Wall");
+const $=id=>document.getElementById(id);
+const NC=['#FFF27A','#FFB3D1','#9FE6FF','#B8F59A','#FFC98B','#D6C2FF'];
+const PRE={brain:['💡 Brainstorm',['Ideas']],kwl:['📚 K-W-L',['What I Know','What I Want to know','What I Learned']],pro:['⚖️ Pros & cons',['👍 Pros','👎 Cons']],kan:['✅ To do / doing / done',['To do','Doing','Done']],park:['🅿️ Parking lot',['Questions','Ideas','Later']],star:['⭐ Glow & grow',['🌟 Glows','🌱 Grows']]};
+let S=Kit.get('sn-wall',null)||{cols:PRE.kwl[1].map(t=>({t,n:[]}))},nc=0,drag=null;
+document.querySelector('main').innerHTML=`<div class="sn-top"><select id="pr" style="width:auto"><option value="">📋 New wall…</option>${Object.entries(PRE).map(([k,v])=>`<option value="${k}">${v[0]}</option>`).join('')}</select><button class="btn white small" id="ac">➕ Column</button><button class="btn white small" id="rc">➖ Column</button><button class="btn white small" id="sh">🔀 Shuffle notes</button><button class="btn white small" id="sv">⬇️ Sort by votes</button><button class="btn white small" id="cl">🗑️ Clear notes</button></div><div class="sn-board" id="bd"></div>`;
+function save(){Kit.set('sn-wall',S)}
+function draw(){const n=S.cols.length;$('bd').style.gridTemplateColumns=`repeat(${n},minmax(0,1fr))`;if(innerWidth<760)$('bd').style.gridTemplateColumns='minmax(0,1fr)';
+ $('bd').innerHTML=S.cols.map((c,ci)=>`<div class="sn-col" data-col="${ci}"><h3><input value="${Kit.esc(c.t)}" data-t="${ci}" aria-label="Column name"><span>${c.n.length}</span></h3><div class="sn-add">${NC.map((x,k)=>`<button class="cl ${k===nc?'on':''}" data-nc="${k}" style="--nc:${x}" title="Note color"></button>`).join('')}<button class="btn green small" data-add="${ci}">➕ Note</button></div><div class="sn-list">${c.n.map((m,ni)=>`<div class="sn-n" data-c="${ci}" data-i="${ni}" style="--nc:${NC[m.c]};--r:${((m.id*37)%7-3)*.8}deg"><span class="pin">📌</span><div class="tx" contenteditable="true" data-e="${ci}:${ni}">${Kit.esc(m.t)}</div><div class="ft"><button data-v="${ci}:${ni}" title="Vote">👍 ${m.v||''}</button><button data-x="${ci}:${ni}" title="Delete">✖</button></div></div>`).join('')}</div></div>`).join('');
+ window.__t={cols:S.cols.map(c=>c.t),notes:S.cols.map(c=>c.n.map(m=>m.t))}}
+function addNote(ci,t=''){const id=Date.now()%100000+Math.floor(Math.random()*1000);S.cols[ci].n.push({id,t,c:nc,v:0});save();draw();const el=[...document.querySelectorAll(`[data-c="${ci}"] .tx`)].pop();if(el&&!t)el.focus();Kit.tick()}
+$('bd').addEventListener('click',e=>{const a=e.target.closest('[data-add]'),v=e.target.closest('[data-v]'),x=e.target.closest('[data-x]'),k=e.target.closest('[data-nc]');
+ if(a)addNote(+a.dataset.add);if(k){nc=+k.dataset.nc;draw()}
+ if(v){const [c,i]=v.dataset.v.split(':').map(Number);S.cols[c].n[i].v=(S.cols[c].n[i].v||0)+1;save();draw();Kit.tone(700,.06,'triangle',.1)}
+ if(x){const [c,i]=x.dataset.x.split(':').map(Number);S.cols[c].n.splice(i,1);save();draw()}});
+$('bd').addEventListener('input',e=>{const t=e.target;if(t.dataset.t!==undefined){S.cols[+t.dataset.t].t=t.value;save()}if(t.dataset.e){const [c,i]=t.dataset.e.split(':').map(Number);S.cols[c].n[i].t=t.innerText.slice(0,200);save()}});
+// drag a note by its edges (the text area stays typeable)
+$('bd').addEventListener('pointerdown',e=>{const n=e.target.closest('.sn-n');if(!n||e.target.closest('.tx,button'))return;e.preventDefault();const g=n.cloneNode(true);g.classList.add('sn-ghost');document.body.appendChild(g);n.classList.add('drag');drag={c:+n.dataset.c,i:+n.dataset.i,g,ox:e.clientX-n.getBoundingClientRect().left,oy:e.clientY-n.getBoundingClientRect().top};move(e)});
+function move(e){if(!drag)return;drag.g.style.left=(e.clientX-drag.ox)+'px';drag.g.style.top=(e.clientY-drag.oy)+'px';document.querySelectorAll('.sn-col').forEach(c=>c.classList.remove('over'));const col=document.elementsFromPoint(e.clientX,e.clientY).find(x=>x.classList&&x.classList.contains('sn-col'));if(col)col.classList.add('over')}
+addEventListener('pointermove',move);
+addEventListener('pointerup',e=>{if(!drag)return;const col=document.elementsFromPoint(e.clientX,e.clientY).find(x=>x.classList&&x.classList.contains('sn-col'));drag.g.remove();
+ if(col){const to=+col.dataset.col,m=S.cols[drag.c].n.splice(drag.i,1)[0];// drop before the note under the finger, or at the end
+  const over=document.elementsFromPoint(e.clientX,e.clientY).find(x=>x.classList&&x.classList.contains('sn-n')&&!x.classList.contains('drag'));let at=S.cols[to].n.length;if(over&&+over.dataset.c===to){at=+over.dataset.i;if(drag.c===to&&drag.i<at)at--}
+  S.cols[to].n.splice(at,0,m);save();Kit.tick()}drag=null;draw()});
+$('pr').onchange=()=>{const k=$('pr').value;if(!k)return;const all=S.cols.flatMap(c=>c.n);if(!all.length||confirm('Start a new wall? Your notes will be cleared.')){S={cols:PRE[k][1].map(t=>({t,n:[]}))};save();draw()}$('pr').value=''};
+$('ac').onclick=()=>{if(S.cols.length<6){S.cols.push({t:'New column',n:[]});save();draw()}};
+$('rc').onclick=()=>{if(S.cols.length<2)return;const last=S.cols[S.cols.length-1];if(!last.n.length||confirm(`Remove "${last.t}" and its notes?`)){S.cols.pop();save();draw()}};
+$('sh').onclick=()=>{S.cols.forEach(c=>c.n=Kit.shuffle(c.n));save();draw()};$('sv').onclick=()=>{S.cols.forEach(c=>c.n.sort((a,b)=>(b.v||0)-(a.v||0)));save();draw()};
+$('cl').onclick=()=>{if(confirm('Remove every note?')){S.cols.forEach(c=>c.n=[]);save();draw()}};
+addEventListener('resize',()=>{if(!drag&&document.activeElement.tagName!=='INPUT'&&!document.activeElement.isContentEditable)draw()});
+window.__s={add:(c,t)=>addNote(c,t),move:(c,i,to)=>{const m=S.cols[c].n.splice(i,1)[0];S.cols[to].n.push(m);save();draw()}};
+draw();
+</script>
+</body></html>

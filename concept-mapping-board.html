@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Concept Mapping Board</title>
+<style>
+main{max-width:1800px}
+.cm-bar{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:10px}
+.cm-bar .btn.on{background:var(--sun)}
+.cm-c{width:30px;height:30px;border-radius:50%;border:3px solid var(--ink);background:var(--c);cursor:pointer}.cm-c.on{outline:4px solid #fff;outline-offset:2px}
+.cm-board{background:#FFFDF6;background-image:radial-gradient(#E3E8F2 1.5px,transparent 1.5px);background-size:28px 28px;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);overflow:hidden;touch-action:none}
+.cm-board svg{width:100%;display:block;aspect-ratio:16/10;user-select:none}
+.cm-n rect{stroke:#1D2B53;stroke-width:3.5;cursor:grab}
+.cm-n text{font:800 17px Fredoka,sans-serif;fill:#1D2B53;text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.cm-n.sel rect{stroke:#E5533F;stroke-width:6}
+.cm-n.main rect{stroke-width:5}
+.cm-n.main text{font-size:21px}
+.cm-l{stroke:#5B6B95;stroke-width:3.5;fill:none;cursor:pointer}
+.cm-ll{font:700 14px Fredoka,sans-serif;fill:#55607E;text-anchor:middle;dominant-baseline:central;paint-order:stroke;stroke:#FFFDF6;stroke-width:6;cursor:pointer}
+.cm-tip{text-align:center;color:#fff;font-weight:800;text-shadow:2px 2px 0 var(--ink);min-height:1.5em;margin-top:8px}
+@media print{header,.cm-bar,.cm-tip{display:none!important}.cm-board{box-shadow:none}}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🧠", "Concept Mapping Board");
+const $=id=>document.getElementById(id);
+const COLS=['#FFF27A','#FFB3D1','#9FE6FF','#B8F59A','#FFC98B','#D6C2FF','#FFFFFF'];
+const PRE={plant:['🌱 Parts of a plant',[['Plant',500,300,3,1],['Roots',250,470,1],['Stem',500,480,1],['Leaves',760,470,1],['Flower',760,130,1],['Water',110,320,2],['Sunlight',900,300,0],['Seeds',500,90,4]],[[0,1,'has'],[0,2,'has'],[0,3,'has'],[0,4,'has'],[1,5,'drink'],[3,6,'catch'],[4,7,'makes']]],
+ food:['🦊 Food web',[['Sun',500,70,0,1],['Grass',300,220,3],['Berries',700,220,3],['Rabbit',220,400,4],['Mouse',520,400,4],['Bird',800,400,2],['Fox',350,560,1],['Hawk',720,560,1]],[[0,1,'feeds'],[0,2,'feeds'],[1,3,'eaten by'],[1,4,'eaten by'],[2,4,'eaten by'],[2,5,'eaten by'],[3,6,'eaten by'],[4,6,'eaten by'],[4,7,'eaten by'],[5,7,'eaten by']]],
+ water:['💧 Water cycle',[['Water cycle',500,310,2,1],['Evaporation',230,150,4],['Condensation',770,150,6],['Precipitation',770,470,2],['Collection',230,470,3]],[[1,2,'then'],[2,3,'then'],[3,4,'then'],[4,1,'then'],[0,1,''],[0,3,'']]],
+ blank:['🆕 Start fresh',[['Big idea',500,310,0,1]],[]]};
+let S=Kit.get('cm-state',null),mode='move',col=0,sel=null,drag=null,link=null;
+if(!S)load('plant',false);
+function load(k,draw_=true){const p=PRE[k];S={n:p[1].map(([t,x,y,c,m],i)=>({id:i+1,t,x,y,c,m:!!m})),l:p[2].map(([a,b,t])=>({a:a+1,b:b+1,t})),nid:p[1].length+1};if(draw_){save();draw()}}
+document.querySelector('main').innerHTML=`<div class="cm-bar" id="bar"><select id="pr" style="width:auto"><option value="">📚 Start from…</option>${Object.entries(PRE).map(([k,v])=>`<option value="${k}">${v[0]}</option>`).join('')}</select><button class="btn small" data-m="move">✋ Move</button><button class="btn white small" data-m="add">➕ Add idea</button><button class="btn white small" data-m="link">🔗 Connect</button><button class="btn white small" data-m="del">🗑️ Remove</button>${COLS.map((c,i)=>`<button class="cm-c" data-c="${i}" style="--c:${c}"></button>`).join('')}<button class="btn white small" id="tidy">✨ Tidy up</button><button class="btn white small" id="prt">🖨️</button></div>
+<div class="cm-board"><svg id="sv" viewBox="0 0 1000 625"></svg></div><div class="cm-tip" id="tip"></div>`;
+function save(){Kit.set('cm-state',S)}
+const N=id=>S.n.find(n=>n.id===id);
+function size(n){const w=Math.max(90,Math.min(260,n.t.length*(n.m?12:10)+40));return [w,n.m?64:50]}
+// where a line from a to b leaves the edge of box a
+function edge(a,b){const [w,h]=size(a),dx=b.x-a.x,dy=b.y-a.y;if(!dx&&!dy)return [a.x,a.y];const s=Math.min(Math.abs((w/2+4)/(dx||1e-9)),Math.abs((h/2+4)/(dy||1e-9)));return [a.x+dx*s,a.y+dy*s]}
+function draw(){let h='<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5B6B95"/></marker></defs>';
+ S.l.forEach((l,i)=>{const a=N(l.a),b=N(l.b);if(!a||!b)return;const p=edge(a,b),q=edge(b,a);h+=`<line class="cm-l" data-l="${i}" x1="${p[0]}" y1="${p[1]}" x2="${q[0]}" y2="${q[1]}" marker-end="url(#ar)"/>`;if(l.t)h+=`<text class="cm-ll" data-l="${i}" x="${(p[0]+q[0])/2}" y="${(p[1]+q[1])/2}">${Kit.esc(l.t)}</text>`});
+ S.n.forEach(n=>{const [w,hh]=size(n);h+=`<g class="cm-n ${n.id===sel||(link&&link===n.id)?'sel':''} ${n.m?'main':''}" data-n="${n.id}"><rect x="${n.x-w/2}" y="${n.y-hh/2}" width="${w}" height="${hh}" rx="${hh/2}" fill="${COLS[n.c]}"/><text x="${n.x}" y="${n.y}">${Kit.esc(n.t)}</text></g>`});
+ $('sv').innerHTML=h;document.querySelectorAll('[data-m]').forEach(b=>b.className='btn small '+(b.dataset.m===mode?'on':'white'));document.querySelectorAll('[data-c]').forEach(b=>b.classList.toggle('on',+b.dataset.c===col));
+ $('tip').textContent={move:'Drag ideas around. Double-tap an idea or a line label to change its words.',add:'Tap an empty spot to add a new idea.',link:link?'Now tap the idea to connect it to.':'Tap one idea, then another, to draw an arrow between them.',del:'Tap an idea or an arrow to remove it.'}[mode];
+ window.__t={nodes:S.n.map(n=>n.t),links:S.l.map(l=>[N(l.a)&&N(l.a).t,N(l.b)&&N(l.b).t,l.t])}}
+function pt(e){const r=$('sv').getBoundingClientRect();return [(e.clientX-r.left)/r.width*1000,(e.clientY-r.top)/r.height*625]}
+function addNode(t,x,y){const n={id:S.nid++,t,x,y,c:col,m:false};S.n.push(n);save();draw();return n.id}
+function connect(a,b,t){if(a===b||S.l.some(l=>l.a===a&&l.b===b))return false;S.l.push({a,b,t:t||''});save();draw();return true}
+let lastTap={id:null,t:0};
+$('sv').addEventListener('pointerdown',e=>{const g=e.target.closest('[data-n]'),ln=e.target.closest('[data-l]');const [x,y]=pt(e);
+ if(mode==='add'&&!g&&!ln){const t=prompt('New idea:','');if(t&&t.trim()){addNode(t.trim().slice(0,40),x,y);Kit.ding()}return}
+ if(mode==='del'){if(g){const id=+g.dataset.n;S.n=S.n.filter(n=>n.id!==id);S.l=S.l.filter(l=>l.a!==id&&l.b!==id)}else if(ln)S.l.splice(+ln.dataset.l,1);save();draw();return}
+ if(ln&&mode!=='link'){const l=S.l[+ln.dataset.l];const now=Date.now();if(lastTap.id==='l'+ln.dataset.l&&now-lastTap.t<450){const t=prompt('Words on the arrow (like "eats" or "is part of"):',l.t);if(t!==null){l.t=t.trim().slice(0,30);save();draw()}}lastTap={id:'l'+ln.dataset.l,t:now};return}
+ if(!g){sel=null;link=null;draw();return}const id=+g.dataset.n,n=N(id);
+ if(mode==='link'){if(link==null){link=id;draw()}else{const a=link;link=null;if(a!==id){const t=prompt(`How is "${N(a).t}" connected to "${n.t}"? (for example: eats, needs, makes)`,'');if(t!==null){connect(a,id,t.trim().slice(0,30));Kit.ding()}}draw()}return}
+ const now=Date.now();if(lastTap.id===id&&now-lastTap.t<450){const t=prompt('Change the words:',n.t);if(t&&t.trim()){n.t=t.trim().slice(0,40);save()}lastTap={id:null,t:0};draw();return}lastTap={id,t:now};
+ sel=id;n.c=mode==='move'&&e.shiftKey?col:n.c;drag={n,dx:x-n.x,dy:y-n.y};$('sv').setPointerCapture(e.pointerId);draw()});
+$('sv').addEventListener('pointermove',e=>{if(!drag)return;const [x,y]=pt(e);drag.n.x=Math.max(50,Math.min(950,x-drag.dx));drag.n.y=Math.max(30,Math.min(595,y-drag.dy));draw()});
+$('sv').addEventListener('pointerup',()=>{if(drag){drag=null;save()}});
+$('bar').onclick=e=>{const m=e.target.closest('[data-m]'),c=e.target.closest('[data-c]');if(m){mode=m.dataset.m;link=null;draw()}if(c){col=+c.dataset.c;const n=N(sel);if(n){n.c=col;save()}draw()}};
+$('pr').onchange=()=>{const k=$('pr').value;if(k&&(S.n.length<=1||confirm('Replace your map?')))load(k);$('pr').value=''};
+// tidy: a few rounds of pushing ideas apart and pulling connected ideas together
+$('tidy').onclick=()=>{for(let it=0;it<200;it++){S.n.forEach(a=>{let fx=0,fy=0;S.n.forEach(b=>{if(a===b)return;const dx=a.x-b.x,dy=(a.y-b.y)*1.6,d=Math.max(30,Math.hypot(dx,dy));const k=9000/(d*d);fx+=dx/d*k;fy+=dy/d*k});S.l.forEach(l=>{const o=l.a===a.id?N(l.b):l.b===a.id?N(l.a):null;if(!o)return;const dx=o.x-a.x,dy=o.y-a.y,d=Math.hypot(dx,dy);fx+=dx/d*(d-200)*.03;fy+=dy/d*(d-200)*.03});fx+=(500-a.x)*.004;fy+=(312-a.y)*.004;a.x=Math.max(70,Math.min(930,a.x+fx));a.y=Math.max(40,Math.min(585,a.y+fy))})}save();draw();Kit.tada()};
+$('prt').onclick=()=>print();
+window.__c={addNode,connect,mode:m=>{mode=m;draw()},count:()=>[S.n.length,S.l.length]};
+draw();
+</script>
+</body></html>

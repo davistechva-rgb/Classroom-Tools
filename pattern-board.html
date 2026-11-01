@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Pattern Board</title>
+<style>
+main{max-width:1700px}
+.pb-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:10px}
+.pb-pal{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:10px}
+.pb-pal button{border:4px solid var(--ink);border-radius:14px;background:#fff;cursor:pointer;padding:4px 8px;display:grid;place-items:center}
+.pb-pal svg{height:40px;width:auto;overflow:visible}
+.pb-board{background:#FFFDF6;background-image:radial-gradient(#E3E8F2 1.5px,transparent 1.5px);background-size:30px 30px;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);overflow:hidden;touch-action:none}
+.pb-board svg{width:100%;display:block;aspect-ratio:16/10;user-select:none}
+.pb-piece{cursor:grab;stroke:#1D2B53;stroke-width:3;stroke-linejoin:round}
+.pb-piece.sel{stroke:#E5533F;stroke-width:5}
+.pb-ghost{pointer-events:none;opacity:.55}
+.pb-out{fill:rgba(29,43,83,.08);stroke:#1D2B53;stroke-width:4;stroke-dasharray:10 8;pointer-events:none}
+.pb-msg{text-align:center;color:#fff;font-weight:900;font-size:clamp(1.1rem,2.8vw,1.6rem);text-shadow:2px 2px 0 var(--ink);min-height:1.5em;margin-top:10px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🟦", "Pattern Board");
+const $=id=>document.getElementById(id);
+const s=60,r3=Math.sqrt(3);
+// classic pattern blocks; points are around (0,0)
+const B={hex:['#FFC93C',Array.from({length:6},(_,i)=>[s*Math.cos(i*Math.PI/3),s*Math.sin(i*Math.PI/3)])],trap:['#E5533F',[[-s,0],[s,0],[s/2,-s*r3/2],[-s/2,-s*r3/2]]],
+ rhomb:['#1E7FD0',[[0,0],[s,0],[s*1.5,-s*r3/2],[s/2,-s*r3/2]]],thin:['#E8C38A',[[0,0],[s,0],[s+s*Math.cos(Math.PI/6),-s/2],[s*Math.cos(Math.PI/6),-s/2]]],
+ tri:['#5DC66E',[[0,0],[s,0],[s/2,-s*r3/2]]],sq:['#FF9F43',[[0,0],[s,0],[s,-s],[0,-s]]]};
+// center each shape on its middle so it rotates nicely
+Object.values(B).forEach(b=>{const cx=b[1].reduce((a,p)=>a+p[0],0)/b[1].length,cy=b[1].reduce((a,p)=>a+p[1],0)/b[1].length;b[1]=b[1].map(([x,y])=>[x-cx,y-cy])});
+const hexPts=(cx,cy,R)=>Array.from({length:6},(_,i)=>[cx+R*Math.cos(i*Math.PI/3),cy+R*Math.sin(i*Math.PI/3)]);
+const PUZ=[['⬡ Make a hexagon (no yellow!)',()=>[hexPts(500,312,s)],['hex']],['🔺 Big triangle',()=>[[[500-s,312+s*r3/2],[500+s,312+s*r3/2],[500,312-s*r3/2]]],[]],['⭐ Star',()=>{const H=hexPts(500,312,s);return [H,...H.map((p,i)=>{const q=H[(i+1)%6],mx=(p[0]+q[0])/2,my=(p[1]+q[1])/2,d=Math.hypot(mx-500,my-312);return [p,q,[500+(mx-500)/d*(d+s*r3/2),312+(my-312)/d*(d+s*r3/2)]]})]},[]],['⬡⬡ Giant hexagon',()=>[hexPts(500,312,2*s)],[]]];
+let P=Kit.get('pb-pieces',[]),sel=null,drag=null,mirror=false,puz=-1,nid=P.reduce((m,p)=>Math.max(m,p.id),0)+1;
+document.querySelector('main').innerHTML=`<div class="pb-top"><label style="color:#fff;font-weight:800"><input type="checkbox" id="mr"> 🪞 Mirror mode</label><button class="btn white small" id="ro">🔄 Turn</button><button class="btn white small" id="du">📄 Copy</button><button class="btn white small" id="de">🗑️ Delete</button><select id="pz" style="width:auto"><option value="-1">🧩 Fill-the-shape puzzles…</option>${PUZ.map((p,i)=>`<option value="${i}">${p[0]}</option>`).join('')}</select><button class="btn white small" id="ck" hidden>✓ Check</button><button class="btn white small" id="cl">🧽 Clear</button></div>
+<div class="pb-pal" id="pl">${Object.entries(B).map(([k,b])=>`<button data-add="${k}" title="Add"><svg viewBox="-70 -70 140 140"><polygon points="${b[1].map(p=>p.join(',')).join(' ')}" fill="${b[0]}" stroke="#1D2B53" stroke-width="5"/></svg></button>`).join('')}</div>
+<div class="pb-board"><svg id="sv" viewBox="0 0 1000 625"></svg></div><div class="pb-msg" id="msg">Tap a shape to add it. Drag to move, and tap a shape to turn it. Corners snap together!</div>`;
+const pts=p=>B[p.k][1].map(([x,y])=>{const a=p.r*Math.PI/180;return [p.x+x*Math.cos(a)-y*Math.sin(a),p.y+x*Math.sin(a)+y*Math.cos(a)]});
+const poly=(ps,cls,fill,extra='')=>`<polygon class="${cls}" points="${ps.map(q=>q.map(v=>v.toFixed(1)).join(',')).join(' ')}" fill="${fill}" ${extra}/>`;
+function save(){Kit.set('pb-pieces',P)}
+function draw(){let h='';if(mirror)h+='<line x1="500" y1="0" x2="500" y2="625" stroke="#9B6BF2" stroke-width="4" stroke-dasharray="12 10"/>';
+ if(puz>=0)PUZ[puz][1]().forEach(o=>h+=poly(o,'pb-out','rgba(29,43,83,.08)'));
+ P.forEach(p=>{h+=poly(pts(p),'pb-piece'+(p.id===sel?' sel':''),B[p.k][0],`data-id="${p.id}"`);if(mirror)h+=poly(pts(p).map(([x,y])=>[1000-x,y]),'pb-ghost',B[p.k][0],'stroke="#1D2B53" stroke-width="3"')});
+ $('sv').innerHTML=h;window.__t={n:P.length,sel,mirror,puz}}
+function add(k){const p={id:nid++,k,x:Kit.rand(120,880),y:Kit.rand(100,520),r:0};if(puz>=0){p.x=Kit.rand(80,280)*(Math.random()<.5?1:3.2);p.y=Kit.rand(80,540)}P.push(p);sel=p.id;save();draw();Kit.tick();return p.id}
+function snap(p){// find the closest pair of corners between this piece and any other, and line them up
+ let best=null;const mine=pts(p);P.forEach(o=>{if(o===p)return;pts(o).forEach(q=>mine.forEach(m=>{const d=Math.hypot(q[0]-m[0],q[1]-m[1]);if(d<16&&(!best||d<best.d))best={d,dx:q[0]-m[0],dy:q[1]-m[1]}}))});
+ if(puz>=0)PUZ[puz][1]().forEach(o=>o.forEach(q=>mine.forEach(m=>{const d=Math.hypot(q[0]-m[0],q[1]-m[1]);if(d<16&&(!best||d<best.d))best={d,dx:q[0]-m[0],dy:q[1]-m[1]}})));
+ if(best){p.x+=best.dx;p.y+=best.dy;Kit.tone(520,.05,'triangle',.1)}}
+function pt(e){const r=$('sv').getBoundingClientRect();return [(e.clientX-r.left)/r.width*1000,(e.clientY-r.top)/r.height*625]}
+$('sv').addEventListener('pointerdown',e=>{const g=e.target.closest('[data-id]');if(!g){sel=null;draw();return}const p=P.find(q=>q.id===+g.dataset.id);P.splice(P.indexOf(p),1);P.push(p);const [x,y]=pt(e);drag={p,dx:x-p.x,dy:y-p.y,moved:false,was:sel===p.id};sel=p.id;$('sv').setPointerCapture(e.pointerId);draw()});
+$('sv').addEventListener('pointermove',e=>{if(!drag)return;const [x,y]=pt(e);const nx=x-drag.dx,ny=y-drag.dy;if(Math.hypot(nx-drag.p.x,ny-drag.p.y)>2)drag.moved=true;if(drag.moved){drag.p.x=Math.max(0,Math.min(1000,nx));drag.p.y=Math.max(0,Math.min(625,ny));draw()}});
+$('sv').addEventListener('pointerup',()=>{if(!drag)return;const {p,moved,was}=drag;drag=null;if(moved)snap(p);else if(was){p.r=(p.r+30)%360;snap(p)}save();draw()});
+$('pl').onclick=e=>{const b=e.target.closest('[data-add]');if(b)add(b.dataset.add)};
+$('ro').onclick=()=>{const p=P.find(q=>q.id===sel);if(p){p.r=(p.r+30)%360;save();draw()}};
+$('du').onclick=()=>{const p=P.find(q=>q.id===sel);if(p){const c={...p,id:nid++,x:p.x+30,y:p.y+30};P.push(c);sel=c.id;save();draw()}};
+$('de').onclick=()=>{P=P.filter(q=>q.id!==sel);sel=null;save();draw()};$('cl').onclick=()=>{if(!P.length||confirm('Clear the board?')){P=[];save();draw()}};
+$('mr').onchange=()=>{mirror=$('mr').checked;draw();$('msg').textContent=mirror?'🪞 Build on the left side and watch the mirror copy appear on the right!':''};
+$('pz').onchange=()=>{puz=+$('pz').value;$('ck').hidden=puz<0;if(puz>=0){P=[];save();$('msg').textContent='Fill the dotted shape exactly, with no gaps and nothing sticking out.'+(PUZ[puz][2].length?' (No hexagons allowed!)':'')}draw()};
+// check by painting the outline and the pieces on a hidden canvas and counting pixels
+function check(){const c=document.createElement('canvas');c.width=500;c.height=313;const x=c.getContext('2d'),k=.5,path=ps=>{x.beginPath();ps.forEach(([a,b],i)=>i?x.lineTo(a*k,b*k):x.moveTo(a*k,b*k));x.closePath()};
+ x.fillStyle='#f00';PUZ[puz][1]().forEach(o=>{path(o);x.fill()});const tgt=x.getImageData(0,0,500,313).data;x.clearRect(0,0,500,313);x.fillStyle='#0f0';P.forEach(p=>{path(pts(p));x.fill()});const got=x.getImageData(0,0,500,313).data;
+ let T=0,hit=0,spill=0;for(let i=0;i<tgt.length;i+=4){const t=tgt[i]>128,g=got[i+1]>128;if(t){T++;if(g)hit++}else if(g)spill++}
+ const banned=PUZ[puz][2].some(b=>P.some(p=>p.k===b)),ok=hit/T>.97&&spill/T<.04&&!banned;
+ if(ok){Kit.tada();Kit.confetti(70);$('msg').textContent=`🎉 Perfect fit with ${P.length} pieces! Can you do it a different way?`}else{Kit.tone(200,.25,'triangle',.15);$('msg').textContent=banned?'No hexagons allowed in this one!':hit/T<.97?`${Math.round(hit/T*100)}% filled. Keep going!`:'Some pieces are sticking out of the shape.'}window.__t.ok=ok;return ok}
+$('ck').onclick=check;
+window.__p={add,set:(id,x,y,r)=>{const p=P.find(q=>q.id===id);p.x=x;p.y=y;p.r=r;draw()},check,puz:i=>{$('pz').value=i;$('pz').onchange()},pts:id=>pts(P.find(q=>q.id===id))};
+draw();
+</script>
+</body></html>

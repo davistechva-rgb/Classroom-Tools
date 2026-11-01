@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Collaborative Drawing Board</title>
+<style>
+main{max-width:1800px}
+.cd-tabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:10px}
+.cd-bar{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:10px}
+.cd-c{width:32px;height:32px;border-radius:50%;border:3px solid var(--ink);background:var(--c);cursor:pointer}.cd-c.on{outline:4px solid #fff;outline-offset:2px}
+.cd-wrap{position:relative;border:6px solid var(--ink);border-radius:20px;box-shadow:7px 7px 0 var(--ink);overflow:hidden;background:#fff;touch-action:none}
+.cd-wrap canvas{display:block;width:100%;aspect-ratio:16/9}
+.cd-zones{display:grid;gap:10px}
+.cd-zone{border:6px solid var(--zc);border-radius:20px;background:#fff;overflow:hidden;position:relative;touch-action:none;box-shadow:5px 5px 0 var(--ink)}
+.cd-zone canvas{display:block;width:100%;aspect-ratio:4/3}
+.cd-zone .zb{position:absolute;left:6px;right:6px;top:6px;display:flex;gap:4px;flex-wrap:wrap;align-items:center;pointer-events:none}
+.cd-zone .zb>*{pointer-events:auto}
+.cd-zone .zb b{background:var(--zc);color:#fff;border-radius:10px;padding:2px 8px;text-shadow:1px 1px 0 rgba(0,0,0,.3)}
+.cd-zone .zb .cd-c{width:24px;height:24px;border-width:2px}
+.cd-prompt{text-align:center;color:#fff;font-weight:900;font-size:clamp(1.3rem,3.5vw,2rem);text-shadow:3px 3px 0 var(--ink);margin-bottom:8px}
+.cd-cover{position:absolute;left:0;right:0;background:repeating-linear-gradient(45deg,#FFD27F 0 18px,#FFC98B 18px 36px);display:grid;place-items:center;font-weight:900;font-size:1.3rem;color:var(--ink);border-bottom:5px dashed var(--ink);transition:transform .8s}
+.cd-guide{position:absolute;left:0;right:0;border-top:4px dashed #E5533F;pointer-events:none}
+.cd-guide span{position:absolute;right:8px;top:-28px;background:#E5533F;color:#fff;font-weight:800;border-radius:8px;padding:0 8px;font-size:.85rem}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🖍️", "Collaborative Drawing Board");
+const $=id=>document.getElementById(id);
+const COLS=['#1D2B53','#E5533F','#FF9F43','#FFC93C','#5DC66E','#22C3E6','#1E7FD0','#9B6BF2','#FF6B9A','#8B5A2B'];
+const ZC=['#E5533F','#1E7FD0','#5DC66E','#9B6BF2'];
+const PROMPTS=['a cat wearing a hat','a robot chef','your dream treehouse','a dragon eating pizza','a monster under the bed','a rocket ship','a happy volcano','an underwater city','a superhero pet','a castle in the clouds','a funny fish','a snowman on vacation','an alien at school','a car that can fly','a giant sandwich','a dinosaur playing soccer'];
+const PARTS={3:['🙂 Head','👕 Body','👟 Legs & feet'],4:['🎩 Hat & head','👕 Body & arms','🩳 Legs','👟 Feet & ground']};
+let mode='together',pen=0,width=8,zones=[],timer=0,fold=null;
+document.querySelector('main').innerHTML=`<div class="cd-tabs"><button class="btn" data-m="together">🙌 Draw together</button><button class="btn white" data-m="split">🪟 Split screen</button><button class="btn white" data-m="fold">📜 Fold & pass</button></div><div id="bd"></div>`;
+// a tiny raster pen: every finger or mouse gets its own stroke
+function painter(cv,getCol,getW){const ctx=cv.getContext('2d'),live=new Map();const fit=()=>{const r=cv.getBoundingClientRect(),img=cv.width?ctx.getImageData(0,0,cv.width,cv.height):null;const ow=cv.width,oh=cv.height;cv.width=Math.round(r.width);cv.height=Math.round(r.height);ctx.fillStyle='#fff';ctx.fillRect(0,0,cv.width,cv.height);if(img&&ow){const t=document.createElement('canvas');t.width=ow;t.height=oh;t.getContext('2d').putImageData(img,0,0);ctx.drawImage(t,0,0,cv.width,cv.height)}};fit();
+ const P=e=>{const r=cv.getBoundingClientRect();return [(e.clientX-r.left)*cv.width/r.width,(e.clientY-r.top)*cv.height/r.height]};
+ cv.addEventListener('pointerdown',e=>{if(cv.dataset.lock)return;cv.setPointerCapture(e.pointerId);const c=getCol(e,live.size);live.set(e.pointerId,{p:P(e),c});ctx.fillStyle=c;const [x,y]=P(e);ctx.beginPath();ctx.arc(x,y,getW()/2,0,7);ctx.fill();window.__t&&(window.__t.marks=(window.__t.marks||0)+1)});
+ cv.addEventListener('pointermove',e=>{const s=live.get(e.pointerId);if(!s)return;const q=P(e);ctx.strokeStyle=s.c;ctx.lineWidth=getW();ctx.lineCap='round';ctx.beginPath();ctx.moveTo(...s.p);ctx.lineTo(...q);ctx.stroke();s.p=q});
+ const end=e=>live.delete(e.pointerId);cv.addEventListener('pointerup',end);cv.addEventListener('pointercancel',end);
+ return {clear:()=>{ctx.fillStyle='#fff';ctx.fillRect(0,0,cv.width,cv.height)},fit,ctx,cv}}
+function bar(){return `<div class="cd-bar"><span style="color:#fff;font-weight:800">✏️</span>${COLS.map((c,i)=>`<button class="cd-c ${i===pen?'on':''}" data-c="${i}" style="--c:${c}"></button>`).join('')}<select id="wd" style="width:auto"><option value="4">Thin</option><option value="8" selected>Medium</option><option value="16">Thick</option><option value="34">Huge</option></select><button class="btn white small" id="er">🧽 Eraser</button><button class="btn white small" id="cl">🗑️ Clear</button></div>`}
+function wireBar(onClear){document.querySelectorAll('.cd-bar [data-c]').forEach(b=>b.onclick=()=>{pen=+b.dataset.c;document.querySelectorAll('.cd-bar [data-c]').forEach(x=>x.classList.toggle('on',x===b))});$('wd').onchange=()=>width=+$('wd').value;$('er').onclick=()=>{pen=-1;document.querySelectorAll('.cd-bar [data-c]').forEach(x=>x.classList.remove('on'))};$('cl').onclick=onClear}
+function together(){$('bd').innerHTML=bar()+`<div class="cd-wrap"><canvas id="cv"></canvas></div><p style="color:#fff;font-weight:800;text-align:center;text-shadow:1px 1px 0 var(--ink)">On a touch screen, everyone can draw at the same time! Each extra finger gets its own color.</p>`;
+ const p=painter($('cv'),(e,n)=>pen<0?'#fff':n===0?COLS[pen]:COLS[(pen+n*3)%COLS.length],()=>pen<0?width*3:width);wireBar(()=>{if(confirm('Clear the whole board?'))p.clear()});zones=[p];window.__t={mode,marks:0}}
+function split(){const n=+(Kit.get('cd-n',2));$('bd').innerHTML=`<div class="cd-bar"><select id="zn" style="width:auto">${[2,3,4].map(v=>`<option ${v===n?'selected':''} value="${v}">${v} artists</option>`).join('')}</select><button class="btn green" id="np">🎲 New prompt</button><select id="tt" style="width:auto"><option value="0">No timer</option><option value="60" selected>1 minute</option><option value="120">2 minutes</option></select><button class="btn white small" id="ca">🗑️ Clear all</button></div><div class="cd-prompt" id="pr">Draw: ${Kit.pick(PROMPTS)}</div><div class="cd-zones" id="zs" style="grid-template-columns:repeat(${n>2?2:n},minmax(0,1fr))"></div>`;
+ $('zs').innerHTML=Array.from({length:n},(_,i)=>`<div class="cd-zone" style="--zc:${ZC[i]}"><canvas></canvas><div class="zb"><b>Artist ${i+1}</b>${COLS.slice(0,6).map((c,k)=>`<button class="cd-c ${k===0?'on':''}" data-z="${i}" data-k="${k}" style="--c:${c}"></button>`).join('')}<button class="cd-c" data-z="${i}" data-k="-1" style="--c:#fff" title="Eraser">🧽</button><button class="btn white small" data-zc="${i}" style="margin-left:auto">🗑️</button></div></div>`).join('');
+ const pens=Array(n).fill(0);zones=[...document.querySelectorAll('.cd-zone canvas')].map((cv,i)=>painter(cv,()=>pens[i]<0?'#fff':COLS[pens[i]],()=>pens[i]<0?28:7));
+ $('zs').onclick=e=>{const b=e.target.closest('[data-z]');if(b){pens[+b.dataset.z]=+b.dataset.k;b.parentNode.querySelectorAll('[data-z]').forEach(x=>x.classList.toggle('on',x===b))}const c=e.target.closest('[data-zc]');if(c)zones[+c.dataset.zc].clear()};
+ $('zn').onchange=()=>{Kit.set('cd-n',+$('zn').value);split()};$('ca').onclick=()=>zones.forEach(z=>z.clear());
+ $('np').onclick=()=>{clearInterval(timer);zones.forEach(z=>{z.clear();delete z.cv.dataset.lock});const p=Kit.pick(PROMPTS),t=+$('tt').value;let left=t;$('pr').textContent=`Draw: ${p}${t?` · ⏱️ ${left}s`:''}`;Kit.ding();
+  if(t)timer=setInterval(()=>{left--;$('pr').textContent=`Draw: ${p} · ⏱️ ${left}s`;if(left<=5&&left>0)Kit.tick();if(left<=0){clearInterval(timer);zones.forEach(z=>z.cv.dataset.lock=1);$('pr').textContent=`⏰ Pencils down! Show your ${p}!`;Kit.alarm?Kit.alarm():Kit.tada()}},1000)};window.__t={mode,zones:n}}
+function fold_(){const n=+(Kit.get('cd-parts',3));fold={n,part:0};$('bd').innerHTML=`<div class="cd-bar"><select id="fp" style="width:auto"><option value="3" ${n===3?'selected':''}>3 parts</option><option value="4" ${n===4?'selected':''}>4 parts</option></select><button class="btn white small" id="rs">🔄 Start over</button></div><div class="cd-prompt" id="pr"></div>`+bar()+`<div class="cd-wrap" id="fw"><canvas id="cv" style="aspect-ratio:3/4;max-height:78vh;width:auto;margin:auto"></canvas></div><div class="row" style="justify-content:center;margin-top:10px"><button class="btn green big" id="nx">✅ Done! Fold and pass ➜</button></div>`;
+ $('cv').style.width='min(100%, calc(78vh * .75))';const p=painter($('cv'),()=>pen<0?'#fff':COLS[pen],()=>pen<0?width*3:width);zones=[p];wireBar(()=>p.clear());
+ const show=()=>{const f=fold,h=100/f.n;$('fw').querySelectorAll('.cd-cover,.cd-guide').forEach(x=>x.remove());
+  if(f.part>=f.n){$('pr').textContent='🎉 Unfold! Here\'s your monster!';$('nx').hidden=true;$('cv').dataset.lock=1;Kit.tada();Kit.confetti(80);window.__t={mode,part:f.part,done:true};return}
+  $('pr').textContent=`Artist ${f.part+1}: draw the ${PARTS[f.n][f.part].replace(/^\S+ /,'')} ${PARTS[f.n][f.part].split(' ')[0]}`;$('nx').textContent=f.part===f.n-1?'🎉 Done! Unfold it!':'✅ Done! Fold and pass ➜';
+  // cover the earlier parts, leaving a thin strip so the next artist can connect their drawing
+  if(f.part>0){const c=document.createElement('div');c.className='cd-cover';c.style.top='0';c.style.height=`calc(${f.part*h}% - 18px)`;c.textContent='🙈 No peeking!';$('fw').appendChild(c)}
+  if(f.part<f.n-1){const g=document.createElement('div');g.className='cd-guide';g.style.top=`${(f.part+1)*h}%`;g.innerHTML='<span>Draw a little past this line ⬇</span>';$('fw').appendChild(g)}
+  const lo=f.part*h,hi=(f.part+1)*h;$('cv').style.clipPath='';window.__t={mode,part:f.part,done:false,lo,hi}};
+ $('nx').onclick=()=>{fold.part++;Kit.tick();show()};$('rs').onclick=()=>{p.clear();delete $('cv').dataset.lock;fold.part=0;$('nx').hidden=false;show()};$('fp').onchange=()=>{Kit.set('cd-parts',+$('fp').value);fold_()};show()}
+document.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{clearInterval(timer);mode=b.dataset.m;document.querySelectorAll('[data-m]').forEach(x=>x.className='btn '+(x.dataset.m===mode?'':'white'));({together,split,fold:fold_})[mode]()});
+addEventListener('resize',()=>zones.forEach(z=>z.fit()));
+together();
+</script>
+</body></html>

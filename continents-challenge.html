@@ -33,7 +33,7 @@ document.querySelector('main').innerHTML=`<div class="cn-pal" id="pal">${Object.
 <div class="cn-map" id="mb"><svg id="sv"></svg></div>
 <div class="cn-bar"><span class="ln-pill">🎨 <b id="pc">0</b> / ${LIST.length} painted</span><button class="btn green" id="ck">✓ Check my map</button><button class="btn white" id="hl">💡 Paint one for me</button><button class="btn white small" id="cl">🧽 Start over</button></div><div class="cn-msg" id="msg">Pick a continent color, then tap every country that belongs to it.</div>`;
 const M=GEO.world($('sv'),{onTap:c=>{if(!c||!CC[c.ct])return;if(pen)paint[c.id]=pen;else delete paint[c.id];checked=false;Kit.set('ct-paint',paint);Kit.tick();color();$('msg').textContent=`${c.n}`}});GEO.zoomButtons($('mb'),M);
-function color(){LIST.forEach(c=>{const el=M.el(c.id);if(!el)return;el.style.fill=paint[c.id]?CC[paint[c.id]][1]:'';el.classList.toggle('bad',checked&&paint[c.id]&&paint[c.id]!==c.ct)});
+function color(){LIST.forEach(c=>{const el=M.el(c.id);if(!el)return;el.style.fill=paint[c.id]?CC[paint[c.id]][1]:'';el.classList.toggle('bad',!!(checked&&paint[c.id]&&paint[c.id]!==c.ct))});
  Object.keys(CC).forEach(k=>$('n-'+k).textContent=`${LIST.filter(c=>paint[c.id]===k).length} countries`);$('pc').textContent=Object.keys(paint).length;
  [...$('pal').children].forEach(b=>b.classList.toggle('on',b.dataset.k===pen));window.__t={painted:Object.keys(paint).length,right:LIST.filter(c=>paint[c.id]===c.ct).length}}
 $('pal').onclick=e=>{const b=e.target.closest('[data-k]');if(!b)return;pen=b.dataset.k;color()};

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Interactive Map Board</title>
+<style>
+main{max-width:1800px}
+.im-bar{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;align-items:center;background:#fff;border:5px solid var(--ink);border-radius:18px;padding:6px;margin-bottom:10px;box-shadow:0 5px 0 var(--ink)}
+.im-bar button.t{font-size:1.3rem;min-width:46px;height:46px;border:3px solid var(--ink);border-radius:12px;background:#fff;cursor:pointer;padding:0 6px;font-family:inherit;font-weight:800;color:var(--ink)}
+.im-bar button.t.on{background:var(--sun)}
+.im-c{width:30px;height:30px;border-radius:50%;border:3px solid var(--ink);background:var(--c);cursor:pointer}.im-c.on{outline:4px solid var(--ink);outline-offset:2px}
+.im{display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:14px;align-items:start}
+@media (max-width:900px){.im{grid-template-columns:1fr}}
+.im-map{border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);overflow:hidden;position:relative;background:#BFE6FA}
+.im-map svg{width:100%;display:block;aspect-ratio:2/1}
+.im-map.us svg{aspect-ratio:975/610}
+.im-map .cty:hover,.im-map .st:hover{filter:brightness(1.08)}
+.im-map .st{fill:#FFF6DC;stroke:#fff;stroke-width:1.2;cursor:pointer}
+.im-side{min-width:0;grid-template-columns:minmax(0,1fr);overflow-wrap:anywhere;background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:8px}
+.im-leg div{display:flex;gap:6px;align-items:center;margin:3px 0}.im-leg i{width:22px;height:22px;border-radius:6px;border:3px solid var(--ink);background:var(--c);flex:none}.im-leg input{flex:1;min-width:0;font:inherit;font-weight:700;border:0;border-bottom:2px dashed #C3CBDB}
+.im-tip{font-weight:800;min-height:1.4em}
+.im-pins{display:flex;gap:4px;flex-wrap:wrap}.im-pins button{font-size:1.4rem;border:3px solid var(--ink);border-radius:10px;background:#fff;cursor:pointer;width:42px;height:42px}.im-pins button.on{background:var(--sun)}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script><script src="geo.js"></script>
+<script>
+Kit.mount("🗺️", "Interactive Map Board");
+const $=id=>document.getElementById(id);
+const COLS=['#E5533F','#FF9F43','#FFC93C','#5DC66E','#22C3E6','#1E7FD0','#9B6BF2','#FF6B9A','#8B5A2B','#FFFFFF'];
+const PINS=['📍','⭐','🏠','✈️','🏔️','🌋','🐘','🏛️','❓','❤️'];
+let S=Kit.get('im-state',null)||{map:'world',fill:{world:{},us:{}},pins:{world:[],us:[]},lines:{world:[],us:[]},legend:{}},tool='color',col=0,pin='📍',M=null,cur=null;
+document.querySelector('main').innerHTML=`<div class="im-bar" id="bar"><select id="mp" style="width:auto"><option value="world">🌍 World</option><option value="us">🇺🇸 United States</option></select><button class="t" data-tool="color" title="Color a place">🎨</button><button class="t" data-tool="pin" title="Drop a pin">📍</button><button class="t" data-tool="draw" title="Draw">✏️</button><button class="t" data-tool="text" title="Write a label">🔤</button><button class="t" data-tool="erase" title="Erase">🧽</button>${COLS.map((c,i)=>`<button class="im-c" data-c="${i}" style="--c:${c}"></button>`).join('')}<button class="t" id="clr" title="Clear this map">🗑️</button></div>
+<div class="im"><div class="im-map" id="mw"><svg id="sv"></svg></div><div class="im-side"><div class="im-tip" id="tip"></div><b>📍 Pin type</b><div class="im-pins" id="pp">${PINS.map(p=>`<button data-pin="${p}">${p}</button>`).join('')}</div><b>🗝️ Map key (what each color means)</b><div class="im-leg" id="lg"></div><b>📋 Places you colored</b><div id="ls" style="font-weight:700;font-size:.9rem;max-height:30vh;overflow:auto"></div></div></div>`;
+function save(){Kit.set('im-state',S)}
+const W=()=>S.map;
+function pt(e){const sv=$('sv'),r=sv.getBoundingClientRect();if(W()==='world'){const vb=M.vb,s=Math.max(vb[2]/r.width,vb[3]/r.height),ox=(r.width*s-vb[2])/2,oy=(r.height*s-vb[3])/2;return [vb[0]-ox+(e.clientX-r.left)*s,vb[1]-oy+(e.clientY-r.top)*s]}return [(e.clientX-r.left)/r.width*975,(e.clientY-r.top)/r.height*610]}
+function build(){$('mw').className='im-map'+(W()==='us'?' us':'');const sv=$('sv');const fresh=sv.cloneNode(false);sv.replaceWith(fresh);$('mw').querySelectorAll('.zbtn').forEach(b=>b.remove());
+ if(W()==='world'){M=GEO.world($('sv'),{onTap:(c,lo,la,x,y)=>tap(c&&c.id,c&&c.n,x,y)});GEO.zoomButtons($('mw'),M)}
+ else{M=null;$('sv').setAttribute('viewBox','0 0 975 610');$('sv').innerHTML=GEO.S.map(s=>`<path class="st" data-id="${s.id}" d="${s.p}"><title>${s.n}</title></path>`).join('')+'<g class="ovl"></g>';
+  $('sv').addEventListener('click',e=>{const p=e.target.closest('[data-id]'),[x,y]=pt(e);const s=p&&GEO.S.find(q=>q.id===p.dataset.id);tap(s&&s.id,s&&s.n,x,y)})}
+ // drawing grabs the pointer before the map can pan
+ $('sv').addEventListener('pointerdown',e=>{if(tool!=='draw')return;e.stopPropagation();const [x,y]=pt(e);cur={c:COLS[col],p:[[x,y]].map(q=>q.map(v=>+v.toFixed(1)))};S.lines[W()].push(cur);$('sv').setPointerCapture(e.pointerId)},true);
+ $('sv').addEventListener('pointermove',e=>{if(!cur)return;e.stopPropagation();const [x,y]=pt(e),l=cur.p[cur.p.length-1];if(Math.hypot(x-l[0],y-l[1])>1.5){cur.p.push([+x.toFixed(1),+y.toFixed(1)]);ovl()}},true);
+ $('sv').addEventListener('pointerup',e=>{if(!cur)return;e.stopPropagation();cur=null;save();ovl()},true);
+ paint()}
+const el=id=>W()==='world'?M.el(id):$('sv').querySelector(`[data-id="${id}"]`);
+function paint(){const F=S.fill[W()];(W()==='world'?GEO.W:GEO.S).forEach(c=>{const e=el(c.id);if(e)e.style.fill=F[c.id]!=null?COLS[F[c.id]]:''});ovl();side()}
+function ovl(){const g=$('sv').querySelector('.ovl');if(!g)return;const k=W()==='world'?1:2;
+ g.innerHTML=S.lines[W()].map(l=>`<polyline points="${l.p.map(q=>q.join(',')).join(' ')}" fill="none" stroke="${l.c}" stroke-width="${3*k}" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>`).join('')+
+ S.pins[W()].map(p=>p.t?`<text x="${p.x}" y="${p.y}" font-size="${11*k}" font-weight="900" text-anchor="middle" fill="${p.c||'#1D2B53'}" stroke="#fff" stroke-width="${3*k}" paint-order="stroke">${Kit.esc(p.t)}</text>`:`<text x="${p.x}" y="${p.y}" font-size="${18*k}" text-anchor="middle">${p.e}</text>`).join('');
+ window.__t={map:W(),fill:Object.keys(S.fill[W()]).length,pins:S.pins[W()].length,lines:S.lines[W()].length}}
+function side(){const F=S.fill[W()],used=[...new Set(Object.values(F))].sort((a,b)=>a-b);
+ $('lg').innerHTML=used.map(c=>`<div><i style="--c:${COLS[c]}"></i><input value="${Kit.esc(S.legend[c]||'')}" data-lg="${c}" placeholder="What does this color mean?"></div>`).join('')||'<span class="muted" style="font-weight:700">Color some places to start a key.</span>';
+ const src=W()==='world'?GEO.W:GEO.S;$('ls').innerHTML=used.map(c=>`<div><b style="color:${c===9?'#55607E':COLS[c]}">■ ${Kit.esc(S.legend[c]||'')}</b> ${Object.keys(F).filter(id=>F[id]===c).map(id=>(src.find(s=>s.id===id)||{}).n).filter(Boolean).sort().join(', ')}</div>`).join('');
+ document.querySelectorAll('[data-tool]').forEach(b=>b.classList.toggle('on',b.dataset.tool===tool));document.querySelectorAll('[data-c]').forEach(b=>b.classList.toggle('on',+b.dataset.c===col));document.querySelectorAll('[data-pin]').forEach(b=>b.classList.toggle('on',b.dataset.pin===pin));
+ $('tip').textContent={color:'🎨 Tap a place to color it. Tap again with the same color to uncolor it.',pin:'📍 Tap anywhere to drop a pin.',draw:'✏️ Drag to draw routes, borders or arrows.',text:'🔤 Tap where you want a label.',erase:'🧽 Tap a pin, label or colored place to remove it. Drawings: tap near a line.'}[tool]}
+function tap(id,name,x,y){const F=S.fill[W()];
+ if(tool==='color'&&id){if(F[id]===col)delete F[id];else F[id]=col;Kit.tick();$('tip').textContent=`${name}`}
+ else if(tool==='pin'){S.pins[W()].push({x:+x.toFixed(1),y:+y.toFixed(1),e:pin});Kit.ding()}
+ else if(tool==='text'){const t=prompt(`Label${name?' (near '+name+')':''}:`,name||'');if(t&&t.trim())S.pins[W()].push({x:+x.toFixed(1),y:+y.toFixed(1),t:t.trim().slice(0,30),c:COLS[col]==='#FFFFFF'?'#1D2B53':COLS[col]})}
+ else if(tool==='erase'){const k=W()==='world'?1:2,near=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);const pi=S.pins[W()].findIndex(p=>near([p.x,p.y-6*k],[x,y])<14*k);
+  if(pi>=0)S.pins[W()].splice(pi,1);else{const li=S.lines[W()].findIndex(l=>l.p.some(q=>near(q,[x,y])<8*k));if(li>=0)S.lines[W()].splice(li,1);else if(id)delete F[id]}Kit.tone(220,.08,'triangle',.1)}
+ save();paint()}
+$('bar').onclick=e=>{const t=e.target.closest('[data-tool]'),c=e.target.closest('[data-c]');if(t){tool=t.dataset.tool;side()}if(c){col=+c.dataset.c;if(tool==='erase')tool='color';side()}};
+$('pp').onclick=e=>{const b=e.target.closest('[data-pin]');if(b){pin=b.dataset.pin;tool='pin';side()}};
+$('lg').oninput=e=>{const i=e.target.dataset.lg;if(i!=null){S.legend[i]=e.target.value;save();const src=W()==='world'?GEO.W:GEO.S}};$('lg').onchange=()=>setTimeout(side,0);
+$('mp').onchange=()=>{S.map=$('mp').value;save();build()};$('clr').onclick=()=>{if(confirm('Clear everything on this map?')){S.fill[W()]={};S.pins[W()]=[];S.lines[W()]=[];save();paint()}};
+window.__i={tap,tool:t=>{tool=t;side()},col:c=>{col=c},pt:(lo,la)=>W()==='world'?GEO.xy(lo,la):null};
+$('mp').value=S.map;build();
+</script>
+</body></html>

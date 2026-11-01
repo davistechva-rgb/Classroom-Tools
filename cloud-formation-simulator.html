@@ -56,7 +56,7 @@ document.querySelector('main').innerHTML=`<div class="cf2"><div><div class="cf2-
 <b>🎯 Challenges</b><div class="cf2-ch" id="ch"></div></div></div>`;
 function model(){const gap=T0-TD,base=Math.max(0,gap/(DRY-DEW));const t=a=>a<=base?T0-DRY*a:T0-DRY*base-WET*(a-base);const d=a=>a<=base?TD-DEW*a:t(a);return {base,T:t(alt),D:d(alt),inCloud:alt>=base}}
 function draw(){const m=model(),y=a=>12+Math.min(a,MAXKM)/MAXKM*86;
- $('t0v').textContent=T0+'°C';$('tdv').textContent=TD+'°C';$('pc').style.bottom=y(alt)+'%';$('pc').classList.toggle('wet',m.inCloud&&m.base<MAXKM);$('pt').innerHTML=`${Math.round(m.T)}°C${m.inCloud&&m.base<MAXKM?'<br>💧':''}`;
+ $('t0v').textContent=T0+'°C';$('tdv').textContent=TD+'°C';$('pc').style.bottom=y(alt)+'%';$('pc').classList.toggle('wet',!!(m.inCloud&&m.base<MAXKM));$('pt').innerHTML=`${Math.round(m.T)}°C${m.inCloud&&m.base<MAXKM?'<br>💧':''}`;
  const vis=m.base<MAXKM;$('bs').style.bottom=y(m.base)+'%';$('bs').style.display=vis?'':'none';$('bl').textContent=`Cloud base ≈ ${(m.base*1000).toFixed(0)} m`;
  // cloud grows from its base up to how high the air has been lifted (at least a puffy start)
  const top=Math.max(alt,m.base+.4);const h=vis?(Math.min(top,MAXKM)-m.base)/MAXKM*86:0;$('cl').style.bottom=y(m.base)+'%';$('cl').style.height=h+'%';$('cl').style.opacity=vis&&alt>=m.base?1:vis?.25:0;

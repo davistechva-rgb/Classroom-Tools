@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Virtual Whiteboard</title>
+<style>
+main{max-width:1800px}
+.wb-bar{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;align-items:center;background:#fff;border:5px solid var(--ink);border-radius:18px;padding:6px;margin-bottom:10px;box-shadow:0 5px 0 var(--ink)}
+.wb-bar button.t{font-size:1.35rem;width:46px;height:46px;border:3px solid var(--ink);border-radius:12px;background:#fff;cursor:pointer;display:grid;place-items:center}
+.wb-bar button.t.on{background:var(--sun);transform:translateY(2px)}
+.wb-sep{width:3px;height:36px;background:#C3CBDB;border-radius:2px}
+.wb-col{width:32px;height:32px;border-radius:50%;border:3px solid var(--ink);cursor:pointer;background:var(--c)}
+.wb-col.on{outline:4px solid var(--ink);outline-offset:2px}
+.wb-sz{display:flex;gap:4px;align-items:center}.wb-sz button{width:34px;height:34px;border:3px solid var(--ink);border-radius:10px;background:#fff;cursor:pointer;display:grid;place-items:center}
+.wb-sz button i{display:block;border-radius:50%;background:var(--ink)}.wb-sz button.on{background:var(--sun)}
+.wb-wrap{position:relative;border:6px solid var(--ink);border-radius:20px;box-shadow:7px 7px 0 var(--ink);overflow:hidden;background:#fff;touch-action:none}
+.wb-wrap canvas{display:block;width:100%;aspect-ratio:16/10;cursor:crosshair}
+.wb-pages{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:10px;align-items:center}
+.wb-pages button{font:inherit;font-weight:900;min-width:40px;height:40px;border:3px solid var(--ink);border-radius:10px;background:#fff;cursor:pointer;color:var(--ink)}
+.wb-pages button.on{background:var(--sun)}
+.wb-stamps{position:absolute;z-index:5;background:#fff;border:4px solid var(--ink);border-radius:16px;padding:8px;display:grid;grid-template-columns:repeat(6,1fr);gap:4px;box-shadow:4px 4px 0 var(--ink)}
+.wb-stamps button{font-size:1.6rem;border:0;background:none;cursor:pointer;border-radius:8px;padding:2px}.wb-stamps button:hover{background:#FFF1A8}
+.wb-text{position:absolute;z-index:6;border:3px dashed var(--ink);background:rgba(255,255,255,.9);font:700 24px Fredoka,sans-serif;padding:2px 6px;min-width:120px;border-radius:8px}
+.wb-full .wb-wrap canvas{aspect-ratio:auto;height:calc(100vh - 150px)}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🎨", "Virtual Whiteboard");
+const $=id=>document.getElementById(id);
+const W=1600,H=1000;
+const COLS=['#1D2B53','#E5533F','#FF9F43','#FFC93C','#5DC66E','#22C3E6','#1E7FD0','#9B6BF2','#FF6B9A','#8B5A2B','#FFFFFF'];
+const STAMPS=['⭐','✅','❌','❤️','👍','😀','🎉','💡','❓','➡️','📌','🔥','🌟','🏆','🐶','🐱','🌈','☀️','🍎','✏️','📚','🔢','🌍','🎵'];
+const TOOLS=[['pen','✏️','Pen'],['hi','🖍️','Highlighter'],['er','🧽','Eraser'],['line','📏','Line'],['arrow','➡️','Arrow'],['rect','⬜','Rectangle'],['circ','⭕','Circle'],['text','🔤','Text'],['stamp','⭐','Stamp']];
+const BGS={blank:'⬜ Blank',grid:'🔲 Grid',lines:'📄 Lines',dots:'⚫ Dots',hand:'✍️ Handwriting',graph:'📈 Graph'};
+let pages=Kit.get('wb-pages',null)||[{bg:'blank',s:[]}],pi=0,tool='pen',col=COLS[0],size=6,cur=null,redo=[],stamp='⭐',cv,ctx,dpr=1;
+document.querySelector('main').innerHTML=`<div class="wb-bar" id="bar">${TOOLS.map(t=>`<button class="t" data-tool="${t[0]}" title="${t[2]}">${t[1]}</button>`).join('')}<span class="wb-sep"></span>${COLS.map(c=>`<button class="wb-col" data-c="${c}" style="--c:${c}" title="Color"></button>`).join('')}<span class="wb-sep"></span><div class="wb-sz">${[3,6,12,24].map(s=>`<button data-s="${s}" title="Size"><i style="width:${Math.min(22,s)}px;height:${Math.min(22,s)}px"></i></button>`).join('')}</div><span class="wb-sep"></span><button class="t" id="un" title="Undo">↩️</button><button class="t" id="re" title="Redo">↪️</button><select id="bg" style="width:auto">${Object.entries(BGS).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select><button class="t" id="cl" title="Clear page">🗑️</button><button class="t" id="dl" title="Save picture">💾</button></div>
+<div class="wb-wrap" id="wr"><canvas id="cv"></canvas></div><div class="wb-pages" id="pg"></div>`;
+cv=$('cv');ctx=cv.getContext('2d');
+function size_(){const r=cv.getBoundingClientRect();dpr=Math.min(2,window.devicePixelRatio||1);cv.width=Math.round(r.width*dpr);cv.height=Math.round(r.height*dpr);render()}
+function bg(c,k){c.fillStyle='#fff';c.fillRect(0,0,W,H);c.lineWidth=1.5;
+ if(k==='grid'||k==='graph'){const g=k==='grid'?50:25;c.strokeStyle='#DCE6F3';for(let x=0;x<=W;x+=g){c.lineWidth=k==='graph'&&x%125===0?2.5:1.2;c.beginPath();c.moveTo(x,0);c.lineTo(x,H);c.stroke()}for(let y=0;y<=H;y+=g){c.lineWidth=k==='graph'&&y%125===0?2.5:1.2;c.beginPath();c.moveTo(0,y);c.lineTo(W,y);c.stroke()}
+  if(k==='graph'){c.strokeStyle='#7F8FB8';c.lineWidth=3;c.beginPath();c.moveTo(W/2,0);c.lineTo(W/2,H);c.moveTo(0,H/2);c.lineTo(W,H/2);c.stroke()}}
+ if(k==='lines'){c.strokeStyle='#BFD8F2';for(let y=90;y<H;y+=55){c.beginPath();c.moveTo(0,y);c.lineTo(W,y);c.stroke()}c.strokeStyle='#F2A3A3';c.beginPath();c.moveTo(120,0);c.lineTo(120,H);c.stroke()}
+ if(k==='dots'){c.fillStyle='#B8C4DA';for(let x=40;x<W;x+=40)for(let y=40;y<H;y+=40){c.beginPath();c.arc(x,y,2.5,0,7);c.fill()}}
+ if(k==='hand'){for(let y=80;y<H-60;y+=120){c.strokeStyle='#1E7FD0';c.lineWidth=2.5;c.beginPath();c.moveTo(0,y);c.lineTo(W,y);c.moveTo(0,y+80);c.lineTo(W,y+80);c.stroke();c.strokeStyle='#E5533F';c.setLineDash([12,10]);c.lineWidth=2;c.beginPath();c.moveTo(0,y+40);c.lineTo(W,y+40);c.stroke();c.setLineDash([])}}}
+function shape(c,s){c.save();c.lineCap='round';c.lineJoin='round';c.strokeStyle=s.c;c.fillStyle=s.c;c.lineWidth=s.w;
+ if(s.t==='hi'){c.globalAlpha=.35;c.lineWidth=s.w*3}if(s.t==='er'){c.globalCompositeOperation='destination-out';c.lineWidth=s.w*3}
+ if(s.t==='pen'||s.t==='hi'||s.t==='er'){const p=s.p;c.beginPath();c.moveTo(p[0],p[1]);if(p.length===2)c.lineTo(p[0]+.1,p[1]);for(let i=2;i<p.length-2;i+=2){const mx=(p[i]+p[i+2])/2,my=(p[i+1]+p[i+3])/2;c.quadraticCurveTo(p[i],p[i+1],mx,my)}if(p.length>2)c.lineTo(p[p.length-2],p[p.length-1]);c.stroke()}
+ else if(s.t==='line'||s.t==='arrow'){const [a,b,x,y]=s.p;c.beginPath();c.moveTo(a,b);c.lineTo(x,y);c.stroke();if(s.t==='arrow'){const ang=Math.atan2(y-b,x-a),L=Math.max(18,s.w*3.5);c.beginPath();c.moveTo(x,y);c.lineTo(x-L*Math.cos(ang-.45),y-L*Math.sin(ang-.45));c.lineTo(x-L*Math.cos(ang+.45),y-L*Math.sin(ang+.45));c.closePath();c.fill()}}
+ else if(s.t==='rect'){const [a,b,x,y]=s.p;c.strokeRect(Math.min(a,x),Math.min(b,y),Math.abs(x-a),Math.abs(y-b))}
+ else if(s.t==='circ'){const [a,b,x,y]=s.p;c.beginPath();c.ellipse((a+x)/2,(b+y)/2,Math.abs(x-a)/2||1,Math.abs(y-b)/2||1,0,0,7);c.stroke()}
+ else if(s.t==='text'){c.font=`700 ${s.w*5+16}px Fredoka, sans-serif`;c.textBaseline='top';(s.txt||'').split('\n').forEach((l,i)=>c.fillText(l,s.p[0],s.p[1]+i*(s.w*5+22)))}
+ else if(s.t==='stamp'){c.font=`${s.w*6+40}px sans-serif`;c.textAlign='center';c.textBaseline='middle';c.fillText(s.txt,s.p[0],s.p[1])}
+ c.restore()}
+// strokes are drawn on their own layer so the eraser doesn't erase the background
+const ink=document.createElement('canvas');ink.width=W;ink.height=H;const ictx=ink.getContext('2d');
+function render(){const P=pages[pi];ictx.clearRect(0,0,W,H);P.s.forEach(s=>shape(ictx,s));if(cur)shape(ictx,cur);ctx.setTransform(cv.width/W,0,0,cv.height/H,0,0);bg(ctx,P.bg);ctx.drawImage(ink,0,0);
+ document.querySelectorAll('[data-tool]').forEach(b=>b.classList.toggle('on',b.dataset.tool===tool));document.querySelectorAll('[data-c]').forEach(b=>b.classList.toggle('on',b.dataset.c===col));document.querySelectorAll('[data-s]').forEach(b=>b.classList.toggle('on',+b.dataset.s===size));
+ $('bg').value=P.bg;$('pg').innerHTML=pages.map((p,i)=>`<button data-p="${i}" class="${i===pi?'on':''}">${i+1}</button>`).join('')+(pages.length<12?'<button data-p="new" title="New page">➕</button>':'')+(pages.length>1?'<button data-p="del" title="Delete this page">🗑️</button>':'');window.__t={page:pi,pages:pages.length,strokes:P.s.length,tool,bg:P.bg}}
+function save(){try{Kit.set('wb-pages',pages)}catch(e){}}
+function pos(e){const r=cv.getBoundingClientRect();return [Math.round((e.clientX-r.left)/r.width*W),Math.round((e.clientY-r.top)/r.height*H)]}
+function closePop(){document.querySelectorAll('.wb-stamps,.wb-text').forEach(x=>x.remove())}
+function commit(s){pages[pi].s.push(s);redo=[];save();render()}
+cv.addEventListener('pointerdown',e=>{closePop();const [x,y]=pos(e);
+ if(tool==='text'){const r=cv.getBoundingClientRect(),t=document.createElement('textarea');t.className='wb-text';t.style.left=(e.clientX-r.left)+'px';t.style.top=(e.clientY-r.top)+'px';t.style.color=col;t.rows=2;$('wr').appendChild(t);setTimeout(()=>t.focus(),0);
+  const done=()=>{if(t.value.trim())commit({t:'text',c:col,w:size,p:[x,y],txt:t.value});t.remove()};t.onblur=done;t.onkeydown=k=>{if(k.key==='Escape'){t.value='';t.blur()}if(k.key==='Enter'&&!k.shiftKey){k.preventDefault();t.blur()}};return}
+ if(tool==='stamp'){commit({t:'stamp',c:col,w:size,p:[x,y],txt:stamp});Kit.tick();return}
+ cur={t:tool,c:col,w:size,p:['pen','hi','er'].includes(tool)?[x,y]:[x,y,x,y]};cv.setPointerCapture(e.pointerId);render()});
+cv.addEventListener('pointermove',e=>{if(!cur)return;const [x,y]=pos(e);if(cur.p.length===4&&!['pen','hi','er'].includes(cur.t)){cur.p[2]=x;cur.p[3]=y}else{const n=cur.p.length;if(Math.hypot(x-cur.p[n-2],y-cur.p[n-1])>=2)cur.p.push(x,y)}render()});
+cv.addEventListener('pointerup',()=>{if(!cur)return;const s=cur;cur=null;commit(s)});
+$('bar').onclick=e=>{const t=e.target.closest('[data-tool]'),c=e.target.closest('[data-c]'),s=e.target.closest('[data-s]');
+ if(t){tool=t.dataset.tool;closePop();if(tool==='stamp'){const r=t.getBoundingClientRect(),w=$('wr').getBoundingClientRect(),p=document.createElement('div');p.className='wb-stamps';p.style.left=Math.max(0,Math.min(w.width-290,r.left-w.left-100))+'px';p.style.top='6px';p.innerHTML=STAMPS.map(x=>`<button data-st="${x}">${x}</button>`).join('');$('wr').appendChild(p);p.onclick=ev=>{const b=ev.target.closest('[data-st]');if(b){stamp=b.dataset.st;t.textContent=stamp;p.remove()}}}render()}
+ if(c){col=c.dataset.c;if(tool==='er')tool='pen';render()}if(s){size=+s.dataset.s;render()}};
+$('un').onclick=()=>{const s=pages[pi].s.pop();if(s){redo.push(s);save();render()}};$('re').onclick=()=>{const s=redo.pop();if(s){pages[pi].s.push(s);save();render()}};
+$('bg').onchange=()=>{pages[pi].bg=$('bg').value;save();render()};$('cl').onclick=()=>{if(!pages[pi].s.length||confirm('Clear this page?')){pages[pi].s=[];redo=[];save();render()}};
+$('dl').onclick=()=>{const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');bg(x,pages[pi].bg);x.drawImage(ink,0,0);const a=document.createElement('a');a.download=`whiteboard-page-${pi+1}.png`;a.href=c.toDataURL('image/png');a.click()};
+$('pg').onclick=e=>{const b=e.target.closest('[data-p]');if(!b)return;const v=b.dataset.p;if(v==='new'){pages.push({bg:pages[pi].bg,s:[]});pi=pages.length-1}else if(v==='del'){if(confirm('Delete this page?')){pages.splice(pi,1);pi=Math.max(0,pi-1)}}else pi=+v;redo=[];closePop();save();render()};
+addEventListener('keydown',e=>{if(e.target.tagName==='TEXTAREA'||e.target.tagName==='INPUT')return;if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();e.shiftKey?$('re').click():$('un').click()}});
+addEventListener('resize',size_);size_();
+</script>
+</body></html>

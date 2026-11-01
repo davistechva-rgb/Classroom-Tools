@@ -75,7 +75,7 @@ function draw(){const s=secs[st.cur];$('map').innerHTML=`<b style="margin-bottom
  ${st.notes&&s.notes?`<div class="sn-notes"><b>🔒 TEACHER NOTES</b>${Kit.esc(s.notes)}</div>`:''}</div>
  <div class="sn-ft"><button class="btn white" id="bk" ${st.cur?'':'disabled'}>◀ Back</button><span class="sn-time" id="tm"></span><button class="btn green big" id="fw">${st.cur>=secs.length-1?'🏁 Finish':'Next part ▶'}</button></div>`;
  $('bk').onclick=()=>go(-1);$('fw').onclick=()=>{if(st.cur>=secs.length-1){Kit.tada();Kit.confetti(100);return}go(1)};tick();window.__t={cur:st.cur,n:secs.length}}
-function tick(){const s=secs[st.cur];if(!s||!$('tm'))return;const e=(Date.now()-enter)/1000,lim=s.min*60;$('tm').textContent=lim?`⏱ ${lim-e>=0?'':'+'}${Math.floor(Math.abs(lim-e)/60)}:${String(Math.floor(Math.abs(lim-e))%60).padStart(2,'0')} ${lim-e>=0?'left':'over'}`:`⏱ ${Math.floor(e/60)}:${String(Math.floor(e)%60).padStart(2,'0')}`;$('tm').classList.toggle('over',lim&&e>lim)}
+function tick(){const s=secs[st.cur];if(!s||!$('tm'))return;const e=(Date.now()-enter)/1000,lim=s.min*60;$('tm').textContent=lim?`⏱ ${lim-e>=0?'':'+'}${Math.floor(Math.abs(lim-e)/60)}:${String(Math.floor(Math.abs(lim-e))%60).padStart(2,'0')} ${lim-e>=0?'left':'over'}`:`⏱ ${Math.floor(e/60)}:${String(Math.floor(e)%60).padStart(2,'0')}`;$('tm').classList.toggle('over',!!(lim&&e>lim))}
 const save=()=>Kit.set('sn-state',st);
 function go(d){st.cur=Math.max(0,Math.min(secs.length-1,st.cur+d));enter=Date.now();save();Kit.tone(520+st.cur*50,.12,'triangle',.2);draw()}
 $('map').onclick=e=>{const s=e.target.closest('.sn-stop');if(s){st.cur=+s.dataset.i;enter=Date.now();save();draw()}};

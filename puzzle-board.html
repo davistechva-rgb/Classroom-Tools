@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Puzzle Board</title>
+<style>
+main{max-width:1700px}
+.pz-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:10px}
+.pz-table{position:relative;background:#8B5A2B;background-image:repeating-linear-gradient(90deg,rgba(0,0,0,.06) 0 3px,transparent 3px 60px);border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);overflow:hidden;touch-action:none;aspect-ratio:16/10}
+.pz-frame{position:absolute;background:rgba(255,255,255,.18);border:4px dashed rgba(255,255,255,.7);border-radius:6px}
+.pz-frame img{width:100%;height:100%;opacity:0;transition:opacity .3s}
+.pz-frame.ghost img{opacity:.25}
+.pz-p{position:absolute;cursor:grab;filter:drop-shadow(2px 4px 0 rgba(0,0,0,.35));touch-action:none}
+.pz-p.hold{cursor:grabbing;filter:drop-shadow(6px 12px 6px rgba(0,0,0,.4));z-index:50}
+.pz-p.done{filter:none;cursor:default;z-index:1}
+.pz-msg{text-align:center;color:#fff;font-weight:900;font-size:clamp(1.2rem,3vw,1.8rem);text-shadow:3px 3px 0 var(--ink);min-height:1.5em;margin-top:10px}
+.pz-pics{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:10px}
+.pz-pics button{width:64px;height:44px;border:4px solid var(--ink);border-radius:10px;cursor:pointer;background-size:cover;background-position:center;padding:0}
+.pz-pics button.on{outline:4px solid var(--sun);outline-offset:2px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🧩", "Puzzle Board");
+const $=id=>document.getElementById(id);
+// built-in pictures are painted on a canvas from 3D emoji, so they work offline
+const PICS=[['🦁','#FFD27F','#FF9F43','🌴','☀️'],['🐙','#22C3E6','#1E7FD0','🐠','🫧'],['🚀','#1D2B53','#9B6BF2','⭐','🪐'],['🦕','#8BE09A','#2E9E47','🌋','🌿'],['🏰','#FFB3D1','#9FD8FF','🌈','☁️'],['🐼','#C9E58A','#5DC66E','🎋','🌸']];
+let img=null,pic=0,N=3,M=4,pieces=[],placed=0,drag=null,moves=0,t0=0,fr={x:0,y:0,w:0,h:0},ghost=true,custom=null;
+document.querySelector('main').innerHTML=`<div class="pz-pics" id="pc"></div><div class="pz-top"><select id="sz" style="width:auto"><option value="2x3">6 pieces</option><option value="3x4" selected>12 pieces</option><option value="4x6">24 pieces</option><option value="5x8">40 pieces</option></select><label class="btn white small" style="cursor:pointer">📷 Use my picture<input type="file" id="up" accept="image/*" hidden></label><label style="color:#fff;font-weight:800"><input type="checkbox" id="gh" checked> 👻 Show faint picture</label><button class="btn green" id="go">🔀 Mix up</button><span class="ln-pill">🧩 <b id="ct">0</b></span><span class="ln-pill">⏱️ <b id="tm">0:00</b></span></div>
+<div class="pz-table" id="tb"><div class="pz-frame ghost" id="fr"><img id="gi" alt=""></div></div><div class="pz-msg" id="msg"></div>`;
+function paint(p){const c=document.createElement('canvas');c.width=1200;c.height=900;const x=c.getContext('2d');const g=x.createLinearGradient(0,0,0,900);g.addColorStop(0,p[1]);g.addColorStop(1,p[2]);x.fillStyle=g;x.fillRect(0,0,1200,900);
+ x.globalAlpha=.25;x.fillStyle='#fff';for(let i=0;i<14;i++){x.beginPath();x.arc((i*173)%1200,(i*271)%900,40+(i*37)%90,0,7);x.fill()}x.globalAlpha=1;
+ x.textAlign='center';x.textBaseline='middle';x.font='160px sans-serif';[[160,170],[1040,200],[180,740],[1050,720]].forEach(([a,b],i)=>x.fillText(i%2?p[4]:p[3],a,b));x.font='520px sans-serif';x.fillText(p[0],600,470);return c.toDataURL('image/jpeg',.9)}
+function thumbs(){$('pc').innerHTML=PICS.map((p,i)=>`<button data-p="${i}" class="${i===pic&&!custom?'on':''}" style="background:linear-gradient(${p[1]},${p[2]})" title="Picture">${p[0]}</button>`).join('')+(custom?`<button data-p="c" class="${custom?'on':''}" style="background-image:url(${custom})"></button>`:'')}
+// each edge is flat (0), sticks out (1) or goes in (-1); neighbors always match
+function edgePath(w,h,e){const [t,r,b,l]=e,k=Math.min(w,h)*.22;const seg=(x0,y0,x1,y1,s,nx,ny)=>{if(!s)return `L${x1},${y1}`;const mx=(x0+x1)/2,my=(y0+y1)/2,dx=(x1-x0)/3,dy=(y1-y0)/3;const a=[x0+dx,y0+dy],b2=[x1-dx,y1-dy];return `L${a[0]},${a[1]} C${a[0]+nx*k*s*.2},${a[1]+ny*k*s*.2} ${mx-dx*.8+nx*k*s*1.2},${my-dy*.8+ny*k*s*1.2} ${mx+nx*k*s},${my+ny*k*s} C${mx+dx*.8+nx*k*s*1.2},${my+dy*.8+ny*k*s*1.2} ${b2[0]+nx*k*s*.2},${b2[1]+ny*k*s*.2} ${b2[0]},${b2[1]} L${x1},${y1}`};
+ return `M0,0 ${seg(0,0,w,0,t,0,-1)} ${seg(w,0,w,h,r,1,0)} ${seg(w,h,0,h,b,0,1)} ${seg(0,h,0,0,l,-1,0)} Z`}
+function build(tries=0){// wait (briefly) for the 3D pictures so the puzzle uses them
+ if(!custom&&window.E3D&&tries<20&&PICS[pic].slice(0,1).concat(PICS[pic].slice(3)).some(e=>E3D.url(e)&&!E3D.img(e))){setTimeout(()=>build(tries+1),100);return}
+ const src=custom||paint(PICS[pic]);[N,M]=$('sz').value.split('x').map(Number);img=new Image();img.onload=layout;img.src=src;$('gi').src=src}
+function layout(){const T=$('tb').getBoundingClientRect(),ar=img.width/img.height;let fh=T.height*.72,fw=fh*ar;if(fw>T.width*.6){fw=T.width*.6;fh=fw/ar}fr={x:(T.width-fw)/2,y:(T.height-fh)/2,w:fw,h:fh};
+ Object.assign($('fr').style,{left:fr.x+'px',top:fr.y+'px',width:fw+'px',height:fh+'px'});$('fr').classList.toggle('ghost',ghost);
+ const pw=fw/M,ph=fh/N,pad=Math.min(pw,ph)*.3,H=[],V=[];for(let r=0;r<N;r++){H[r]=[];V[r]=[];for(let c=0;c<M;c++){H[r][c]=Math.random()<.5?1:-1;V[r][c]=Math.random()<.5?1:-1}}
+ $('tb').querySelectorAll('.pz-p').forEach(p=>p.remove());pieces=[];placed=0;moves=0;t0=0;
+ for(let r=0;r<N;r++)for(let c=0;c<M;c++){const e=[r===0?0:-V[r-1][c],c===M-1?0:H[r][c],r===N-1?0:V[r][c],c===0?0:-H[r][c-1]];
+  const d=document.createElementNS('http://www.w3.org/2000/svg','svg');d.setAttribute('class','pz-p');d.setAttribute('width',pw+pad*2);d.setAttribute('height',ph+pad*2);d.setAttribute('viewBox',`${-pad} ${-pad} ${pw+pad*2} ${ph+pad*2}`);
+  const id='c'+r+'_'+c+'_'+Date.now();d.innerHTML=`<defs><clipPath id="${id}"><path d="${edgePath(pw,ph,e)}"/></clipPath></defs><image href="${img.src}" x="${-c*pw}" y="${-r*ph}" width="${fw}" height="${fh}" clip-path="url(#${id})" preserveAspectRatio="none"/><path d="${edgePath(pw,ph,e)}" fill="none" stroke="rgba(29,43,83,.55)" stroke-width="1.5"/>`;
+  const p={r,c,el:d,hx:fr.x+c*pw-pad,hy:fr.y+r*ph-pad,done:false};pieces.push(p);$('tb').appendChild(d);d.dataset.k=pieces.length-1}
+ scatter(false);$('ct').textContent=`0 / ${pieces.length}`;$('msg').textContent='Drag the pieces into the frame. They click into place when they\'re close!';window.__t={n:pieces.length,placed:0}}
+function scatter(anim=true){const T=$('tb').getBoundingClientRect();pieces.forEach(p=>{if(p.done)return;const w=+p.el.getAttribute('width'),h=+p.el.getAttribute('height');let x,y,g=0;
+  do{x=Math.random()*(T.width-w);y=Math.random()*(T.height-h)}while(g++<30&&x+w>fr.x-10&&x<fr.x+fr.w+10&&y+h>fr.y-10&&y<fr.y+fr.h+10);// keep them out of the frame when there's room
+  p.x=x;p.y=y;p.el.style.transition=anim?'left .4s,top .4s':'';p.el.style.left=x+'px';p.el.style.top=y+'px'})}
+function tick(){if(!t0||placed===pieces.length)return;const s=Math.floor((Date.now()-t0)/1000);$('tm').textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`}
+setInterval(tick,500);
+$('tb').addEventListener('pointerdown',e=>{const el=e.target.closest('.pz-p');if(!el)return;const p=pieces[+el.dataset.k];if(p.done)return;e.preventDefault();if(!t0)t0=Date.now();el.style.transition='';el.classList.add('hold');$('tb').appendChild(el);drag={p,ox:e.clientX-p.x,oy:e.clientY-p.y};el.setPointerCapture(e.pointerId)});
+$('tb').addEventListener('pointermove',e=>{if(!drag)return;const p=drag.p;p.x=e.clientX-drag.ox;p.y=e.clientY-drag.oy;p.el.style.left=p.x+'px';p.el.style.top=p.y+'px'});
+$('tb').addEventListener('pointerup',()=>{if(!drag)return;const p=drag.p;drag=null;p.el.classList.remove('hold');moves++;drop(p)});
+function drop(p){const snap=Math.min(fr.w/M,fr.h/N)*.3;if(Math.hypot(p.x-p.hx,p.y-p.hy)<snap){p.x=p.hx;p.y=p.hy;p.el.style.left=p.x+'px';p.el.style.top=p.y+'px';p.done=true;p.el.classList.add('done');$('tb').insertBefore(p.el,$('fr').nextSibling);placed++;Kit.ding();
+  $('ct').textContent=`${placed} / ${pieces.length}`;if(placed===pieces.length){tick();$('fr').classList.remove('ghost');Kit.tada();Kit.confetti(90);$('msg').textContent=`🎉 Finished in ${$('tm').textContent} with ${moves} moves!`}}else Kit.tick();window.__t={n:pieces.length,placed,moves}}
+$('pc').onclick=e=>{const b=e.target.closest('[data-p]');if(!b)return;if(b.dataset.p!=='c'){pic=+b.dataset.p;custom=null}thumbs();build()};
+$('sz').onchange=build;$('go').onclick=()=>{pieces.forEach(p=>{if(p.done){p.done=false;p.el.classList.remove('done')}});placed=0;moves=0;t0=0;$('tm').textContent='0:00';$('ct').textContent=`0 / ${pieces.length}`;$('fr').classList.toggle('ghost',ghost);scatter();$('msg').textContent=''};
+$('gh').onchange=()=>{ghost=$('gh').checked;if(placed<pieces.length)$('fr').classList.toggle('ghost',ghost)};
+$('up').onchange=()=>{const f=$('up').files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas'),s=Math.min(1,1400/Math.max(im.width,im.height));c.width=im.width*s;c.height=im.height*s;c.getContext('2d').drawImage(im,0,0,c.width,c.height);custom=c.toDataURL('image/jpeg',.88);thumbs();build()};im.src=r.result};r.readAsDataURL(f)};
+let rt;addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{if(placed===0)layout()},300)});
+window.__z={solve:k=>{const p=pieces[k];p.x=p.hx+3;p.y=p.hy+2;drop(p)},home:k=>[pieces[k].hx,pieces[k].hy,pieces[k].x,pieces[k].y]};
+thumbs();build();
+</script>
+</body></html>

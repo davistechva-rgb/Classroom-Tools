@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Tangram Board</title>
+<style>
+main{max-width:1600px}
+.tg-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:10px}
+.tg-board{background:#FFFDF6;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);overflow:hidden;touch-action:none}
+.tg-board svg{width:100%;display:block;aspect-ratio:16/10;user-select:none}
+.tg-t{stroke:#1D2B53;stroke-width:3;stroke-linejoin:round;cursor:grab}
+.tg-t.sel{stroke:#E5533F;stroke-width:5}
+.tg-sil{fill:#2B3A67;opacity:.85}
+.tg-msg{text-align:center;color:#fff;font-weight:900;font-size:clamp(1.1rem,2.8vw,1.6rem);text-shadow:2px 2px 0 var(--ink);min-height:1.5em;margin-top:10px}
+.tg-pz{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:10px}
+.tg-pz button{font:inherit;font-weight:800;border:3px solid var(--ink);border-radius:12px;padding:5px 10px;background:#fff;cursor:pointer;color:var(--ink)}
+.tg-pz button.on{background:var(--sun)}.tg-pz button.won::after{content:" ✅"}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🧩", "Tangram Board");
+const $=id=>document.getElementById(id);
+const U=55;
+// the 7 tans cut from a 4×4 square (units)
+const TAN={L1:['#E5533F',[[0,0],[4,0],[2,2]]],L2:['#1E7FD0',[[0,0],[2,2],[0,4]]],M:['#5DC66E',[[4,2],[4,4],[2,4]]],S1:['#FFC93C',[[2,2],[3,1],[3,3]]],S2:['#FF9F43',[[0,4],[1,3],[2,4]]],SQ:['#9B6BF2',[[2,2],[3,3],[2,4],[1,3]]],P:['#22C3E6',[[4,0],[4,2],[3,3],[3,1]]]};
+const cen=ps=>[ps.reduce((a,p)=>a+p[0],0)/ps.length,ps.reduce((a,p)=>a+p[1],0)/ps.length];
+const LOC={};Object.entries(TAN).forEach(([k,t])=>{const c=cen(t[1]);LOC[k]=t[1].map(([x,y])=>[(x-c[0])*U,(y-c[1])*U])});
+// puzzles: which tans to use, and the silhouette to fill (units, centered on the board)
+const PZ=[['🔶 Two small triangles: square',['S1','S2'],[[[2,2],[3,1],[4,2],[3,3]]]],['🔺 Two small triangles: triangle',['S1','S2'],[[[4,2],[4,4],[2,4]]]],['🟩 Three pieces: square',['M','S1','S2'],[[[2,2],[4,2],[4,4],[2,4]]]],['📐 Two big triangles',['L1','L2'],[[[0,0],[4,0],[0,4]]]],['🔺 Five pieces: big triangle',['M','S1','S2','SQ','P'],[[[4,0],[4,4],[0,4]]]],['⬛ All seven: the square',Object.keys(TAN),[[[0,0],[4,0],[4,4],[0,4]]]]];
+let T=[],sel=null,drag=null,pz=-1,won=Kit.get('tg-won',[]),done=false;
+document.querySelector('main').innerHTML=`<div class="tg-top"><button class="btn white small" id="ro">🔄 Turn</button><button class="btn white small" id="fl">↔️ Flip</button><button class="btn white small" id="mx">🔀 Mix up</button><button class="btn white small" id="fr">🎨 Free play</button></div><div class="tg-pz" id="pzs">${PZ.map((p,i)=>`<button data-p="${i}">${p[0]}</button>`).join('')}</div>
+<div class="tg-board"><svg id="sv" viewBox="0 0 1000 625"></svg></div><div class="tg-msg" id="msg"></div>`;
+function pts(t){const a=t.r*Math.PI/180;return LOC[t.k].map(([x,y])=>{if(t.f)x=-x;return [t.x+x*Math.cos(a)-y*Math.sin(a),t.y+x*Math.sin(a)+y*Math.cos(a)]})}
+const SX=650,SY=150;// where silhouettes sit
+const silPts=()=>pz<0?[]:PZ[pz][2].map(o=>{const all=PZ[pz][2].flat(),mx=Math.min(...all.map(p=>p[0])),my=Math.min(...all.map(p=>p[1]));return o.map(([x,y])=>[SX+(x-mx)*U,SY+(y-my)*U])});
+function setup(keys){T=keys.map((k,i)=>({k,x:90+(i%4)*130,y:130+Math.floor(i/4)*190,r:Kit.pick([0,45,90,135,180,225,270,315]),f:false}));sel=null;done=false;draw()}
+function draw(){let h='';silPts().forEach(o=>h+=`<polygon class="tg-sil" points="${o.map(p=>p.join(',')).join(' ')}"/>`);
+ T.forEach((t,i)=>h+=`<polygon class="tg-t ${i===sel?'sel':''}" data-i="${i}" points="${pts(t).map(p=>p.map(v=>v.toFixed(1)).join(',')).join(' ')}" fill="${TAN[t.k][0]}"/>`);$('sv').innerHTML=h;
+ [...$('pzs').children].forEach((b,i)=>{b.classList.toggle('on',i===pz);b.classList.toggle('won',won.includes(i))});window.__t={n:T.length,pz,sel,done}}
+function snap(t){let best=null;const mine=pts(t),others=T.filter(o=>o!==t).flatMap(pts).concat(silPts().flat());others.forEach(q=>mine.forEach(m=>{const d=Math.hypot(q[0]-m[0],q[1]-m[1]);if(d<18&&(!best||d<best.d))best={d,dx:q[0]-m[0],dy:q[1]-m[1]}}));if(best){t.x+=best.dx;t.y+=best.dy;Kit.tone(520,.05,'triangle',.1)}}
+// compare pixels of the silhouette with pixels of the pieces
+function check(){if(pz<0||done)return false;const c=document.createElement('canvas');c.width=500;c.height=313;const x=c.getContext('2d'),k=.5,path=ps=>{x.beginPath();ps.forEach(([a,b],i)=>i?x.lineTo(a*k,b*k):x.moveTo(a*k,b*k));x.closePath()};
+ x.fillStyle='#f00';silPts().forEach(o=>{path(o);x.fill()});const tg=x.getImageData(0,0,500,313).data;x.clearRect(0,0,500,313);x.fillStyle='#0f0';T.forEach(t=>{path(pts(t));x.fill()});const gt=x.getImageData(0,0,500,313).data;
+ let n=0,hit=0,sp=0;for(let i=0;i<tg.length;i+=4){const a=tg[i]>128,b=gt[i+1]>128;if(a){n++;if(b)hit++}else if(b)sp++}const ok=hit/n>.97&&sp/n<.04;
+ if(ok){done=true;if(!won.includes(pz)){won.push(pz);Kit.set('tg-won',won)}Kit.tada();Kit.confetti(70);$('msg').textContent='🎉 You solved it!';draw()}window.__t.cover=+(hit/n).toFixed(3);return ok}
+function pt(e){const r=$('sv').getBoundingClientRect();return [(e.clientX-r.left)/r.width*1000,(e.clientY-r.top)/r.height*625]}
+$('sv').addEventListener('pointerdown',e=>{const g=e.target.closest('[data-i]');if(!g){sel=null;draw();return}const i=+g.dataset.i,t=T[i];T.splice(i,1);T.push(t);const [x,y]=pt(e);drag={t,dx:x-t.x,dy:y-t.y,moved:false,was:sel===i};sel=T.length-1;$('sv').setPointerCapture(e.pointerId);draw()});
+$('sv').addEventListener('pointermove',e=>{if(!drag)return;const [x,y]=pt(e),nx=x-drag.dx,ny=y-drag.dy;if(Math.hypot(nx-drag.t.x,ny-drag.t.y)>2)drag.moved=true;if(drag.moved){drag.t.x=Math.max(0,Math.min(1000,nx));drag.t.y=Math.max(0,Math.min(625,ny));draw()}});
+$('sv').addEventListener('pointerup',()=>{if(!drag)return;const {t,moved,was}=drag;drag=null;if(moved)snap(t);else if(was){t.r=(t.r+45)%360;snap(t)}draw();check()});
+$('ro').onclick=()=>{const t=T[sel];if(t){t.r=(t.r+45)%360;snap(t);draw();check()}};$('fl').onclick=()=>{const t=T[sel];if(t){t.f=!t.f;draw();check()}};
+$('mx').onclick=()=>setup(T.map(t=>t.k));$('fr').onclick=()=>{pz=-1;$('msg').textContent='Make anything you like: a cat, a boat, a house…';setup(Object.keys(TAN))};
+$('pzs').onclick=e=>{const b=e.target.closest('[data-p]');if(!b)return;pz=+b.dataset.p;$('msg').textContent=`Fill the dark shape using ${PZ[pz][1].length} pieces. Tap a piece to turn it.`;setup(PZ[pz][1])};
+window.__g={pz:i=>$('pzs').children[i].click(),place:(i,x,y,r,f)=>{Object.assign(T[i],{x,y,r,f:!!f});draw();return check()},sol:i=>{// put each tan exactly where it sits in the original square
+  const all=PZ[i][2].flat(),mx=Math.min(...all.map(p=>p[0])),my=Math.min(...all.map(p=>p[1]));return PZ[i][1].map(k=>{const c=cen(TAN[k][1]);return [SX+(c[0]-mx)*U,SY+(c[1]-my)*U]})},keys:()=>T.map(t=>t.k)};
+$('msg').textContent='Pick a puzzle, or try free play!';pz=-1;setup(Object.keys(TAN));
+</script>
+</body></html>

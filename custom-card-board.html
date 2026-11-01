@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Custom Card Board</title>
+<style>
+main{max-width:1800px}
+.cc-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:10px}
+.cc-table{position:relative;background:#2E8B57;background-image:radial-gradient(rgba(255,255,255,.07) 1px,transparent 1px);background-size:14px 14px;border:8px solid #8B5A2B;outline:5px solid var(--ink);border-radius:26px;box-shadow:9px 9px 0 var(--ink);aspect-ratio:16/9;overflow:hidden;touch-action:none;margin:5px}
+.cc-table{}@media (max-width:700px){.cc-table{aspect-ratio:3/4}}
+.cc-c{position:absolute;width:var(--cw);aspect-ratio:5/7;perspective:800px;cursor:grab;touch-action:none;transition:left .45s,top .45s}
+.cc-c.hold{transition:none;z-index:100;cursor:grabbing}
+.cc-in{position:absolute;inset:0;transition:transform .45s;transform-style:preserve-3d}
+.cc-c.up .cc-in{transform:rotateY(180deg)}
+.cc-f,.cc-b{position:absolute;inset:0;border-radius:12px;border:4px solid var(--ink);backface-visibility:hidden;display:grid;place-items:center;text-align:center;padding:8px;box-shadow:3px 5px 0 rgba(0,0,0,.3)}
+.cc-b{background:var(--back);background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.18) 0 8px,transparent 8px 16px);color:#fff;font-size:calc(var(--cw)*.3);text-shadow:2px 2px 0 rgba(0,0,0,.3)}
+.cc-f{background:#FFFDF6;transform:rotateY(180deg);font-weight:800;font-size:calc(var(--cw)*.13);line-height:1.2;word-break:break-word;overflow:hidden}
+.cc-f .big{font-size:calc(var(--cw)*.36);line-height:1}
+.cc-f small{display:block;color:#55607E;font-size:.7em;margin-top:4px}
+.cc-c.sel .cc-f,.cc-c.sel .cc-b{outline:5px solid var(--sun);outline-offset:2px}
+.cc-deck{position:absolute;right:2%;bottom:4%;width:var(--cw);aspect-ratio:5/7;border-radius:12px;border:4px solid var(--ink);background:var(--back);box-shadow:4px 4px 0 #1D2B53,8px 8px 0 #1D2B53;display:grid;place-items:center;color:#fff;font-weight:900;cursor:pointer;font-size:1.2rem;text-shadow:1px 1px 0 rgba(0,0,0,.3)}
+.cc-hint{position:absolute;left:12px;bottom:10px;color:rgba(255,255,255,.85);font-weight:700}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🃏", "Custom Card Board");
+const $=id=>document.getElementById(id);
+const BACKS=['#E5533F','#1E7FD0','#9B6BF2','#2E9E47','#FF9F43'];
+const DECKS0={'🔤 Vocabulary':`curious | wanting to know or learn something
+enormous | very, very big
+fragile | easy to break
+brave | not afraid to do something hard
+ancient | very old
+habitat | the natural home of an animal or plant
+predict | to guess what will happen next
+observe | to watch carefully`,
+'➕ Math facts':`7 × 8 | 56
+6 × 7 | 42
+9 × 6 | 54
+12 ÷ 3 | 4
+15 + 27 | 42
+100 − 37 | 63
+8 × 8 | 64
+45 ÷ 5 | 9`,
+'🌍 Capitals':`🇫🇷 France | Paris
+🇯🇵 Japan | Tokyo
+🇧🇷 Brazil | Brasília
+🇨🇦 Canada | Ottawa
+🇰🇪 Kenya | Nairobi
+🇦🇺 Australia | Canberra
+🇮🇳 India | New Delhi
+🇪🇬 Egypt | Cairo`,
+'💬 Talk cards':`🎤 Tell about your favorite book
+🦸 If you had a superpower, what would it be?
+🌎 Where would you love to visit?
+🍕 Describe your perfect lunch
+🐾 What animal are you most like?
+🎨 What do you like to make?
+🚀 What job would you love to have?
+😂 Tell the funniest thing that happened this week`};
+let DECKS={},deck=Object.keys(DECKS0)[0],cards=[],sel=null,drag=null,back=0,cw=120,pile=[];
+function parse(t){DECKS={...DECKS0};const my=Kit.lines(t);if(my.length>=2)DECKS['✏️ My cards']=my.join('\n');fill()}
+const ED=Kit.editable({key:'card-board',title:'My cards',help:'(one card per line: front | back. Leave out the back for one-sided cards.)',def:`🐝 | bee
+🌳 | tree
+☀️ | sun
+🐟 | fish`,onSave:t=>{parse(t);deck='✏️ My cards';$('dk').value=deck;spread()}});
+document.querySelector('main').innerHTML=`<div class="cc-top"><select id="dk" style="width:auto"></select><button class="btn green" id="sp">🃏 Spread all</button><button class="btn white" id="dl">🎴 Deal 1</button><button class="btn white small" id="fu">👀 Flip all up</button><button class="btn white small" id="fd">🙈 Flip all down</button><button class="btn white small" id="sh">🔀 Shuffle</button><button class="btn white small" id="bk">🎨 Card back</button><select id="cs" style="width:auto"><option value="90">Small cards</option><option value="120" selected>Medium cards</option><option value="160">Big cards</option></select></div>
+<div class="cc-table" id="tb"></div>`;
+function fill(){const s=$('dk');if(!s)return;s.innerHTML=Object.keys(DECKS).map(k=>`<option>${k}</option>`).join('');s.value=DECKS[deck]?deck:Object.keys(DECKS)[0];deck=s.value}
+function parts(l){const [a,b]=l.split('|').map(x=>x.trim());return [a,b||'']}
+function face(t){const emo=/^\p{Extended_Pictographic}|^\p{Regional_Indicator}/u.test(t)&&t.length<=8;return emo?`<span class="big">${Kit.esc(t)}</span>`:Kit.esc(t)}
+function make(){const T=$('tb');T.querySelectorAll('.cc-c,.cc-deck').forEach(e=>e.remove());T.style.setProperty('--cw',cw+'px');T.style.setProperty('--back',BACKS[back]);
+ cards=Kit.lines(DECKS[deck]).map((l,i)=>{const [f,b]=parts(l);const el=document.createElement('div');el.className='cc-c';el.dataset.i=i;el.innerHTML=`<div class="cc-in"><div class="cc-b">?</div><div class="cc-f"><div>${face(f)}${b?'':''}</div></div></div>`;T.appendChild(el);return {f,b,el,up:false,side:0,x:0,y:0}});
+ const d=document.createElement('div');d.className='cc-deck';d.id='deck';T.appendChild(d);pile=[]}
+function pos(c,x,y){c.x=x;c.y=y;c.el.style.left=x+'%';c.el.style.top=y+'%'}
+// two-sided cards: tap a face-up card again to see its back side
+function showFace(c){c.el.querySelector('.cc-f').innerHTML=`<div>${c.side&&c.b?face(c.b):face(c.f)}${c.b?`<small>${c.side?'(back)':'tap to see the back'}</small>`:''}</div>`}
+function upd(){$('deck').textContent=pile.length?`🎴 ${pile.length}`:'';$('deck').style.visibility=pile.length?'visible':'hidden';cards.forEach(c=>{c.el.classList.toggle('up',c.up);showFace(c)});window.__t={n:cards.length,up:cards.filter(c=>c.up).length,pile:pile.length,onTable:cards.filter(c=>!pile.includes(c)).length}}
+function spread(){make();const T=$('tb').getBoundingClientRect(),n=cards.length,cwp=cw/T.width*100,chp=cw*1.4/T.height*100;const cols=Math.max(1,Math.min(n,Math.floor(92/(cwp+1.5)))),rows=Math.ceil(n/cols);
+ Kit.shuffle(cards).forEach((c,i)=>{const r=Math.floor(i/cols),k=i%cols,inRow=Math.min(cols,n-r*cols),gap=(100-inRow*cwp)/(inRow+1);pos(c,gap+k*(cwp+gap),Math.max(2,(100-rows*chp)/(rows+1))+r*(chp+Math.max(2,(100-rows*chp)/(rows+1))))});upd()}
+function stack(){make();pile=Kit.shuffle(cards);const T=$('tb').getBoundingClientRect();pile.forEach((c,i)=>{const d=$('deck').getBoundingClientRect();pos(c,(d.left-T.left)/T.width*100,(d.top-T.top)/T.height*100);c.el.style.visibility='hidden'});upd()}
+function deal(){if(!pile.length)stack();const c=pile.pop();if(!c)return;const T=$('tb').getBoundingClientRect(),cwp=cw/T.width*100,chp=cw*1.4/T.height*100;c.el.style.visibility='visible';c.el.style.zIndex=50+cards.length-pile.length;
+ const n=cards.length-pile.length-1;requestAnimationFrame(()=>{pos(c,Math.min(78,8+(n%6)*(cwp+3)),Math.min(60,8+Math.floor(n/6)*(chp+4)));setTimeout(()=>{c.up=true;upd()},window.__fast?0:350)});Kit.tick();upd()}
+$('tb').addEventListener('pointerdown',e=>{if(e.target.closest('#deck')){deal();return}const el=e.target.closest('.cc-c');if(!el)return;e.preventDefault();const c=cards[+el.dataset.i],T=$('tb').getBoundingClientRect();drag={c,sx:e.clientX,sy:e.clientY,ox:c.x,oy:c.y,T,moved:false};el.classList.add('hold');el.style.zIndex=200;el.setPointerCapture(e.pointerId)});
+$('tb').addEventListener('pointermove',e=>{if(!drag)return;const dx=(e.clientX-drag.sx)/drag.T.width*100,dy=(e.clientY-drag.sy)/drag.T.height*100;if(Math.abs(dx)+Math.abs(dy)>.8)drag.moved=true;if(drag.moved)pos(drag.c,Math.max(-2,Math.min(96,drag.ox+dx)),Math.max(-2,Math.min(90,drag.oy+dy)))});
+$('tb').addEventListener('pointerup',()=>{if(!drag)return;const {c,moved}=drag;c.el.classList.remove('hold');c.el.style.zIndex=101;drag=null;if(!moved){if(!c.up){c.up=true;c.side=0}else if(c.b&&!c.side)c.side=1;else{c.up=false;c.side=0}Kit.tone(c.up?600:420,.06,'triangle',.1);upd()}});
+$('dk').onchange=()=>{deck=$('dk').value;spread()};$('sp').onclick=spread;$('dl').onclick=deal;$('fu').onclick=()=>{cards.forEach(c=>{c.up=true;c.side=0});upd()};$('fd').onclick=()=>{cards.forEach(c=>{c.up=false;c.side=0});upd()};
+$('sh').onclick=()=>{cards.forEach(c=>{c.up=false;c.side=0});upd();setTimeout(spread,window.__fast?0:450)};$('bk').onclick=()=>{back=(back+1)%BACKS.length;$('tb').style.setProperty('--back',BACKS[back])};
+$('cs').onchange=()=>{cw=+$('cs').value;spread()};let rt;addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{if(!pile.length)spread()},300)});
+window.__k={tap:i=>{const c=cards[i];if(!c.up){c.up=true}else if(c.b&&!c.side)c.side=1;else{c.up=false;c.side=0}upd();return [c.up,c.side]},deal,face:i=>cards[i].el.querySelector('.cc-f').textContent};
+parse(ED);if(innerWidth<600)cw=80,$('cs').value='90';spread();
+</script>
+</body></html>

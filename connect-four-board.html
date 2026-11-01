@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Connect Four Board</title>
+<style>
+main{max-width:1200px}
+.c4-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:10px}
+.c4-score{display:flex;gap:10px;justify-content:center;margin-bottom:10px;flex-wrap:wrap}
+.c4-p{display:flex;align-items:center;gap:8px;background:#fff;border:5px solid var(--ink);border-radius:18px;padding:6px 14px;font-weight:900;font-size:1.2rem;opacity:.6;transition:.2s}
+.c4-p.on{opacity:1;transform:scale(1.06);box-shadow:0 5px 0 var(--ink)}
+.c4-p i{width:30px;height:30px;border-radius:50%;border:3px solid var(--ink);background:var(--pc)}
+.c4-p input{font:inherit;font-weight:900;border:0;width:7.5em;background:transparent;color:var(--ink)}
+.c4-p b{background:var(--ink);color:#fff;border-radius:10px;padding:0 10px}
+.c4-wrap{max-width:min(760px,100%,calc((100vh - 230px) * 7 / 6.4));margin:0 auto}
+.c4-drop{display:grid;grid-template-columns:repeat(7,1fr);height:44px}
+.c4-drop span{display:grid;place-items:center;font-size:1.8rem;opacity:0;transition:.15s}
+.c4-drop span.on{opacity:1}
+.c4-b{background:#1E7FD0;border:7px solid var(--ink);border-radius:24px;box-shadow:8px 8px 0 var(--ink);display:grid;grid-template-columns:repeat(7,1fr);gap:clamp(4px,1vw,10px);padding:clamp(6px,1.4vw,14px);position:relative;cursor:pointer;touch-action:manipulation}
+.c4-c{aspect-ratio:1;border-radius:50%;background:#EAF6FF;box-shadow:inset 0 5px 0 rgba(0,0,0,.25);position:relative;overflow:hidden}
+.c4-c i{position:absolute;inset:0;border-radius:50%;background:var(--pc);box-shadow:inset 0 -6px 0 rgba(0,0,0,.18),inset 0 4px 0 rgba(255,255,255,.4)}
+.c4-c i.fall{animation:fall var(--t) cubic-bezier(.5,0,1,1)}
+@keyframes fall{0%{transform:translateY(var(--from))}}
+.c4-c.win i{animation:glow .6s infinite alternate}@keyframes glow{to{transform:scale(.8)}}
+.c4-msg{text-align:center;color:#fff;font-weight:900;font-size:clamp(1.3rem,3.5vw,2rem);text-shadow:3px 3px 0 var(--ink);min-height:1.5em;margin-top:12px}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🔴", "Connect Four Board");
+const $=id=>document.getElementById(id);
+const PC=['#E5533F','#FFC93C'],ROWS=6,COLS=7;
+let B,turn=0,over=false,hist=[],score=Kit.get('c4-score',[0,0]),names=Kit.get('c4-names',['Red','Yellow']),ai=Kit.get('c4-ai','0'),busy=false,starter=0;
+document.querySelector('main').innerHTML=`<div class="c4-top"><select id="op" style="width:auto"><option value="0">👥 Two players</option><option value="1">🤖 vs computer (easy)</option><option value="3">🤖 vs computer (medium)</option><option value="5">🤖 vs computer (hard)</option></select><button class="btn green" id="ng">🔄 New game</button><button class="btn white small" id="un">↩️ Undo</button><button class="btn white small" id="rs">0️⃣ Reset score</button></div>
+<div class="c4-score">${[0,1].map(p=>`<div class="c4-p" id="p${p}" style="--pc:${PC[p]}"><i></i><input value="${Kit.esc(names[p])}" data-n="${p}" aria-label="Player name"><b id="s${p}">0</b></div>`).join('')}</div>
+<div class="c4-wrap"><div class="c4-drop" id="dp">${'<span></span>'.repeat(COLS)}</div><div class="c4-b" id="bd"></div></div><div class="c4-msg" id="msg"></div>`;
+$('op').value=ai;
+function start(){B=Array.from({length:ROWS},()=>Array(COLS).fill(-1));turn=starter;starter=1-starter;over=false;hist=[];draw();say();maybeAI()}
+function draw(win=[],fall=null){$('bd').innerHTML=B.map((r,y)=>r.map((v,x)=>`<div class="c4-c ${win.some(w=>w[0]===y&&w[1]===x)?'win':''}" data-x="${x}">${v<0?'':`<i style="--pc:${PC[v]}" class="${fall&&fall[0]===y&&fall[1]===x?'fall':''}"></i>`}</div>`).join('')).join('');
+ if(fall){const el=$('bd').children[fall[0]*COLS+fall[1]].firstChild;el.style.setProperty('--from',`-${(fall[0]+1)*115}%`);el.style.setProperty('--t',`${.18+fall[0]*.06}s`)}
+ [0,1].forEach(p=>{$('p'+p).classList.toggle('on',!over&&turn===p);$('s'+p).textContent=score[p]});window.__t={B:B.map(r=>r.join(',')),turn,over,score:[...score]}}
+const name=p=>p===1&&ai!=='0'?'Computer':names[p]||(p?'Yellow':'Red');
+function say(t){$('msg').textContent=t||`${name(turn)}'s turn${turn===1&&ai!=='0'?' 🤔':''}`}
+const drop=(b,x)=>{for(let y=ROWS-1;y>=0;y--)if(b[y][x]<0)return y;return -1};
+function lines(b,p){const out=[];for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++)for(const [dy,dx] of [[0,1],[1,0],[1,1],[1,-1]]){const cs=[];for(let k=0;k<4;k++){const yy=y+dy*k,xx=x+dx*k;if(yy<0||yy>=ROWS||xx<0||xx>=COLS||b[yy][xx]!==p)break;cs.push([yy,xx])}if(cs.length===4)out.push(cs)}return out}
+async function play(x){if(over||busy)return false;const y=drop(B,x);if(y<0){Kit.tone(200,.15,'triangle',.12);return false}busy=true;B[y][x]=turn;hist.push([y,x]);draw([],[y,x]);Kit.tone(300+y*40,.08,'triangle',.15);await Kit.sleep(window.__fast?1:200+y*60);
+ const w=lines(B,turn);if(w.length){over=true;score[turn]++;Kit.set('c4-score',score);draw(w.flat());say(`🎉 ${name(turn)} wins!`);Kit.tada();Kit.confetti(80);busy=false;return true}
+ if(B[0].every(v=>v>=0)){over=true;draw();say('🤝 It\'s a tie! The board is full.');busy=false;return true}
+ turn=1-turn;draw();say();busy=false;maybeAI();return true}
+// the computer looks a few moves ahead (minimax) and scores how many threes and twos each side has
+function evalB(b){let s=0;const W=[[0,1],[1,0],[1,1],[1,-1]];for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++)for(const [dy,dx] of W){let a=0,h=0,ok=true;for(let k=0;k<4;k++){const yy=y+dy*k,xx=x+dx*k;if(yy<0||yy>=ROWS||xx<0||xx>=COLS){ok=false;break}if(b[yy][xx]===1)a++;else if(b[yy][xx]===0)h++}if(!ok||(a&&h))continue;s+=a===3?50:a===2?5:0;s-=h===3?60:h===2?5:0}for(let y=0;y<ROWS;y++)s+=(b[y][3]===1?3:b[y][3]===0?-3:0);return s}
+function mm(b,d,p,al,be){const moves=[3,2,4,1,5,0,6].filter(x=>drop(b,x)>=0);if(lines(b,1).length)return [null,1e6+d];if(lines(b,0).length)return [null,-1e6-d];if(!moves.length)return [null,0];if(!d)return [null,evalB(b)];
+ let best=[moves[0],p?-Infinity:Infinity];for(const x of moves){const y=drop(b,x);b[y][x]=p;const v=mm(b,d-1,1-p,al,be)[1];b[y][x]=-1;if(p?v>best[1]:v<best[1])best=[x,v];if(p)al=Math.max(al,v);else be=Math.min(be,v);if(al>=be)break}return best}
+function maybeAI(){if(ai==='0'||turn!==1||over)return;busy=true;setTimeout(()=>{let x;const d=+ai;if(d===1&&Math.random()<.5)x=Kit.pick([0,1,2,3,4,5,6].filter(c=>drop(B,c)>=0));else x=mm(B.map(r=>[...r]),d,1,-Infinity,Infinity)[0];busy=false;play(x)},window.__fast?1:500)}
+$('bd').onclick=e=>{const c=e.target.closest('[data-x]');if(c&&!(ai!=='0'&&turn===1))play(+c.dataset.x)};
+$('bd').onmousemove=e=>{const c=e.target.closest('[data-x]');[...$('dp').children].forEach((s,i)=>{s.classList.toggle('on',!!(c&&+c.dataset.x===i&&!over));s.textContent=turn?'🟡':'🔴'})};$('bd').onmouseleave=()=>[...$('dp').children].forEach(s=>s.classList.remove('on'));
+$('ng').onclick=start;$('op').onchange=()=>{ai=$('op').value;Kit.set('c4-ai',ai);start()};
+$('un').onclick=()=>{if(busy||!hist.length)return;const n=ai!=='0'&&hist.length>=2&&!over?2:1;for(let k=0;k<n;k++){const [y,x]=hist.pop();turn=B[y][x];B[y][x]=-1}if(over){over=false}draw();say()};
+$('rs').onclick=()=>{score=[0,0];Kit.set('c4-score',score);draw()};
+document.querySelectorAll('[data-n]').forEach(i=>i.oninput=()=>{names[+i.dataset.n]=i.value;Kit.set('c4-names',names);if(!over)say()});
+window.__c={play,lines:p=>lines(B,p).length,ai:d=>{ai=String(d);$('op').value=ai;start()},best:()=>mm(B.map(r=>[...r]),5,1,-Infinity,Infinity)[0],set:rows=>{B=rows.map(r=>r.split('').map(c=>c==='.'?-1:+c));turn=1;over=false;draw()}};
+start();
+</script>
+</body></html>

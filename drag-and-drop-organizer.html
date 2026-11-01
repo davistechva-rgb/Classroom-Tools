@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Drag-and-Drop Organizer</title>
+<style>
+main{max-width:1800px}
+.go-top{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:10px}
+.go{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:14px;align-items:start}
+@media (max-width:900px){.go{grid-template-columns:1fr}}
+.go-board{position:relative;background:#fff;border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);aspect-ratio:16/10;overflow:hidden;touch-action:none}
+.go-r{position:absolute;border:4px solid var(--rc);background:color-mix(in srgb,var(--rc) 14%,#fff);border-radius:18px}
+.go-r.circ{border-radius:50%;background:color-mix(in srgb,var(--rc) 16%,transparent);mix-blend-mode:multiply}
+.go-r input{position:absolute;left:8px;right:8px;top:6px;font:inherit;font-weight:900;font-size:clamp(.9rem,1.8vw,1.3rem);text-align:center;border:0;background:transparent;color:var(--ink);pointer-events:auto}
+.go-r.circ input{top:9%}
+.go-arrow{position:absolute;font-size:clamp(1.4rem,3vw,2.4rem);transform:translate(-50%,-50%);pointer-events:none}
+.go-card{position:absolute;background:var(--cc);border:3px solid var(--ink);border-radius:10px;padding:5px 9px;font-weight:800;font-size:clamp(.8rem,1.5vw,1.05rem);cursor:grab;max-width:24%;box-shadow:2px 3px 0 rgba(29,43,83,.4);user-select:none;touch-action:none;z-index:3;transform:translate(-50%,-50%);word-break:break-word}
+.go-card.hold{cursor:grabbing;z-index:20;box-shadow:5px 8px 0 rgba(29,43,83,.3);transform:translate(-50%,-50%) scale(1.08)}
+.go-side input,.go-side textarea{font:inherit;font-weight:700;padding:6px 8px;border:3px solid var(--ink);border-radius:10px}
+.go-side{min-width:0;grid-template-columns:minmax(0,1fr);background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:8px}
+.go-tray{display:flex;flex-wrap:wrap;gap:6px;min-height:60px;border:3px dashed #C3CBDB;border-radius:12px;padding:6px;align-content:flex-start}
+.go-tray .go-card{position:static;transform:none;max-width:100%}
+.go-sum{font-weight:700;font-size:.9rem;display:grid;gap:4px}
+.go-trash{position:absolute;right:8px;bottom:8px;font-size:1.6rem;background:#fff;border:3px solid var(--ink);border-radius:12px;padding:2px 8px;z-index:2}
+@media print{header,.go-top,.go-side{display:none!important}.go{grid-template-columns:1fr}.go-board{box-shadow:none}}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🗂️", "Drag-and-Drop Organizer");
+const $=id=>document.getElementById(id);
+const CC=['#FFF27A','#FFB3D1','#9FE6FF','#B8F59A','#FFC98B','#D6C2FF'];
+// regions: [label, x, y, w, h (percent), color, circle?]
+const T={venn:['⭕ Venn diagram',[['Group A',6,8,52,84,'#E5533F',1],['Group B',42,8,52,84,'#1E7FD0',1]]],
+ t:['📊 T-chart',[['Side 1',3,4,46.5,92,'#5DC66E'],['Side 2',50.5,4,46.5,92,'#9B6BF2']]],
+ three:['📋 Three columns',[['One',2,4,31,92,'#E5533F'],['Two',34.5,4,31,92,'#FFC93C'],['Three',67,4,31,92,'#1E7FD0']]],
+ story:['📖 Story map',[['Characters',2,4,47,28,'#FF6B9A'],['Setting',51,4,47,28,'#22C3E6'],['Beginning',2,36,31,60,'#5DC66E'],['Middle',34.5,36,31,60,'#FFC93C'],['End',67,36,31,60,'#9B6BF2']]],
+ main:['🎯 Main idea & details',[['Main idea',30,4,40,30,'#E5533F'],['Detail',2,44,31,52,'#1E7FD0'],['Detail',34.5,44,31,52,'#1E7FD0'],['Detail',67,44,31,52,'#1E7FD0']]],
+ cause:['➡️ Cause & effect',[['Cause',2,10,28,80,'#FF9F43'],['Effect',36,10,28,80,'#22C3E6'],['Then…',70,10,28,80,'#9B6BF2']],[[33,50],[67,50]]],
+ seq:['🔢 First, next, then, last',[['First',1,10,23,80,'#5DC66E'],['Next',26,10,23,80,'#FFC93C'],['Then',51,10,23,80,'#FF9F43'],['Last',76,10,23,80,'#E5533F']],[[24.5,50],[49.5,50],[74.5,50]]],
+ kwl:['🧠 K-W-L',[['Know',2,4,31,92,'#5DC66E'],['Want to know',34.5,4,31,92,'#FFC93C'],['Learned',67,4,31,92,'#1E7FD0']]]};
+let S=Kit.get('go-state',null)||{t:'venn',labels:{},cards:[]},drag=null,nc=0;
+document.querySelector('main').innerHTML=`<div class="go-top"><select id="tp" style="width:auto">${Object.entries(T).map(([k,v])=>`<option value="${k}">${v[0]}</option>`).join('')}</select><button class="btn white small" id="pr">🖨️ Print</button><button class="btn white small" id="cl">🧽 Clear cards</button></div>
+<div class="go"><div class="go-board" id="bd"></div><div class="go-side"><b>✏️ Make a card</b><div class="row" style="gap:6px"><input id="tx" maxlength="60" placeholder="Type an idea" style="flex:1;min-width:0;width:50px"><button class="btn green small" id="ad">➕</button></div><div class="row" style="gap:4px" id="cc">${CC.map((c,i)=>`<button data-cc="${i}" style="width:28px;height:28px;border-radius:8px;border:3px solid var(--ink);background:${c};cursor:pointer"></button>`).join('')}</div>
+<details><summary style="font-weight:800;cursor:pointer">📋 Add many cards at once</summary><textarea id="many" rows="4" placeholder="One card per line" style="width:100%"></textarea><button class="btn white small" id="am">Add them</button></details>
+<b>🃏 Cards waiting (drag onto the board)</b><div class="go-tray" id="tr"></div><b>📌 What's where</b><div class="go-sum" id="sm"></div></div></div>`;
+$('tp').value=S.t;
+function save(){Kit.set('go-state',S)}
+const regs=()=>T[S.t][1];
+function where(c){if(c.x==null)return null;const R=regs();if(S.t==='venn'){const inC=k=>{const r=R[k],cx=r[1]+r[3]/2,cy=r[2]+r[4]/2;return Math.hypot((c.x-cx)/(r[3]/2),(c.y-cy)/(r[4]/2))<=1};const a=inC(0),b=inC(1);return a&&b?'both':a?0:b?1:null}
+ const i=R.findIndex(r=>c.x>=r[1]&&c.x<=r[1]+r[3]&&c.y>=r[2]&&c.y<=r[2]+r[4]);return i<0?null:i}
+const label=i=>S.labels[S.t+i]??regs()[i][0];
+function draw(){const R=regs();$('bd').innerHTML=R.map((r,i)=>`<div class="go-r ${r[6]?'circ':''}" style="left:${r[1]}%;top:${r[2]}%;width:${r[3]}%;height:${r[4]}%;--rc:${r[5]}"><input value="${Kit.esc(label(i))}" data-l="${i}"></div>`).join('')+(T[S.t][2]||[]).map(([x,y])=>`<div class="go-arrow" style="left:${x}%;top:${y}%">➡️</div>`).join('')+(S.t==='venn'?`<div style="position:absolute;left:50%;top:1.5%;transform:translateX(-50%);font-weight:900;color:#55607E">Both</div>`:'')+
+ S.cards.filter(c=>c.x!=null).map(c=>`<div class="go-card" data-id="${c.id}" style="left:${c.x}%;top:${c.y}%;--cc:${CC[c.c]}">${Kit.esc(c.t)}</div>`).join('')+'<div class="go-trash" id="trash">🗑️</div>';
+ $('tr').innerHTML=S.cards.filter(c=>c.x==null).map(c=>`<div class="go-card" data-id="${c.id}" style="--cc:${CC[c.c]}">${Kit.esc(c.t)}</div>`).join('')||'<span class="muted" style="font-weight:700">Make some cards above!</span>';
+ sum()}
+function sum(){const R=regs();const groups=S.t==='venn'?[[0,label(0)],['both','Both'],[1,label(1)]]:R.map((r,i)=>[i,label(i)]);$('sm').innerHTML=groups.map(([k,n])=>{const cs=S.cards.filter(c=>where(c)===k);return `<div><b>${Kit.esc(n)}:</b> ${cs.length?cs.map(c=>Kit.esc(c.t)).join(', '):'<span class="muted">—</span>'}</div>`}).join('');
+ [...$('cc').children].forEach((b,i)=>b.style.outline=i===nc?'3px solid var(--ink)':'');window.__t={t:S.t,cards:S.cards.map(c=>[c.t,where(c)])}}
+function add(t){t=t.trim();if(!t||S.cards.length>=40)return;S.cards.push({id:Date.now()+Math.random(),t,c:nc,x:null,y:null});save();draw()}
+$('ad').onclick=()=>{add($('tx').value);$('tx').value='';$('tx').focus()};$('tx').onkeydown=e=>{if(e.key==='Enter')$('ad').click()};
+$('am').onclick=()=>{Kit.lines($('many').value).forEach(add);$('many').value=''};$('cc').onclick=e=>{const b=e.target.closest('[data-cc]');if(b){nc=+b.dataset.cc;draw()}};
+$('bd').addEventListener('input',e=>{const i=e.target.dataset.l;if(i!==undefined){S.labels[S.t+i]=e.target.value;save();sum()}});
+document.addEventListener('pointerdown',e=>{const el=e.target.closest('.go-card');if(!el)return;e.preventDefault();const c=S.cards.find(x=>String(x.id)===el.dataset.id);const g=el.cloneNode(true);g.classList.add('hold');g.style.position='fixed';g.style.transform='translate(-50%,-50%) scale(1.08)';g.style.maxWidth='240px';document.body.appendChild(g);el.style.opacity=.3;drag={c,g,el};mv(e)});
+function mv(e){if(!drag)return;drag.g.style.left=e.clientX+'px';drag.g.style.top=e.clientY+'px'}
+document.addEventListener('pointermove',mv);
+document.addEventListener('pointerup',e=>{if(!drag)return;const {c,g}=drag;g.remove();drag=null;const r=$('bd').getBoundingClientRect(),t=$('trash').getBoundingClientRect();
+ if(e.clientX>=t.left-8&&e.clientX<=t.right+8&&e.clientY>=t.top-8&&e.clientY<=t.bottom+8){S.cards=S.cards.filter(x=>x!==c);Kit.tone(220,.1,'triangle',.1)}
+ else if(e.clientX>r.left&&e.clientX<r.right&&e.clientY>r.top&&e.clientY<r.bottom){c.x=(e.clientX-r.left)/r.width*100;c.y=(e.clientY-r.top)/r.height*100;Kit.tick()}else{c.x=null;c.y=null}save();draw()});
+$('tp').onchange=()=>{S.t=$('tp').value;S.cards.forEach(c=>{c.x=null;c.y=null});save();draw()};
+$('cl').onclick=()=>{if(confirm('Remove all cards?')){S.cards=[];save();draw()}};$('pr').onclick=()=>print();
+window.__o={add,put:(i,x,y)=>{S.cards[i].x=x;S.cards[i].y=y;save();draw()}};
+draw();
+</script>
+</body></html>

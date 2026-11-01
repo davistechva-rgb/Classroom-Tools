@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#56B8EA">
+<link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<title>Block Builder</title>
+<style>
+main{max-width:1600px}
+.bb{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.bb{grid-template-columns:1fr}}
+.bb-stage{border:6px solid var(--ink);border-radius:24px;box-shadow:7px 7px 0 var(--ink);overflow:hidden;touch-action:none;background:linear-gradient(#9FDCFF,#DDF3FF 70%)}
+.bb-stage svg{width:100%;display:block;cursor:pointer}
+.bb-stage.shake svg{animation:quake .12s 10 linear}
+@keyframes quake{25%{transform:translate(-6px,2px)}50%{transform:translate(5px,-2px)}75%{transform:translate(-3px,1px)}}
+.bb-p{background:#fff;border:5px solid var(--ink);border-radius:20px;padding:12px;display:grid;gap:10px}
+.bb-pal{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.bb-pal button{border:4px solid var(--ink);border-radius:14px;background:#fff;cursor:pointer;padding:6px;display:grid;place-items:center;gap:2px;font:inherit;font-weight:800;font-size:.8rem;color:var(--ink)}
+.bb-pal button.on{background:var(--sun)}
+.bb-pal svg{height:34px;width:auto}
+.bb-cols{display:flex;gap:5px;flex-wrap:wrap}.bb-cols button{width:30px;height:30px;border-radius:8px;border:3px solid var(--ink);background:var(--c);cursor:pointer}.bb-cols button.on{outline:3px solid var(--ink);outline-offset:2px}
+.bb-goal{display:grid;gap:6px}.bb-goal button{font:inherit;font-weight:800;border:3px solid var(--ink);border-radius:12px;padding:5px 9px;background:#fff;cursor:pointer;text-align:left;color:var(--ink)}
+.bb-goal button.on{background:var(--sun)}.bb-goal button.won::after{content:" ✅"}
+.bb-msg{font-weight:800;min-height:2.6em}
+.bb-stat{display:flex;gap:6px;flex-wrap:wrap}
+</style></head>
+<body>
+<main></main>
+<script src="kit.js"></script>
+<script src="learn.js"></script>
+<script>
+Kit.mount("🧱", "Block Builder");
+const $=id=>document.getElementById(id);
+const GW=20,GH=14,S=40;
+// block shapes as lists of cells [dx,dy] (dy goes up)
+const SH={b1:['Cube',[[0,0]]],b2:['Brick',[[0,0],[1,0]]],b3:['Plank',[[0,0],[1,0],[2,0]]],b4:['Long plank',[[0,0],[1,0],[2,0],[3,0]]],p2:['Pillar',[[0,0],[0,1]]],p3:['Tall pillar',[[0,0],[0,1],[0,2]]],L:['Corner',[[0,0],[1,0],[0,1]]],T:['T block',[[0,0],[1,0],[2,0],[1,1]]],rf:['Roof',[[0,0]],'roof']};
+const COLS=['#E5533F','#FF9F43','#FFC93C','#5DC66E','#22C3E6','#1E7FD0','#9B6BF2','#FF6B9A','#C99A63'];
+// challenges: [name, description, ground layout (gaps), check]
+const GOALS=[['🗼 Tall tower','Build a tower that reaches the flag (10 blocks high) and survives the earthquake.',[],()=>topH()>=10],
+ ['🌉 Bridge','Build a bridge across the river so the 🚗 can drive from one side to the other. It must survive the earthquake!',[[9,10]],()=>bridged()],
+ ['🏠 House with a roof','Build walls at least 3 high with a roof on top. Make sure there is space inside!',[],()=>house()],
+ ['🧗 Overhang','Make a block stick out at least 3 squares past the edge of the cliff without falling.',[[12,19]],()=>overhang()>=3],
+ ['🎨 Free build','Build anything you like!',[],()=>false]];
+let blocks=[],shape='b2',col=0,gi=0,won=Kit.get('bb-won',[]),hover=null,busy=false,nid=1;
+document.querySelector('main').innerHTML=`<div class="bb"><div><div class="bb-stage" id="st"><svg id="sv" viewBox="0 0 ${GW*S} ${GH*S}"></svg></div><div class="row" style="justify-content:center;margin-top:10px;gap:6px"><button class="btn green" id="eq">🌋 Earthquake test!</button><button class="btn white small" id="un">↩️ Undo</button><button class="btn white small" id="cl">🧽 Clear</button></div></div>
+<div class="bb-p"><b>🧱 Pick a block, then tap where it should drop</b><div class="bb-pal" id="pl">${Object.entries(SH).map(([k,s])=>`<button data-s="${k}">${icon(k)}${s[0]}</button>`).join('')}</div><div class="bb-cols" id="cs">${COLS.map((c,i)=>`<button data-c="${i}" style="--c:${c}"></button>`).join('')}</div>
+<div class="bb-stat"><span class="ln-pill">🧱 <b id="nb">0</b> blocks</span><span class="ln-pill">📏 <b id="ht">0</b> high</span></div><div class="bb-msg" id="msg"></div><b>🎯 Challenges</b><div class="bb-goal" id="gl">${GOALS.map((g,i)=>`<button data-g="${i}">${g[0]}</button>`).join('')}</div></div></div>`;
+function icon(k){const c=SH[k][1];const w=Math.max(...c.map(p=>p[0]))+1,h=Math.max(...c.map(p=>p[1]))+1;return `<svg viewBox="0 0 ${w*10} ${h*10}">${SH[k][2]==='roof'?'<polygon points="0,10 5,0 10,10" fill="#E5533F" stroke="#1D2B53" stroke-width="1.2"/>':c.map(p=>`<rect x="${p[0]*10+.6}" y="${(h-1-p[1])*10+.6}" width="8.8" height="8.8" rx="1.5" fill="#FF9F43" stroke="#1D2B53" stroke-width="1.2"/>`).join('')}</svg>`}
+const gaps=()=>GOALS[gi][2];
+const ground=x=>!gaps().some(([a,b])=>x>=a&&x<=b);
+const cells=b=>SH[b.k][1].map(([dx,dy])=>[b.x+dx,b.y+dy]);
+function occ(skip){const m=new Map();blocks.forEach(b=>{if(b===skip)return;cells(b).forEach(([x,y])=>m.set(x+','+y,b))});return m}
+// a block falls until any of its cells would land on the ground or another block
+function settle(b){const o=occ(b);while(b.y>0&&cells(b).every(([x,y])=>!o.has(x+','+(y-1))&&!(y-1<0)))b.y--;
+ // if every cell is above a gap, it can fall into the water (below row 0) and is lost
+ if(b.y===0&&cells(b).filter(([x,y])=>y===0).every(([x])=>!ground(x))&&cells(b).every(([x,y])=>!o.has(x+','+(y-1))))return false;return true}
+function supported(b,o){return cells(b).some(([x,y])=>(y===0&&ground(x))||o.has(x+','+(y-1))&&o.get(x+','+(y-1))!==b)}
+function topH(){return blocks.reduce((m,b)=>Math.max(m,...cells(b).map(c=>c[1]+1)),0)}
+function place(x){if(busy)return;const s=SH[shape][1],w=Math.max(...s.map(p=>p[0]))+1;x=Math.max(0,Math.min(GW-w,x));const b={id:nid++,k:shape,x,y:GH-1-Math.max(...s.map(p=>p[1])),c:COLS[col]};
+ const o=occ();if(cells(b).some(([cx,cy])=>o.has(cx+','+cy))){Kit.tone(200,.2,'triangle',.15);return msg('No room up there!')}
+ blocks.push(b);if(!settle(b)){blocks.pop();Kit.tone(160,.3,'triangle',.12);msg('💦 Splash! That block fell in the water.');draw();return}Kit.tone(240+b.y*30,.06,'square',.08);draw();status()}
+function draw(){let h='';h+=`<g>${Array.from({length:GW},(_,x)=>ground(x)?`<rect x="${x*S}" y="${(GH-0)*S-6}" width="${S}" height="6" fill="#5DC66E"/>`:`<rect x="${x*S}" y="${GH*S-20}" width="${S}" height="20" fill="#2F8FE0"/><text x="${x*S+S/2}" y="${GH*S-6}" font-size="14" text-anchor="middle">〰️</text>`).join('')}</g>`;
+ // grid
+ for(let x=0;x<=GW;x++)h+=`<line x1="${x*S}" y1="0" x2="${x*S}" y2="${GH*S}" stroke="rgba(255,255,255,.35)"/>`;for(let y=0;y<=GH;y++)h+=`<line x1="0" y1="${y*S}" x2="${GW*S}" y2="${y*S}" stroke="rgba(255,255,255,.35)"/>`;
+ if(gi===0)h+=`<line x1="0" y1="${(GH-10)*S}" x2="${GW*S}" y2="${(GH-10)*S}" stroke="#E5533F" stroke-width="3" stroke-dasharray="10 8"/><text x="${GW*S-30}" y="${(GH-10)*S-6}" font-size="26">🚩</text>`;
+ if(gi===1){h+=`<text x="10" y="${GH*S-12}" font-size="30">🚗</text><text x="${GW*S-40}" y="${GH*S-12}" font-size="30">🏁</text>`}
+ if(gi===3)h+=`<text x="${12*S+4}" y="${GH*S-10}" font-size="22">👆 edge</text>`;
+ blocks.forEach(b=>{if(SH[b.k][2]==='roof'){const X=b.x*S,Y=(GH-1-b.y)*S;h+=`<polygon points="${X},${Y+S} ${X+S/2},${Y+2} ${X+S},${Y+S}" fill="${b.c}" stroke="#1D2B53" stroke-width="3" stroke-linejoin="round"/>`}else cells(b).forEach(([x,y])=>h+=`<rect x="${x*S+1.5}" y="${(GH-1-y)*S+1.5}" width="${S-3}" height="${S-3}" rx="6" fill="${b.c}" stroke="#1D2B53" stroke-width="3"/><rect x="${x*S+7}" y="${(GH-1-y)*S+6}" width="${S-20}" height="6" rx="3" fill="rgba(255,255,255,.45)"/>`)});
+ if(hover!=null){const s=SH[shape][1],w=Math.max(...s.map(p=>p[0]))+1,x=Math.max(0,Math.min(GW-w,hover));h+=`<rect x="${x*S}" y="0" width="${w*S}" height="${GH*S}" fill="rgba(255,255,255,.25)"/>`}
+ $('sv').innerHTML=h;document.querySelectorAll('[data-s]').forEach(b=>b.classList.toggle('on',b.dataset.s===shape));document.querySelectorAll('[data-c]').forEach(b=>b.classList.toggle('on',+b.dataset.c===col));
+ [...$('gl').children].forEach((b,i)=>{b.classList.toggle('on',i===gi);b.classList.toggle('won',won.includes(i))});$('nb').textContent=blocks.length;$('ht').textContent=topH();window.__t={n:blocks.length,top:topH(),gi,won:[...won]}}
+function msg(t){$('msg').textContent=t}
+function status(){}
+// earthquake: blocks whose middle isn't over something solid tip off, then everything settles; repeat until nothing changes
+async function quake(){if(busy)return;busy=true;$('st').classList.add('shake');Kit.tone(80,1,'sawtooth',.12);await Kit.sleep(window.__fast?1:1200);$('st').classList.remove('shake');let lost=0;
+ for(let r=0;r<40;r++){let changed=false;blocks.sort((a,b)=>a.y-b.y);const o=occ();
+  for(const b of [...blocks]){const cs=cells(b),bottom=Math.min(...cs.map(c=>c[1])),cx=cs.reduce((s,c)=>s+c[0],0)/cs.length+.5;// support span under this block
+   const sup=[];cs.forEach(([x,y])=>{if((y===0&&ground(x))||(o.has(x+','+(y-1))&&o.get(x+','+(y-1))!==b))sup.push(x)});
+   // blocks resting on top help hold a plank down: count their weight too
+   const above=blocks.filter(a=>a!==b&&cells(a).some(([x,y])=>cs.some(([X,Y])=>X===x&&Y===y-1)));let mass=cs.length,mx=cx*cs.length;above.forEach(a=>{const ac=cells(a).filter(([x,y])=>cs.some(([X,Y])=>X===x&&Y===y-1));ac.forEach(([x])=>{mass+=1.5;mx+=(x+.5)*1.5})});const cm=mx/mass;
+   if(!sup.length||cm<Math.min(...sup)-.02||cm>Math.max(...sup)+1.02){// tip or fall
+    const dir=!sup.length?0:cm<Math.min(...sup)?-1:1;b.x+=dir;if(b.x<0||b.x+Math.max(...SH[b.k][1].map(p=>p[0]))>=GW||cells(b).some(([x,y])=>o.has(x+','+y)&&o.get(x+','+y)!==b)){b.x-=dir}
+    const before=b.y;if(!settle(b)||b.y===before&&dir===0){if(!supported(b,occ(b))){blocks.splice(blocks.indexOf(b),1);lost++}}changed=true;break}}
+  if(!changed)break;draw();await Kit.sleep(window.__fast?1:120)}
+ blocks.forEach(b=>settle(b));blocks=blocks.filter(b=>supported(b,occ(b))||(lost++,false));draw();busy=false;
+ const g=GOALS[gi];if(gi<4&&g[3]()){if(!won.includes(gi)){won.push(gi);Kit.set('bb-won',won)}Kit.tada();Kit.confetti(70);msg(`🎉 It survived${lost?` (${lost} block${lost>1?'s':''} fell)`:''}! Challenge complete!`)}else msg(lost?`😬 ${lost} block${lost>1?'s':''} tumbled down. ${gi<4?'Not done yet: '+g[1]:''}`:`💪 Nothing fell!${gi<4?' But the challenge isn\'t finished yet.':''}`);draw();window.__t.lost=lost}
+function bridged(){const o=occ(),[a,b]=gaps()[0];// a row of blocks must cover the whole gap, joined to land on both sides
+ for(let y=0;y<4;y++){let ok=true;for(let x=a-1;x<=b+1;x++)if(!o.has(x+','+y)){ok=false;break}if(ok)return true}return false}
+function house(){const o=occ();for(let l=0;l<GW;l++)for(let r=l+2;r<GW;r++){const wall=x=>[0,1,2].every(y=>o.has(x+','+y));if(!wall(l)||!wall(r))continue;const inside=[0,1].every(y=>{for(let x=l+1;x<r;x++)if(o.has(x+','+y))return false;return true});if(!inside)continue;
+  const roof=blocks.some(b=>SH[b.k][2]==='roof'&&b.x>=l&&b.x<=r&&b.y>=3);if(roof)return true}return false}
+function overhang(){let m=0;blocks.forEach(b=>cells(b).forEach(([x])=>{if(x>=12)m=Math.max(m,x-11)}));return m}
+$('sv').addEventListener('pointermove',e=>{const r=$('sv').getBoundingClientRect();hover=Math.floor((e.clientX-r.left)/r.width*GW);draw()});$('sv').addEventListener('pointerleave',()=>{hover=null;draw()});
+$('sv').addEventListener('pointerdown',e=>{const r=$('sv').getBoundingClientRect();place(Math.floor((e.clientX-r.left)/r.width*GW))});
+$('pl').onclick=e=>{const b=e.target.closest('[data-s]');if(b){shape=b.dataset.s;draw()}};$('cs').onclick=e=>{const b=e.target.closest('[data-c]');if(b){col=+b.dataset.c;draw()}};
+$('gl').onclick=e=>{const b=e.target.closest('[data-g]');if(b&&!busy){gi=+b.dataset.g;blocks=[];msg('🎯 '+GOALS[gi][1]);draw()}};
+$('eq').onclick=quake;$('un').onclick=()=>{if(!busy){blocks.pop();draw()}};$('cl').onclick=()=>{if(!busy){blocks=[];draw()}};
+window.__b={place:(k,x)=>{shape=k;place(x)},quake,goal:i=>$('gl').children[i].click()};
+msg('🎯 '+GOALS[0][1]);draw();
+</script>
+</body></html>

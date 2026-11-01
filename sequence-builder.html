@@ -61,7 +61,7 @@ $('newStep').onkeydown=e=>{if(e.key==='Enter')$('addBtn').click()};
 Learn.drag($('game'),{item:'.sb-step',zone:'.dz-zone',drop(it,z){
  if(z.dataset.tray!=null){z.appendChild(it)}else{const old=z.querySelector('.sb-step');if(old&&old!==it){const from=it.closest('.sb-slot');if(from)from.appendChild(old);else $('tray').appendChild(old)}z.appendChild(it)}
  document.querySelectorAll('.sb-slot').forEach(s=>{s.classList.toggle('full',!!s.querySelector('.sb-step'));s.classList.remove('ok','off')});Kit.tick()}});
-$('chk').onclick=()=>{const sl=[...document.querySelectorAll('.sb-slot')];let r=0;sl.forEach((s,k)=>{const st=s.querySelector('.sb-step');const ok=st&&+st.dataset.i===k;s.classList.toggle('ok',ok);s.classList.toggle('off',!!st&&!ok);r+=ok});
+$('chk').onclick=()=>{const sl=[...document.querySelectorAll('.sb-slot')];let r=0;sl.forEach((s,k)=>{const st=s.querySelector('.sb-step');const ok=!!(st&&+st.dataset.i===k);s.classList.toggle('ok',ok);s.classList.toggle('off',!!st&&!ok);r+=ok});
  $('say').textContent=`${r} of ${sl.length} steps are in the right spot.`;if(r===sl.length)Learn.finish('📚','Perfect sequence!','Every step is in order. Press Play to hear it.');else Kit.tone(240,.25,'triangle',.18)};
 $('clr').onclick=()=>{if(free){steps=[]}load()};$('back').onclick=()=>{$('game').hidden=true;$('set').hidden=false};
 const speak=t=>new Promise(res=>{try{const u=new SpeechSynthesisUtterance(t);u.rate=.95;u.onend=res;u.onerror=res;speechSynthesis.cancel();speechSynthesis.speak(u);setTimeout(res,Math.max(2200,t.length*85))}catch{setTimeout(res,1800)}});
